@@ -1,0 +1,7 @@
+*.class
+target/
+.idea
+.settings
+.project
+.classpath
+hs_err_pid*
