@@ -42,6 +42,30 @@
 			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.derby</groupId>
+			<artifactId>derby</artifactId>
+			<version>10.14.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.42</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>4.3.19.RELEASE</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.25</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -67,6 +91,26 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.querydsl</groupId>
+				<artifactId>querydsl-maven-plugin</artifactId>
+				<version>${querydsl.version}</version>
+				<configuration>
+					<jdbcDriver>org.apache.derby.jdbc.EmbeddedDriver</jdbcDriver>
+					<jdbcUrl>jdbc:derby:db;create=true</jdbcUrl>
+					<exportBeans>true</exportBeans>
+					<packageName>com.github.xuse.querydsl.entity</packageName>
+					<targetFolder>${project.basedir}/src/test/java</targetFolder>
+					<beanAddToString>true</beanAddToString>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.derby</groupId>
+						<artifactId>derby</artifactId>
+						<version>10.14.1.0</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
 	</build>

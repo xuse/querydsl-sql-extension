@@ -5,3 +5,5 @@ target/
 .project
 .classpath
 hs_err_pid*
+db
+*.log
