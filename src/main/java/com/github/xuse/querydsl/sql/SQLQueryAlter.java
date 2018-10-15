@@ -13,6 +13,8 @@
  */
 package com.github.xuse.querydsl.sql;
 
+import static com.google.common.collect.Lists.newArrayList;
+
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.inject.Provider;
@@ -37,10 +40,13 @@ import com.querydsl.core.QueryModifiers;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
+import com.querydsl.core.types.ParamExpression;
+import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.Configuration;
+import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLListenerContext;
 import com.querydsl.sql.SQLListenerContextImpl;
@@ -116,21 +122,21 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 		this.connProvider = connProvider;
 	}
 
-	/**
-	 * Called to create and start a new SQL Listener context
-	 *
-	 * @param connection the database connection
-	 * @param metadata   the meta data for that context
-	 * @return the newly started context
-	 */
-	protected SQLListenerContextImpl startContext(Connection connection, QueryMetadata metadata) {
-		SQLListenerContextImpl context = new SQLListenerContextImpl(metadata, connection);
-		if (parentContext != null) {
-			context.setData(PARENT_CONTEXT, parentContext);
-		}
-		listeners.start(context);
-		return context;
-	}
+//	/**
+//	 * Called to create and start a new SQL Listener context
+//	 *
+//	 * @param connection the database connection
+//	 * @param metadata   the meta data for that context
+//	 * @return the newly started context
+//	 */
+//	protected SQLListenerContextImpl startContext(Connection connection, QueryMetadata metadata) {
+//		SQLListenerContextImpl context = new SQLListenerContextImpl(metadata, connection);
+//		if (parentContext != null) {
+//			context.setData(PARENT_CONTEXT, parentContext);
+//		}
+//		listeners.start(context);
+//		return context;
+//	}
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -210,7 +216,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			setParameters(stmt, constants, serializer.getConstantPaths(), getMetadata().getParams());
 
 			context.addPreparedStatement(stmt);
-			prepared(context,constants, serializer.getConstantPaths());
+			listeners.prepared(context);
 
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
@@ -276,7 +282,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			try {
 				setParameters(stmt, constants, serializer.getConstantPaths(), queryMixin.getMetadata().getParams());
 				context.addPreparedStatement(stmt);
-				prepared(context,constants, serializer.getConstantPaths());
+				listeners.prepared(context);
 
 				listeners.preExecute(context);
 				long timeesp = System.currentTimeMillis();
@@ -315,7 +321,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 							rv.add(get(rs, expr, 1, expr.getType()));
 						}
 					}
-					postExecuted(context, timeesp, "fetch", rv.size());
+					postExecuted(context, timeesp, "Fetch", rv.size());
 					return rv;
 				} catch (IllegalAccessException e) {
 					onException(context, e);
@@ -414,12 +420,12 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			final PreparedStatement stmt = getPreparedStatement(queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), metadata.getParams());
 			context.addPreparedStatement(stmt);
-			prepared(context,constants, serializer.getConstantPaths());
+			listeners.prepared(context);
 
 			listeners.preExecute(context);
 			long start=System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
-			postExecuted(context,System.currentTimeMillis()-start, "iterate", 1);
+			postExecuted(context,System.currentTimeMillis()-start, "Iterated", 1);
 			if (expr == null) {
 				return new SQLResultIterator<T>(configuration, stmt, rs, listeners, context) {
 					@Override
@@ -492,12 +498,12 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			final PreparedStatement stmt = getPreparedStatement(queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), getMetadata().getParams());
 			context.addPreparedStatement(stmt);
-			prepared(context,constants, serializer.getConstantPaths());
+			listeners.prepared(context);
 
 			listeners.preExecute(context);
 			long start=System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
-			postExecuted(context, System.currentTimeMillis()-start, "resultset", 0);
+			postExecuted(context, System.currentTimeMillis()-start, "ResultSet", 0);
 
 			return new ResultSetAdapter(rs) {
 				@Override
@@ -518,6 +524,21 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			throw configuration.translate(queryString, constants, e);
 		}
 	}
+	
+    protected SQLBindings getSQL(SQLSerializer serializer) {
+        List<Object> args = newArrayList();
+        Map<ParamExpression<?>, Object> params = getMetadata().getParams();
+        for (Object o : serializer.getConstants()) {
+            if (o instanceof ParamExpression) {
+                if (!params.containsKey(o)) {
+                    throw new ParamNotSetException((ParamExpression<?>) o);
+                }
+                o = queryMixin.getMetadata().getParams().get(o);
+            }
+            args.add(o);
+        }
+        return new SQLBindingsAlter(serializer.toString(), args, serializer.getConstantPaths());
+    }
 
 	@Override
 	public SQLQueryAlter<T> clone() {
@@ -529,12 +550,6 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 		SQLQueryAlter<T> q = new SQLQueryAlter<T>(conn, getConfiguration(), getMetadata().clone());
 		q.clone(this);
 		return q;
-	}
-
-	private void prepared(SQLListenerContextImpl context, List<?> objects, List<Path<?>> constantPaths) {
-		context.setData(ContextKeyConstants.SIGLE_PARAMS, objects);
-		context.setData(ContextKeyConstants.PARAMS_PATH, constantPaths);
-		listeners.prepared(context);
 	}
 
 	private void postExecuted(SQLListenerContextImpl context, long cost, String action, int count) {

@@ -13,10 +13,11 @@
  */
 package com.github.xuse.querydsl.sql.dml;
 
+import static com.google.common.collect.Lists.newArrayList;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +25,13 @@ import java.util.Map;
 import javax.inject.Provider;
 
 import com.github.xuse.querydsl.sql.ContextKeyConstants;
-import com.google.common.collect.Maps;
-import com.querydsl.core.types.Path;
+import com.github.xuse.querydsl.sql.SQLBindingsAlter;
+import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.types.ParamExpression;
+import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLTemplates;
@@ -93,107 +97,22 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 		}
 	}
 
-	protected PreparedStatement createStatement() throws SQLException {
-		listeners.preRender(context);
-		SQLSerializer serializer = createSerializer();
-		serializer.serializeUpdate(metadata, entity, updates);
-		queryString = serializer.toString();
-		constants = serializer.getConstants();
-		logQuery(logger, queryString, constants);
-		context.addSQL(createBindings(metadata, serializer));
-		// 此处原来的代码有错误，已经改正
-		listeners.rendered(context);
 
-		listeners.prePrepare(context);
-		PreparedStatement stmt = connection().prepareStatement(queryString);
-		setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
-		context.addPreparedStatement(stmt);
-		prepared(context, constants, serializer.getConstantPaths(), -1);
-
-		return stmt;
-	}
-
-	protected Collection<PreparedStatement> createStatements() throws SQLException {
-		boolean addBatches = !configuration.getUseLiterals();
-		listeners.preRender(context);
-		SQLSerializer serializer = createSerializer();
-		serializer.serializeUpdate(batches.get(0).getMetadata(), entity, batches.get(0).getUpdates());
-		queryString = serializer.toString();
-		constants = serializer.getConstants();
-		logQuery(logger, queryString, constants);
-		context.addSQL(createBindings(metadata, serializer));
-		listeners.rendered(context);
-
-		Map<String, PreparedStatement> stmts = Maps.newHashMap();
-
-		// add first batch
-		listeners.prePrepare(context);
-		PreparedStatement stmt = connection().prepareStatement(queryString);
-		setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
-		if (addBatches) {
-			stmt.addBatch();
-		}
-		stmts.put(serializer.toString(), stmt);
-		context.addPreparedStatement(stmt);
-		prepared(context, serializer.getConstants(), serializer.getConstantPaths(), 0);
-
-		// add other batches
-		for (int i = 1; i < batches.size(); i++) {
-			listeners.preRender(context);
-			serializer = createSerializer();
-			serializer.serializeUpdate(batches.get(i).getMetadata(), entity, batches.get(i).getUpdates());
-			context.addSQL(createBindings(metadata, serializer));
-			listeners.rendered(context);
-
-			stmt = stmts.get(serializer.toString());
-			if (stmt == null) {
-				listeners.prePrepare(context);
-				stmt = connection().prepareStatement(serializer.toString());
-				stmts.put(serializer.toString(), stmt);
-				context.addPreparedStatement(stmt);
-				prepared(context, serializer.getConstants(), serializer.getConstantPaths(), i);
-				// listeners.prepared(context);
-			}
-			setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
-			if (addBatches) {
-				stmt.addBatch();
-			}
-		}
-		preparedFinish(context, batches.size());
-
-		return stmts.values();
-	}
-
-	/**
-	 * first -1唯一 0初始 n后续
-	 * 
-	 * @param context
-	 * @param objects
-	 * @param constantPaths
-	 * @param first
-	 */
-	private void prepared(SQLListenerContextImpl context, List<?> objects, List<Path<?>> constantPaths, int first) {
-		switch (first) {
-		case -1:
-			context.setData(ContextKeyConstants.SIGLE_PARAMS, objects);
-			context.setData(ContextKeyConstants.PARAMS_PATH, constantPaths);
-			listeners.prepared(context);
-			return;
-		case 0: {
-			context.setData(ContextKeyConstants.PARAMS_PATH, constantPaths);
-			List<List<?>> mlist = new ArrayList<>();
-			mlist.add(objects);
-			context.setData(ContextKeyConstants.BATCH_PARAMS, mlist);
-			return;
-		}
-		default:
-			if (first > ContextKeyConstants.MAX_BATCH_LOG) {
-				return;
-			}
-			@SuppressWarnings("unchecked")
-			List<List<?>> mlist = (List<List<?>>) context.getData(ContextKeyConstants.BATCH_PARAMS);
-			mlist.add(objects);
-		}
+	@Override
+	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {
+		String queryString = serializer.toString();
+        List<Object> args = newArrayList();
+        Map<ParamExpression<?>, Object> params = metadata.getParams();
+        for (Object o : serializer.getConstants()) {
+            if (o instanceof ParamExpression) {
+                if (!params.containsKey(o)) {
+                    throw new ParamNotSetException((ParamExpression<?>) o);
+                }
+                o = metadata.getParams().get(o);
+            }
+            args.add(o);
+        }
+        return new SQLBindingsAlter(queryString, args, serializer.getConstantPaths());
 	}
 
 	private void postExecuted(SQLListenerContextImpl context, long cost, String action, long count) {
@@ -201,10 +120,5 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
 		listeners.executed(context);
-	}
-
-	private void preparedFinish(SQLListenerContextImpl context, int maxSize) {
-		context.setData(ContextKeyConstants.BATCH_SIZE, maxSize);
-		listeners.prepared(context);
 	}
 }

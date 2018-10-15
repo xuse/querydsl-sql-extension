@@ -5,7 +5,7 @@
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>4.2.1</version>
+	<version>4.2.1-r1</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -17,6 +17,7 @@
 		<maven.compiler.testSource>1.7</maven.compiler.testSource>
 		<maven.compiler.testTarget>1.7</maven.compiler.testTarget>
 		<querydsl.version>4.2.1</querydsl.version>
+		<springframework.version>4.3.19.RELEASE</springframework.version>
 	</properties>
 
 	<dependencies>
@@ -57,8 +58,8 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-jdbc</artifactId>
-			<version>4.3.19.RELEASE</version>
-			<scope>test</scope>
+			<version>${springframework.version}</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -92,28 +93,13 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- 
-			<plugin>
-				<groupId>com.querydsl</groupId>
-				<artifactId>querydsl-maven-plugin</artifactId>
-				<version>${querydsl.version}</version>
-				<configuration>
-					<jdbcDriver>org.apache.derby.jdbc.EmbeddedDriver</jdbcDriver>
-					<jdbcUrl>jdbc:derby:db;create=true</jdbcUrl>
-					<exportBeans>true</exportBeans>
-					<packageName>com.github.xuse.querydsl.entity</packageName>
-					<targetFolder>${project.basedir}/src/test/java</targetFolder>
-					<beanAddToString>true</beanAddToString>
-				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.derby</groupId>
-						<artifactId>derby</artifactId>
-						<version>10.14.1.0</version>
-					</dependency>
-				</dependencies>
-			</plugin>
-			 -->
+			<!-- <plugin> <groupId>com.querydsl</groupId> <artifactId>querydsl-maven-plugin</artifactId> 
+				<version>${querydsl.version}</version> <configuration> <jdbcDriver>org.apache.derby.jdbc.EmbeddedDriver</jdbcDriver> 
+				<jdbcUrl>jdbc:derby:db;create=true</jdbcUrl> <exportBeans>true</exportBeans> 
+				<packageName>com.github.xuse.querydsl.entity</packageName> <targetFolder>${project.basedir}/src/test/java</targetFolder> 
+				<beanAddToString>true</beanAddToString> </configuration> <dependencies> <dependency> 
+				<groupId>org.apache.derby</groupId> <artifactId>derby</artifactId> <version>10.14.1.0</version> 
+				</dependency> </dependencies> </plugin> -->
 		</plugins>
 	</build>
 	<distributionManagement>
