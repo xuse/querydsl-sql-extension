@@ -19,8 +19,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UnmanagedConnection implements Connection {
 	protected final Connection conn;
+	private static Logger LOG = LoggerFactory.getLogger(UnmanagedConnection.class);
 
 	protected UnmanagedConnection(Connection conn) {
 		this.conn = conn;
@@ -29,6 +33,7 @@ public class UnmanagedConnection implements Connection {
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}
+		LOG.debug("UnmanagedConnection created, {}", conn);
 	}
 
 	public PreparedStatement prepareStatement(String sql) throws SQLException {
@@ -151,18 +156,15 @@ public class UnmanagedConnection implements Connection {
 		conn.releaseSavepoint(savepoint);
 	}
 
-	public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability)
-			throws SQLException {
+	public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
 		return conn.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability);
 	}
 
-	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
-			int resultSetHoldability) throws SQLException {
+	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
 		return conn.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
 	}
 
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
-			int resultSetHoldability) throws SQLException {
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
 		return conn.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
 	}
 
@@ -248,6 +250,7 @@ public class UnmanagedConnection implements Connection {
 
 	@Override
 	public void close() throws SQLException {
+		LOG.debug("UnmanagedConnection closing, {}", conn);
 		conn.close();
 	}
 }

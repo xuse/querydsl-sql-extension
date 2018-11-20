@@ -16,14 +16,10 @@ package com.querydsl.sql;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.xuse.querydsl.sql.spring.UnmanagedConnection;
 import com.querydsl.core.QueryException;
 
 public final class UnmanagedConnectionCloseListener extends SQLBaseListener {
-	private static Logger log = LoggerFactory.getLogger("Non-Transactional closer");
 	public static final UnmanagedConnectionCloseListener DEFAULT = new UnmanagedConnectionCloseListener();
 
 	private UnmanagedConnectionCloseListener() {
@@ -35,7 +31,6 @@ public final class UnmanagedConnectionCloseListener extends SQLBaseListener {
 		if (connection != null && context.getData(AbstractSQLQuery.PARENT_CONTEXT) == null) {
 			if (connection instanceof UnmanagedConnection) {
 				try {
-					log.info("close connection:{}", connection);
 					connection.close();
 				} catch (SQLException e) {
 					throw new QueryException(e);

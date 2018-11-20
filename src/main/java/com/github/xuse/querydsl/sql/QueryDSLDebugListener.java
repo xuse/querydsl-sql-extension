@@ -48,8 +48,7 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 	}
 
 	@Override
-	public final void notifyMerge(RelationalPath<?> entity, QueryMetadata md, List<Path<?>> keys, List<Path<?>> columns,
-			List<Expression<?>> values, SubQueryExpression<?> subQuery) {
+	public final void notifyMerge(RelationalPath<?> entity, QueryMetadata md, List<Path<?>> keys, List<Path<?>> columns, List<Expression<?>> values, SubQueryExpression<?> subQuery) {
 	}
 
 	@Override
@@ -57,8 +56,7 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 	}
 
 	@Override
-	public final void notifyInsert(RelationalPath<?> entity, QueryMetadata md, List<Path<?>> columns,
-			List<Expression<?>> values, SubQueryExpression<?> subQuery) {
+	public final void notifyInsert(RelationalPath<?> entity, QueryMetadata md, List<Path<?>> columns, List<Expression<?>> values, SubQueryExpression<?> subQuery) {
 	}
 
 	@Override
@@ -116,17 +114,21 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 		} else {
 			List<SQLBindings> list = convert(bs);
 			int total = list.size();
-			for (int row = 0; row < ContextKeyConstants.MAX_BATCH_LOG; row++) {
+			int loopMax = Math.min(total, ContextKeyConstants.MAX_BATCH_LOG);
+			for (int row = 0; row < loopMax; row++) {
+				if(row>0) {
+					sb.append('\n');
+				}
 				SQLBindings bindings = list.get(row);
-				sb.append("Batch Params: (").append(row + 1).append('/').append(total + 1).append(")\n");
-				List<Object> params=bindings.getNullFriendlyBindings();
+				sb.append("Batch Params: (").append(row + 1).append('/').append(total).append(")\n");
+				List<Object> params = bindings.getNullFriendlyBindings();
 				for (int count = 0; count < params.size(); count++) {
 					Path<?> p = constantPaths.get(count);
 					Object value = params.get(count);
 					append(sb, p, value, count);
 				}
 			}
-			if(ContextKeyConstants.MAX_BATCH_LOG<total) {
+			if (ContextKeyConstants.MAX_BATCH_LOG < total) {
 				sb.append("Parameters after are ignored to reduce the size of log.");
 			}
 		}
@@ -134,8 +136,8 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 	}
 
 	private List<SQLBindings> convert(Collection<SQLBindings> bs) {
-		if(bs instanceof List) {
-			return (List<SQLBindings>)bs;
+		if (bs instanceof List) {
+			return (List<SQLBindings>) bs;
 		}
 		return new ArrayList<SQLBindings>(bs);
 	}
@@ -158,7 +160,7 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 			return;
 		}
 		String action = (String) context.getData(ContextKeyConstants.ACTION);
-		if (action == null || action.length()==0) {
+		if (action == null || action.length() == 0) {
 			// 兼容官方版本
 			return;
 		}
@@ -181,19 +183,19 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 			sb.append("\n");
 		}
 		sb.append('(').append(count + 1).append(')');
-		int pad=0;
+		int pad = 0;
 		if (p == null) {
 			sb.append(":      ");
 		} else {
 			String s = p.toString();
 			int index = s.indexOf('.');
 			if (index > 0) {
-				s=s.substring(index + 1);
+				s = s.substring(index + 1);
 			}
-			pad=13-s.length();
+			pad = 13 - s.length();
 			sb.append(s);
 		}
-		for(int i=0;i<pad;i++) {
+		for (int i = 0; i < pad; i++) {
 			sb.append(' ');
 		}
 		if (value == null) {
