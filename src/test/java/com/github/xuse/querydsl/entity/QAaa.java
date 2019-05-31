@@ -1,15 +1,18 @@
 package com.github.xuse.querydsl.entity;
 
-import static com.querydsl.core.types.PathMetadataFactory.*;
+import static com.querydsl.core.types.PathMetadataFactory.forVariable;
 
-import com.querydsl.core.types.dsl.*;
-
-import com.querydsl.core.types.PathMetadata;
-import javax.annotation.Generated;
-import com.querydsl.core.types.Path;
-
-import com.querydsl.sql.ColumnMetadata;
 import java.sql.Types;
+import java.util.Date;
+
+import javax.annotation.Generated;
+
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.PathMetadata;
+import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.NumberPath;
+import com.querydsl.core.types.dsl.StringPath;
+import com.querydsl.sql.ColumnMetadata;
 
 
 
@@ -24,7 +27,7 @@ public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
 
     public static final QAaa aaa = new QAaa("AAA");
 
-    public final DateTimePath<java.sql.Timestamp> created = createDateTime("created", java.sql.Timestamp.class);
+    public final DateTimePath<Date> created = createDateTime("created", Date.class);
 
     public final NumberPath<Integer> id = createNumber("id", Integer.class);
 

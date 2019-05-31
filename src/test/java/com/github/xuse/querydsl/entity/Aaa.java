@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.entity;
 
+import java.util.Date;
+
 import javax.annotation.Generated;
 
 /**
@@ -8,17 +10,17 @@ import javax.annotation.Generated;
 @Generated("com.querydsl.codegen.BeanSerializer")
 public class Aaa {
 
-    private java.sql.Timestamp created;
+    private Date created;
 
     private Integer id;
 
     private String name;
 
-    public java.sql.Timestamp getCreated() {
+    public Date getCreated() {
         return created;
     }
 
-    public void setCreated(java.sql.Timestamp created) {
+    public void setCreated(Date created) {
         this.created = created;
     }
 

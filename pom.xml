@@ -5,7 +5,7 @@
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>4.2.1-r2</version>
+	<version>4.2.1-r3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -18,9 +18,17 @@
 		<maven.compiler.testTarget>1.7</maven.compiler.testTarget>
 		<querydsl.version>4.2.1</querydsl.version>
 		<springframework.version>4.3.19.RELEASE</springframework.version>
+		<geequery.version>1.13.0-SNAPSHOT</geequery.version>
 	</properties>
 
 	<dependencies>
+	<!-- 
+		<dependency>
+			<groupId>org.easyframe</groupId>
+			<artifactId>common-orm</artifactId>
+			<version>${geequery.version}</version>
+		</dependency>
+		 -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -116,14 +124,15 @@
 	</build>
 	<distributionManagement>
 		<repository>
-			<id>fsdmdept-release</id>
-			<name>Release Repository</name>
-			<url>http://192.0.0.55/nexus/content/repositories/releases/</url>
+			<id>civil-release</id>
+			<name>civil-release</name>
+			<url>http://10.1.74.162:80/artifactory/civil-release/</url>
+			<layout>default</layout>
 		</repository>
 		<snapshotRepository>
-			<id>fsdmdept-snapshot</id>
-			<name>Snapshots Repository</name>
-			<url>http://192.0.0.55/nexus/content/repositories/snapshots/</url>
+			<id>civil-snapshot</id>
+			<name>civil-release</name>
+			<url>http://10.1.74.162:80/artifactory/civil-snapshot/</url>
 		</snapshotRepository>
 	</distributionManagement>
 </project>

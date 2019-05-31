@@ -27,8 +27,11 @@ import javax.inject.Provider;
 import com.github.xuse.querydsl.sql.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.types.ConstantImpl;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
+import com.querydsl.core.types.Path;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
@@ -51,8 +54,7 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 		super(connection, configuration, entity);
 	}
 
-	public SQLUpdateClauseAlter(Provider<Connection> connection, Configuration configuration,
-			RelationalPath<?> entity) {
+	public SQLUpdateClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity) {
 		super(connection, configuration, entity);
 	}
 
@@ -97,22 +99,61 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 		}
 	}
 
+//	private List<Pair<Path<?>, Expression<?>>> optionalUpdates = new ArrayList<>();
+	
+	// @WithBridgeMethods(value = SQLUpdateClause.class, castRequired = true)
+	public <T> SQLUpdateClauseAlter setIf(boolean doSet, Path<T> path, T value) {
+		if (doSet && path != null) {
+			if (value instanceof Expression<?>) {
+				updates.put(path, (Expression<?>) value);
+			} else if (value != null) {
+				updates.put(path, ConstantImpl.create(value));
+			} else {
+				setNull(path);
+			}
+		}
+		return this;
+	}
+
+	// @WithBridgeMethods(value = SQLUpdateClause.class, castRequired = true)
+	public <T> SQLUpdateClauseAlter setIf(boolean doSet, Path<T> path, Expression<? extends T> expression) {
+		if (doSet && path != null) {
+			if (expression != null) {
+				updates.put(path, expression);
+			} else {
+				setNull(path);
+			}
+		}
+		return this;
+	}
+	
+//	
+//	public <T> SQLUpdateClauseAlter setOptional(Path<T> path, T value) {
+//		optionalUpdates.add(Pair.of(path, value));
+//		return this;
+//	}
+//	
+//	
+//	public <T> SQLUpdateClause setOptional(Path<T> path, Expression<? extends T> expression) {
+//		optionalUpdates.add(Pair.of(path, value));
+//		return this;
+//	}
 
 	@Override
 	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
-        List<Object> args = newArrayList();
-        Map<ParamExpression<?>, Object> params = metadata.getParams();
-        for (Object o : serializer.getConstants()) {
-            if (o instanceof ParamExpression) {
-                if (!params.containsKey(o)) {
-                    throw new ParamNotSetException((ParamExpression<?>) o);
-                }
-                o = metadata.getParams().get(o);
-            }
-            args.add(o);
-        }
-        return new SQLBindingsAlter(queryString, args, serializer.getConstantPaths());
+		List<Object> args = newArrayList();
+		Map<ParamExpression<?>, Object> params = metadata.getParams();
+		for (Object o : serializer.getConstants()) {
+			if (o instanceof ParamExpression) {
+				if (!params.containsKey(o)) {
+					throw new ParamNotSetException((ParamExpression<?>) o);
+				}
+				o = metadata.getParams().get(o);
+			}
+			args.add(o);
+		}
+		return new SQLBindingsAlter(queryString, args, serializer.getConstantPaths());
 	}
 
 	private void postExecuted(SQLListenerContextImpl context, long cost, String action, long count) {
