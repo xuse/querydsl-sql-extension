@@ -38,6 +38,7 @@ import com.querydsl.core.QueryFlag;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.QueryModifiers;
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.ParamExpression;
@@ -45,12 +46,12 @@ import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
+import com.querydsl.sql.AbstractSQLQuery;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLListenerContext;
 import com.querydsl.sql.SQLListenerContextImpl;
-import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLResultIterator;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLTemplates;
@@ -63,7 +64,7 @@ import com.querydsl.sql.StatementOptions;
  * @param <T>
  * @author tiwe
  */
-public class SQLQueryAlter<T> extends SQLQuery<T> {
+public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private static final long serialVersionUID = -3451422354253107107L;
 	private static final Logger logger = LoggerFactory.getLogger(SQLQueryAlter.class);
 	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
@@ -89,7 +90,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 	///////////// 覆盖检查字段结束/////////////
 
 	public SQLQueryAlter() {
-		super();
+		super((Connection) null, new Configuration(SQLTemplates.DEFAULT), new DefaultQueryMetadata());
 	}
 
 	public SQLQueryAlter(Connection conn, Configuration configuration, QueryMetadata metadata) {
@@ -103,12 +104,12 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 	}
 
 	public SQLQueryAlter(Connection conn, SQLTemplates templates, QueryMetadata metadata) {
-		super(conn, templates, metadata);
+		super(conn, new Configuration(templates), metadata);
 		this.conn = conn;
 	}
 
 	public SQLQueryAlter(Connection conn, SQLTemplates templates) {
-		super(conn, templates);
+		super(conn, new Configuration(templates));
 		this.conn = conn;
 	}
 
@@ -121,22 +122,6 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 		super(connProvider, configuration, new DefaultQueryMetadata());
 		this.connProvider = connProvider;
 	}
-
-//	/**
-//	 * Called to create and start a new SQL Listener context
-//	 *
-//	 * @param connection the database connection
-//	 * @param metadata   the meta data for that context
-//	 * @return the newly started context
-//	 */
-//	protected SQLListenerContextImpl startContext(Connection connection, QueryMetadata metadata) {
-//		SQLListenerContextImpl context = new SQLListenerContextImpl(metadata, connection);
-//		if (parentContext != null) {
-//			context.setData(PARENT_CONTEXT, parentContext);
-//		}
-//		listeners.start(context);
-//		return context;
-//	}
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -227,7 +212,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			} else {
 				count = 0L;
 			}
-			postExecuted(context, System.currentTimeMillis() - start, "Count", (int)count);
+			postExecuted(context, System.currentTimeMillis() - start, "Count", (int) count);
 			return count;
 		} catch (SQLException e) {
 			onException(context, e);
@@ -290,7 +275,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 				timeesp = System.currentTimeMillis() - timeesp;
 				try {
 					lastCell = null;
-					final List<T> rv = new ArrayList<T>();
+					final List<T> result = new ArrayList<T>();
 					if (expr instanceof FactoryExpression) {
 						FactoryExpression<T> fe = (FactoryExpression<T>) expr;
 						while (rs.next()) {
@@ -298,11 +283,12 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 								lastCell = rs.getObject(fe.getArgs().size() + 1);
 								getLastCell = false;
 							}
-							rv.add(newInstance(fe, rs, 0));
+							result.add(newInstance(fe, rs, 0));
 						}
 					} else if (expr.equals(Wildcard.all)) {
+						int columnSize = rs.getMetaData().getColumnCount();
 						while (rs.next()) {
-							Object[] row = new Object[rs.getMetaData().getColumnCount()];
+							Object[] row = new Object[columnSize];
 							if (getLastCell) {
 								lastCell = rs.getObject(row.length);
 								getLastCell = false;
@@ -310,7 +296,7 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 							for (int i = 0; i < row.length; i++) {
 								row[i] = rs.getObject(i + 1);
 							}
-							rv.add((T) row);
+							result.add((T) row);
 						}
 					} else {
 						while (rs.next()) {
@@ -318,11 +304,11 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 								lastCell = rs.getObject(2);
 								getLastCell = false;
 							}
-							rv.add(get(rs, expr, 1, expr.getType()));
+							result.add(get(rs, expr, 1, expr.getType()));
 						}
 					}
-					postExecuted(context, timeesp, "Fetch", rv.size());
-					return rv;
+					postExecuted(context, timeesp, "Fetch", result.size());
+					return result;
 				} catch (IllegalAccessException e) {
 					onException(context, e);
 					throw new QueryException(e);
@@ -423,9 +409,9 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			listeners.prepared(context);
 
 			listeners.preExecute(context);
-			long start=System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
-			postExecuted(context,System.currentTimeMillis()-start, "Iterated", 1);
+			postExecuted(context, System.currentTimeMillis() - start, "Iterated", 1);
 			if (expr == null) {
 				return new SQLResultIterator<T>(configuration, stmt, rs, listeners, context) {
 					@Override
@@ -501,9 +487,9 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			listeners.prepared(context);
 
 			listeners.preExecute(context);
-			long start=System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
-			postExecuted(context, System.currentTimeMillis()-start, "ResultSet", 0);
+			postExecuted(context, System.currentTimeMillis() - start, "ResultSet", 0);
 
 			return new ResultSetAdapter(rs) {
 				@Override
@@ -524,21 +510,21 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 			throw configuration.translate(queryString, constants, e);
 		}
 	}
-	
-    protected SQLBindings getSQL(SQLSerializer serializer) {
-        List<Object> args = newArrayList();
-        Map<ParamExpression<?>, Object> params = getMetadata().getParams();
-        for (Object o : serializer.getConstants()) {
-            if (o instanceof ParamExpression) {
-                if (!params.containsKey(o)) {
-                    throw new ParamNotSetException((ParamExpression<?>) o);
-                }
-                o = queryMixin.getMetadata().getParams().get(o);
-            }
-            args.add(o);
-        }
-        return new SQLBindingsAlter(serializer.toString(), args, serializer.getConstantPaths());
-    }
+
+	protected SQLBindings getSQL(SQLSerializer serializer) {
+		List<Object> args = newArrayList();
+		Map<ParamExpression<?>, Object> params = getMetadata().getParams();
+		for (Object o : serializer.getConstants()) {
+			if (o instanceof ParamExpression) {
+				if (!params.containsKey(o)) {
+					throw new ParamNotSetException((ParamExpression<?>) o);
+				}
+				o = queryMixin.getMetadata().getParams().get(o);
+			}
+			args.add(o);
+		}
+		return new SQLBindingsAlter(serializer.toString(), args, serializer.getConstantPaths());
+	}
 
 	@Override
 	public SQLQueryAlter<T> clone() {
@@ -559,4 +545,19 @@ public class SQLQueryAlter<T> extends SQLQuery<T> {
 		listeners.executed(context);
 	}
 
+	@Override
+	public <U> SQLQueryAlter<U> select(Expression<U> expr) {
+		queryMixin.setProjection(expr);
+		@SuppressWarnings("unchecked") // This is the new type
+		SQLQueryAlter<U> newType = (SQLQueryAlter<U>) this;
+		return newType;
+	}
+
+	@Override
+	public SQLQueryAlter<Tuple> select(Expression<?>... exprs) {
+		queryMixin.setProjection(exprs);
+		@SuppressWarnings("unchecked") // This is the new type
+		SQLQueryAlter<Tuple> newType = (SQLQueryAlter<Tuple>) this;
+		return newType;
+	}
 }

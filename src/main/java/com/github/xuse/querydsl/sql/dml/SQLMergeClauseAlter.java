@@ -40,7 +40,6 @@ import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLNoCloseListener;
-import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.EmptyResultSet;
@@ -191,7 +190,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	}
 
 	protected boolean hasRow() {
-		SQLQuery<?> query = new SQLQueryAlter<Void>(connection(), configuration).from(entity);
+		SQLQueryAlter<?> query = new SQLQueryAlter<Void>(connection(), configuration).from(entity);
 		for (SQLListener listener : listeners.getListeners()) {
 			query.addListener(listener);
 		}

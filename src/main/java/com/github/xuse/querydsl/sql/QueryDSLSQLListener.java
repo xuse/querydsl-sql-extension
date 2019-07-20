@@ -183,35 +183,20 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			sb.append(", ");
 		}
 		sb.append('(').append(count + 1).append(')');
-//		int pad = 0;
-//		if (p == null) {
-//			sb.append(":      ");
-//		} else {
-//			String s = p.toString();
-//			int index = s.indexOf('.');
-//			if (index > 0) {
-//				s = s.substring(index + 1);
-//			}
-//			pad = 13 - s.length();
-//			sb.append(s);
-//		}
-//		for (int i = 0; i < pad; i++) {
-//			sb.append(' ');
-//		}
 		if (value == null) {
-			sb.append("\tnull");
+			sb.append("null");
 			return;
 		}
 		Class<?> vClass = value.getClass();
 		if (vClass == byte[].class) {
-			sb.append("\t").append(((byte[]) value).length).append(" bytes");
+			sb.append(((byte[]) value).length).append(" bytes");
 		} else {
 			String valStr = String.valueOf(value);
 			if (valStr.length() > 40) {// 如果日志太长是不行的
-				sb.append("\t[").append(valStr.substring(0, 38)).append("..]");
+				sb.append("[").append(valStr.substring(0, 38)).append("..]");
 				sb.append(" chars=").append(valStr.length());
 			} else {
-				sb.append("\t[").append(valStr).append(']');
+				sb.append("[").append(valStr).append(']');
 			}
 		}
 	}

@@ -22,16 +22,27 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuse.querydsl.sql.ddl.AlterTableQuery;
+import com.github.xuse.querydsl.sql.ddl.CreateConstraintQuery;
+import com.github.xuse.querydsl.sql.ddl.CreateIndexQuery;
+import com.github.xuse.querydsl.sql.ddl.CreateTableQuery;
+import com.github.xuse.querydsl.sql.ddl.DropConstraintQuery;
+import com.github.xuse.querydsl.sql.ddl.DropIndexQuery;
+import com.github.xuse.querydsl.sql.ddl.DropTableQuery;
 import com.github.xuse.querydsl.sql.spring.SpringProvider;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RelationalPathBase;
 import com.querydsl.sql.SQLCloseListener;
-import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.UnmanagedConnectionCloseListener;
+import com.querydsl.sql.mssql.SQLServerQueryFactory;
+import com.querydsl.sql.mysql.MySQLQueryFactory;
+import com.querydsl.sql.oracle.OracleQueryFactory;
+import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
 
 /**
  * Factory class for query and DML clause creation
@@ -48,7 +59,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 
 	public SQLQueryFactory(Configuration configuration, Provider<Connection> connProvider) {
 		super(configuration, connProvider);
-		log.info("Init QueryDSL Factory(extension) with {}.",configuration.getTemplates().getClass().getName());
+		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
 	}
 
 	public SQLQueryFactory(Configuration configuration, DataSource dataSource) {
@@ -60,11 +71,11 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		if (release) {
 			configuration.addListener(SQLCloseListener.DEFAULT);
 		}
-		log.info("Init QueryDSL Factory(extension) with {}.",configuration.getTemplates().getClass().getName());
+		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
 	}
-	
+
 	public static SQLQueryFactory createSpringQueryFactory(DataSource datasource, Configuration configuration) {
-		//用于关闭连接非事务状态下创建的连接。
+		// 用于关闭连接非事务状态下创建的连接。
 		configuration.addListener(UnmanagedConnectionCloseListener.DEFAULT);
 		return new SQLQueryFactory(configuration, new SpringProvider(datasource));
 	}
@@ -86,44 +97,99 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		}
 	}
 
+	public com.querydsl.sql.SQLQueryFactory asRaw() {
+		return new com.querydsl.sql.SQLQueryFactory(configuration, connection);
+	}
+
+	public MySQLQueryFactory asMySQL() {
+		return new com.querydsl.sql.mysql.MySQLQueryFactory(configuration, connection);
+	}
+
+	
+	public SQLServerQueryFactory asSQLServer() {
+		return new SQLServerQueryFactory(configuration, connection);
+	}
+
+	public OracleQueryFactory asOracle() {
+		return new OracleQueryFactory(configuration, connection);
+	}
+	
+	public PostgreSQLQueryFactory asPostgreSQL() {
+		return new PostgreSQLQueryFactory(configuration, connection);
+	}
+
 	@Override
 	public SQLQueryAlter<?> query() {
 		return new SQLQueryAlter<Void>(connection, configuration);
 	}
 
 	@Override
-	public <T> SQLQuery<T> select(Expression<T> expr) {
+	public <T> SQLQueryAlter<T> select(Expression<T> expr) {
 		return query().select(expr);
 	}
 
 	@Override
-	public SQLQuery<Tuple> select(Expression<?>... exprs) {
+	public SQLQueryAlter<Tuple> select(Expression<?>... exprs) {
 		return query().select(exprs);
 	}
 
 	@Override
-	public <T> SQLQuery<T> selectDistinct(Expression<T> expr) {
+	public <T> SQLQueryAlter<T> selectDistinct(Expression<T> expr) {
 		return query().select(expr).distinct();
 	}
 
 	@Override
-	public SQLQuery<Tuple> selectDistinct(Expression<?>... exprs) {
+	public SQLQueryAlter<Tuple> selectDistinct(Expression<?>... exprs) {
 		return query().select(exprs).distinct();
 	}
 
 	@Override
-	public SQLQuery<Integer> selectZero() {
+	public SQLQueryAlter<Integer> selectZero() {
 		return select(Expressions.ZERO);
 	}
 
 	@Override
-	public SQLQuery<Integer> selectOne() {
+	public SQLQueryAlter<Integer> selectOne() {
 		return select(Expressions.ONE);
 	}
 
 	@Override
-	public <T> SQLQuery<T> selectFrom(RelationalPath<T> expr) {
+	public <T> SQLQueryAlter<T> selectFrom(RelationalPath<T> expr) {
 		return select(expr).from(expr);
 	}
 
+	@Override
+	public <T> CreateTableQuery createTable(RelationalPathBase<T> path) {
+		return new CreateTableQuery(connection, configuration, path);
+	}
+
+	@Override
+	public <T> DropTableQuery dropTable(RelationalPathBase<T> path) {
+		return new DropTableQuery(connection, configuration, path);
+	}
+
+	@Override
+	public <T> AlterTableQuery alterTable(RelationalPathBase<T> path) {
+		return new AlterTableQuery(connection, configuration, path);
+	}
+
+	@Override
+	public <T> CreateIndexQuery createIndex(RelationalPathBase<T> path) {
+		return new CreateIndexQuery(connection, configuration, path);
+	}
+
+	@Override
+	public <T> DropIndexQuery dropIndex(RelationalPathBase<T> path) {
+		return new DropIndexQuery(connection, configuration, path);
+	}
+
+	@Override
+	public <T> CreateConstraintQuery createContraint(RelationalPathBase<T> path) {
+		return new CreateConstraintQuery(connection, configuration, path);
+	}
+
+	@Override
+	public <T> DropConstraintQuery dropConstraint(RelationalPathBase<T> path) {
+		return new DropConstraintQuery(connection, configuration, path);
+	}
 }

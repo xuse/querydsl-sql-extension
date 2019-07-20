@@ -1,15 +1,18 @@
 package com.github.xuse.querydsl.entity;
 
-import static com.querydsl.core.types.PathMetadataFactory.*;
+import static com.querydsl.core.types.PathMetadataFactory.forVariable;
 
-import com.querydsl.core.types.dsl.*;
-
-import com.querydsl.core.types.PathMetadata;
-import javax.annotation.Generated;
-import com.querydsl.core.types.Path;
-
-import com.querydsl.sql.ColumnMetadata;
 import java.sql.Types;
+import java.util.Date;
+
+import javax.annotation.Generated;
+
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.PathMetadata;
+import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.NumberPath;
+import com.querydsl.core.types.dsl.StringPath;
+import com.querydsl.sql.ColumnMetadata;
 
 
 
@@ -22,7 +25,7 @@ public class QAvsUserAuthority extends com.querydsl.sql.RelationalPathBase<AvsUs
 
     private static final long serialVersionUID = 1931074253;
 
-    public static final QAvsUserAuthority avsUserAuthority = new QAvsUserAuthority("AVS_USER_AUTHORITY");
+    public static final QAvsUserAuthority avsUserAuthority = new QAvsUserAuthority("a");
 
     public final StringPath authContent = createString("authContent");
 
@@ -30,13 +33,13 @@ public class QAvsUserAuthority extends com.querydsl.sql.RelationalPathBase<AvsUs
 
     public final NumberPath<Integer> channelNo = createNumber("channelNo", Integer.class);
 
-    public final DateTimePath<java.sql.Timestamp> createTime = createDateTime("createTime", java.sql.Timestamp.class);
+    public final DateTimePath<Date> createTime = createDateTime("createTime", Date.class);
 
     public final StringPath devId = createString("devId");
 
     public final NumberPath<Integer> id = createNumber("id", Integer.class);
 
-    public final DateTimePath<java.sql.Timestamp> updateTime = createDateTime("updateTime", java.sql.Timestamp.class);
+    public final DateTimePath<Date> updateTime = createDateTime("updateTime", Date.class);
 
     public final StringPath userId = createString("userId");
 
