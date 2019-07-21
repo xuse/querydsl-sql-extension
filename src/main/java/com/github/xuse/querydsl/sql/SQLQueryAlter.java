@@ -67,8 +67,7 @@ import com.querydsl.sql.StatementOptions;
 public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private static final long serialVersionUID = -3451422354253107107L;
 	private static final Logger logger = LoggerFactory.getLogger(SQLQueryAlter.class);
-	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
-			", count(*) over() ");
+	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION, ", count(*) over() ");
 
 	////////////// 覆盖检查字段开始 <p>////////////
 	/*
@@ -181,17 +180,17 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	private long unsafeCount() throws SQLException {
 		SQLListenerContextImpl context = startContext(connection(), getMetadata());
-		String queryString = null;
 		List<Object> constants = ImmutableList.of();
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
-
+		String queryString = null;
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(true);
-			queryString = serializer.toString();
+			SQLBindings sql = getSQL(serializer);
+			queryString = sql.getSQL();
 			logQuery(queryString, serializer.getConstants());
-			context.addSQL(getSQL(serializer));
+			context.addSQL(sql);
 			listeners.rendered(context);
 
 			constants = serializer.getConstants();
@@ -254,9 +253,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
-			queryString = serializer.toString();
+			SQLBindings sql = getSQL(serializer);
+			queryString = sql.getSQL();
 			logQuery(queryString, serializer.getConstants());
-			context.addSQL(getSQL(serializer));
+			context.addSQL(sql);
 			listeners.rendered(context);
 
 			listeners.notifyQuery(queryMixin.getMetadata());
@@ -394,9 +394,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
-			queryString = serializer.toString();
+			SQLBindings sql = getSQL(serializer);
+			queryString = sql.getSQL();
 			logQuery(queryString, serializer.getConstants());
-			context.addSQL(getSQL(serializer));
+			context.addSQL(sql);
 			listeners.rendered(context);
 
 			listeners.notifyQuery(queryMixin.getMetadata());
@@ -471,9 +472,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
-			queryString = serializer.toString();
+			SQLBindings sql = getSQL(serializer);
+			queryString = sql.getSQL();
 			logQuery(queryString, serializer.getConstants());
-			context.addSQL(getSQL(serializer));
+			context.addSQL(sql);
 			listeners.rendered(context);
 
 			listeners.notifyQuery(queryMixin.getMetadata());

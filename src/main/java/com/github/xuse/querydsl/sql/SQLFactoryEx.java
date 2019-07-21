@@ -5,6 +5,11 @@ import com.querydsl.sql.mysql.MySQLQueryFactory;
 import com.querydsl.sql.oracle.OracleQueryFactory;
 import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
 
+/**
+ * 增强后的SQLFactory
+ * @author Administrator
+ *
+ */
 public interface SQLFactoryEx {
 	/**
 	 * 返回QueryDSL原生版本的SQLQueryFactory
