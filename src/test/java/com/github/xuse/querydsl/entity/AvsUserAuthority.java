@@ -4,6 +4,8 @@ import java.util.Date;
 
 import javax.annotation.Generated;
 
+import com.github.xuse.querydsl.enums.Gender;
+
 /**
  * AvsUserAuthority is a Querydsl bean type
  */
@@ -20,11 +22,13 @@ public class AvsUserAuthority {
 
     private String devId;
 
-    private Integer id;
+    private int id;
 
     private Date updateTime;
 
     private String userId;
+    
+	private Gender gender;
 
     public String getAuthContent() {
         return authContent;
@@ -66,11 +70,11 @@ public class AvsUserAuthority {
         this.devId = devId;
     }
 
-    public Integer getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -90,7 +94,15 @@ public class AvsUserAuthority {
         this.userId = userId;
     }
 
-    @Override
+    public Gender getGender() {
+		return gender;
+	}
+
+	public void setGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	@Override
     public String toString() {
          return "authContent = " + authContent + ", authType = " + authType + ", channelNo = " + channelNo + ", createTime = " + createTime + ", devId = " + devId + ", id = " + id + ", updateTime = " + updateTime + ", userId = " + userId;
     }

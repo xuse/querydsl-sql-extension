@@ -1,10 +1,27 @@
 #QueryDSL的增强
 
 
+
+##修订记录
+
+
+### r4
+增加更适合于linux下的简洁日志。
+结果集拼接性能优化
+API增加
+增加DDL语法框架（尚未实现）
+提供额外的RelationalPathBaseEx用于继承。
+
+### r1
+1. 日志扩展
+2. 关于Connection is not transactional异常，
+还有一些其他方面的个性化要求，因此通过本项目进行扩展。后续随功能更新。
+
+
+
 ##FAQ
 1. 关于SQL语句的换行，在创建SQLTemplate的时候就使用
  com.querydsl.sql.SQLTemplates.Builder.newLineToSingleSpace()方法来实现。
-
 
 
 ##目的
@@ -23,7 +40,3 @@
 从代码看，这些类的被覆盖的方法很多是原作者故意标记为protected的。从原作者的本意看，这些类的方法本身就被设计为希望被修饰和覆盖的。
 因此可以认为，这种覆盖是符合作者原本的设计目的的。
 
-##修订记录
-1. 日志扩展
-2. 关于Connection is not transactional异常，
-还有一些其他方面的个性化要求，因此通过本项目进行扩展。后续随功能更新。

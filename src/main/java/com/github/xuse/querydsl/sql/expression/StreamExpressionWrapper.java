@@ -18,7 +18,6 @@ public class StreamExpressionWrapper<T, K> extends ExpressionBase<K> implements 
 	private Function<T, K> function;
 
 	public StreamExpressionWrapper(FactoryExpression<T> expr, Function<T, K> function, Class<K> clz) {
-		// 最好是通过反射自动获取到K的类型.
 		super(clz);
 		Assert.notNull(function, "consumer must not be null.");
 		this.expr = expr;

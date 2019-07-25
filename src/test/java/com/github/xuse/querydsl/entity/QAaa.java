@@ -8,6 +8,7 @@ import java.util.Date;
 import javax.annotation.Generated;
 
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.DateTimePath;
@@ -23,7 +24,7 @@ import com.querydsl.sql.ColumnMetadata;
  * QAaa is a Querydsl query type for Aaa
  */
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
+public class QAaa extends RelationalPathBaseEx<Aaa> {
 
     private static final long serialVersionUID = -1389588466;
 
@@ -31,7 +32,7 @@ public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
 
     public final DateTimePath<Date> created = createDateTime("created", Date.class);
 
-    public final NumberPath<Integer> id = createNumber("id", Integer.class);
+    public final NumberPath<Integer> id = createNumber("id", int.class);
 
     public final StringPath name =super.createString("name");
     

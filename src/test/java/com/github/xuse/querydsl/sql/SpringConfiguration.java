@@ -8,6 +8,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import com.github.xuse.querydsl.sql.log.QueryDSLDebugListener;
 import com.querydsl.sql.DerbyTemplates;
 import com.querydsl.sql.SQLTemplates;
 

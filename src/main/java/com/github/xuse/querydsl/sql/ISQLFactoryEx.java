@@ -10,7 +10,7 @@ import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
  * @author Administrator
  *
  */
-public interface SQLFactoryEx {
+public interface ISQLFactoryEx {
 	/**
 	 * 返回QueryDSL原生版本的SQLQueryFactory
 	 * 

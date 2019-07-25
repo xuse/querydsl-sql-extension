@@ -26,10 +26,13 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.inject.Provider;
+import javax.xml.ws.Holder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.result.Projection;
 import com.google.common.collect.ImmutableList;
 import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.DefaultQueryMetadata;
@@ -67,7 +70,8 @@ import com.querydsl.sql.StatementOptions;
 public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private static final long serialVersionUID = -3451422354253107107L;
 	private static final Logger logger = LoggerFactory.getLogger(SQLQueryAlter.class);
-	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION, ", count(*) over() ");
+	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
+			", count(*) over() ");
 
 	////////////// 覆盖检查字段开始 <p>////////////
 	/*
@@ -75,9 +79,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * 检查所有引用该字段的位置，其位置数量应当和父类AbstractSQLQuery完全一致。
 	 * 相当于完全拦截了父类中字段的使用，使得父类的同名字段作废。使用子类的字段。 这一点也不优雅！ 2018-10-09 v4.2.1版本检查通过
 	 */
-	private boolean getLastCell;
-
-	private Object lastCell;
 
 	private SQLListenerContext parentContext;
 
@@ -122,28 +123,27 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		this.connProvider = connProvider;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public QueryResults<T> fetchResults() {
 		parentContext = startContext(connection(), queryMixin.getMetadata());
-		Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
 		QueryModifiers originalModifiers = queryMixin.getMetadata().getModifiers();
 		try {
 			if (configuration.getTemplates().isCountViaAnalytics() && queryMixin.getMetadata().getGroupBy().isEmpty()) {
 				List<T> results;
+				Holder<Object> holder = new Holder<>();
 				try {
 					queryMixin.addFlag(rowCountFlag);
-					getLastCell = true;
-					results = fetch();
+					results = fetch(holder);
+
 				} finally {
 					queryMixin.removeFlag(rowCountFlag);
 				}
 				long total;
 				if (!results.isEmpty()) {
-					if (lastCell instanceof Number) {
-						total = ((Number) lastCell).longValue();
+					if (holder.value instanceof Number) {
+						total = ((Number) holder.value).longValue();
 					} else {
-						throw new IllegalStateException("Unsupported lastCell instance " + lastCell);
+						throw new IllegalStateException("Unsupported lastCell instance " + holder.value);
 					}
 				} else {
 					total = fetchCount();
@@ -151,7 +151,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				return new QueryResults<T>(results, originalModifiers, total);
 
 			} else {
-				queryMixin.setProjection(expr);
+				// 我怎么感觉这两句话是没什么用处的。
+//				Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
+//				queryMixin.setProjection(expr);
 				long total = fetchCount();
 				if (total > 0) {
 					return new QueryResults<T>(fetch(), originalModifiers, total);
@@ -162,7 +164,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		} finally {
 			endContext(parentContext);
 			reset();
-			getLastCell = false;
 			parentContext = null;
 		}
 	}
@@ -242,10 +243,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		return conn;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public List<T> fetch() {
-		Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
+		return fetch(null);
+	}
+
+	private List<T> fetch(Holder<Object> getLastCell) {
 		SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = ImmutableList.of();
@@ -268,44 +271,15 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				setParameters(stmt, constants, serializer.getConstantPaths(), queryMixin.getMetadata().getParams());
 				context.addPreparedStatement(stmt);
 				listeners.prepared(context);
-
 				listeners.preExecute(context);
 				long timeesp = System.currentTimeMillis();
-				final ResultSet rs = stmt.executeQuery();
+				ResultSet rs = stmt.executeQuery();
 				timeesp = System.currentTimeMillis() - timeesp;
 				try {
-					lastCell = null;
-					final List<T> result = new ArrayList<T>();
-					if (expr instanceof FactoryExpression) {
-						FactoryExpression<T> fe = (FactoryExpression<T>) expr;
-						while (rs.next()) {
-							if (getLastCell) {
-								lastCell = rs.getObject(fe.getArgs().size() + 1);
-								getLastCell = false;
-							}
-							result.add(newInstance(fe, rs, 0));
-						}
-					} else if (expr.equals(Wildcard.all)) {
-						int columnSize = rs.getMetaData().getColumnCount();
-						while (rs.next()) {
-							Object[] row = new Object[columnSize];
-							if (getLastCell) {
-								lastCell = rs.getObject(row.length);
-								getLastCell = false;
-							}
-							for (int i = 0; i < row.length; i++) {
-								row[i] = rs.getObject(i + 1);
-							}
-							result.add((T) row);
-						}
-					} else {
-						while (rs.next()) {
-							if (getLastCell) {
-								lastCell = rs.getObject(2);
-								getLastCell = false;
-							}
-							result.add(get(rs, expr, 1, expr.getType()));
-						}
+					Projection<T> fe = getProjection(rs, getLastCell != null);
+					final List<T> result = fe.convert(rs);
+					if (getLastCell != null && fe instanceof AbstractProjection) {
+						getLastCell.value = ((AbstractProjection<?>) fe).lastCell;
 					}
 					postExecuted(context, timeesp, "Fetch", result.size());
 					return result;
@@ -336,18 +310,152 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 	}
 
-	private <RT> RT newInstance(FactoryExpression<RT> c, ResultSet rs, int offset)
-			throws InstantiationException, IllegalAccessException, InvocationTargetException, SQLException {
-		Object[] args = new Object[c.getArgs().size()];
-		for (int i = 0; i < args.length; i++) {
-			args[i] = get(rs, c.getArgs().get(i), offset + i + 1, c.getArgs().get(i).getType());
+	@SuppressWarnings("unchecked")
+	private Projection<T> getProjection(ResultSet rs, boolean getLastCell) throws SQLException {
+		Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
+		Projection<T> fe;
+		if (expr instanceof FactoryExpression) {
+			FactoryExpressionResult<T> r = new FactoryExpressionResult<T>((FactoryExpression<T>) expr);
+			r.getLastCell = getLastCell;
+			fe = r;
+		} else if (expr == null) {
+			DefaultValueResult<T> r = new DefaultValueResult<>();
+			r.getLastCell = getLastCell;
+			fe = r;
+		} else if (expr.equals(Wildcard.all)) {
+			WildcardAllResult<T> r = new WildcardAllResult<>(rs.getMetaData().getColumnCount());
+			r.getLastCell = getLastCell;
+			fe = r;
+		} else {
+			SingleValueResult<T> r = new SingleValueResult<>(expr);
+			r.getLastCell = getLastCell;
+			fe = r;
 		}
-		return c.newInstance(args);
+		return fe;
 	}
 
-	@Nullable
-	private <U> U get(ResultSet rs, Expression<?> expr, int i, Class<U> type) throws SQLException {
-		return configuration.get(rs, expr instanceof Path ? (Path<?>) expr : null, i, type);
+	abstract class AbstractProjection<RT> implements Projection<RT> {
+		boolean getLastCell;
+		Object lastCell;
+
+		@Override
+		public CloseableIterator<RT> iterator(PreparedStatement stmt, ResultSet rs, SQLListenerContext context) {
+			return new SQLResultIterator<RT>(configuration, stmt, rs, listeners, context) {
+				@Override
+				public RT produceNext(ResultSet rs) throws Exception {
+					return fetch(rs);
+				}
+			};
+		}
+		@Override
+		public List<RT> convert(ResultSet rs) throws SQLException {
+			List<RT> result = new ArrayList<>();
+			int argSize = getArgSize();
+			while (rs.next()) {
+				if (getLastCell) {
+					lastCell = rs.getObject(argSize + 1);
+					getLastCell = false;
+				}
+				result.add(fetch(rs));
+			}
+			return result;
+		}
+
+		protected abstract RT fetch(ResultSet rs) throws SQLException;
+
+		protected abstract int getArgSize();
+
+	}
+
+	final class FactoryExpressionResult<RT> extends AbstractProjection<RT> {
+		private final FactoryExpression<RT> c;
+		private final int argSize;
+		private final List<Path<?>> argPath;
+		private final List<Class<?>> argTypes;
+
+		FactoryExpressionResult(FactoryExpression<RT> c) {
+			int argSize = c.getArgs().size();
+			this.c = c;
+			this.argSize = argSize;
+			this.argPath = new ArrayList<>(argSize);
+			this.argTypes = new ArrayList<>(argSize);
+			for (int i = 0; i < argSize; i++) {
+				Expression<?> expr = c.getArgs().get(i);
+				argPath.add(expr instanceof Path ? (Path<?>) expr : null);
+				argTypes.add(expr.getType());
+			}
+		}
+
+		protected RT fetch(ResultSet rs) throws SQLException {
+			int offset = 0;
+			Object[] args = new Object[argSize];
+			for (int i = 0; i < args.length; i++) {
+				args[i] = configuration.get(rs, argPath.get(i), offset + i + 1, argTypes.get(i));
+			}
+			return c.newInstance(args);
+		}
+
+		@Override
+		protected int getArgSize() {
+			return argSize;
+		}
+	}
+
+	final class WildcardAllResult<RT> extends AbstractProjection<RT> {
+		private final int columnSize;
+
+		public WildcardAllResult(int columnSize) {
+			super();
+			this.columnSize = columnSize;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected RT fetch(ResultSet rs) throws SQLException {
+			Object[] row = new Object[columnSize];
+			for (int i = 0; i < row.length; i++) {
+				row[i] = rs.getObject(i + 1);
+			}
+			return (RT) row;
+		}
+
+		@Override
+		protected int getArgSize() {
+			return columnSize;
+		}
+	}
+
+	final class SingleValueResult<RT> extends AbstractProjection<RT> {
+		private final Expression<RT> expr;
+		private final Path<?> path;
+
+		public SingleValueResult(Expression<RT> expr) {
+			this.expr = expr;
+			this.path = expr instanceof Path ? (Path<?>) expr : null;
+		}
+
+		@Override
+		protected RT fetch(ResultSet rs) throws SQLException {
+			return configuration.get(rs, path, 1, expr.getType());
+		}
+
+		@Override
+		protected int getArgSize() {
+			return 1;
+		}
+	}
+
+	final class DefaultValueResult<RT> extends AbstractProjection<RT> {
+		@SuppressWarnings("unchecked")
+		@Override
+		protected RT fetch(ResultSet rs) throws SQLException {
+			return (RT) rs.getObject(1);
+		}
+
+		@Override
+		protected int getArgSize() {
+			return 1;
+		}
 	}
 
 	private void reset() {
@@ -378,15 +486,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		return statement;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public CloseableIterator<T> iterate() {
-		Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
-		return iterateSingle(queryMixin.getMetadata(), expr);
+		return iterateSingle(queryMixin.getMetadata());
 	}
 
-	@SuppressWarnings("unchecked")
-	private CloseableIterator<T> iterateSingle(QueryMetadata metadata, @Nullable final Expression<T> expr) {
+	private CloseableIterator<T> iterateSingle(QueryMetadata metadata) {
 		SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = ImmutableList.of();
@@ -413,40 +518,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
 			postExecuted(context, System.currentTimeMillis() - start, "Iterated", 1);
-			if (expr == null) {
-				return new SQLResultIterator<T>(configuration, stmt, rs, listeners, context) {
-					@Override
-					public T produceNext(ResultSet rs) throws Exception {
-						return (T) rs.getObject(1);
-					}
-				};
-			} else if (expr instanceof FactoryExpression) {
-				return new SQLResultIterator<T>(configuration, stmt, rs, listeners, context) {
-					@Override
-					public T produceNext(ResultSet rs) throws Exception {
-						return newInstance((FactoryExpression<T>) expr, rs, 0);
-					}
-				};
-			} else if (expr.equals(Wildcard.all)) {
-				return new SQLResultIterator<T>(configuration, stmt, rs, listeners, context) {
-					@Override
-					public T produceNext(ResultSet rs) throws Exception {
-						Object[] rv = new Object[rs.getMetaData().getColumnCount()];
-						for (int i = 0; i < rv.length; i++) {
-							rv[i] = rs.getObject(i + 1);
-						}
-						return (T) rv;
-					}
-				};
-			} else {
-				return new SQLResultIterator<T>(configuration, stmt, rs, listeners, context) {
-					@Override
-					public T produceNext(ResultSet rs) throws Exception {
-						return get(rs, expr, 1, expr.getType());
-					}
-				};
-			}
-
+			Projection<T> expr = getProjection(rs, false);
+			return expr.iterator(stmt, rs, context);
 		} catch (SQLException e) {
 			onException(context, e);
 			endContext(context);

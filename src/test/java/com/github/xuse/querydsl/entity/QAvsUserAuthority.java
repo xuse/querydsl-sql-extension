@@ -7,9 +7,12 @@ import java.util.Date;
 
 import javax.annotation.Generated;
 
+import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.sql.ColumnMetadata;
@@ -21,7 +24,7 @@ import com.querydsl.sql.ColumnMetadata;
  * QAvsUserAuthority is a Querydsl query type for AvsUserAuthority
  */
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAvsUserAuthority extends com.querydsl.sql.RelationalPathBase<AvsUserAuthority> {
+public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
 
     private static final long serialVersionUID = 1931074253;
 
@@ -37,12 +40,15 @@ public class QAvsUserAuthority extends com.querydsl.sql.RelationalPathBase<AvsUs
 
     public final StringPath devId = createString("devId");
 
-    public final NumberPath<Integer> id = createNumber("id", Integer.class);
+    public final NumberPath<Integer> id = createNumber("id", int.class);
 
     public final DateTimePath<Date> updateTime = createDateTime("updateTime", Date.class);
 
     public final StringPath userId = createString("userId");
+    
+    public final EnumPath<Gender> gender =super.createEnum("gender",Gender.class);
 
+    
     public final com.querydsl.sql.PrimaryKey<AvsUserAuthority> sql181012120126200 = createPrimaryKey(id);
 
     public QAvsUserAuthority(String variable) {
@@ -79,7 +85,8 @@ public class QAvsUserAuthority extends com.querydsl.sql.RelationalPathBase<AvsUs
         addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER).withSize(10).notNull());
         addMetadata(updateTime, ColumnMetadata.named("UPDATE_TIME").withIndex(8).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
         addMetadata(userId, ColumnMetadata.named("USER_ID").withIndex(2).ofType(Types.VARCHAR).withSize(64).notNull());
+        addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(2).ofType(Types.VARCHAR).withSize(64));
     }
-
 }
+
 

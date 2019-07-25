@@ -1,9 +1,13 @@
 package com.github.xuse.querydsl.sql.expression;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.Projections;
+import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
 	/**
@@ -62,6 +66,36 @@ public class ProjectionsAlter {
 		return new QBeanEx<T>(type, bindings);
 	}
 	
+
+    public static <T> FactoryExpression<T> createProjection(RelationalPath<T> path) {
+        if (path.getType().equals(path.getClass())) {
+            throw new IllegalArgumentException("RelationalPath based projection can only be used with generated Bean types");
+        }
+        try {
+            // ensure that empty constructor is available
+            path.getType().getConstructor();
+            return createBeanProjection(path);
+        } catch (NoSuchMethodException e) {
+            // fallback to constructor projection
+            return createConstructorProjection(path);
+        }
+    }
+    
+    public static <T> QBeanEx<T> createBeanProjection(RelationalPath<T> path) {
+        Map<String,Expression<?>> bindings = new LinkedHashMap<String,Expression<?>>();
+        for (Path<?> column : path.getColumns()) {
+            bindings.put(column.getMetadata().getName(), column);
+        }
+        if (bindings.isEmpty()) {
+            throw new IllegalArgumentException("No bindings could be derived from " + path);
+        }
+        return new QBeanEx<T>((Class<? extends T>) path.getType(), bindings);
+    }
+
+    private static <T> FactoryExpression<T> createConstructorProjection(RelationalPath<T> path) {
+        Expression<?>[] exprs = path.getColumns().toArray(new Expression[path.getColumns().size()]);
+        return Projections.<T>constructor((Class<? extends T>) path.getType(), exprs);
+    }
 
 	private ProjectionsAlter() {
 	}

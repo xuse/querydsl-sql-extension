@@ -13,288 +13,150 @@
  */
 package com.github.xuse.querydsl.sql.expression;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.Primitives;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.ExpressionException;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.FactoryExpressionBase;
 import com.querydsl.core.types.Operation;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.QBean;
 import com.querydsl.core.types.Visitor;
 
 /**
- 1 这个类是拼装所有对象的核心类，是优化的重点
- 2、默认实现需要在构造时反射来判断拼装对象结构，是一个耗时比较大的构造过程，因此Projections.bean/field的结果应该要缓存起来
- 2 对于Qxxx生成类，内部已经缓存了默认的Projection。
+ * 
+ * 1 query DSL的 {@link QBean} 另一种实现方式。使用ASM生成的动态类来加速对Bean的构造和存取。
+ * 2、首次使用的时候需要生成动态类。
+ * 
+ * 默认实现需要在构造时反射来判断拼装对象结构，是一个耗时比较大的构造过程，因此Projections.bean/field的结果应该要缓存起来 2
+ * 对于Qxxx生成类，内部已经缓存了默认的Projection。
  */
 public class QBeanEx<T> extends FactoryExpressionBase<T> {
 
-    private static final long serialVersionUID = -8210214512730989778L;
+	private static final long serialVersionUID = -8210214512730989778L;
 
-    private static ImmutableMap<String,Expression<?>> createBindings(Expression<?>... args) {
-        ImmutableMap.Builder<String, Expression<?>> rv = ImmutableMap.builder();
-        for (Expression<?> expr : args) {
-            if (expr instanceof Path<?>) {
-                Path<?> path = (Path<?>) expr;
-                rv.put(path.getMetadata().getName(), expr);
-            } else if (expr instanceof Operation<?>) {
-                Operation<?> operation = (Operation<?>) expr;
-                if (operation.getOperator() == Ops.ALIAS && operation.getArg(1) instanceof Path<?>) {
-                    Path<?> path = (Path<?>) operation.getArg(1);
-                    if (isCompoundExpression(operation.getArg(0))) {
-                        rv.put(path.getMetadata().getName(), operation.getArg(0));
-                    } else {
-                        rv.put(path.getMetadata().getName(), operation);
-                    }
-                } else {
-                    throw new IllegalArgumentException("Unsupported expression " + expr);
-                }
+	private final BeanCodec beanCodec;
 
-            } else {
-                throw new IllegalArgumentException("Unsupported expression " + expr);
-            }
-        }
-        return rv.build();
-    }
+	public BeanCodec getBeanCodec() {
+		return beanCodec;
+	}
 
-    private static boolean isCompoundExpression(Expression<?> expr) {
-        return expr instanceof FactoryExpression || expr instanceof GroupExpression;
-    }
+	private static ImmutableMap<String, Expression<?>> createBindings(Expression<?>... args) {
+		ImmutableMap.Builder<String, Expression<?>> rv = ImmutableMap.builder();
+		for (Expression<?> expr : args) {
+			if (expr instanceof Path<?>) {
+				Path<?> path = (Path<?>) expr;
+				rv.put(path.getMetadata().getName(), expr);
+			} else if (expr instanceof Operation<?>) {
+				Operation<?> operation = (Operation<?>) expr;
+				if (operation.getOperator() == Ops.ALIAS && operation.getArg(1) instanceof Path<?>) {
+					Path<?> path = (Path<?>) operation.getArg(1);
+					if (isCompoundExpression(operation.getArg(0))) {
+						rv.put(path.getMetadata().getName(), operation.getArg(0));
+					} else {
+						rv.put(path.getMetadata().getName(), operation);
+					}
+				} else {
+					throw new IllegalArgumentException("Unsupported expression " + expr);
+				}
 
-    private static Class<?> normalize(Class<?> cl) {
-        return cl.isPrimitive() ? Primitives.wrap(cl) : cl;
-    }
+			} else {
+				throw new IllegalArgumentException("Unsupported expression " + expr);
+			}
+		}
+		return rv.build();
+	}
 
-    private static boolean isAssignableFrom(Class<?> cl1, Class<?> cl2) {
-        return normalize(cl1).isAssignableFrom(normalize(cl2));
-    }
+	private static boolean isCompoundExpression(Expression<?> expr) {
+		return expr instanceof FactoryExpression || expr instanceof GroupExpression;
+	}
 
-    private final ImmutableMap<String, Expression<?>> bindings;
+	private final ImmutableMap<String, Expression<?>> bindings;
 
-    private final List<Field> fields;
+	/**
+	 * Create a new QBean instance
+	 *
+	 * @param type type of bean
+	 * @param args properties to be populated
+	 */
+	protected QBeanEx(Class<? extends T> type, Expression<?>... args) {
+		this(type, createBindings(args));
+	}
 
-    private final List<Method> setters;
+	/**
+	 * Create a new QBean instance
+	 *
+	 * @param type        type of bean
+	 * @param fieldAccess true, for field access and false, for property access
+	 * @param bindings    bindings
+	 */
+	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
+		super(type);
+		this.bindings = ImmutableMap.copyOf(bindings);
+		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), this.bindings.keySet().asList());
 
-    private final boolean fieldAccess;
+	}
 
-    /**
-     * Create a new QBean instance
-     *
-     * @param type type of bean
-     * @param bindings bindings
-     */
-    protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
-        this(type, false, bindings);
-    }
+	protected void typeMismatch(Class<?> type, Expression<?> expr) {
+		final String msg = expr.getType().getName() + " is not compatible with " + type.getName();
+		throw new IllegalArgumentException(msg);
+	}
 
-    /**
-     * Create a new QBean instance
-     *
-     * @param type type of bean
-     * @param args properties to be populated
-     */
-    protected QBeanEx(Class<? extends T> type, Expression<?>... args) {
-        this(type, false, args);
-    }
+	@SuppressWarnings("unchecked")
+	@Override
+	public T newInstance(Object... a) {
+		return (T) beanCodec.newInstance(a);
+	}
 
-    /**
-     * Create a new QBean instance
-     *
-     * @param type type of bean
-     * @param fieldAccess true, for field access and false, for property access
-     * @param args fields or properties to be populated
-     */
-    protected QBeanEx(Class<? extends T> type, boolean fieldAccess, Expression<?>... args) {
-        this(type, fieldAccess, createBindings(args));
-    }
+	/**
+	 * Create an alias for the expression
+	 *
+	 * @return this as alias
+	 */
+	public Expression<T> as(Path<T> alias) {
+		return ExpressionUtils.operation(getType(), Ops.ALIAS, this, alias);
+	}
+	
+	
 
-    /**
-     * Create a new QBean instance
-     *
-     * @param type type of bean
-     * @param fieldAccess true, for field access and false, for property access
-     * @param bindings bindings
-     */
-    protected QBeanEx(Class<? extends T> type, boolean fieldAccess, Map<String, ? extends Expression<?>> bindings) {
-        super(type);
-        this.bindings = ImmutableMap.copyOf(bindings);
-        this.fieldAccess = fieldAccess;
-        if (fieldAccess) {
-            this.fields = initFields(bindings);
-            this.setters = ImmutableList.of();
-        } else {
-            this.fields = ImmutableList.of();
-            this.setters = initMethods(bindings);
-        }
-    }
+	/**
+	 * Create an alias for the expression
+	 *
+	 * @return this as alias
+	 */
+	public Expression<T> as(String alias) {
+		return as(ExpressionUtils.path(getType(), alias));
+	}
 
-    private List<Field> initFields(Map<String, ? extends Expression<?>> args) {
-        List<Field> fields = new ArrayList<Field>(args.size());
-        for (Map.Entry<String,? extends Expression<?>> entry : args.entrySet()) {
-            String property = entry.getKey();
-            Expression<?> expr = entry.getValue();
-            Class<?> beanType = getType();
-            Field field = null;
-            while (!beanType.equals(Object.class)) {
-                try {
-                    field = beanType.getDeclaredField(property);
-                    field.setAccessible(true);
-                    if (!isAssignableFrom(field.getType(), expr.getType())) {
-                        typeMismatch(field.getType(), expr);
-                    }
-                    beanType = Object.class;
-                } catch (SecurityException e) {
-                    // do nothing
-                } catch (NoSuchFieldException e) {
-                    beanType = beanType.getSuperclass();
-                }
-            }
-            if (field == null) {
-                propertyNotFound(expr, property);
-            }
-            fields.add(field);
-        }
-        return fields;
-    }
+	@Override
+	public <R, C> R accept(Visitor<R, C> v, C context) {
+		return v.visit(this, context);
+	}
 
-    private List<Method> initMethods(Map<String, ? extends Expression<?>> args) {
-        try {
-            List<Method> methods = new ArrayList<Method>(args.size());
-            BeanInfo beanInfo = Introspector.getBeanInfo(getType());
-            PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
-            for (Map.Entry<String, ? extends Expression<?>> entry : args.entrySet()) {
-                String property = entry.getKey();
-                Expression<?> expr = entry.getValue();
-                Method setter = null;
-                for (PropertyDescriptor prop : propertyDescriptors) {
-                    if (prop.getName().equals(property)) {
-                        setter = prop.getWriteMethod();
-                        if (!isAssignableFrom(prop.getPropertyType(), expr.getType())) {
-                            typeMismatch(prop.getPropertyType(), expr);
-                        }
-                        break;
-                    }
-                }
-                if (setter == null) {
-                    propertyNotFound(expr, property);
-                }
-                methods.add(setter);
-            }
-            return methods;
-        } catch (IntrospectionException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		} else if (obj instanceof QBeanEx<?>) {
+			QBeanEx<?> c = (QBeanEx<?>) obj;
+			return getArgs().equals(c.getArgs()) && getType().equals(c.getType());
+		} else {
+			return false;
+		}
+	}
 
-    protected void propertyNotFound(Expression<?> expr, String property) {
-        // do nothing
-    }
+	@Override
+	public List<Expression<?>> getArgs() {
+		return bindings.values().asList();
+	}
 
-    protected void typeMismatch(Class<?> type, Expression<?> expr) {
-        final String msg = expr.getType().getName() + " is not compatible with " + type.getName();
-        throw new IllegalArgumentException(msg);
-    }
-
-    @Override
-    public T newInstance(Object... a) {
-        try {
-            T rv = create(getType());
-            if (fieldAccess) {
-                for (int i = 0; i < a.length; i++) {
-                    Object value = a[i];
-                    if (value != null) {
-                        Field field = fields.get(i);
-                        if (field != null) {
-                            field.set(rv, value);
-                        }
-                    }
-                }
-            } else {
-                for (int i = 0; i < a.length; i++) {
-                    Object value = a[i];
-                    if (value != null) {
-                        Method setter = setters.get(i);
-                        if (setter != null) {
-                            setter.invoke(rv, value);
-                        }
-                    }
-                }
-            }
-            return rv;
-        } catch (InstantiationException e) {
-            throw new ExpressionException(e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            throw new ExpressionException(e.getMessage(), e);
-        } catch (InvocationTargetException e) {
-            throw new ExpressionException(e.getMessage(), e);
-        }
-    }
-
-    protected <T> T create(Class<T> type) throws IllegalAccessException, InstantiationException {
-        return type.newInstance();
-    }
-
-    /**
-     * Create an alias for the expression
-     *
-     * @return this as alias
-     */
-    @SuppressWarnings("unchecked")
-    public Expression<T> as(Path<T> alias) {
-        return ExpressionUtils.operation(getType(),Ops.ALIAS, this, alias);
-    }
-
-    /**
-     * Create an alias for the expression
-     *
-     * @return this as alias
-     */
-    public Expression<T> as(String alias) {
-        return as(ExpressionUtils.path(getType(), alias));
-    }
-
-    @Override
-    public <R,C> R accept(Visitor<R,C> v, C context) {
-        return v.visit(this, context);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj instanceof QBeanEx<?>) {
-            QBeanEx<?> c = (QBeanEx<?>) obj;
-            return getArgs().equals(c.getArgs()) && getType().equals(c.getType());
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public List<Expression<?>> getArgs() {
-        return bindings.values().asList();
-    }
-    
-    
-    public <K> StreamExpressionWrapper<T,K> map(Function<T,K> function){
-    	Object obj=function.getClass().getTypeParameters();
-    	return new StreamExpressionWrapper<>(this,function,null);
-    }
+	public <K> StreamExpressionWrapper<T, K> map(Function<T, K> function, Class<K> clz) {
+		return new StreamExpressionWrapper<>(this, function, clz);
+	}
 }

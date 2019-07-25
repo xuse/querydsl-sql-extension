@@ -14,7 +14,7 @@ public class Aaa {
 
 	private Date created;
 
-	private Integer id;
+	private int id;
 
 	private String name;
 	
@@ -30,11 +30,11 @@ public class Aaa {
 		this.created = created;
 	}
 
-	public Integer getId() {
+	public int getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(int id) {
 		this.id = id;
 	}
 

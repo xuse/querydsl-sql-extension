@@ -24,8 +24,8 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
-import com.github.xuse.querydsl.sql.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
+import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;

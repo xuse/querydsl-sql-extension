@@ -42,7 +42,7 @@ import com.querydsl.sql.SQLCommonQueryFactory;
  * @author tiwe
  */
 public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactory<Q,
-    SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,SQLMetadataQueryFactory,SQLFactoryEx {
+    SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,SQLMetadataQueryFactory,ISQLFactoryEx {
 
     protected final Configuration configuration;
 
