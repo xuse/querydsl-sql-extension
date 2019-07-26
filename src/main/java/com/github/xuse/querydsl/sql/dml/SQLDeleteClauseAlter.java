@@ -91,6 +91,29 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
         }
     }
     
+
+    protected PreparedStatement createStatement() throws SQLException {
+        listeners.preRender(context);
+        SQLSerializer serializer = createSerializer();
+        serializer.serializeDelete(metadata, entity);
+        
+        SQLBindings bindings= createBindings(metadata, serializer);
+        context.addSQL(bindings);
+        queryString = bindings.getSQL();
+        constants = serializer.getConstants();
+        //logQuery(logger, queryString, constants);
+        listeners.rendered(context);
+
+        listeners.prePrepare(context);
+        PreparedStatement stmt = connection().prepareStatement(queryString);
+        setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
+
+        context.addPreparedStatement(stmt);
+        listeners.prepared(context);
+
+        return stmt;
+    }
+    
 	@Override
 	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();

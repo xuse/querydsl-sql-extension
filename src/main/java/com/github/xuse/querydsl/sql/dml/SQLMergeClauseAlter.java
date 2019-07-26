@@ -36,7 +36,6 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLNoCloseListener;
@@ -218,7 +217,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	}
 	
 	@Override
-	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {
+	protected SQLBindingsAlter createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
         List<Object> args = newArrayList();
         Map<ParamExpression<?>, Object> params = metadata.getParams();

@@ -138,6 +138,27 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 //		optionalUpdates.add(Pair.of(path, value));
 //		return this;
 //	}
+	
+    protected PreparedStatement createStatement() throws SQLException {
+        listeners.preRender(context);
+        SQLSerializer serializer = createSerializer();
+        serializer.serializeUpdate(metadata, entity, updates);
+        SQLBindings bindings = createBindings(metadata, serializer);
+        context.addSQL(bindings);
+        queryString = bindings.getSQL();
+        constants = serializer.getConstants();
+       // logQuery(logger, queryString, constants);
+        //原代码此处有笔误
+        listeners.rendered(context); 
+
+        listeners.prePrepare(context);
+        PreparedStatement stmt = connection().prepareStatement(queryString);
+        setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
+        context.addPreparedStatement(stmt);
+        listeners.prepared(context);
+
+        return stmt;
+    }
 
 	@Override
 	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {

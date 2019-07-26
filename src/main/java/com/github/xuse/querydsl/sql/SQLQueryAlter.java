@@ -190,7 +190,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(true);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			logQuery(queryString, serializer.getConstants());
+			//logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
@@ -258,7 +258,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(false);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			logQuery(queryString, serializer.getConstants());
+			//logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
@@ -374,13 +374,14 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		private final List<Class<?>> argTypes;
 
 		FactoryExpressionResult(FactoryExpression<RT> c) {
-			int argSize = c.getArgs().size();
+			List<Expression<?>> args=c.getArgs();
+			int argSize = args.size();
 			this.c = c;
 			this.argSize = argSize;
 			this.argPath = new ArrayList<>(argSize);
 			this.argTypes = new ArrayList<>(argSize);
 			for (int i = 0; i < argSize; i++) {
-				Expression<?> expr = c.getArgs().get(i);
+				Expression<?> expr = args.get(i);
 				argPath.add(expr instanceof Path ? (Path<?>) expr : null);
 				argTypes.add(expr.getType());
 			}
@@ -501,7 +502,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(false);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			logQuery(queryString, serializer.getConstants());
+			//logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
@@ -547,7 +548,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(false);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			logQuery(queryString, serializer.getConstants());
+			//logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 

@@ -145,7 +145,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 			return true;
 		} else if (obj instanceof QBeanEx<?>) {
 			QBeanEx<?> c = (QBeanEx<?>) obj;
-			return getArgs().equals(c.getArgs()) && getType().equals(c.getType());
+			return bindings.equals(c.bindings) && getType().equals(c.getType());
 		} else {
 			return false;
 		}

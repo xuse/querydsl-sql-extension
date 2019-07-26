@@ -30,10 +30,12 @@ import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.util.ResultSetAdapter;
+import com.querydsl.sql.ColumnMetadata;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
@@ -57,13 +59,11 @@ public class SQLInsertClauseAlter extends SQLInsertClause {
 		this(connection, new Configuration(templates), entity);
 	}
 
-	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity,
-			SQLQuery<?> subQuery) {
+	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity, SQLQuery<?> subQuery) {
 		this(connection, new Configuration(templates), entity, subQuery);
 	}
 
-	public SQLInsertClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity,
-			SQLQuery<?> subQuery) {
+	public SQLInsertClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
 		super(connection, configuration, entity, subQuery);
 	}
 
@@ -71,13 +71,11 @@ public class SQLInsertClauseAlter extends SQLInsertClause {
 		super(connection, configuration, entity);
 	}
 
-	public SQLInsertClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity,
-			SQLQuery<?> subQuery) {
+	public SQLInsertClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
 		super(connection, configuration, entity, subQuery);
 	}
 
-	public SQLInsertClauseAlter(Provider<Connection> connection, Configuration configuration,
-			RelationalPath<?> entity) {
+	public SQLInsertClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity) {
 		super(connection, configuration, entity);
 	}
 
@@ -109,8 +107,7 @@ public class SQLInsertClauseAlter extends SQLInsertClause {
 			} else {
 				Collection<PreparedStatement> stmts = createStatements(true);
 				if (stmts != null && stmts.size() > 1) {
-					throw new IllegalStateException(
-							"executeWithKeys called with batch statement and multiple SQL strings");
+					throw new IllegalStateException("executeWithKeys called with batch statement and multiple SQL strings");
 				}
 				stmt = stmts.iterator().next();
 				listeners.notifyInserts(entity, metadata, batches);
@@ -208,8 +205,56 @@ public class SQLInsertClauseAlter extends SQLInsertClause {
 		return this;
 	}
 
+	protected PreparedStatement createStatement(boolean withKeys) throws SQLException {
+		listeners.preRender(context);
+		SQLSerializer serializer = createSerializer();
+		if (subQueryBuilder != null) {
+			subQuery = subQueryBuilder.select(values.toArray(new Expression[values.size()])).clone();
+			values.clear();
+		}
+
+		if (!batches.isEmpty() && batchToBulk) {
+			serializer.serializeInsert(metadata, entity, batches);
+		} else {
+			serializer.serializeInsert(metadata, entity, columns, values, subQuery);
+		}
+		SQLBindingsAlter bindings = createBindings(metadata, serializer);
+		context.addSQL(bindings);
+		listeners.rendered(context);
+		return prepareStatementAndSetParameters(serializer, withKeys);
+	}
+
+	protected PreparedStatement prepareStatementAndSetParameters(SQLBindingsAlter bindings, List<Object> constants, boolean withKeys) throws SQLException {
+		listeners.prePrepare(context);
+
+		this.queryString = bindings.getSQL();
+		this.constants = constants;
+//        logQuery(logger, queryString, constants);
+		PreparedStatement stmt;
+		if (withKeys) {
+			if (entity.getPrimaryKey() != null) {
+				String[] target = new String[entity.getPrimaryKey().getLocalColumns().size()];
+				for (int i = 0; i < target.length; i++) {
+					Path<?> path = entity.getPrimaryKey().getLocalColumns().get(i);
+					String column = ColumnMetadata.getName(path);
+					target[i] = column;
+				}
+				stmt = connection().prepareStatement(queryString, target);
+			} else {
+				stmt = connection().prepareStatement(queryString, Statement.RETURN_GENERATED_KEYS);
+			}
+		} else {
+			stmt = connection().prepareStatement(queryString);
+		}
+		setParameters(stmt, constants, bindings.getPaths(), metadata.getParams());
+
+		context.addPreparedStatement(stmt);
+		listeners.prepared(context);
+		return stmt;
+	}
+
 	@Override
-	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {
+	protected SQLBindingsAlter createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
 		List<Object> args = newArrayList();
 		Map<ParamExpression<?>, Object> params = metadata.getParams();
