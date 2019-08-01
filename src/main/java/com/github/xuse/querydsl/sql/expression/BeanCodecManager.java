@@ -50,7 +50,7 @@ public class BeanCodecManager {
 
 		@Override
 		public String toString() {
-			return "CacheKey [targetClass=" + targetClass + ", fieldNames=" + fieldNames + "]";
+			return targetClass + ", fieldNames=" + fieldNames;
 		}
 
 		@Override
@@ -99,8 +99,7 @@ public class BeanCodecManager {
 		// do nothing
 	}
 
-	private synchronized BeanCodec generateAccessor(CacheKey key)
-			throws InstantiationException, IllegalAccessException {
+	private synchronized BeanCodec generateAccessor(CacheKey key) throws InstantiationException, IllegalAccessException {
 		String clzName = key.getClassName();
 		Class<?> clz;
 		try {
@@ -112,13 +111,26 @@ public class BeanCodecManager {
 		List<FieldProperty> methods = initMethods(key);
 		CodecClassGenerator g = new CodecClassGenerator(cl);
 		clz = g.generate(key.targetClass, methods, clzName);
-		BeanCodec bc= (BeanCodec) clz.newInstance();
-		Field[] fields=new Field[methods.size()];
-		for(int i=0;i<methods.size();i++) {
+		BeanCodec bc;
+		if (clz == null) {
+			// 无法生成类
+			try {
+				clz = cl.loadClass(clzName);
+			} catch (ClassNotFoundException e) {
+				log.error("无法使用ASM加速类{}，退化为反射", key, e);
+			}
+		}
+		if (clz == null) {
+			bc = new ReflectCodec(key.targetClass, methods);
+		}else{
+			bc = (BeanCodec) clz.newInstance();
+		}
+		Field[] fields = new Field[methods.size()];
+		for (int i = 0; i < methods.size(); i++) {
 			fields[i] = methods.get(i).getField();
 		}
 		bc.setFields(fields);
-		 return bc;
+		return bc;
 	}
 
 	private static List<FieldProperty> initMethods(CacheKey key) {
@@ -143,14 +155,14 @@ public class BeanCodecManager {
 				}
 				if (setter == null || getter == null) {
 					propertyNotFound(property);
-				}else {
+				} else {
 					count++;
 				}
 				propereties.add(new FieldProperty(getter, setter, field));
 			}
 			if (count == 0) {
-				throw new IllegalArgumentException("There is no property match between the bean ["
-						+ key.targetClass.getName() + "] and select expression :" + key.fieldNames);
+				throw new IllegalArgumentException(
+						"There is no property match between the bean [" + key.targetClass.getName() + "] and select expression :" + key.fieldNames);
 			}
 			return propereties;
 		} catch (IntrospectionException e) {
