@@ -49,7 +49,7 @@ public class CodecClassGenerator implements Opcodes {
 			Class<?> clz = cl.defineClz(clzName, data);
 			log.info("The codec class {} was load.", clzName);
 			return clz;
-		} catch (Exception ex) {
+		} catch (Throwable ex) {
 			log.error("ASM generation error for class {}", clzName, ex);
 			return null;
 		}
