@@ -3,10 +3,14 @@ package com.github.xuse.querydsl.util;
 /**
  * 进制转换工具
  * 
- * @author jiyi
+ * Use {@link #encode(long)} {@link #encodeInt(int)} to convert a decimal number
+ * to a N-module number. Use {@link #decodeInt(String)} {@link #decode(String)}
+ * to convert the N-module number back to the decimal number
+ * 
+ * @author Joey
  *
  */
-public enum Hex {
+public enum Radix {
 	/**
 	 * 二进制
 	 */
@@ -34,6 +38,10 @@ public enum Hex {
 			sb.append(codeTable[(int) num]);
 		}
 	},
+	/**
+	 * 九进制
+	 */
+	D9("012345678".toCharArray(), 20),
 	/**
 	 * 10进制
 	 */
@@ -101,7 +109,11 @@ public enum Hex {
 	/**
 	 * 字符码表是否符合编码顺序
 	 */
-	private boolean isCodeOrdered = true;
+	private int codeAlgorithm = BINARY_SEARCH;
+	
+	private static final int FAST_CONVERT = 0;
+	private static final int BINARY_SEARCH = 1;
+	private static final int INDEXOF = 2;
 
 	/**
 	 * NOTE:乘方计算，不能用Math.pow()会丢失精度。 例如Math.pow(3,39) = {@code 4052555153018976256}
@@ -125,25 +137,29 @@ public enum Hex {
 	 * 
 	 * @param cs
 	 */
-	Hex(char[] cs, int powerTableSize) {
+	Radix(char[] cs, int powerTableSize) {
 		this.scale = cs.length;
 		this.codeTable = cs;
 		// 计算乘方表
 		powTable = new long[powerTableSize];
 		for (int i = 0; i < powerTableSize; i++) {
-			// 不能用Math.pow()，会有误差
+			// must not use Math.pow()
 			powTable[i] = pow(scale, i);
 		}
 		// 判断码表是否为有序集合，这将决定解码时的查找算法
-		char last = 0;
-		for (char c : cs) {
-			if (c < last) {
-				isCodeOrdered = false;
-				// System.out.println(name() + "不是顺序");
-				break;
+		if (cs[0] - 48 == 0 && cs[scale - 1] - 48 == scale - 1) {
+			codeAlgorithm = FAST_CONVERT;
+		} else {
+			char last = 0;
+			for (char c : cs) {
+				if (c < last) {
+					codeAlgorithm = INDEXOF;
+					break;
+				}
+				last = c;
 			}
-			last = c;
 		}
+
 	}
 
 	/**
@@ -185,8 +201,7 @@ public enum Hex {
 		} else {
 			encode0(num, sb);
 		}
-		String value = sb.reverse().toString();
-		return value;
+		return sb.reverse().toString();
 	}
 
 	/**
@@ -207,13 +222,18 @@ public enum Hex {
 	private long decode0(String str, int begin) {
 		int len = str.length();
 		long num = 0;
-		if (isCodeOrdered) {
+		switch(codeAlgorithm) {
+		case FAST_CONVERT:
 			for (int i = begin; i < len; i++) {
-				int index = fastIndexOf(str.charAt(i));
+				int index = str.charAt(i) - 48;
 				num += index * powTable[len - i - 1];
-				// System.out.println(index + " " + index * powTable[len - i - 1]);
 			}
-		} else {
+		case BINARY_SEARCH:
+			for (int i = begin; i < len; i++) {
+				int index = binarySearch(str.charAt(i));
+				num += index * powTable[len - i - 1];
+			}
+		case INDEXOF:
 			for (int i = begin; i < len; i++) {
 				int index = indexOf(str.charAt(i));
 				num += index * powTable[len - i - 1];
@@ -255,7 +275,7 @@ public enum Hex {
 	 * @param charAt
 	 * @return
 	 */
-	private int fastIndexOf(char charAt) {
+	private int binarySearch(char charAt) {
 		int min = 0;
 		int max = scale - 1;
 		while (min <= max) {
