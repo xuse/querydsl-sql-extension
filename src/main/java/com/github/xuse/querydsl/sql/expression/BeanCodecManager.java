@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.Hex;
 import com.querydsl.core.util.ReflectionUtils;
 
 public class BeanCodecManager {
@@ -68,7 +69,7 @@ public class BeanCodecManager {
 		}
 
 		public String getClassName() {
-			return targetClass.getName() + "_" + fieldNames.hashCode();
+			return targetClass.getName() + "_" + Hex.D64.encode(fieldNames.hashCode());
 		}
 	}
 
