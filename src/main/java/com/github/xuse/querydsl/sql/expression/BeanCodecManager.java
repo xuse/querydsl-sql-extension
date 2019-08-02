@@ -69,7 +69,7 @@ public class BeanCodecManager {
 		}
 
 		public String getClassName() {
-			return targetClass.getName() + "_" + Hex.D64.encode(fieldNames.hashCode());
+			return targetClass.getName() + "_" + Hex.D64.encodeInt(fieldNames.hashCode());
 		}
 	}
 
