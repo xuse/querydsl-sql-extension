@@ -22,13 +22,19 @@
 	</properties>
 
 	<dependencies>
-	<!-- 
+		<!-- <dependency> <groupId>org.easyframe</groupId> <artifactId>common-orm</artifactId> 
+			<version>${geequery.version}</version> </dependency> -->
 		<dependency>
-			<groupId>org.easyframe</groupId>
-			<artifactId>common-orm</artifactId>
-			<version>${geequery.version}</version>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jpa_2.1_spec</artifactId>
+			<version>1.0-alpha-1</version>
 		</dependency>
-		 -->
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>fastjson</artifactId>
+			<version>1.2.29</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

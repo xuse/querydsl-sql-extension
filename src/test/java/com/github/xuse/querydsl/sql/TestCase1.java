@@ -39,6 +39,9 @@ public class TestCase1 {
 		com.querydsl.sql.Configuration configuration = new com.querydsl.sql.Configuration(templates);
 		configuration.addListener(new QueryDSLDebugListener());
 	
+		//枚举自动注册功能
+		//JSON自动转换功能
+		//
 		configuration.register(new EnumByNameType<Gender>(Gender.class));
 		
 		return configuration;

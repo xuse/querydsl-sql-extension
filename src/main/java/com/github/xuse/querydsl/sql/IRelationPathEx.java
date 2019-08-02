@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.sql;
 
 import java.util.List;
 
+import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.querydsl.core.types.Path;
 
@@ -21,4 +22,6 @@ public interface IRelationPathEx {
 	BeanCodec getBeanCodec();
 
 	List<Path<?>> getColumns();
+	
+	ColumnMapping getColumnMetadata(Path<?> path);
 }

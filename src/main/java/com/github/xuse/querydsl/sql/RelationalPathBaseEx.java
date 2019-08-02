@@ -2,17 +2,23 @@ package com.github.xuse.querydsl.sql;
 
 import static com.google.common.collect.ImmutableList.copyOf;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.github.xuse.querydsl.sql.column.ColumnMetadataExt;
+import com.github.xuse.querydsl.sql.column.MetadataBuilder;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Primitives;
+import com.mysema.commons.lang.Assert;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
@@ -37,12 +43,12 @@ import com.querydsl.sql.SchemaAndTable;
  * @param <T>
  */
 @SuppressWarnings("rawtypes")
-public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPath<T>,IRelationPathEx {
+public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPath<T>, IRelationPathEx {
 	private static final long serialVersionUID = -3351359519644416084L;
 	@Nullable
 	private PrimaryKey<T> primaryKey;
 
-	private final Map<Path<?>, ColumnMetadata> columnMetadata = Maps.newLinkedHashMap();
+	private final Map<Path<?>, ColumnMetadataExt> columnMetadata = Maps.newLinkedHashMap();
 
 	private final List<ForeignKey<?>> foreignKeys = Lists.newArrayList();
 
@@ -96,7 +102,29 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		return foreignKey;
 	}
 
-	protected <P extends Path<?>> P addMetadata(P path, ColumnMetadata metadata) {
+	protected <P extends Path<?>> P addMetadata(P expr, ColumnMetadata metadata) {
+		Class<?> beanType = super.getType();
+		Field field = null;
+		while (!beanType.equals(Object.class)) {
+			try {
+				field = beanType.getDeclaredField(expr.getMetadata().getName());
+				field.setAccessible(true);
+				if (!isAssignableFrom(field.getType(), expr.getType())) {
+					typeMismatch(field.getType(), expr);
+				}
+				break;
+			} catch (SecurityException e) {
+				// do nothing
+			} catch (NoSuchFieldException e) {
+				beanType = beanType.getSuperclass();
+			}
+		}
+		Assert.notNull(field, "Can't find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
+		columnMetadata.put(expr, new ColumnMetadataExt(field, metadata));
+		return expr;
+	}
+
+	protected <P extends Path<?>> P addMetadata(P path, ColumnMetadataExt metadata) {
 		columnMetadata.put(path, metadata);
 		return path;
 	}
@@ -105,8 +133,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 	public NumberExpression<Long> count() {
 		if (count == null) {
 			if (primaryKey != null) {
-				count = Expressions.numberOperation(Long.class, Ops.AggOps.COUNT_AGG,
-						primaryKey.getLocalColumns().get(0));
+				count = Expressions.numberOperation(Long.class, Ops.AggOps.COUNT_AGG, primaryKey.getLocalColumns().get(0));
 			} else {
 				throw new IllegalStateException("No count expression can be created");
 			}
@@ -119,8 +146,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		if (countDistinct == null) {
 			if (primaryKey != null) {
 				// TODO handle multiple column primary keys properly
-				countDistinct = Expressions.numberOperation(Long.class, Ops.AggOps.COUNT_DISTINCT_AGG,
-						primaryKey.getLocalColumns().get(0));
+				countDistinct = Expressions.numberOperation(Long.class, Ops.AggOps.COUNT_DISTINCT_AGG, primaryKey.getLocalColumns().get(0));
 			} else {
 				throw new IllegalStateException("No count distinct expression can be created");
 			}
@@ -197,8 +223,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		}
 		BooleanExpression rv = null;
 		for (int i = 0; i < pk1.getLocalColumns().size(); i++) {
-			BooleanExpression pred = Expressions.booleanOperation(op, pk1.getLocalColumns().get(i),
-					pk2.getLocalColumns().get(i));
+			BooleanExpression pred = Expressions.booleanOperation(op, pk1.getLocalColumns().get(i), pk2.getLocalColumns().get(i));
 			rv = rv != null ? rv.and(pred) : pred;
 		}
 		return rv;
@@ -263,6 +288,63 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
-		return columnMetadata.get(column);
+		ColumnMetadataExt metadata = columnMetadata.get(column);
+		return metadata == null ? null : metadata.get();
+	}
+
+	/**
+	 * 读取Entity类上的JPA注解，生成元数据
+	 */
+	protected void scanClassMetadata() {
+		Class<? extends T> beanType = super.getType();
+		Class<?> QClz = this.getClass();
+		try {
+			for (Field field : QClz.getDeclaredFields()) {
+				if (Modifier.isStatic(field.getModifiers())) {
+					continue;
+				}
+				Path<?> path = (Path<?>) field.get(this);
+				MetadataBuilder metadata = getMetadataBuilder(beanType, path, field);
+				this.addMetadata(path, metadata.build());
+			}
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private MetadataBuilder getMetadataBuilder(Class<?> beanType, Path<?> expr, Field metadataField) {
+		while (!beanType.equals(Object.class)) {
+			try {
+				Field field = beanType.getDeclaredField(expr.getMetadata().getName());
+				field.setAccessible(true);
+				if (!isAssignableFrom(field.getType(), expr.getType())) {
+					typeMismatch(field.getType(), expr);
+				}
+				return new MetadataBuilder(field, expr, metadataField);
+			} catch (SecurityException e) {
+				// do nothing
+			} catch (NoSuchFieldException e) {
+				beanType = beanType.getSuperclass();
+			}
+		}
+		throw new IllegalArgumentException("Not found field [" + expr.getMetadata().getName() + "] in bean " + beanType.getName());
+	}
+
+	private static boolean isAssignableFrom(Class<?> cl1, Class<?> cl2) {
+		return normalize(cl1).isAssignableFrom(normalize(cl2));
+	}
+
+	private static Class<?> normalize(Class<?> cl) {
+		return cl.isPrimitive() ? Primitives.wrap(cl) : cl;
+	}
+
+	protected void typeMismatch(Class<?> type, Expression<?> expr) {
+		final String msg = expr.getType().getName() + " is not compatible with " + type.getName();
+		throw new IllegalArgumentException(msg);
+	}
+
+	@Override
+	public ColumnMetadataExt getColumnMetadata(Path<?> path) {
+		return columnMetadata.get(path);
 	}
 }
