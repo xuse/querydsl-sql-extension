@@ -58,7 +58,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 
 	private final SchemaAndTable schemaAndTable;
 
-	private transient QBeanEx<T> projection;
+	private transient volatile QBeanEx<T> projection;
 
 	private transient NumberExpression<Long> count, countDistinct;
 
