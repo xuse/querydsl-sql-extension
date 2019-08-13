@@ -51,6 +51,17 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
         super(connection, configuration, entity);
     }
     
+
+	private Integer queryTimeout;	
+	/**
+	 * 设置查询超时（秒）
+	 * @param queryTimeout
+	 */
+	public SQLDeleteClauseAlter setQueryTimeout(int queryTimeout) {
+		this.queryTimeout=queryTimeout;
+		return this;
+	}
+    
     @Override
     public long execute() {
         context = startContext(connection(), metadata, entity);
@@ -59,6 +70,9 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
         try {
             if (batches.isEmpty()) {
                 stmt = createStatement();
+                if(queryTimeout!=null) {
+                	stmt.setQueryTimeout(queryTimeout);
+                }
                 listeners.notifyDelete(entity, metadata);
 
                 listeners.preExecute(context);
@@ -68,6 +82,11 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
                 return rc;
             } else {
                 stmts = createStatements();
+                if(queryTimeout!=null) {
+                	for(PreparedStatement st:stmts) {
+                    	st.setQueryTimeout(queryTimeout);
+                    }	
+                }
                 listeners.notifyDeletes(entity, batches);
 
                 listeners.preExecute(context);

@@ -63,6 +63,17 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		super(connection, configuration, entity);
 	}
 
+	
+	private Integer queryTimeout;	
+	/**
+	 * 设置查询超时（秒）
+	 * @param queryTimeout
+	 */
+	public SQLMergeClauseAlter setQueryTimeout(int queryTimeout) {
+		this.queryTimeout=queryTimeout;
+		return this;
+	}
+	
 	/**
 	 * Execute the clause and return the generated keys as a ResultSet
 	 *
@@ -75,6 +86,9 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 				PreparedStatement stmt = null;
 				if (batches.isEmpty()) {
 					stmt = createStatement(true);
+					if(queryTimeout!=null) {
+						stmt.setQueryTimeout(queryTimeout);
+					}
 					listeners.notifyMerge(entity, metadata, keys, columns, values, subQuery);
 
 					listeners.preExecute(context);
@@ -88,6 +102,9 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 								"executeWithKeys called with batch statement and multiple SQL strings");
 					}
 					stmt = stmts.iterator().next();
+					if(queryTimeout!=null) {
+						stmt.setQueryTimeout(queryTimeout);
+					}
 					listeners.notifyMerges(entity, metadata, batches);
 
 					listeners.preExecute(context);
@@ -114,6 +131,9 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 				if (hasRow()) {
 					// update
 					SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configuration, entity);
+					if(queryTimeout!=null) {
+						update.setQueryTimeout(queryTimeout);
+					}
 					update.addListener(listeners);
 					populate(update);
 					addKeyConditions(update);

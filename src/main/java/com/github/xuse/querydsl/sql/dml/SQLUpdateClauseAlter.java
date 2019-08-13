@@ -127,6 +127,16 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 		return this;
 	}
 	
+	private Integer queryTimeout;	
+	/**
+	 * 设置查询超时（秒）
+	 * @param queryTimeout
+	 */
+	public SQLUpdateClauseAlter setQueryTimeout(int queryTimeout) {
+		this.queryTimeout=queryTimeout;
+		return this;
+	}
+	
 //	
 //	public <T> SQLUpdateClauseAlter setOptional(Path<T> path, T value) {
 //		optionalUpdates.add(Pair.of(path, value));
@@ -153,6 +163,9 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 
         listeners.prePrepare(context);
         PreparedStatement stmt = connection().prepareStatement(queryString);
+        if(queryTimeout!=null) {
+        	stmt.setQueryTimeout(queryTimeout);
+        }
         setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
         context.addPreparedStatement(stmt);
         listeners.prepared(context);
