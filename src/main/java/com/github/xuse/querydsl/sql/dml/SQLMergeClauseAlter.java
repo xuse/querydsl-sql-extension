@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -29,9 +30,14 @@ import javax.inject.Provider;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.querydsl.core.FilteredClause;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.NullExpression;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
+import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.Configuration;
@@ -63,17 +69,18 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		super(connection, configuration, entity);
 	}
 
-	
-	private Integer queryTimeout;	
+	private Integer queryTimeout;
+
 	/**
 	 * 设置查询超时（秒）
+	 * 
 	 * @param queryTimeout
 	 */
 	public SQLMergeClauseAlter setQueryTimeout(int queryTimeout) {
-		this.queryTimeout=queryTimeout;
+		this.queryTimeout = queryTimeout;
 		return this;
 	}
-	
+
 	/**
 	 * Execute the clause and return the generated keys as a ResultSet
 	 *
@@ -86,7 +93,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 				PreparedStatement stmt = null;
 				if (batches.isEmpty()) {
 					stmt = createStatement(true);
-					if(queryTimeout!=null) {
+					if (queryTimeout != null) {
 						stmt.setQueryTimeout(queryTimeout);
 					}
 					listeners.notifyMerge(entity, metadata, keys, columns, values, subQuery);
@@ -102,7 +109,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 								"executeWithKeys called with batch statement and multiple SQL strings");
 					}
 					stmt = stmts.iterator().next();
-					if(queryTimeout!=null) {
+					if (queryTimeout != null) {
 						stmt.setQueryTimeout(queryTimeout);
 					}
 					listeners.notifyMerges(entity, metadata, batches);
@@ -131,15 +138,17 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 				if (hasRow()) {
 					// update
 					SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configuration, entity);
-					if(queryTimeout!=null) {
+					if (queryTimeout != null) {
 						update.setQueryTimeout(queryTimeout);
 					}
 					update.addListener(listeners);
+					//必须在populate之前执行
+					addKeyConditions(update, true);
 					populate(update);
-					addKeyConditions(update);
+					// 源代码中没有update.execute()，属于BUG，此处进行了修复。
+					update.execute();
 					reset();
 					endContext(context);
-					//这里为什么没有执行，源代码如此，待确认。
 					return EmptyResultSet.DEFAULT;
 				} else {
 					// insert
@@ -156,9 +165,6 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			throw configuration.translate(queryString, constants, e);
 		}
 	}
-
-
-	
 
 	private long executeBatch(PreparedStatement stmt) throws SQLException {
 		int[] rcs = stmt.executeBatch();
@@ -214,7 +220,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			query.addListener(listener);
 		}
 		query.addListener(SQLNoCloseListener.DEFAULT);
-		addKeyConditions(query);
+		addKeyConditions(query, false);
 		return query.select(Expressions.ONE).fetchFirst() != null;
 	}
 
@@ -222,9 +228,10 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		if (hasRow()) {
 			// update
 			SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configuration, entity);
+			//必须在populator之前执行
+			addKeyConditions(update, true);
 			populate(update);
 			addListeners(update);
-			addKeyConditions(update);
 			return update.execute();
 		} else {
 			// insert
@@ -235,22 +242,50 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 
 		}
 	}
-	
+
 	@Override
 	protected SQLBindingsAlter createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
-        List<Object> args = newArrayList();
-        Map<ParamExpression<?>, Object> params = metadata.getParams();
-        for (Object o : serializer.getConstants()) {
-            if (o instanceof ParamExpression) {
-                if (!params.containsKey(o)) {
-                    throw new ParamNotSetException((ParamExpression<?>) o);
-                }
-                o = metadata.getParams().get(o);
-            }
-            args.add(o);
-        }
-        return new SQLBindingsAlter(queryString, args, serializer.getConstantPaths());
+		List<Object> args = newArrayList();
+		Map<ParamExpression<?>, Object> params = metadata.getParams();
+		for (Object o : serializer.getConstants()) {
+			if (o instanceof ParamExpression) {
+				if (!params.containsKey(o)) {
+					throw new ParamNotSetException((ParamExpression<?>) o);
+				}
+				o = metadata.getParams().get(o);
+			}
+			args.add(o);
+		}
+		return new SQLBindingsAlter(queryString, args, serializer.getConstantPaths());
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected void addKeyConditions(FilteredClause<?> query, boolean removeFromUpdate) {
+		List<? extends Path<?>> keys = getKeys();
+
+		Iterator<Path<?>> columnIterator = columns.iterator();
+		Iterator<Expression<?>> valueIterator = values.iterator();
+		int count = 0;
+		while (columnIterator.hasNext()) {
+			Path<?> column = columnIterator.next();
+			Expression<?> value = valueIterator.next();
+			if (keys.contains(column)) {
+				count++;
+				if (value instanceof NullExpression) {
+					query.where(ExpressionUtils.isNull(column));
+				} else {
+					query.where(ExpressionUtils.eq(column, (Expression) value));
+				}
+				if (removeFromUpdate) {
+					columnIterator.remove();
+					valueIterator.remove();
+				}
+			}
+		}
+		if (count < keys.size()) {
+			throw new IllegalStateException("Missed value for keys " + keys);
+		}
 	}
 
 	private void postExecuted(SQLListenerContextImpl context, long cost, String action, long count) {
