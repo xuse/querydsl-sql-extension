@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.persistence.Column;
+import javax.persistence.Lob;
 
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExt;
 import com.github.xuse.querydsl.sql.column.MetadataBuilder;
@@ -34,6 +36,9 @@ import com.querydsl.sql.ForeignKey;
 import com.querydsl.sql.PrimaryKey;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
+
+import jef.database.meta.AnnotationProvider.FieldAnnotationProvider;
+import jef.database.meta.def.GenerateTypeDef;
 
 /**
  * 覆盖QueryDSL生成的表元数据的一些默认行为，建议让生成类继承本类.
@@ -329,6 +334,37 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		}
 		throw new IllegalArgumentException("Not found field [" + expr.getMetadata().getName() + "] in bean " + beanType.getName());
 	}
+	
+	
+	public ColumnTypeBuilder(Column col, java.lang.reflect.Field field, Class<?> treatJavaType, FieldAnnotationProvider fieldProvider) {
+		this.field = field;
+		this.javaType = treatJavaType;
+		this.fieldProvider = fieldProvider;
+		init(col);
+	}
+
+	private void init(Column col) {
+		generatedValue = GenerateTypeDef.create(fieldProvider.getAnnotation(javax.persistence.GeneratedValue.class));
+		version = fieldProvider.getAnnotation(javax.persistence.Version.class) != null;
+		lob = fieldProvider.getAnnotation(Lob.class) != null;
+		if (col != null) {
+			length = col.length();
+			precision = col.precision();
+			scale = col.scale();
+			nullable = col.nullable();
+			unique = col.unique();
+			if (col.columnDefinition().length() > 0) {
+				parseColumnDef(col.columnDefinition());
+			}
+		} else {
+			nullable = !javaType.isPrimitive();
+		}
+	}
+
+	
+	
+	
+	
 
 	private static boolean isAssignableFrom(Class<?> cl1, Class<?> cl2) {
 		return normalize(cl1).isAssignableFrom(normalize(cl2));
