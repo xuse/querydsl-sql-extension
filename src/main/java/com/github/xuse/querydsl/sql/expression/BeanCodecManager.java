@@ -29,7 +29,7 @@ public class BeanCodecManager {
 
 	private final ClassLoaderAccessor cl;
 
-	public BeanCodecManager() {
+	private BeanCodecManager() {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
 		if (cl == null)
 			cl = BeanCodecManager.class.getClassLoader();
@@ -76,31 +76,38 @@ public class BeanCodecManager {
 	public BeanCodec getPopulator(Class<?> target, List<String> fieldNames) {
 		CacheKey key = CacheKey.of(target, fieldNames);
 		BeanCodec result = populators.get(key);
-		if (result == null) {
-			try {
-				result = generateAccessor(key);
-				populators.putIfAbsent(key, result);
-			} catch (RuntimeException e) {
-				result = populators.get(key);
-				if (result != null) {
-					log.error("", e);
-					return result;
-				}
-				throw e;
-			} catch (InstantiationException e) {
-				throw Exceptions.illegalState(e);
-			} catch (IllegalAccessException e) {
-				throw Exceptions.illegalState(e);
-			}
+		if (result != null) {
+			return result;
 		}
-		return result;
+		synchronized (this) {
+			result = populators.get(key);
+			//使用双重检查锁定来提高并发安全性
+			if(result==null) {
+				try {
+					result = generateAccessor(key);
+					populators.putIfAbsent(key, result);
+				} catch (RuntimeException e) {
+					result = populators.get(key);
+					if (result != null) {
+						log.error("", e);
+						return result;
+					}
+					throw e;
+				} catch (InstantiationException e) {
+					throw Exceptions.illegalState(e);
+				} catch (IllegalAccessException e) {
+					throw Exceptions.illegalState(e);
+				}	
+			}
+			return result;
+		}
 	}
 
 	protected static void propertyNotFound(String property) {
 		// do nothing
 	}
 
-	private synchronized BeanCodec generateAccessor(CacheKey key) throws InstantiationException, IllegalAccessException {
+	private BeanCodec generateAccessor(CacheKey key) throws InstantiationException, IllegalAccessException {
 		String clzName = key.getClassName();
 		Class<?> clz;
 		try {

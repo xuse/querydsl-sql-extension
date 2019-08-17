@@ -190,7 +190,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(true);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			//logQuery(queryString, serializer.getConstants());
+			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
@@ -258,7 +258,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(false);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			//logQuery(queryString, serializer.getConstants());
+			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
@@ -347,6 +347,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				}
 			};
 		}
+
 		@Override
 		public List<RT> convert(ResultSet rs) throws SQLException {
 			List<RT> result = new ArrayList<>();
@@ -374,7 +375,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		private final List<Class<?>> argTypes;
 
 		FactoryExpressionResult(FactoryExpression<RT> c) {
-			List<Expression<?>> args=c.getArgs();
+			List<Expression<?>> args = c.getArgs();
 			int argSize = args.size();
 			this.c = c;
 			this.argSize = argSize;
@@ -465,6 +466,39 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	private StatementOptions statementOptions = StatementOptions.DEFAULT;
 
+	/**
+	 * 设置本次查询载入的最大行数
+	 * @param maxRows
+	 */
+	public SQLQueryAlter<T> setMaxRows(int maxRows) {
+		StatementOptions options = this.statementOptions;
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(),
+				options.getFetchSize()));
+		return this;
+	}
+	
+	/**
+	 * 设置本次查询每批获取大小
+	 * @param fetchSize
+	 */
+	public SQLQueryAlter<T> setFetchSisze(int fetchSize) {
+		StatementOptions options = this.statementOptions;
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), options.getQueryTimeout(),
+				fetchSize));
+		return this;
+	}
+	
+	/**
+	 * 设置查询超时（秒）
+	 * @param queryTimeout
+	 */
+	public SQLQueryAlter<T> setQueryTimeout(int queryTimeout) {
+		StatementOptions options = this.statementOptions;
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout,
+				options.getFetchSize()));
+		return this;
+	}
+
 	public void setStatementOptions(StatementOptions statementOptions) {
 		super.setStatementOptions(statementOptions);
 		this.statementOptions = statementOptions;
@@ -472,6 +506,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	private PreparedStatement getPreparedStatement(String queryString) throws SQLException {
 		PreparedStatement statement = connection().prepareStatement(queryString);
+		StatementOptions statementOptions = this.statementOptions;
 		if (statementOptions.getFetchSize() != null) {
 			statement.setFetchSize(statementOptions.getFetchSize());
 		}
@@ -502,7 +537,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(false);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			//logQuery(queryString, serializer.getConstants());
+			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
@@ -548,7 +583,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			SQLSerializer serializer = serialize(false);
 			SQLBindings sql = getSQL(serializer);
 			queryString = sql.getSQL();
-			//logQuery(queryString, serializer.getConstants());
+			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
 
