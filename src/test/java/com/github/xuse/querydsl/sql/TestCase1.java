@@ -26,6 +26,7 @@ import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.MySQLTemplates;
 import com.querydsl.sql.SQLTemplates;
+import com.querydsl.sql.UpdateDeleteProtectListener;
 
 public class TestCase1 {
 
@@ -69,6 +70,8 @@ public class TestCase1 {
 		SQLTemplates templates = MySQLTemplates.builder().newLineToSingleSpace().build();
 		ConfigurationEx configuration = new ConfigurationEx(templates);
 		configuration.addListener(new QueryDSLDebugListener());
+		configuration.addListener(new UpdateDeleteProtectListener());
+		
 
 		// 枚举自动注册功能
 		// JSON自动转换功能
@@ -191,6 +194,19 @@ public class TestCase1 {
 		factory.update(t1).set(t1.created, Expressions.currentTimestamp()).set(t1.name, "李四").where(t1.id.eq(1))
 				.execute();
 	}
+	
+	@Test
+	public void testUpdateAll() {
+		QAaa t1 = QAaa.aaa;
+		factory.update(t1).set(t1.created, Expressions.currentTimestamp()).set(t1.name, "李四").execute();
+	}
+	
+	@Test
+	public void testDeleteAll() {
+		QAaa t1 = QAaa.aaa;
+		factory.delete(t1).where(Expressions.TRUE).execute();
+	}
+	
 	
 	
 	@Test

@@ -5,12 +5,13 @@ import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.types.Type;
 
+/**
+ * 可以扩展的配置项目
+ * @author jiyi
+ *
+ */
 public class ConfigurationEx {
-	
 	private final Configuration configuration;
-	
-	private boolean protectDelAndUpdate = true;
-	
 	
 
 	public Configuration get() {
@@ -44,12 +45,4 @@ public class ConfigurationEx {
     public void register(String table, String column, Type<?> type) {
     	configuration.register(table, column, type);
     }
-
-	public boolean isProtectDelAndUpdate() {
-		return protectDelAndUpdate;
-	}
-
-	public void setProtectDelAndUpdate(boolean protectDelAndUpdate) {
-		this.protectDelAndUpdate = protectDelAndUpdate;
-	}
 }
