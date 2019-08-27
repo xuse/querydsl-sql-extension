@@ -23,9 +23,6 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 		this.field = field;
 		this.column = column;
 		this.unsavedValue=UnsavedValuePredicateFactory.create(field.getType(), field.getAnnotation(UnsavedValue.class));
-		Column anno=field.getAnnotation(Column.class);
-		Id id=field.getAnnotation(Id.class);
-		GeneratedValue gv=field.getAnnotation(GeneratedValue.class);
 		//根据注解进行初始化
 
 //		ColumnMetadataExt()
