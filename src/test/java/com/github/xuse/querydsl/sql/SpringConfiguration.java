@@ -8,6 +8,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.log.QueryDSLDebugListener;
 import com.querydsl.sql.DerbyTemplates;
 import com.querydsl.sql.SQLTemplates;
@@ -27,9 +28,9 @@ public class SpringConfiguration {
 		return new DataSourceTransactionManager(ds);
 	}
 
-	private com.querydsl.sql.Configuration querydslConfiguration() {
+	private ConfigurationEx querydslConfiguration() {
 		SQLTemplates templates = DerbyTemplates.builder().newLineToSingleSpace().build();
-		com.querydsl.sql.Configuration configuration = new com.querydsl.sql.Configuration(templates);
+		ConfigurationEx configuration = new ConfigurationEx(templates);
 		configuration.addListener(new QueryDSLDebugListener());
 		return configuration;
 	}

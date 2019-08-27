@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-import javax.persistence.Column;
-import javax.persistence.Lob;
 
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExt;
 import com.github.xuse.querydsl.sql.column.MetadataBuilder;
@@ -36,9 +34,6 @@ import com.querydsl.sql.ForeignKey;
 import com.querydsl.sql.PrimaryKey;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
-
-import jef.database.meta.AnnotationProvider.FieldAnnotationProvider;
-import jef.database.meta.def.GenerateTypeDef;
 
 /**
  * 覆盖QueryDSL生成的表元数据的一些默认行为，建议让生成类继承本类.
@@ -309,7 +304,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 					continue;
 				}
 				Path<?> path = (Path<?>) field.get(this);
-				MetadataBuilder metadata = getMetadataBuilder(beanType, path, field);
+				MetadataBuilder<?> metadata = getMetadataBuilder(beanType, path, field);
 				this.addMetadata(path, metadata.build());
 			}
 		} catch (IllegalAccessException e) {
@@ -317,7 +312,9 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		}
 	}
 
-	private MetadataBuilder getMetadataBuilder(Class<?> beanType, Path<?> expr, Field metadataField) {
+	@SuppressWarnings("unchecked")
+	private MetadataBuilder<?> getMetadataBuilder(Class<? extends T> beanClz, Path<?> expr, Field metadataField) {
+		Class<?> beanType=beanClz;
 		while (!beanType.equals(Object.class)) {
 			try {
 				Field field = beanType.getDeclaredField(expr.getMetadata().getName());
@@ -336,34 +333,30 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 	}
 	
 	
-	public ColumnTypeBuilder(Column col, java.lang.reflect.Field field, Class<?> treatJavaType, FieldAnnotationProvider fieldProvider) {
-		this.field = field;
-		this.javaType = treatJavaType;
-		this.fieldProvider = fieldProvider;
-		init(col);
-	}
-
-	private void init(Column col) {
-		generatedValue = GenerateTypeDef.create(fieldProvider.getAnnotation(javax.persistence.GeneratedValue.class));
-		version = fieldProvider.getAnnotation(javax.persistence.Version.class) != null;
-		lob = fieldProvider.getAnnotation(Lob.class) != null;
-		if (col != null) {
-			length = col.length();
-			precision = col.precision();
-			scale = col.scale();
-			nullable = col.nullable();
-			unique = col.unique();
-			if (col.columnDefinition().length() > 0) {
-				parseColumnDef(col.columnDefinition());
-			}
-		} else {
-			nullable = !javaType.isPrimitive();
-		}
-	}
-
-	
-	
-	
+//	public ColumnTypeBuilder(Column col, java.lang.reflect.Field field, Class<?> treatJavaType, FieldAnnotationProvider fieldProvider) {
+//		this.field = field;
+//		this.javaType = treatJavaType;
+//		this.fieldProvider = fieldProvider;
+//		init(col);
+//	}
+//
+//	private void init(Column col) {
+//		generatedValue = GenerateTypeDef.create(fieldProvider.getAnnotation(javax.persistence.GeneratedValue.class));
+//		version = fieldProvider.getAnnotation(javax.persistence.Version.class) != null;
+//		lob = fieldProvider.getAnnotation(Lob.class) != null;
+//		if (col != null) {
+//			length = col.length();
+//			precision = col.precision();
+//			scale = col.scale();
+//			nullable = col.nullable();
+//			unique = col.unique();
+//			if (col.columnDefinition().length() > 0) {
+//				parseColumnDef(col.columnDefinition());
+//			}
+//		} else {
+//			nullable = !javaType.isPrimitive();
+//		}
+//	}
 	
 
 	private static boolean isAssignableFrom(Class<?> cl1, Class<?> cl2) {

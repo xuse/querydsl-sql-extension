@@ -4,12 +4,12 @@ import java.sql.Connection;
 
 import javax.inject.Provider;
 
-import com.querydsl.sql.Configuration;
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.querydsl.sql.RelationalPathBase;
 
 public class DropIndexQuery extends AbstractDDLClause<DropIndexQuery>{
 
-	public DropIndexQuery(Provider<Connection> connection, Configuration configuration, RelationalPathBase<?> path) {
+	public DropIndexQuery(Provider<Connection> connection, ConfigurationEx configuration, RelationalPathBase<?> path) {
 		super(connection, configuration, path);
 	}
 

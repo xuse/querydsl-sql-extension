@@ -31,6 +31,7 @@ import javax.xml.ws.Holder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.result.Projection;
 import com.google.common.collect.ImmutableList;
@@ -42,7 +43,6 @@ import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.QueryModifiers;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.support.QueryMixin.Role;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.ParamExpression;
@@ -83,6 +83,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 */
 
 	private SQLListenerContext parentContext;
+	
+	private final ConfigurationEx configEx;
+	
 
 	@Nullable
 	private Provider<Connection> connProvider;
@@ -93,36 +96,43 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	public SQLQueryAlter() {
 		super((Connection) null, new Configuration(SQLTemplates.DEFAULT), new DefaultQueryMetadata());
+		this.configEx=new ConfigurationEx(super.getConfiguration());
 	}
 
-	public SQLQueryAlter(Connection conn, Configuration configuration, QueryMetadata metadata) {
-		super(conn, configuration, metadata);
+	public SQLQueryAlter(Connection conn, ConfigurationEx configuration, QueryMetadata metadata) {
+		super(conn, configuration.get(), metadata);
 		this.conn = conn;
+		this.configEx=configuration;
 	}
 
-	public SQLQueryAlter(Connection conn, Configuration configuration) {
-		super(conn, configuration);
+	public SQLQueryAlter(Connection conn, ConfigurationEx configuration) {
+		super(conn, configuration.get());
 		this.conn = conn;
+		this.configEx=configuration;
 	}
 
 	public SQLQueryAlter(Connection conn, SQLTemplates templates, QueryMetadata metadata) {
 		super(conn, new Configuration(templates), metadata);
 		this.conn = conn;
+		this.configEx=new ConfigurationEx(super.getConfiguration());
 	}
 
 	public SQLQueryAlter(Connection conn, SQLTemplates templates) {
 		super(conn, new Configuration(templates));
 		this.conn = conn;
+		this.configEx=new ConfigurationEx(super.getConfiguration());
 	}
 
-	public SQLQueryAlter(Provider<Connection> connProvider, Configuration configuration, QueryMetadata metadata) {
-		super(connProvider, configuration, metadata);
+	public SQLQueryAlter(Provider<Connection> connProvider, ConfigurationEx configuration, QueryMetadata metadata) {
+		super(connProvider, configuration.get(), metadata);
 		this.connProvider = connProvider;
+		this.configEx=configuration;
 	}
 
-	public SQLQueryAlter(Provider<Connection> connProvider, Configuration configuration) {
-		super(connProvider, configuration, new DefaultQueryMetadata());
+	public SQLQueryAlter(Provider<Connection> connProvider, ConfigurationEx configuration) {
+		super(connProvider, configuration.get(), new DefaultQueryMetadata());
 		this.connProvider = connProvider;
+		this.configEx=configuration;
 	}
 
 	@Override
@@ -646,7 +656,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	@Override
 	public SQLQueryAlter<T> clone(Connection conn) {
-		SQLQueryAlter<T> q = new SQLQueryAlter<T>(conn, getConfiguration(), getMetadata().clone());
+		SQLQueryAlter<T> q = new SQLQueryAlter<T>(conn, configEx, getMetadata().clone());
 		q.clone(this);
 		return q;
 	}

@@ -22,6 +22,7 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.ddl.AlterTableQuery;
 import com.github.xuse.querydsl.sql.ddl.CreateConstraintQuery;
 import com.github.xuse.querydsl.sql.ddl.CreateIndexQuery;
@@ -29,11 +30,14 @@ import com.github.xuse.querydsl.sql.ddl.CreateTableQuery;
 import com.github.xuse.querydsl.sql.ddl.DropConstraintQuery;
 import com.github.xuse.querydsl.sql.ddl.DropIndexQuery;
 import com.github.xuse.querydsl.sql.ddl.DropTableQuery;
+import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
+import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
+import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
+import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.spring.SpringProvider;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.RelationalPathBase;
 import com.querydsl.sql.SQLCloseListener;
@@ -51,30 +55,35 @@ import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
  *
  */
 public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
+	private final ConfigurationEx configEx;
+
 	Logger log = LoggerFactory.getLogger(SQLQueryFactory.class);
 
 	public SQLQueryFactory(SQLTemplates templates, Provider<Connection> connection) {
-		this(new Configuration(templates), connection);
+		this(new ConfigurationEx(templates), connection);
+		
 	}
 
-	public SQLQueryFactory(Configuration configuration, Provider<Connection> connProvider) {
+	public SQLQueryFactory(ConfigurationEx configuration, Provider<Connection> connProvider) {
 		super(configuration, connProvider);
+		this.configEx=configuration;
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
 	}
 
-	public SQLQueryFactory(Configuration configuration, DataSource dataSource) {
+	public SQLQueryFactory(ConfigurationEx configuration, DataSource dataSource) {
 		this(configuration, dataSource, true);
 	}
 
-	public SQLQueryFactory(Configuration configuration, DataSource dataSource, boolean release) {
+	public SQLQueryFactory(ConfigurationEx configuration, DataSource dataSource, boolean release) {
 		super(configuration, new DataSourceProvider(dataSource));
+		this.configEx=configuration;
 		if (release) {
 			configuration.addListener(SQLCloseListener.DEFAULT);
 		}
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
 	}
 
-	public static SQLQueryFactory createSpringQueryFactory(DataSource datasource, Configuration configuration) {
+	public static SQLQueryFactory createSpringQueryFactory(DataSource datasource, ConfigurationEx configuration) {
 		// 用于关闭连接非事务状态下创建的连接。
 		configuration.addListener(UnmanagedConnectionCloseListener.DEFAULT);
 		return new SQLQueryFactory(configuration, new SpringProvider(datasource));
@@ -96,31 +105,34 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 			}
 		}
 	}
+	
+	protected ConfigurationEx getConfigurationEx() {
+		return configEx;
+	}
 
 	public com.querydsl.sql.SQLQueryFactory asRaw() {
-		return new com.querydsl.sql.SQLQueryFactory(configuration, connection);
+		return new com.querydsl.sql.SQLQueryFactory(configuration.get(), connection);
 	}
 
 	public MySQLQueryFactory asMySQL() {
-		return new com.querydsl.sql.mysql.MySQLQueryFactory(configuration, connection);
+		return new com.querydsl.sql.mysql.MySQLQueryFactory(configuration.get(), connection);
 	}
 
-	
 	public SQLServerQueryFactory asSQLServer() {
-		return new SQLServerQueryFactory(configuration, connection);
+		return new SQLServerQueryFactory(configuration.get(), connection);
 	}
 
 	public OracleQueryFactory asOracle() {
-		return new OracleQueryFactory(configuration, connection);
+		return new OracleQueryFactory(configuration.get(), connection);
 	}
-	
+
 	public PostgreSQLQueryFactory asPostgreSQL() {
-		return new PostgreSQLQueryFactory(configuration, connection);
+		return new PostgreSQLQueryFactory(configuration.get(), connection);
 	}
 
 	@Override
 	public SQLQueryAlter<?> query() {
-		return new SQLQueryAlter<Void>(connection, configuration);
+		return new SQLQueryAlter<Void>(connection, configEx);
 	}
 
 	@Override
@@ -192,4 +204,24 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 	public <T> DropConstraintQuery dropConstraint(RelationalPathBase<T> path) {
 		return new DropConstraintQuery(connection, configuration, path);
 	}
+
+    @Override
+    public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
+        return new SQLDeleteClauseAlter(connection, configEx, path);
+    }
+    
+    @Override
+    public final SQLInsertClauseAlter insert(RelationalPath<?> path) {
+        return new SQLInsertClauseAlter(connection, configEx, path);
+    }
+
+    @Override
+    public final SQLMergeClauseAlter merge(RelationalPath<?> path) {
+        return new SQLMergeClauseAlter(connection, configEx, path);
+    }
+
+    @Override
+    public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
+        return new SQLUpdateClauseAlter(connection, configEx, path);
+    }
 }

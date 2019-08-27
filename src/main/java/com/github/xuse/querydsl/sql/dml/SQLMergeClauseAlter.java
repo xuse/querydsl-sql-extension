@@ -27,6 +27,7 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
@@ -40,13 +41,11 @@ import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.util.ResultSetAdapter;
-import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLNoCloseListener;
 import com.querydsl.sql.SQLSerializer;
-import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.EmptyResultSet;
 import com.querydsl.sql.dml.SQLMergeClause;
 
@@ -57,16 +56,16 @@ import com.querydsl.sql.dml.SQLMergeClause;
  *
  */
 public class SQLMergeClauseAlter extends SQLMergeClause {
-	public SQLMergeClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity) {
-		super(connection, configuration, entity);
+	private final ConfigurationEx configEx;
+	
+	public SQLMergeClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+		super(connection, configuration.get(), entity);
+		this.configEx=configuration;
 	}
 
-	public SQLMergeClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity) {
-		super(connection, templates, entity);
-	}
-
-	public SQLMergeClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity) {
-		super(connection, configuration, entity);
+	public SQLMergeClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+		super(connection, configuration.get(), entity);
+		this.configEx=configuration;
 	}
 
 	private Integer queryTimeout;
@@ -137,7 +136,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			} else {
 				if (hasRow()) {
 					// update
-					SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configuration, entity);
+					SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configEx, entity);
 					if (queryTimeout != null) {
 						update.setQueryTimeout(queryTimeout);
 					}
@@ -152,7 +151,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 					return EmptyResultSet.DEFAULT;
 				} else {
 					// insert
-					SQLInsertClauseAlter insert = new SQLInsertClauseAlter(connection(), configuration, entity);
+					SQLInsertClauseAlter insert = new SQLInsertClauseAlter(connection(), configEx, entity);
 					insert.addListener(listeners);
 					populate(insert);
 					return insert.executeWithKeys();
@@ -215,7 +214,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	}
 
 	protected boolean hasRow() {
-		SQLQueryAlter<?> query = new SQLQueryAlter<Void>(connection(), configuration).from(entity);
+		SQLQueryAlter<?> query = new SQLQueryAlter<Void>(connection(), configEx).from(entity);
 		for (SQLListener listener : listeners.getListeners()) {
 			query.addListener(listener);
 		}
@@ -227,7 +226,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	protected long executeCompositeMerge() {
 		if (hasRow()) {
 			// update
-			SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configuration, entity);
+			SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configEx, entity);
 			//必须在populator之前执行
 			addKeyConditions(update, true);
 			populate(update);
@@ -235,7 +234,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			return update.execute();
 		} else {
 			// insert
-			SQLInsertClauseAlter insert = new SQLInsertClauseAlter(connection(), configuration, entity);
+			SQLInsertClauseAlter insert = new SQLInsertClauseAlter(connection(), configEx, entity);
 			addListeners(insert);
 			populate(insert);
 			return insert.execute();

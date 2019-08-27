@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.Test;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.QAaa;
@@ -63,10 +64,10 @@ public class TestCase1 {
 		factory = new SQLQueryFactory(querydslConfiguration(), dsMySQL, false);
 	}
 
-	public com.querydsl.sql.Configuration querydslConfiguration() {
+	public ConfigurationEx querydslConfiguration() {
 //		SQLTemplates templates = DerbyTemplates.builder().newLineToSingleSpace().build();
 		SQLTemplates templates = MySQLTemplates.builder().newLineToSingleSpace().build();
-		com.querydsl.sql.Configuration configuration = new com.querydsl.sql.Configuration(templates);
+		ConfigurationEx configuration = new ConfigurationEx(templates);
 		configuration.addListener(new QueryDSLDebugListener());
 
 		// 枚举自动注册功能

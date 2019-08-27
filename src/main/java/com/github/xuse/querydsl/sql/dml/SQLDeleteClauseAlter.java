@@ -24,31 +24,31 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
-import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
-import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.SQLDeleteClause;
 
 
 public class SQLDeleteClauseAlter extends SQLDeleteClause {
-    public SQLDeleteClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity) {
-        super(connection, new Configuration(templates), entity);
+	private final ConfigurationEx configEx;
+	
+
+    public SQLDeleteClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+        super(connection, configuration.get(), entity);
+        this.configEx=configuration;
     }
 
-    public SQLDeleteClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity) {
-        super(connection, configuration, entity);
-    }
-
-    public SQLDeleteClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity) {
-        super(connection, configuration, entity);
+    public SQLDeleteClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+        super(connection, configuration.get(), entity);
+        this.configEx=configuration;
     }
     
 

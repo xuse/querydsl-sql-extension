@@ -17,6 +17,7 @@ import java.sql.Connection;
 
 import javax.inject.Provider;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
@@ -27,7 +28,6 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.sql.AbstractSQLQuery;
-import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLCommonQueryFactory;
@@ -44,18 +44,13 @@ import com.querydsl.sql.SQLCommonQueryFactory;
 public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactory<Q,
     SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,SQLMetadataQueryFactory,ISQLFactoryEx {
 
-    protected final Configuration configuration;
+    protected final ConfigurationEx configuration;
 
     protected final Provider<Connection> connection;
 
-    public AbstractSQLQueryFactory(Configuration configuration, Provider<Connection> connProvider) {
+    public AbstractSQLQueryFactory(ConfigurationEx configuration, Provider<Connection> connProvider) {
         this.configuration = configuration;
         this.connection = connProvider;
-    }
-
-    @Override
-    public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
-        return new SQLDeleteClauseAlter(connection, configuration, path);
     }
 
     @SuppressWarnings("unchecked")
@@ -76,22 +71,7 @@ public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> imple
         return (Q) query().from(subQuery, alias);
     }
 
-    @Override
-    public final SQLInsertClauseAlter insert(RelationalPath<?> path) {
-        return new SQLInsertClauseAlter(connection, configuration, path);
-    }
-
-    @Override
-    public final SQLMergeClauseAlter merge(RelationalPath<?> path) {
-        return new SQLMergeClauseAlter(connection, configuration, path);
-    }
-
-    @Override
-    public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
-        return new SQLUpdateClauseAlter(connection, configuration, path);
-    }
-
-    public final Configuration getConfiguration() {
+    public final ConfigurationEx getConfiguration() {
         return configuration;
     }
 

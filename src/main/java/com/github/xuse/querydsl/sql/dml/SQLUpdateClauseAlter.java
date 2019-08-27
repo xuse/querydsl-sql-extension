@@ -24,6 +24,7 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.QueryMetadata;
@@ -32,12 +33,10 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
-import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
-import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.AbstractSQLUpdateClause;
 import com.querydsl.sql.dml.SQLUpdateClause;
 
@@ -46,16 +45,17 @@ import com.querydsl.sql.dml.SQLUpdateClause;
  * {@link AbstractSQLUpdateClause} instead.
  */
 public class SQLUpdateClauseAlter extends SQLUpdateClause {
-	public SQLUpdateClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity) {
-		super(connection, new Configuration(templates), entity);
+	
+	private final ConfigurationEx configEx;
+	
+	public SQLUpdateClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+		super(connection, configuration.get(), entity);
+		this.configEx=configuration;
 	}
 
-	public SQLUpdateClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity) {
-		super(connection, configuration, entity);
-	}
-
-	public SQLUpdateClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity) {
-		super(connection, configuration, entity);
+	public SQLUpdateClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+		super(connection, configuration.get(), entity);
+		this.configEx=configuration;
 	}
 
 	@Override

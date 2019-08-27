@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
@@ -36,15 +37,12 @@ import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.ColumnMetadata;
-import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.AbstractSQLInsertClause;
-import com.querydsl.sql.dml.Mapper;
 import com.querydsl.sql.dml.SQLInsertClause;
 
 /**
@@ -55,28 +53,35 @@ import com.querydsl.sql.dml.SQLInsertClause;
  *
  */
 public class SQLInsertClauseAlter extends SQLInsertClause {
+	
+	private final ConfigurationEx configEx;
+	
 	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity) {
-		this(connection, new Configuration(templates), entity);
+		this(connection, new ConfigurationEx(templates), entity);
 	}
 
 	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity, SQLQuery<?> subQuery) {
-		this(connection, new Configuration(templates), entity, subQuery);
+		this(connection, new ConfigurationEx(templates), entity, subQuery);
 	}
 
-	public SQLInsertClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
-		super(connection, configuration, entity, subQuery);
+	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
+		super(connection, configuration.get(), entity, subQuery);
+		this.configEx=configuration;
 	}
 
-	public SQLInsertClauseAlter(Connection connection, Configuration configuration, RelationalPath<?> entity) {
-		super(connection, configuration, entity);
+	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+		super(connection, configuration.get(), entity);
+		this.configEx=configuration;
 	}
 
-	public SQLInsertClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
-		super(connection, configuration, entity, subQuery);
+	public SQLInsertClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
+		super(connection, configuration.get(), entity, subQuery);
+		this.configEx=configuration;
 	}
 
-	public SQLInsertClauseAlter(Provider<Connection> connection, Configuration configuration, RelationalPath<?> entity) {
-		super(connection, configuration, entity);
+	public SQLInsertClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+		super(connection, configuration.get(), entity);
+		this.configEx=configuration;
 	}
 
 	/**

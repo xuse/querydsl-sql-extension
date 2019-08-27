@@ -4,12 +4,12 @@ import java.sql.Connection;
 
 import javax.inject.Provider;
 
-import com.querydsl.sql.Configuration;
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.querydsl.sql.RelationalPathBase;
 
 public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> {
 
-	public DropConstraintQuery(Provider<Connection> connection, Configuration configuration,
+	public DropConstraintQuery(Provider<Connection> connection, ConfigurationEx configuration,
 			RelationalPathBase<?> path) {
 		super(connection, configuration, path);
 	}
