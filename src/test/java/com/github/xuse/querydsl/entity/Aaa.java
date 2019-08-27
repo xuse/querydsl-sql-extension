@@ -4,7 +4,9 @@ import java.util.Date;
 
 import javax.annotation.Generated;
 
+import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.enums.TaskStatus;
 
 /**
  * Aaa is a Querydsl bean type
@@ -21,7 +23,12 @@ public class Aaa {
 	private Gender gender;
 
 	private String trantField;
+	
+	private TaskStatus taskStatus;
 
+	@UnsavedValue("-1")
+	private int version;
+	
 	public Date getCreated() {
 		return created;
 	}
@@ -53,10 +60,27 @@ public class Aaa {
 	public void setGender(Gender gender) {
 		this.gender = gender;
 	}
+	
+	public TaskStatus getTaskStatus() {
+		return taskStatus;
+	}
+
+	public void setTaskStatus(TaskStatus taskStatus) {
+		this.taskStatus = taskStatus;
+	}
 
 	@Override
 	public String toString() {
-		return "created = " + created + ", id = " + id + ", name = " + name;
+		return "Aaa [created=" + created + ", id=" + id + ", name=" + name + ", gender=" + gender + ", taskStatus="
+				+ taskStatus + ", version=" + version + "]";
+	}
+
+	public int getVersion() {
+		return version;
+	}
+
+	public void setVersion(int version) {
+		this.version = version;
 	}
 
 	public String getTrantField() {

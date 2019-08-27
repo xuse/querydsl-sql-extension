@@ -1,15 +1,13 @@
 package com.github.xuse.querydsl.enums;
 
-import org.springframework.expression.spel.ast.OpDec;
-
 import com.github.xuse.querydsl.types.CodeEnum;
 
-public enum Gender implements CodeEnum<Gender>{
-	MALE,
-	FEMALE;
+public enum TaskStatus implements CodeEnum<TaskStatus>{
+	INIT, RUNNING, FAIL, SUCCESS;
 
 	@Override
 	public int getCode() {
 		return ordinal();
 	}
+
 }

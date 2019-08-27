@@ -17,6 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ import com.querydsl.sql.types.AbstractType;
  *
  * @param <T>
  */
-public class EnumByCodeType<T extends CodeEnum<T>> extends AbstractType<T> {
+public class EnumByCodeType<T extends Enum<T> & CodeEnum<T>> extends AbstractType<T> {
     private final Class<T> type;
     private final Map<Integer,T> index=new HashMap<>();
 
@@ -40,8 +41,10 @@ public class EnumByCodeType<T extends CodeEnum<T>> extends AbstractType<T> {
     public EnumByCodeType(int jdbcType, Class<T> type) {
         super(jdbcType);
         this.type = type;
-        for(T t: type.getEnumConstants()) {
-        	index.put(t.getCode(), t);
+        for(T et: Arrays.asList(type.getEnumConstants())) {
+//        	@SuppressWarnings("unchecked")
+//			T t=(T)et;
+        	index.put(et.getCode(), et);
         }
     }
 

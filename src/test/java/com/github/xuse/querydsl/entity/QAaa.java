@@ -8,6 +8,7 @@ import java.util.Date;
 import javax.annotation.Generated;
 
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
@@ -30,12 +31,16 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 	public final DateTimePath<Date> created = createDateTime("created", Date.class);
 
 	public final NumberPath<Integer> id = createNumber("id", int.class);
+	
+	public final NumberPath<Integer> version = createNumber("version", Integer.class);
 
 	public final StringPath name = super.createString("name");
 
 	public final EnumPath<Gender> gender = super.createEnum("gender", Gender.class);
+	
+	public final EnumPath<TaskStatus> taskStatus = super.createEnum("taskStatus", TaskStatus.class);
 
-	//public final com.querydsl.sql.PrimaryKey<Aaa> PK_Aaa = createPrimaryKey(id);
+	public final com.querydsl.sql.PrimaryKey<Aaa> PK_Aaa = createPrimaryKey(id);
 
 	public QAaa(String variable) {
 		super(Aaa.class, forVariable(variable), "APP", "AAA");
@@ -67,6 +72,8 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 				ColumnMetadata.named("CREATED").withIndex(3).ofType(Types.TIMESTAMP).withSize(29).withDigits(9));
 		addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER).withSize(10));
 		addMetadata(name, ColumnMetadata.named("NAME").withIndex(2).ofType(Types.VARCHAR).withSize(64));
-		addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(2).ofType(Types.VARCHAR).withSize(64));
+		addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(4).ofType(Types.TINYINT));
+		addMetadata(taskStatus, ColumnMetadata.named("TASK_STATUS").withIndex(5).ofType(Types.TINYINT));
+		addMetadata(version, ColumnMetadata.named("VERSION").withIndex(6).ofType(Types.INTEGER));
 	}
 }

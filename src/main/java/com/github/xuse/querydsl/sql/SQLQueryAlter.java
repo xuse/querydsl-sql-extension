@@ -42,11 +42,13 @@ import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.QueryModifiers;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.support.QueryMixin.Role;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.AbstractSQLQuery;
@@ -671,4 +673,14 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		SQLQueryAlter<Tuple> newType = (SQLQueryAlter<Tuple>) this;
 		return newType;
 	}
+
+	/**
+	 * 设置动态查询条件
+	 * @param enable
+	 * @param e
+	 * @return
+	 */
+    public final SQLQueryAlter<T> whereIf(boolean enable,Predicate e) {
+    	return enable? queryMixin.where(e):queryMixin.getSelf();
+    }
 }
