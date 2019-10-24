@@ -3,10 +3,12 @@ package com.github.xuse.querydsl.sql.log;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +90,8 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 	public final void prePrepare(SQLListenerContext context) {
 	}
 
+	private final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+	
 	@Override
 	public final void preExecute(SQLListenerContext context) {
 		if (!log.isInfoEnabled()) {
@@ -206,6 +210,9 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 		Class<?> vClass = value.getClass();
 		if (vClass == byte[].class) {
 			sb.append("\t").append(((byte[]) value).length).append(" bytes");
+		} else if(value instanceof Date) {
+		}else if(value instanceof Date){
+			sb.append(DATE_FORMAT.format((Date)value));
 		} else {
 			String valStr = String.valueOf(value);
 			if (valStr.length() > 40) {// 如果日志太长是不行的

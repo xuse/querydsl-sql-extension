@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.querydsl.sql.types.AbstractType;
 
 /**
@@ -33,6 +36,8 @@ import com.querydsl.sql.types.AbstractType;
 public class EnumByCodeType<T extends Enum<T> & CodeEnum<T>> extends AbstractType<T> {
     private final Class<T> type;
     private final Map<Integer,T> index=new HashMap<>();
+    
+    private static final Logger log=LoggerFactory.getLogger(EnumByCodeType.class);
 
     public EnumByCodeType(Class<T> type) {
         this(Types.INTEGER, type);
@@ -62,5 +67,6 @@ public class EnumByCodeType<T extends Enum<T> & CodeEnum<T>> extends AbstractTyp
     @Override
     public void setValue(PreparedStatement st, int startIndex, T value) throws SQLException {
         st.setInt(startIndex, value.getCode());
+        //log.info("set value for ({})={}",startIndex,value.getCode());
     }
 }
