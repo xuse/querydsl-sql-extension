@@ -5,7 +5,7 @@ public interface ContextKeyConstants {
 	int MAX_BATCH_LOG=5;
 	
 	/**
-	 * 执行花费的纳秒
+	 * 执行花费的毫秒
 	 */
 	String ELAPSED_TIME = "ELAPSED_NANO";
 	/**
@@ -16,4 +16,11 @@ public interface ContextKeyConstants {
 	 * 执行动作
 	 */
 	String ACTION = "ACTION";
+	
+	/**
+	 * 是慢SQL
+	 */
+	String SLOW_SQL="SLOW";
+	
+	
 }

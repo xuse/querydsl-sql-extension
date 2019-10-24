@@ -154,6 +154,9 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
 		context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
+		if(this.configEx.getSlowSqlWarnMillis()<=cost) {
+			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+		}
 		listeners.executed(context);
 	}
 }

@@ -13,6 +13,12 @@ import com.querydsl.sql.types.Type;
 public class ConfigurationEx {
 	private final Configuration configuration;
 	
+	/**
+	 * 在使用com.github.xuse.querydsl.sql.log.QueryDSLDebugListener的场景下，如果SQL执行时间超过这个数值（毫秒）
+	 * 就会记录为错误日志
+	 */
+	private long slowSqlWarnMillis = 10000;
+	
 
 	public Configuration get() {
 		return configuration;
@@ -45,4 +51,12 @@ public class ConfigurationEx {
     public void register(String table, String column, Type<?> type) {
     	configuration.register(table, column, type);
     }
+
+	public long getSlowSqlWarnMillis() {
+		return slowSqlWarnMillis;
+	}
+
+	public void setSlowSqlWarnMillis(long slowSqlWarnMillis) {
+		this.slowSqlWarnMillis = slowSqlWarnMillis;
+	}
 }

@@ -166,22 +166,26 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 
 	@Override
 	public final void executed(SQLListenerContext context) {
-		if (!log.isInfoEnabled()) {
-			return;
+		boolean slow=Boolean.TRUE.equals(context.getData(ContextKeyConstants.SLOW_SQL));
+		if (slow || log.isInfoEnabled()) {
+			String action = (String) context.getData(ContextKeyConstants.ACTION);
+			if (action == null || action.length() == 0) {
+				// 兼容官方版本
+				return;
+			}
+			Object time = context.getData(ContextKeyConstants.ELAPSED_TIME);
+			String count = String.valueOf(context.getData(ContextKeyConstants.COUNT));
+			StringBuilder sb = new StringBuilder(52);
+			if (time == null) {
+				time = -1L;
+			}
+			sb.append("Records ").append(action).append(':').append(count).append(", elapsed ").append(time).append("ms.");
+			if(slow) {
+				log.error("SlowSQL:[{}].\n{}",context.getSQL(),sb);
+			}else {
+				log.info(sb.toString());
+			}
 		}
-		String action = (String) context.getData(ContextKeyConstants.ACTION);
-		if (action == null || action.length() == 0) {
-			// 兼容官方版本
-			return;
-		}
-		Object time = context.getData(ContextKeyConstants.ELAPSED_TIME);
-		String count = String.valueOf(context.getData(ContextKeyConstants.COUNT));
-		StringBuilder sb = new StringBuilder(52);
-		if (time == null) {
-			time = -1L;
-		}
-		sb.append("Records ").append(action).append(':').append(count).append(", elapsed ").append(time).append("ms.");
-		log.info(sb.toString());
 	}
 
 	@Override
