@@ -3,10 +3,12 @@ package com.github.xuse.querydsl.sql.log;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +89,9 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	@Override
 	public final void prePrepare(SQLListenerContext context) {
 	}
+	
+	private final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+	
 
 	@Override
 	public final void preExecute(SQLListenerContext context) {
@@ -100,18 +105,20 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		Iterator<SQLBindings> iter = bs.iterator();
 		SQLBindings first = iter.next();
 
-		StringBuilder sb = new StringBuilder(first.getSQL().replace('\n', ' ')).append('\n');
+		StringBuilder sb = new StringBuilder(first.getSQL().replace('\n', ' '));
 		List<Path<?>> constantPaths = ALL_NULL_LIST;
 		if (first instanceof SQLBindingsAlter) {
 			constantPaths = ((SQLBindingsAlter) first).getPaths();
 		}
 		if (bs.size() == 1) {
+			sb.append('[');
 			List<?> params = first.getNullFriendlyBindings();
 			for (int count = 0; count < params.size(); count++) {
 				Path<?> p = constantPaths.get(count);
 				Object value = params.get(count);
 				append(sb, p, value, count);
 			}
+			sb.append(']');
 		} else {
 			List<SQLBindings> list = convert(bs);
 			int total = list.size();
@@ -120,6 +127,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 				if(row>0) {
 					sb.append('\n');
 				}
+				sb.append('[');
 				SQLBindings bindings = list.get(row);
 				sb.append("Batch Params: (").append(row + 1).append('/').append(total).append(")\n");
 				List<Object> params = bindings.getNullFriendlyBindings();
@@ -128,6 +136,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 					Object value = params.get(count);
 					append(sb, p, value, count);
 				}
+				sb.append(']');
 			}
 			if (ContextKeyConstants.MAX_BATCH_LOG < total) {
 				sb.append("Parameters after are ignored to reduce the size of log.");
@@ -187,7 +196,6 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		if (count > 0) {
 			sb.append(", ");
 		}
-		sb.append('(').append(count + 1).append(')');
 		if (value == null) {
 			sb.append("null");
 			return;
@@ -195,13 +203,15 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		Class<?> vClass = value.getClass();
 		if (vClass == byte[].class) {
 			sb.append(((byte[]) value).length).append(" bytes");
-		} else {
+		}else if(value instanceof Date){
+			sb.append(DATE_FORMAT.format((Date)value));
+		}else {
 			String valStr = String.valueOf(value);
 			if (valStr.length() > 40) {// 如果日志太长是不行的
 				sb.append("[").append(valStr.substring(0, 38)).append("..]");
 				sb.append(" chars=").append(valStr.length());
 			} else {
-				sb.append("[").append(valStr).append(']');
+				sb.append(valStr);
 			}
 		}
 	}
