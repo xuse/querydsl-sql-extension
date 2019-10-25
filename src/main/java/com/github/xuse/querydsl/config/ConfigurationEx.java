@@ -1,16 +1,24 @@
 package com.github.xuse.querydsl.config;
 
+import com.github.xuse.querydsl.types.IntegerASVarcharType;
+import com.github.xuse.querydsl.types.LongASDateTimeType;
+import com.github.xuse.querydsl.types.LongASVarcharType;
+import com.github.xuse.querydsl.types.StringAsBigIntType;
+import com.github.xuse.querydsl.types.StringAsIntegerType;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.types.Type;
 
 /**
- * 可以扩展的配置项目
+ * 在QueryDSL原生基础上扩展的配置项目
  * @author jiyi
  *
  */
 public class ConfigurationEx {
+	/**
+	 * 配置
+	 */
 	private final Configuration configuration;
 	
 	/**
@@ -26,10 +34,11 @@ public class ConfigurationEx {
 	
 	public ConfigurationEx(Configuration configuration) {
 		this.configuration=configuration;
+		extendTypes();
 	}
 
 	public ConfigurationEx(SQLTemplates templates) {
-		this.configuration=new Configuration(templates);
+		this(new Configuration(templates));
 	}
 
 	public SQLTemplates getTemplates() {
@@ -58,5 +67,16 @@ public class ConfigurationEx {
 
 	public void setSlowSqlWarnMillis(long slowSqlWarnMillis) {
 		this.slowSqlWarnMillis = slowSqlWarnMillis;
+	}
+
+	/**
+	 * 默认的数据映射扩充类型
+	 */
+	private void extendTypes() {
+		this.register(new IntegerASVarcharType());
+		this.register(new LongASDateTimeType(true));
+		this.register(new LongASVarcharType());
+		this.register(new StringAsBigIntType());
+		this.register(new StringAsIntegerType());
 	}
 }

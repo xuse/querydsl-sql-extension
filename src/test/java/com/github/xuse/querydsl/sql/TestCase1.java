@@ -69,6 +69,7 @@ public class TestCase1 {
 //		SQLTemplates templates = DerbyTemplates.builder().newLineToSingleSpace().build();
 		SQLTemplates templates = MySQLTemplates.builder().newLineToSingleSpace().build();
 		ConfigurationEx configuration = new ConfigurationEx(templates);
+		configuration.setSlowSqlWarnMillis(4000);
 		configuration.addListener(new QueryDSLDebugListener());
 		configuration.addListener(new UpdateDeleteProtectListener());
 		

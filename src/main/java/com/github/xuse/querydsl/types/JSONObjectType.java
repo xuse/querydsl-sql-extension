@@ -11,17 +11,18 @@ import com.alibaba.fastjson.JSON;
 import com.querydsl.sql.types.AbstractType;
 
 /**
- * 给予JSON序列化与反序列化进行数据存储与读取的类型映射
+ * 扩展类型：给予JSON序列化与反序列化进行数据存储与读取的类型映射
  * @author Administrator
  *
  * @param <T>
  */
 public class JSONObjectType<T> extends AbstractType<T>{
-	public JSONObjectType() {
+	public JSONObjectType(Class<T> clz) {
 		super(Types.VARCHAR);
+		this.clz=clz;
 	}
 
-	private Class<T> clz;
+	private final Class<T> clz;
 	
 	@Override
 	public Class<T> getReturnedClass() {

@@ -13,10 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Radix;
+import com.mysema.commons.lang.Assert;
 import com.querydsl.core.util.ReflectionUtils;
 
 public class BeanCodecManager {
