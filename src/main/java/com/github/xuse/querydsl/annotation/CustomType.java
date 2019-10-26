@@ -25,5 +25,5 @@ public @interface CustomType {
 	/**
 	 * Any configuration parameters for the named type.
 	 */
-	Parameter[] parameters() default {};
+	String[] parameters() default {};
 }

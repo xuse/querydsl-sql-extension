@@ -163,7 +163,7 @@ public class TestCase1 {
 		System.out.println("===========插入t2===========");
 		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
 		int sid = factory.insert(t2).set(t2.authContent, "abcdefg").set(t2.devId, "123")
-				.set(t2.updateTime, new Timestamp(System.currentTimeMillis())).set(t2.gender, Gender.MALE)
+				.set(t2.updateTime, "01/12/2019 12:30:21").set(t2.gender, Gender.MALE)
 				.executeWithKey(t2.id);
 		System.out.println(id);
 		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
@@ -220,7 +220,7 @@ public class TestCase1 {
 		data.setUserId("user-daslfnskfn23");
 		data.setDevId("C12345678");
 		data.setAuthContent("abcdefg");
-		data.setUpdateTime(new Date());
+		data.setUpdateTime("01/12/2019 13:30:21");
 		data.setGender(Gender.MALE);
 		data.setMap(new HashMap<>());
 		data.getMap().put("attr1", "测试属性");
@@ -266,7 +266,7 @@ public class TestCase1 {
 		data.setUserId("user-daslfnskfn23");
 		data.setDevId("C12345678");
 		data.setAuthContent("abcdefg");
-		data.setUpdateTime(new Date());
+		data.setUpdateTime("01/12/2019 13:30:21");
 		data.setGender(Gender.MALE);
 		data.setMap(new HashMap<>());
 		data.getMap().put("attr1", "测试属性");

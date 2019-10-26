@@ -5,11 +5,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.annotation.CustomType;
-import com.github.xuse.querydsl.annotation.Parameter;
 import com.github.xuse.querydsl.sql.IRelationPathEx;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.querydsl.core.types.Path;
@@ -64,6 +64,7 @@ public class ConfigurationEx {
 		configuration.addListener(listener);
 	}
 
+	@SuppressWarnings("rawtypes")
 	public void registerExType(IRelationPathEx path) {
 		if (registeredclasses.add(path)) {
 			for (Path<?> p : path.getColumns()) {
@@ -87,23 +88,34 @@ public class ConfigurationEx {
 		}
 	};
 
-	private Type<?> createInstance(Class<? extends Type> clz, Parameter[] parameters, Class<?> fieldType) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+	@SuppressWarnings("rawtypes")
+	private Type<?> createInstance( Class<? extends Type> clz, String[] parameters, Class<?> fieldType) throws InstantiationException, IllegalAccessException, InvocationTargetException {
 		Constructor<?>[] constructors=clz.getConstructors();
+		int size=parameters.length;
 		for(Constructor<?> c:constructors) {
-			if(c.getParameterCount()==1 && c.getParameterTypes()[0]==Class.class) {
-				return init((Type<?>) c.newInstance(fieldType),parameters);
+			if(size==0 && c.getParameterCount()==1 && c.getParameterTypes()[0]==Class.class) {
+				return (Type<?>) c.newInstance(fieldType);
+			}else if(c.getParameterCount()==size && isStringType(c.getParameterTypes())) {
+				return (Type<?>) c.newInstance((Object[])parameters);
+			}else if(c.getParameterCount()==size+1 && isStringType(ArrayUtils.subarray(c.getParameterTypes(), 1, c.getParameterCount()))) {
+				return (Type<?>) c.newInstance(ArrayUtils.addAll(new Object[] {fieldType}, (Object[])parameters));
 			}
 		}
 		for(Constructor<?> c:constructors) {
 			if(c.getParameterCount()==0) {
-				return init((Type<?>) c.newInstance(),parameters);
+				return (Type<?>) c.newInstance();
 			}
 		}
-		return null;
+		throw new IllegalArgumentException("can not Instant type "+clz.getName()+".") ;
 	}
 
-	private Type<?> init(Type<?> t, Parameter[] parameters) {
-		return t;
+	private boolean isStringType(Class<?>[] parameterTypes) {
+		for(int i=0;i<parameterTypes.length;i++) {
+			if(parameterTypes[i]!=String.class) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public void register(Type<?> type) {

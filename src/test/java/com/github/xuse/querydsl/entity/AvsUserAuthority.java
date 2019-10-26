@@ -5,10 +5,13 @@ import java.util.Map;
 
 import javax.annotation.Generated;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.github.xuse.querydsl.annotation.CustomType;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.github.xuse.querydsl.types.JSONObjectType;
+import com.github.xuse.querydsl.types.StringAsDateTimeType;
 
 /**
  * AvsUserAuthority is a Querydsl bean type
@@ -26,10 +29,10 @@ public class AvsUserAuthority {
 
     private String devId;
 
-   // @CustomType(StringAsBigIntType.class)
     private int id;
 
-    private Date updateTime;
+    @CustomType(value=StringAsDateTimeType.class,parameters = "MM/dd/yyyy HH:mm:ss")
+    private String updateTime;
 
     private String userId;
     
@@ -87,11 +90,11 @@ public class AvsUserAuthority {
         this.id = id;
     }
 
-    public Date getUpdateTime() {
+    public String getUpdateTime() {
         return updateTime;
     }
 
-    public void setUpdateTime(Date updateTime) {
+    public void setUpdateTime(String updateTime) {
         this.updateTime = updateTime;
     }
 
