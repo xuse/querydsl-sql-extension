@@ -1,22 +1,44 @@
 package com.github.xuse.querydsl.sql.column;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.function.Predicate;
-
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 
 import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.querydsl.sql.ColumnMetadata;
 
 public abstract class AbstractColumnMetadata implements ColumnMapping {
+	
+	/**
+	 * Java字段（反射）
+	 */
 	private final Field field;
+	
+	/**
+	 * QueryDSL的元数据对象
+	 */
 	private final ColumnMetadata column;
+	
+	/**
+	 * 无效值
+	 */
 	private final Predicate<Object> unsavedValue;
+	
+	/**
+	 * 不插入
+	 */
 	private boolean notInsert;
+	/**
+	 * 不更新
+	 */
 	private boolean notUpdate;
+	/**
+	 * 自动生成
+	 */
 	private boolean generated;
+	/**
+	 * 是否为主键
+	 */
 	private boolean pk;
 
 	protected AbstractColumnMetadata(Field field, ColumnMetadata column) {
@@ -80,6 +102,12 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 	@Override
 	public boolean isPk() {
 		return pk;
+	}
+
+
+	@Override
+	public <T extends Annotation> T getAnnotation(Class<T> clz) {
+		return field.getAnnotation(clz);
 	}
 
 

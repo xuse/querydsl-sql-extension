@@ -5,7 +5,10 @@ import java.util.Map;
 
 import javax.annotation.Generated;
 
+import com.github.xuse.querydsl.annotation.CustomType;
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.types.EnumByCodeType;
+import com.github.xuse.querydsl.types.JSONObjectType;
 
 /**
  * AvsUserAuthority is a Querydsl bean type
@@ -23,14 +26,17 @@ public class AvsUserAuthority {
 
     private String devId;
 
-    private String id;
+   // @CustomType(StringAsBigIntType.class)
+    private int id;
 
     private Date updateTime;
 
     private String userId;
     
+    @CustomType(EnumByCodeType.class)
 	private Gender gender;
 	
+	@CustomType(JSONObjectType.class)
 	private Map<String,String> map;
 
     public String getAuthContent() {
@@ -73,11 +79,11 @@ public class AvsUserAuthority {
         this.devId = devId;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 

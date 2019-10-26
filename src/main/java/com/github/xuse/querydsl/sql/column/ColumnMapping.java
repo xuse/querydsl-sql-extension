@@ -1,5 +1,9 @@
 package com.github.xuse.querydsl.sql.column;
 
+import java.lang.annotation.Annotation;
+
+import com.querydsl.sql.ColumnMetadata;
+
 /**
  * 描述一个数据库列 映射到java字段上的模型信息
  * 
@@ -67,5 +71,22 @@ public interface ColumnMapping {
 	 * 
 	 * @return
 	 */
-	public Class<?> getType();
+	Class<?> getType();
+	
+	
+	/**
+	 * 获得添加在字段上的注解
+	 * @param <T>
+	 * @param clz
+	 * @return
+	 */
+	<T extends Annotation> T getAnnotation(Class<T> clz);
+	
+	
+	/**
+	 * 得到QueryDSL原生的ColumnMetadata
+	 * @return
+	 */
+	ColumnMetadata get();
+	
 }

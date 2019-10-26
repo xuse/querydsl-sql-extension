@@ -42,7 +42,7 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
 
     public final StringPath devId = createString("devId");
 
-    public final StringPath id = createString("id");
+    public final NumberPath<Integer> id = createNumber("id",int.class);
 
     public final DateTimePath<Date> updateTime = createDateTime("updateTime", Date.class);
 

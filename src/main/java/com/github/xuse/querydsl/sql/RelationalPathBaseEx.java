@@ -5,6 +5,7 @@ import static com.google.common.collect.ImmutableList.copyOf;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +17,6 @@ import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Primitives;
 import com.mysema.commons.lang.Assert;
 import com.querydsl.core.types.Expression;
@@ -48,7 +48,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 	@Nullable
 	private PrimaryKey<T> primaryKey;
 
-	private final Map<Path<?>, ColumnMetadataExt> columnMetadata = Maps.newLinkedHashMap();
+	private final Map<Path<?>, ColumnMetadataExt> columnMetadata = new LinkedHashMap<>();
 
 	private final List<ForeignKey<?>> foreignKeys = Lists.newArrayList();
 

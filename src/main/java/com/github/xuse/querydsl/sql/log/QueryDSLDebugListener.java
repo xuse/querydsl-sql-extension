@@ -213,10 +213,9 @@ public final class QueryDSLDebugListener implements SQLDetailedListener {
 		}
 		Class<?> vClass = value.getClass();
 		if (vClass == byte[].class) {
-			sb.append("\t").append(((byte[]) value).length).append(" bytes");
-		} else if(value instanceof Date) {
+			sb.append('\t').append(((byte[]) value).length).append(" bytes");
 		}else if(value instanceof Date){
-			sb.append(DATE_FORMAT.format((Date)value));
+			sb.append('\t').append(DATE_FORMAT.format((Date)value));
 		} else {
 			String valStr = String.valueOf(value);
 			if (valStr.length() > 40) {// 如果日志太长是不行的

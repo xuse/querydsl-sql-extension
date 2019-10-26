@@ -21,7 +21,18 @@ public interface IRelationPathEx {
 	 */
 	BeanCodec getBeanCodec();
 
+	/**
+	 * 获得所有的列（字段）
+	 * @return
+	 */
 	List<Path<?>> getColumns();
 	
+	/**
+	 * 获得指定列（字段）的元数据描述
+	 * @param path
+	 * @return
+	 */
 	ColumnMapping getColumnMetadata(Path<?> path);
+	
+	String getTableName();
 }
