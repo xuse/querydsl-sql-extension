@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.entity;
 
 import java.util.Date;
+import java.util.Map;
 
 import javax.annotation.Generated;
 
@@ -22,13 +23,15 @@ public class AvsUserAuthority {
 
     private String devId;
 
-    private int id;
+    private String id;
 
     private Date updateTime;
 
     private String userId;
     
 	private Gender gender;
+	
+	private Map<String,String> map;
 
     public String getAuthContent() {
         return authContent;
@@ -70,11 +73,11 @@ public class AvsUserAuthority {
         this.devId = devId;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -100,6 +103,14 @@ public class AvsUserAuthority {
 
 	public void setGender(Gender gender) {
 		this.gender = gender;
+	}
+	
+	public Map<String, String> getMap() {
+		return map;
+	}
+
+	public void setMap(Map<String, String> map) {
+		this.map = map;
 	}
 
 	@Override

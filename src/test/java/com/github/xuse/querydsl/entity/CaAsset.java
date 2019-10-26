@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.entity;
 
 import java.util.Date;
+import java.util.Map;
 
 import com.github.xuse.querydsl.enums.Gender;
 
@@ -12,6 +13,7 @@ public class CaAsset {
 	private Date updated;
 	private Aaa ext;
 	private Gender gender;
+	private Map<String,String> map;
 
 	public Gender getGender() {
 		return gender;
@@ -67,5 +69,13 @@ public class CaAsset {
 
 	public void setUpdated(Date updated) {
 		this.updated = updated;
+	}
+
+	public Map<String, String> getMap() {
+		return map;
+	}
+
+	public void setMap(Map<String, String> map) {
+		this.map = map;
 	}
 }

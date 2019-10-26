@@ -35,9 +35,12 @@ import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.spring.SpringProvider;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.sql.DerbyTemplates;
+import com.querydsl.sql.MySQLTemplates;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.RelationalPathBase;
 import com.querydsl.sql.SQLCloseListener;
@@ -81,6 +84,16 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 			configuration.addListener(SQLCloseListener.DEFAULT);
 		}
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
+	}
+
+
+	public static SQLTemplates calcSQLTemplate(String url) {
+		if(url.startsWith("jdbc:mysql:")) {
+			return MySQLTemplates.builder().newLineToSingleSpace().build();
+		}else if(url.startsWith("jdbc:derby:")) {
+			return DerbyTemplates.builder().newLineToSingleSpace().build();
+		}
+		throw Exceptions.illegalArgument(url);
 	}
 
 	public static SQLQueryFactory createSpringQueryFactory(DataSource datasource, ConfigurationEx configuration) {

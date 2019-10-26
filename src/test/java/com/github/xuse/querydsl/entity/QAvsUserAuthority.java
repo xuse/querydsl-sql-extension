@@ -4,6 +4,7 @@ import static com.querydsl.core.types.PathMetadataFactory.forVariable;
 
 import java.sql.Types;
 import java.util.Date;
+import java.util.Map;
 
 import javax.annotation.Generated;
 
@@ -14,6 +15,7 @@ import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.DateTimePath;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.NumberPath;
+import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.sql.ColumnMetadata;
 
@@ -40,14 +42,15 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
 
     public final StringPath devId = createString("devId");
 
-    public final NumberPath<Integer> id = createNumber("id", int.class);
+    public final StringPath id = createString("id");
 
     public final DateTimePath<Date> updateTime = createDateTime("updateTime", Date.class);
 
     public final StringPath userId = createString("userId");
     
     public final EnumPath<Gender> gender =super.createEnum("gender",Gender.class);
-
+    
+	public final SimplePath<Map<String,String>> map = createSimple("map", Map.class);
     
     public final com.querydsl.sql.PrimaryKey<AvsUserAuthority> sql181012120126200 = createPrimaryKey(id);
 
@@ -77,15 +80,16 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
     }
 
     public void addMetadata() {
-        addMetadata(authContent, ColumnMetadata.named("AUTH_CONTENT").withIndex(6).ofType(Types.VARCHAR).withSize(256));
-        addMetadata(authType, ColumnMetadata.named("AUTH_TYPE").withIndex(5).ofType(Types.INTEGER).withSize(10));
+    	addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER).withSize(10).notNull());
+    	addMetadata(userId, ColumnMetadata.named("USER_ID").withIndex(2).ofType(Types.VARCHAR).withSize(64).notNull());
+    	addMetadata(devId, ColumnMetadata.named("DEV_ID").withIndex(3).ofType(Types.VARCHAR).withSize(64));
         addMetadata(channelNo, ColumnMetadata.named("CHANNEL_NO").withIndex(4).ofType(Types.INTEGER).withSize(10));
+        addMetadata(authType, ColumnMetadata.named("AUTH_TYPE").withIndex(5).ofType(Types.INTEGER).withSize(10));
+        addMetadata(authContent, ColumnMetadata.named("AUTH_CONTENT").withIndex(6).ofType(Types.VARCHAR).withSize(256));
         addMetadata(createTime, ColumnMetadata.named("CREATE_TIME").withIndex(7).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
-        addMetadata(devId, ColumnMetadata.named("DEV_ID").withIndex(3).ofType(Types.VARCHAR).withSize(64));
-        addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER).withSize(10).notNull());
         addMetadata(updateTime, ColumnMetadata.named("UPDATE_TIME").withIndex(8).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
-        addMetadata(userId, ColumnMetadata.named("USER_ID").withIndex(2).ofType(Types.VARCHAR).withSize(64).notNull());
-        addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(2).ofType(Types.VARCHAR).withSize(64));
+        addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(9).ofType(Types.VARCHAR).withSize(64));
+        addMetadata(map, ColumnMetadata.named("MAP_DATA").withIndex(10).ofType(Types.VARCHAR).withSize(512));
     }
 }
 

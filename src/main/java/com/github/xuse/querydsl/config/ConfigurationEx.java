@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.config;
 
-import com.github.xuse.querydsl.types.IntegerASVarcharType;
-import com.github.xuse.querydsl.types.LongASDateTimeType;
-import com.github.xuse.querydsl.types.LongASVarcharType;
-import com.github.xuse.querydsl.types.StringAsBigIntType;
-import com.github.xuse.querydsl.types.StringAsIntegerType;
+import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.github.xuse.querydsl.sql.IRelationPathEx;
+import com.querydsl.core.types.Path;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLTemplates;
@@ -27,6 +28,10 @@ public class ConfigurationEx {
 	 */
 	private long slowSqlWarnMillis = 10000;
 	
+	/**
+	 * 已完成类型注册的Class
+	 */
+	private final Set<IRelationPathEx> registeredclasses=new HashSet<>(); 
 
 	public Configuration get() {
 		return configuration;
@@ -34,7 +39,6 @@ public class ConfigurationEx {
 	
 	public ConfigurationEx(Configuration configuration) {
 		this.configuration=configuration;
-		extendTypes();
 	}
 
 	public ConfigurationEx(SQLTemplates templates) {
@@ -49,6 +53,15 @@ public class ConfigurationEx {
 		configuration.addListener(listener);
 	}
 
+	public void checkRegister(IRelationPathEx path) {
+		if(registeredclasses.add(path)) {
+			for(Path<?> p:path.getColumns()) {
+				Field field;
+				Object o=p.getMetadata().getElement();
+			}
+		}
+	};
+	
 	public void register(Type<?> type) {
 		configuration.register(type);
 		
@@ -67,16 +80,5 @@ public class ConfigurationEx {
 
 	public void setSlowSqlWarnMillis(long slowSqlWarnMillis) {
 		this.slowSqlWarnMillis = slowSqlWarnMillis;
-	}
-
-	/**
-	 * 默认的数据映射扩充类型
-	 */
-	private void extendTypes() {
-		this.register(new IntegerASVarcharType());
-		this.register(new LongASDateTimeType(true));
-		this.register(new LongASVarcharType());
-		this.register(new StringAsBigIntType());
-		this.register(new StringAsIntegerType());
 	}
 }

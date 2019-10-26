@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.entity;
 
 import java.sql.Date;
+import java.util.Map;
 
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
@@ -29,6 +30,8 @@ public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
 	public final EnumPath<Gender> gender = createEnum("gender", Gender.class);
 	
 	public final SimplePath<Aaa> ext = createSimple("ext", Aaa.class);
+	
+	public final SimplePath<Map<String,String>> map = createSimple("map", Map.class);
 
 	public QCaAsset(String variable) {
 		super(CaAsset.class, PathMetadataFactory.forVariable(variable), "APP", "CA_ASSET");
