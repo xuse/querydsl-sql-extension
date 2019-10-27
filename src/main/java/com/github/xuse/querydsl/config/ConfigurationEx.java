@@ -69,20 +69,19 @@ public class ConfigurationEx {
 		if (registeredclasses.add(path)) {
 			for (Path<?> p : path.getColumns()) {
 				ColumnMapping c = path.getColumnMetadata(p);
-				CustomType anno = c.getAnnotation(CustomType.class);
-				if (anno == null) {
-					continue;
+				Type<?> customType=c.getCustomType();
+				CustomType anno;
+				if(customType==null && (anno = c.getAnnotation(CustomType.class))!=null) {
+					Class<? extends Type> clz=anno.value();
+					try {
+						customType = createInstance(clz, anno.parameters(),p.getType());
+					} catch (Exception e) {
+						log.error("customType on {}.{} error",path.getTableName(),p.getMetadata().getName(),e);
+					}
 				}
-				Class<? extends Type> clz=anno.value();
-				Type<?> t = null;
-				try {
-					t = createInstance(clz, anno.parameters(),p.getType());
-				} catch (Exception e) {
-					log.error("customType on {}.{} error",path.getTableName(),p.getMetadata().getName(),e);
-				}
-				if(t!=null) {
-					configuration.register(path.getTableName(), c.get().getName(), t);
-					log.info("Column [{}.{}] is registered to:{}",path.getTableName(), c.get().getName(),t);
+				if(customType!=null) {
+					configuration.register(path.getTableName(), c.get().getName(), customType);
+					log.info("Column [{}.{}] is registered to:{}",path.getTableName(), c.get().getName(),customType);
 				}
 			}
 		}

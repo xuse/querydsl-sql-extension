@@ -39,7 +39,6 @@ public class AvsUserAuthority {
     @CustomType(EnumByCodeType.class)
 	private Gender gender;
 	
-	@CustomType(JSONObjectType.class)
 	private Map<String,String> map;
 
     public String getAuthContent() {

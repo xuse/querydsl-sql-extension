@@ -24,6 +24,7 @@ import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.sql.expression.Streams;
 import com.github.xuse.querydsl.sql.log.QueryDSLDebugListener;
+import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.DateTimeExpression;
@@ -68,7 +69,7 @@ public class TestCase1 {
 	public ConfigurationEx querydslConfiguration(SQLTemplates templates) {
 		ConfigurationEx configuration = new ConfigurationEx(templates);
 		configuration.setSlowSqlWarnMillis(4000);
-		configuration.addListener(new QueryDSLDebugListener());
+		configuration.addListener(new QueryDSLSQLListener());
 		configuration.addListener(new UpdateDeleteProtectListener());
 
 		// 枚举自动注册功能

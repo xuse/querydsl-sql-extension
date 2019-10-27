@@ -10,6 +10,7 @@ import javax.annotation.Generated;
 
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
+import com.github.xuse.querydsl.types.JSONObjectType;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.DateTimePath;
@@ -89,7 +90,7 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
         addMetadata(createTime, ColumnMetadata.named("CREATE_TIME").withIndex(7).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
         addMetadata(updateTime, ColumnMetadata.named("UPDATE_TIME").withIndex(8).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
         addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(9).ofType(Types.VARCHAR).withSize(64));
-        addMetadata(map, ColumnMetadata.named("MAP_DATA").withIndex(10).ofType(Types.VARCHAR).withSize(512));
+        addMetadata(map, ColumnMetadata.named("MAP_DATA").withIndex(10).ofType(Types.VARCHAR).withSize(512)).withCustomType(new JSONObjectType<Map>(Map.class));
     }
 }
 

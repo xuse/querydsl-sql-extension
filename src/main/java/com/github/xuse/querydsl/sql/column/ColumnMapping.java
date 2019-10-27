@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.sql.column;
 import java.lang.annotation.Annotation;
 
 import com.querydsl.sql.ColumnMetadata;
+import com.querydsl.sql.types.Type;
 
 /**
  * 描述一个数据库列 映射到java字段上的模型信息
@@ -88,5 +89,19 @@ public interface ColumnMapping {
 	 * @return
 	 */
 	ColumnMetadata get();
+	
+	
+	/**
+	 * 自定义映射类型
+	 * @param type
+	 * @return
+	 */
+	ColumnMapping withCustomType(Type<?> type);
+	
+	/**
+	 * 返回自定义映射类型 
+	 * @return
+	 */
+	Type<?> getCustomType();
 	
 }

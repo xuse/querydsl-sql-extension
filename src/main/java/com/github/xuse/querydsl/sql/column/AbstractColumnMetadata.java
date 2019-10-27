@@ -2,28 +2,31 @@ package com.github.xuse.querydsl.sql.column;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.querydsl.sql.ColumnMetadata;
+import com.querydsl.sql.types.Type;
 
 public abstract class AbstractColumnMetadata implements ColumnMapping {
-	
+
 	/**
 	 * Java字段（反射）
 	 */
 	private final Field field;
-	
+
 	/**
 	 * QueryDSL的元数据对象
 	 */
 	private final ColumnMetadata column;
-	
+
 	/**
 	 * 无效值
 	 */
 	private final Predicate<Object> unsavedValue;
-	
+
 	/**
 	 * 不插入
 	 */
@@ -40,12 +43,22 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 	 * 是否为主键
 	 */
 	private boolean pk;
+	
+	/**
+	 * 自定义类型
+	 */
+	private Type<?> customType;
+
+	/**
+	 * 附加的注解
+	 */
+	private final Map<Class<? extends Annotation>, Annotation> otherAnnotations = new HashMap<>();
 
 	protected AbstractColumnMetadata(Field field, ColumnMetadata column) {
 		this.field = field;
 		this.column = column;
-		this.unsavedValue=UnsavedValuePredicateFactory.create(field.getType(), field.getAnnotation(UnsavedValue.class));
-		//根据注解进行初始化
+		this.unsavedValue = UnsavedValuePredicateFactory.create(field.getType(), field.getAnnotation(UnsavedValue.class));
+		// 根据注解进行初始化
 
 //		ColumnMetadataExt()
 //		ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER).withSize(10);
@@ -57,23 +70,21 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 //			addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(2).ofType(Types.VARCHAR).withSize(64));
 //			addMetadata(created, ColumnMetadata.named("CREATED").withIndex(3).ofType(Types.TIMESTAMP).withSize(29).withDigits(9));
 	}
-	
 
 	public ColumnMetadata get() {
 		return column;
 	}
-	
+
 	@Override
 	public boolean isUnsavedValue(Object value) {
 		return unsavedValue.test(value);
 	}
-	
 
 	@Override
 	public boolean isGenerated() {
 		return generated;
 	}
-	
+
 	@Override
 	public boolean isNotInsert() {
 		return notInsert;
@@ -88,7 +99,7 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 	public Class<?> getType() {
 		return field.getType();
 	}
-	
+
 	@Override
 	public String fieldName() {
 		return field.getName();
@@ -104,11 +115,24 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 		return pk;
 	}
 
-
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Annotation> T getAnnotation(Class<T> clz) {
-		return field.getAnnotation(clz);
+		T t = (T) otherAnnotations.get(clz);
+		return t == null ? field.getAnnotation(clz) : t;
 	}
 
+	@Override
+	public ColumnMapping withCustomType(Type<?> type) {
+		this.customType=type;
+		return this;
+	}
+	
+	@Override
+	public Type<?> getCustomType() {
+		return customType;
+	}
+	
+	
 
 }

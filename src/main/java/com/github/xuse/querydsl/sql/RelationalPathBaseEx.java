@@ -102,7 +102,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		return foreignKey;
 	}
 
-	protected <P extends Path<?>> P addMetadata(P expr, ColumnMetadata metadata) {
+	protected <P extends Path<?>> ColumnMetadataExt addMetadata(P expr, ColumnMetadata metadata) {
 		Class<?> beanType = super.getType();
 		Field field = null;
 		while (!beanType.equals(Object.class)) {
@@ -120,8 +120,9 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 			}
 		}
 		Assert.notNull(field, "Can't find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
-		columnMetadata.put(expr, new ColumnMetadataExt(field, metadata));
-		return expr;
+		ColumnMetadataExt metadataExt=new ColumnMetadataExt(field, metadata);
+		columnMetadata.put(expr, metadataExt);
+		return metadataExt;
 	}
 
 	protected <P extends Path<?>> P addMetadata(P path, ColumnMetadataExt metadata) {
