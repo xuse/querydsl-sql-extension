@@ -5,7 +5,7 @@
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>4.2.1-r5.3</version>
+	<version>4.2.1-r6</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -32,7 +32,7 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
-			<version>1.2.29</version>
+			<version>1.2.61</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
