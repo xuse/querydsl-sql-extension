@@ -26,7 +26,9 @@ import javax.inject.Provider;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
+import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.infradna.tool.bridge_method_injector.WithBridgeMethods;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -38,6 +40,7 @@ import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.dml.AbstractSQLUpdateClause;
+import com.querydsl.sql.dml.DefaultMapper;
 import com.querydsl.sql.dml.SQLUpdateClause;
 
 /**
@@ -57,6 +60,11 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 		super(connection, configuration.get(), entity);
 		this.configEx=configuration;
 	}
+	
+    public SQLUpdateClauseAlter populate(Object bean) {
+         populate(bean, AdvancedMapper.INSTANCE);
+         return this;
+    }
 
 	@Override
 	public long execute() {

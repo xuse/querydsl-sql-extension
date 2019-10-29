@@ -25,7 +25,7 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 	/**
 	 * 无效值
 	 */
-	private final Predicate<Object> unsavedValue;
+	private Predicate<Object> unsavedValue;
 
 	/**
 	 * 不插入
@@ -129,10 +129,13 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 	}
 	
 	@Override
+	public ColumnMapping withUnsavePredicate(Predicate<Object> unsavedValue) {
+		this.unsavedValue=unsavedValue;
+		return this;
+	};
+	
+	@Override
 	public Type<?> getCustomType() {
 		return customType;
 	}
-	
-	
-
 }

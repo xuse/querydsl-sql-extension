@@ -10,6 +10,13 @@ import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
 
 public final class UnsavedValuePredicateFactory {
+	
+	/**
+	 * 根据类型和默认值来生成
+	 * @param containerType
+	 * @param value
+	 * @return
+	 */
 	public static Predicate<Object> parseValue(Class<?> containerType, String value) {
 		// int 226
 		// short 215
@@ -107,7 +114,10 @@ public final class UnsavedValuePredicateFactory {
 		}
 	};
 
-	private static final Predicate<Object> NullOrEmpty = new Predicate<Object>() {
+	/**
+	 * 如果字符串（或者对象转换为字符串后的长度为0，那么视为未设置值）
+	 */
+	public static final Predicate<Object> NullOrEmpty = new Predicate<Object>() {
 		public boolean test(Object obj) {
 			if (obj == null)
 				return true;
@@ -115,7 +125,10 @@ public final class UnsavedValuePredicateFactory {
 		}
 	};
 
-	private static final Predicate<Object> MinusNumber = new Predicate<Object>() {
+	/**
+	 * 如果是负数，视为未设置值
+	 */
+	public static final Predicate<Object> MinusNumber = new Predicate<Object>() {
 		public boolean test(Object obj) {
 			if (obj == null)
 				return true;
@@ -127,7 +140,10 @@ public final class UnsavedValuePredicateFactory {
 		}
 	};
 
-	private static final Predicate<Object> ZeroAndMinus = new Predicate<Object>() {
+	/**
+	 * 如果是零或者负数，视为未设置值
+	 */
+	public static final Predicate<Object> ZeroAndMinus = new Predicate<Object>() {
 		public boolean test(Object obj) {
 			if (obj == null)
 				return true;
@@ -139,6 +155,12 @@ public final class UnsavedValuePredicateFactory {
 		}
 	};
 
+	/**
+	 * 根据类上的注解来解析生成
+	 * @param type
+	 * @param annotation
+	 * @return
+	 */
 	public static Predicate<Object> create(Class<?> type, UnsavedValue annotation) {
 		if (annotation != null) {
 			return parseValue(type, annotation.value());

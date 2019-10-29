@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.sql.column;
 
 import java.lang.annotation.Annotation;
+import java.util.function.Predicate;
 
 import com.querydsl.sql.ColumnMetadata;
 import com.querydsl.sql.types.Type;
@@ -103,5 +104,12 @@ public interface ColumnMapping {
 	 * @return
 	 */
 	Type<?> getCustomType();
+	
+	/**
+	 * 设置自定义的UnsavedValue判断器
+	 * @param unsavedValue
+	 * @return
+	 */
+	ColumnMapping withUnsavePredicate(Predicate<Object> unsavedValue);
 	
 }
