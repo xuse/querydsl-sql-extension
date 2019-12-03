@@ -65,6 +65,12 @@ public enum Radix {
 			sb.append(codeTable[(int) num]);
 		}
 	},
+	
+	/**
+	 * 36进制
+	 */
+	D36("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray(), 14),
+	
 	/**
 	 * 62进制
 	 */
@@ -228,16 +234,19 @@ public enum Radix {
 				int index = str.charAt(i) - 48;
 				num += index * powTable[len - i - 1];
 			}
+			break;
 		case BINARY_SEARCH:
 			for (int i = begin; i < len; i++) {
 				int index = binarySearch(str.charAt(i));
 				num += index * powTable[len - i - 1];
-			}
+			};
+			break;
 		case INDEXOF:
 			for (int i = begin; i < len; i++) {
 				int index = indexOf(str.charAt(i));
 				num += index * powTable[len - i - 1];
 			}
+			break;
 		}
 		return num;
 	}

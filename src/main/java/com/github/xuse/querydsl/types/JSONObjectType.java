@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.types;
 
+import java.lang.reflect.Type;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,12 +18,29 @@ import com.querydsl.sql.types.AbstractType;
  * @param <T>
  */
 public class JSONObjectType<T> extends AbstractType<T>{
+	
+	/**
+	 * 使用Class构造
+	 * @param clz
+	 */
 	public JSONObjectType(Class<T> clz) {
 		super(Types.VARCHAR);
 		this.clz=clz;
+		this.type=clz;
 	}
 
+	/**
+	 * 使用Type构造
+	 * @param clz
+	 */
+	public JSONObjectType(Type clz) {
+		super(Types.VARCHAR);
+		this.clz=null;
+		this.type=clz;
+		
+	}
 	private final Class<T> clz;
+	private final Type type;
 	
 	@Override
 	public Class<T> getReturnedClass() {
@@ -35,8 +53,12 @@ public class JSONObjectType<T> extends AbstractType<T>{
 		if(StringUtils.isEmpty(s)) {
 			return null;
 		}else {
-			return JSON.parseObject(s,clz);
+			return parse(s);
 		}
+	}
+
+	private T parse(String s) {
+		return clz==null? JSON.parseObject(s,type):JSON.parseObject(s,clz);
 	}
 
 	@Override

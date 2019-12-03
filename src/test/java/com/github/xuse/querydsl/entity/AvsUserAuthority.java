@@ -5,12 +5,9 @@ import java.util.Map;
 
 import javax.annotation.Generated;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.github.xuse.querydsl.annotation.CustomType;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.types.EnumByCodeType;
-import com.github.xuse.querydsl.types.JSONObjectType;
 import com.github.xuse.querydsl.types.StringAsDateTimeType;
 
 /**

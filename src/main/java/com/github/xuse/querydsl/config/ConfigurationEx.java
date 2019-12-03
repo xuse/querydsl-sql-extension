@@ -100,11 +100,11 @@ public class ConfigurationEx {
 				return (Type<?>) c.newInstance(ArrayUtils.addAll(new Object[] {fieldType}, (Object[])parameters));
 			}
 		}
-		for(Constructor<?> c:constructors) {
-			if(c.getParameterCount()==0) {
-				return (Type<?>) c.newInstance();
-			}
-		}
+//		for(Constructor<?> c:constructors) {
+//			if(c.getParameterCount()==0) {
+//				return (Type<?>) c.newInstance();
+//			}
+//		}
 		throw new IllegalArgumentException("can not Instant type "+clz.getName()+".") ;
 	}
 
