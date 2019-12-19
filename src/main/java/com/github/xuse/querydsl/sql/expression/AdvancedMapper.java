@@ -15,6 +15,7 @@ import com.github.xuse.querydsl.util.Entry;
 import com.google.common.collect.Maps;
 import com.querydsl.core.QueryException;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.util.ReflectionUtils;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.dml.Mapper;
@@ -29,13 +30,42 @@ import com.querydsl.sql.dml.Mapper;
 public class AdvancedMapper implements Mapper<Object> {
 	/**
 	 * Singleton instance
+	 * 空值绑定会被跳过，因此在Batch模式下根据参数中的空值不同，很容易生成多组SQL语句。
+	 * 当多组SQL执行executeWithKey时，会抛出异常，因此执行批量插入并且获取Key时，不能使用这种Mapper。
 	 */
 	public static AdvancedMapper INSTANCE = new AdvancedMapper();
+	
+	/**
+	 * 空值绑定会向Statement中执行setNull(index, sqlType). 适合于批量模式下统一SQL语句。
+	 * 但是对于带有自生成如自增键、缺省值等字段，尝试写入NULL可能导致异常。
+	 */
+	public static AdvancedMapper INSTANCE_NULLS_BINGIND = new AdvancedMapper() {
+		protected void processNullBindings(ColumnMapping metadata, List<Entry<Path<?>, Object>> data,Path<?> path) {
+			if(!metadata.isPk()){
+				data.add(new Entry<>(path, com.querydsl.sql.types.Null.DEFAULT));	
+			}
+		}
+		protected void processNullBindings(RelationalPath<?> entity,List<Entry<Path<?>, Object>> data, Path<?> path) {
+			if(!isPrimaryKeyColumn(entity,path)) {
+				data.add(new Entry<>(path, com.querydsl.sql.types.Null.DEFAULT));
+			}
+		}
+	};
+	
+	/**
+	 * 直接在SQL语句的Value区域写入DEFAULT关键字。在某些数据库上有用。
+	 */
+	public static AdvancedMapper INSTANCE_NULLS_DEFAULT = new AdvancedMapper() {
+		protected void processNullBindings(ColumnMapping metadata, List<Entry<Path<?>, Object>> data,Path<?> path) {
+			data.add(new Entry<>(path, Expressions.template(path.getType(), "DEFAULT")));
+		}
+		protected void processNullBindings(RelationalPath<?> entity,List<Entry<Path<?>, Object>> data, Path<?> path) {
+			data.add(new Entry<>(path, Expressions.template(path.getType(), "DEFAULT")));
+		}
+	};
 
-	private final boolean withNullBindings;
-
+	
 	protected AdvancedMapper() {
-		this.withNullBindings = false;
 	}
 
 	/*
@@ -44,7 +74,6 @@ public class AdvancedMapper implements Mapper<Object> {
 	@Override
 	public Map<Path<?>, Object> createMap(RelationalPath<?> entity, Object bean) {
 		if (entity instanceof IRelationPathEx && entity.getType().isAssignableFrom(bean.getClass())) {
-			// 可以采用优化方案构造
 			return createMapOptimized((IRelationPathEx) entity, bean);
 		} else {
 			return createMap0(entity, bean);
@@ -67,20 +96,27 @@ public class AdvancedMapper implements Mapper<Object> {
 		for (int i = 0; i < len; i++) {
 			Object value = values[i];
 			Path<?> p=path.get(i);
-			if (!isNullValue(entity.getColumnMetadata(p), value)) {
+			ColumnMapping metadata=entity.getColumnMetadata(p);
+			if (!isNullValue(metadata, value)) {
 				data.add(new Entry<>(p, value));
-//			} else if (withNullBindings && ) {
-//				data.add(new Entry<>(path.get(i), com.querydsl.sql.types.Null.DEFAULT));
+			} else{
+				processNullBindings(metadata,data,p);
+				
 			}
 		}
 		return ArrayListMap.wrap(data);
 	}
+	
+	protected void processNullBindings(ColumnMapping metadata, List<Entry<Path<?>, Object>> data,Path<?> p) {
+	}
+	protected void processNullBindings(RelationalPath<?> entity,List<Entry<Path<?>, Object>> data, Path<?> path) {
+	}
 
 	private Map<Path<?>, Object> createMap0(RelationalPath<?> entity, Object bean) {
 		try {
-			Map<Path<?>, Object> values = Maps.newLinkedHashMap();
 			Class<?> beanClass = bean.getClass();
 			Map<String, Path<?>> columns = getColumns(entity);
+			List<Entry<Path<?>, Object>> data = new ArrayList<>(columns.size());
 			for (Map.Entry<String, Path<?>> entry : columns.entrySet()) {
 				Path<?> path = entry.getValue();
 				Field beanField = ReflectionUtils.getFieldOrNull(beanClass, entry.getKey());
@@ -88,17 +124,19 @@ public class AdvancedMapper implements Mapper<Object> {
 					beanField.setAccessible(true);
 					Object propertyValue = beanField.get(bean);
 					if (!isNullValue(beanField, propertyValue)) {
-						values.put(path, propertyValue);
-					} else if (withNullBindings && !isPrimaryKeyColumn(entity, path)) {
-						values.put(path, com.querydsl.sql.types.Null.DEFAULT);
+						data.add(new Entry<>(path, propertyValue));
+					} else {
+						processNullBindings(entity,data,path);
 					}
 				}
 			}
-			return values;
+			return ArrayListMap.wrap(data);
 		} catch (IllegalAccessException e) {
 			throw new QueryException(e);
 		}
 	}
+
+
 
 	private boolean isNullValue(Field field, Object propertyValue) {
 		return UnsavedValuePredicateFactory.create(field.getType(), field.getAnnotation(UnsavedValue.class)).test(propertyValue);
@@ -116,7 +154,7 @@ public class AdvancedMapper implements Mapper<Object> {
 		return columns;
 	}
 
-	protected boolean isPrimaryKeyColumn(RelationalPath<?> parent, Path<?> property) {
+	protected static boolean isPrimaryKeyColumn(RelationalPath<?> parent, Path<?> property) {
 		return parent.getPrimaryKey() != null && parent.getPrimaryKey().getLocalColumns().contains(property);
 	}
 }

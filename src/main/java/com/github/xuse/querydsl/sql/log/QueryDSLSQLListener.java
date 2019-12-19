@@ -24,6 +24,7 @@ import com.querydsl.sql.SQLListenerContext;
 import com.querydsl.sql.dml.SQLInsertBatch;
 import com.querydsl.sql.dml.SQLMergeBatch;
 import com.querydsl.sql.dml.SQLUpdateBatch;
+import com.querydsl.sql.types.Null;
 
 /**
  * 本类包含大量空方法，增加final修饰有利于虚拟机进行即时编译优化。
@@ -127,9 +128,8 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 				if(row>0) {
 					sb.append('\n');
 				}
-				sb.append('[');
 				SQLBindings bindings = list.get(row);
-				sb.append("Batch Params: (").append(row + 1).append('/').append(total).append(")\n");
+				sb.append("Batch Params: (").append(row + 1).append('/').append(total).append(")[");
 				List<Object> params = bindings.getNullFriendlyBindings();
 				for (int count = 0; count < params.size(); count++) {
 					Path<?> p = constantPaths.get(count);
@@ -196,7 +196,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		if (count > 0) {
 			sb.append(", ");
 		}
-		if (value == null) {
+		if (value == null || value==Null.DEFAULT) {
 			sb.append("null");
 			return;
 		}

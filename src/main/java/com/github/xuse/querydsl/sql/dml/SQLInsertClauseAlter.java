@@ -197,6 +197,23 @@ public class SQLInsertClauseAlter extends SQLInsertClause {
 			endContext(context);
 		}
 	}
+	
+	/**
+	 * 使用带NULLBinding的方式设置变量
+	 * @param beans
+	 * @return
+	 */
+	public SQLInsertClauseAlter populateBatch(Collection<Object> beans) {
+		for(Object obj:beans) {
+			Map<Path<?>, Object> values = AdvancedMapper.INSTANCE_NULLS_BINGIND.createMap(entity, obj);
+			for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+				set((Path) entry.getKey(), entry.getValue());
+			}
+			addBatch();
+		}
+		return this;
+		
+	}
 
 	/**
 	 * 覆盖父类实现，使用默认的AdvancedMapper，支持primtive类型字段，并可支持注解@UnsavedValue

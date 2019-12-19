@@ -72,7 +72,8 @@ public class MetadataBuilder<T> {
 	 */
 	private GenerateTypeDef generatedValue;
 	
-
+	private boolean qsPk;
+	
 	/**
 	 * 根据类上的注解，自动生成列名，数据类型大小，映射等信息 兼容部分JPA（注解同名不同包）
 	 * 
@@ -91,18 +92,18 @@ public class MetadataBuilder<T> {
 		Column anno=field.getAnnotation(Column.class);
 		Id id=field.getAnnotation(Id.class);
 		GeneratedValue gv=field.getAnnotation(GeneratedValue.class);
-		
-		
-		
-		
-		ColumnMetadataExt columnMapping = new ColumnMetadataExt(field, ColumnMetadata.named(columnName));
-	
-		
+		ColumnMetadataExt columnMapping = new ColumnMetadataExt(field, ColumnMetadata.named(columnName),qsPk || id!=null);
 		return columnMapping;
 	}
 
 	public MetadataBuilder(Field field, Path<T> expr, Field metadataField) {
 		this.field = field;
 		this.expr = expr;
+	}
+	
+
+
+	public void hasQueryDSLPk(boolean pk) {
+		this.qsPk=pk;
 	}
 }

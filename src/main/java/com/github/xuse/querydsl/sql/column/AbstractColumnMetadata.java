@@ -42,7 +42,7 @@ public abstract class AbstractColumnMetadata implements ColumnMapping {
 	/**
 	 * 是否为主键
 	 */
-	private boolean pk;
+	protected boolean pk;
 	
 	/**
 	 * 自定义类型

@@ -10,8 +10,9 @@ import com.querydsl.sql.ColumnMetadata;
  *
  */
 public class ColumnMetadataExt extends AbstractColumnMetadata{
-	public ColumnMetadataExt(Field field,ColumnMetadata metadata) {
+	public ColumnMetadataExt(Field field,ColumnMetadata metadata, boolean pk) {
 		super(field,metadata);
+		super.pk=pk;
 	}
 
 

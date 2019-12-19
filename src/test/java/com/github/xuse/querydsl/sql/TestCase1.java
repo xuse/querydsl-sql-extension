@@ -22,8 +22,8 @@ import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
+import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.expression.Streams;
-import com.github.xuse.querydsl.sql.log.QueryDSLDebugListener;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.querydsl.core.QueryResults;
@@ -211,6 +211,42 @@ public class TestCase1 {
 	public void testDeleteAll() {
 		QAaa t1 = QAaa.aaa;
 		factory.delete(t1).where(Expressions.TRUE).execute();
+	}
+	
+	@Test
+	public void testInertBatch() {
+		QAaa t1 = QAaa.aaa;
+		Aaa a = new Aaa();
+		a.setCreated(new Date());
+		a.setName("张三");
+		a.setTrantField("aaaa");
+		
+		
+		Aaa b = new Aaa();
+		b.setCreated(new Date());
+		b.setTrantField("bbbb");
+		
+		
+		Aaa c = new Aaa();
+		c.setName("sadfsfsdfs");;
+		
+		
+		Aaa d = new Aaa();
+		d.setName("李四");
+		d.setTaskStatus(TaskStatus.RUNNING);
+		d.setTrantField("dsaasdsa");
+		d.setVersion(123);
+		
+		List<Integer> x=factory.insert(t1).populateBatch(Arrays.asList(a,b,c,d)).executeWithKeys(Integer.class);
+		System.out.println(x);
+		
+		//虽然成功执行了，日志看上去像是batch，但实际上是分4个语句执行的，没起到batch效果。
+//		long num=insert.execute();
+//		System.out.println(num);
+		
+		
+		
+		
 	}
 
 	@Test

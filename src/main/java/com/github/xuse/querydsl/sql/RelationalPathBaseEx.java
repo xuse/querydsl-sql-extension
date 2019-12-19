@@ -120,7 +120,8 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 			}
 		}
 		Assert.notNull(field, "Can't find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
-		ColumnMetadataExt metadataExt=new ColumnMetadataExt(field, metadata);
+		boolean isPk=this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(expr);
+		ColumnMetadataExt metadataExt=new ColumnMetadataExt(field, metadata,isPk);
 		columnMetadata.put(expr, metadataExt);
 		return metadataExt;
 	}
@@ -306,6 +307,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 				}
 				Path<?> path = (Path<?>) field.get(this);
 				MetadataBuilder<?> metadata = getMetadataBuilder(beanType, path, field);
+				metadata.hasQueryDSLPk(this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(path));
 				this.addMetadata(path, metadata.build());
 			}
 		} catch (IllegalAccessException e) {
