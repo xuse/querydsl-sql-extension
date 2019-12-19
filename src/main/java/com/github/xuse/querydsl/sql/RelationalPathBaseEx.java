@@ -5,6 +5,7 @@ import static com.google.common.collect.ImmutableList.copyOf;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,8 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	private PrimaryKey<T> primaryKey;
 
 	private final Map<Path<?>, ColumnMetadataExt> columnMetadata = new LinkedHashMap<>();
+	
+	private final Map<String, Path<?>> bindingsMap = new HashMap<>();
 
 	private final List<ForeignKey<?>> foreignKeys = Lists.newArrayList();
 
@@ -123,11 +126,13 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 		boolean isPk=this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(expr);
 		ColumnMetadataExt metadataExt=new ColumnMetadataExt(field, metadata,isPk);
 		columnMetadata.put(expr, metadataExt);
+		bindingsMap.put(expr.getMetadata().getName(), expr);
 		return metadataExt;
 	}
 
 	protected <P extends Path<?>> P addMetadata(P path, ColumnMetadataExt metadata) {
 		columnMetadata.put(path, metadata);
+		bindingsMap.put(path.getMetadata().getName(), path);
 		return path;
 	}
 
@@ -336,6 +341,8 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	}
 	
 	
+	
+	
 //	public ColumnTypeBuilder(Column col, java.lang.reflect.Field field, Class<?> treatJavaType, FieldAnnotationProvider fieldProvider) {
 //		this.field = field;
 //		this.javaType = treatJavaType;
@@ -361,6 +368,11 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 //		}
 //	}
 	
+
+	@Override
+	public Path<?> getColumn(String name) {
+		return bindingsMap.get(name);
+	}
 
 	private static boolean isAssignableFrom(Class<?> cl1, Class<?> cl2) {
 		return normalize(cl1).isAssignableFrom(normalize(cl2));

@@ -30,7 +30,8 @@ public class AvsUserAuthority {
 
     @CustomType(value=StringAsDateTimeType.class,parameters = "MM/dd/yyyy HH:mm:ss")
     private String updateTime;
-
+    
+    @CustomType(AESEncryptedField.class)
     private String userId;
     
     @CustomType(EnumByCodeType.class)

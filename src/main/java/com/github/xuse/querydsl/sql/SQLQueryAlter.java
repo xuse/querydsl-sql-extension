@@ -34,12 +34,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.annotation.Condition;
+import com.github.xuse.querydsl.annotation.ConditionBean;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.result.Projection;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.google.common.collect.ImmutableList;
 import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.DefaultQueryMetadata;
@@ -55,7 +57,6 @@ import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
-import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.SimpleExpression;
@@ -703,16 +704,27 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		SQLQueryAlter<Tuple> newType = (SQLQueryAlter<Tuple>) this;
 		return newType;
 	}
-
+	
 	/**
-	 * 设置动态查询条件
-	 * 
-	 * @param enable
-	 * @param e
+	 * 设置Limit，如果传入值为null或零或负数，则设置无效
+	 * @param limit
 	 * @return
 	 */
-	public final SQLQueryAlter<T> whereIf(boolean enable, Predicate e) {
-		return enable ? queryMixin.where(e) : queryMixin.getSelf();
+	public final SQLQueryAlter<T> limitIf(Integer limit) {
+		if(limit==null  || limit<=0) {
+			return queryMixin.getSelf();
+		}
+		return queryMixin.limit(limit);
+	}
+	
+	/**
+	 * 设置Offset，如果传入值为null或负数，则设置无效
+	 */
+	public final SQLQueryAlter<T> offsetIf(Integer offset) {
+		if(offset==null || offset<0) {
+			return queryMixin.getSelf();
+		}
+		return queryMixin.offset(offset);
 	}
 
 	/**
@@ -722,158 +734,236 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * @param beanPath
 	 * @return
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public final <X> SQLQueryAlter<T> where(X conditionBean, IRelationPathEx<T> beanPath) {
 		List<Path<?>> pathes = beanPath.getColumns();
-		QBeanEx<X> qb = ProjectionsAlter.bean((Class<X>) conditionBean.getClass(), beanPath);
-
+		@SuppressWarnings({"unchecked" })
+		Class<X> clz=(Class<X>) conditionBean.getClass();
+		QBeanEx<X> qb = ProjectionsAlter.bean(clz, beanPath);
+		ConditionBean cb=conditionBean.getClass().getAnnotation(ConditionBean.class);
+		if(cb==null) {
+			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
+		}
+		
 		List<Expression<?>> exps = qb.getArgs();
 		Object[] values = qb.getBeanCodec().values(conditionBean);
 		int len = pathes.size();
 		Field[] fields = qb.getBeanCodec().getFields();
-
 		for (int i = 0; i < len; i++) {
 			Field field = fields[i];
 			if (field == null) {
 				continue;
 			}
-			Condition annotation = field.getAnnotation(Condition.class);
 			Object value = values[i];
-			if(annotation.value()==Ops.IN || annotation.value()==Ops.BETWEEN) {
-				if(!hasElements(value)) {
-					continue;
-				}
-			}else {
-				ColumnMapping cm = beanPath.getColumnMetadata(pathes.get(i));
-				if (cm.isUnsavedValue(value)) {
-					continue;
-				}
-			}
 			Expression<?> exp1=exps.get(i);
-			switch (annotation.value()) {
-			case IN:{
-				SimpleExpression exp = (SimpleExpression) exp1;
-				if(value instanceof Collection<?>) {
-					queryMixin.where(exp.in((Collection<?>)value));	
-				}else if(value instanceof Object[]) {
-					queryMixin.where(exp.in((Object[])value));
-				}
-				break;
+			ColumnMapping cm = beanPath.getColumnMetadata(pathes.get(i));
+			Condition annotation = field.getAnnotation(Condition.class);
+			if(annotation!=null && annotation.name().length()>0 && !cm.get().getName().equals(annotation.name())) {
+				throw Exceptions.illegalArgument("Field {}.{} has matched a property, but name of annotation pointer to another field.{} ", clz.getName(),field.getName(),annotation.name());
 			}
-			case EQ: {
-				SimpleExpression exp = (SimpleExpression) exp1;
-				queryMixin.where(exp.eq(value));
-				break;
+			appendCondition(field,value,exp1,cm, annotation==null? Ops.EQ :annotation.value());
+		}
+		for(String key:cb.additional()) {
+			Field field=getField(clz,key);
+			if(field==null) {
+				logger.error("@ConditionBean on{} field {} not found.",clz,key);
+				continue;
 			}
-			case LT: {
-				if(exp1 instanceof NumberExpression) {
-					NumberExpression exp=(NumberExpression)exp1;
-					queryMixin.where(exp.lt((Number) value));	
-				}else {
-					ComparableExpression exp = (ComparableExpression) exp1;
-					queryMixin.where(exp.lt((Comparable) value));
-				}
-				break;
+			field.setAccessible(true);
+			Condition annotation = field.getAnnotation(Condition.class);
+			if(annotation==null || annotation.name().isEmpty()) {
+				throw Exceptions.illegalArgument("Miss real field name in annotation, please check @Condition annotation. field is {}", field);
 			}
-			case LOE: {
-				if(exp1 instanceof NumberExpression) {
-					NumberExpression exp=(NumberExpression)exp1;
-					queryMixin.where(exp.loe((Number) value));	
-				}else {
-					ComparableExpression exp = (ComparableExpression) exp1;
-					queryMixin.where(exp.loe((Comparable) value));
-				}
-				break;
+			Path<?> path=beanPath.getColumn(annotation.name());
+			if(path==null) {
+				throw Exceptions.illegalArgument("can't find path {} in {}, which annotated in field {}",annotation.name(),beanPath.getType(),field);
 			}
-			case GT:{
-				if(exp1 instanceof NumberExpression) {
-					NumberExpression exp=(NumberExpression)exp1;
-					queryMixin.where(exp.gt((Number) value));	
-				}else {
-					ComparableExpression exp = (ComparableExpression) exp1;
-					queryMixin.where(exp.gt((Comparable) value));
-				}
-				break;
+			ColumnMapping cm = beanPath.getColumnMetadata(path);
+			try {
+				Object value = field.get(conditionBean);
+				appendCondition(field,value,(Expression<?>)path,cm, annotation==null? Ops.EQ :annotation.value());
+			} catch (IllegalAccessException e) {
+				throw new IllegalStateException(e);
 			}
-			case GOE:{
-				if(exp1 instanceof NumberExpression) {
-					NumberExpression exp=(NumberExpression)exp1;
-					queryMixin.where(exp.goe((Number) value));	
-				}else {
-					ComparableExpression exp = (ComparableExpression) exp1;
-					queryMixin.where(exp.goe((Comparable) value));
-				}
-				break;
+		}
+		if(!cb.limitField().isEmpty()) {
+			Number limit=getNumber(cb.limitField(),conditionBean);
+			if(limit!=null) {
+				limitIf(limit.intValue());
 			}
-			case BETWEEN:{
-				ComparableExpression exp = (ComparableExpression) exp1;
-				if(value instanceof Collection<?>) {
-					List<? extends Comparable> list=toList((Collection<Comparable>)value);
-					if(list.size()<2) {
-						throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
-					}
-					queryMixin.where(exp.between(list.get(0),list.get(1)));
-				}else if(value instanceof Object[]) {
-					Object[] bvalue=(Object[])value;
-					if(bvalue.length<2) {
-						throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
-					}
-					queryMixin.where(exp.in((Comparable)bvalue[0],(Comparable)bvalue[1]));
-				}
-				break;
-			}
-			case STARTS_WITH:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.startsWith(String.valueOf(value)));
-				break;
-			}
-			case STARTS_WITH_IC:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.startsWithIgnoreCase(String.valueOf(value)));
-				break;
-			}
-			case ENDS_WITH:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.endsWith(String.valueOf(value)));
-				break;
-			}
-			case ENDS_WITH_IC:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.endsWithIgnoreCase(String.valueOf(value)));
-				break;
-			}
-			case STRING_CONTAINS:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.contains(String.valueOf(value)));
-				break;
-			}
-			case LIKE:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.like(String.valueOf(value)));
-				break;
-			}
-			case LIKE_IC:{
-				StringExpression exp=(StringExpression)exp1;
-				queryMixin.where(exp.likeIgnoreCase(String.valueOf(value)));
-				break;
-			}
-			case IS_NULL:	{
-				SimpleExpression exp = (SimpleExpression) exp1;
-				queryMixin.where(exp.isNull());
-				break;
-			}
-			case IS_NOT_NULL:{
-				SimpleExpression exp = (SimpleExpression) exp1;
-				queryMixin.where(exp.isNotNull());
-				break;
-			}
-			default:
-				throw new UnsupportedOperationException("Ops." + annotation.value() + " is not supported on field " + field.getDeclaringClass().getName() + "." + field.getName());
+		}
+		if(!cb.offsetField().isEmpty()) {
+			Number offset=getNumber(cb.offsetField(), conditionBean);
+			if(offset!=null) {
+				offsetIf(offset.intValue());
 			}
 		}
 		return this;
 	}
 
+	private Number getNumber(String limitField, Object conditionBean) {
+		Field field=getField(conditionBean.getClass(),limitField);
+		if(field==null) {
+			throw Exceptions.illegalArgument("Can not find limit field {}", limitField);
+		}
+		field.setAccessible(true);
+		try {
+			Object value = field.get(conditionBean);
+			if(value instanceof Number) {
+				return (Number)value;
+			}
+			return null;
+		} catch (IllegalAccessException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private Field getField(Class<?> clz, String key) {
+		Field field = null;
+		try {
+			field=clz.getDeclaredField(key);
+		}catch(NoSuchFieldException e) {
+		}
+		if(field!=null || clz.getSuperclass()==Object.class) {
+			return field;
+		}
+		return getField(clz.getSuperclass(),key);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void appendCondition(Field field, Object value,Expression<?> exp1,ColumnMapping cm,Ops ops) {
+		
+		if(ops==Ops.IN || ops==Ops.BETWEEN) {
+			if(!hasElements(value)) {
+				return;
+			}
+		}else {
+			if (cm.isUnsavedValue(value)) {
+				return;
+			}
+		}
+		switch (ops) {
+		case IN:{
+			SimpleExpression exp = (SimpleExpression) exp1;
+			if(value instanceof Collection<?>) {
+				queryMixin.where(exp.in((Collection<?>)value));	
+			}else if(value instanceof Object[]) {
+				queryMixin.where(exp.in((Object[])value));
+			}
+			break;
+		}
+		case EQ: {
+			SimpleExpression exp = (SimpleExpression) exp1;
+			queryMixin.where(exp.eq(value));
+			break;
+		}
+		case LT: {
+			if(exp1 instanceof NumberExpression) {
+				NumberExpression exp=(NumberExpression)exp1;
+				queryMixin.where(exp.lt((Number) value));	
+			}else {
+				ComparableExpression exp = (ComparableExpression) exp1;
+				queryMixin.where(exp.lt((Comparable) value));
+			}
+			break;
+		}
+		case LOE: {
+			if(exp1 instanceof NumberExpression) {
+				NumberExpression exp=(NumberExpression)exp1;
+				queryMixin.where(exp.loe((Number) value));	
+			}else {
+				ComparableExpression exp = (ComparableExpression) exp1;
+				queryMixin.where(exp.loe((Comparable) value));
+			}
+			break;
+		}
+		case GT:{
+			if(exp1 instanceof NumberExpression) {
+				NumberExpression exp=(NumberExpression)exp1;
+				queryMixin.where(exp.gt((Number) value));	
+			}else {
+				ComparableExpression exp = (ComparableExpression) exp1;
+				queryMixin.where(exp.gt((Comparable) value));
+			}
+			break;
+		}
+		case GOE:{
+			if(exp1 instanceof NumberExpression) {
+				NumberExpression exp=(NumberExpression)exp1;
+				queryMixin.where(exp.goe((Number) value));	
+			}else {
+				ComparableExpression exp = (ComparableExpression) exp1;
+				queryMixin.where(exp.goe((Comparable) value));
+			}
+			break;
+		}
+		case BETWEEN:{
+			ComparableExpression exp = (ComparableExpression) exp1;
+			if(value instanceof Collection<?>) {
+				List<? extends Comparable> list=toList((Collection<Comparable>)value);
+				if(list.size()<2) {
+					throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
+				}
+				queryMixin.where(exp.between(list.get(0),list.get(1)));
+			}else if(value instanceof Object[]) {
+				Object[] bvalue=(Object[])value;
+				if(bvalue.length<2) {
+					throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
+				}
+				queryMixin.where(exp.in((Comparable)bvalue[0],(Comparable)bvalue[1]));
+			}
+			break;
+		}
+		case STARTS_WITH:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.startsWith(String.valueOf(value)));
+			break;
+		}
+		case STARTS_WITH_IC:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.startsWithIgnoreCase(String.valueOf(value)));
+			break;
+		}
+		case ENDS_WITH:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.endsWith(String.valueOf(value)));
+			break;
+		}
+		case ENDS_WITH_IC:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.endsWithIgnoreCase(String.valueOf(value)));
+			break;
+		}
+		case STRING_CONTAINS:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.contains(String.valueOf(value)));
+			break;
+		}
+		case LIKE:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.like(String.valueOf(value)));
+			break;
+		}
+		case LIKE_IC:{
+			StringExpression exp=(StringExpression)exp1;
+			queryMixin.where(exp.likeIgnoreCase(String.valueOf(value)));
+			break;
+		}
+		case IS_NULL:	{
+			SimpleExpression exp = (SimpleExpression) exp1;
+			queryMixin.where(exp.isNull());
+			break;
+		}
+		case IS_NOT_NULL:{
+			SimpleExpression exp = (SimpleExpression) exp1;
+			queryMixin.where(exp.isNotNull());
+			break;
+		}
+		default:
+			throw new UnsupportedOperationException("Ops." + ops + " is not supported on field " + field.getDeclaringClass().getName() + "." + field.getName());
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes"})
 	private boolean hasElements(Object value) {
 		if(value==null) {
 			return false;
@@ -887,6 +977,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		return true;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private List<? extends Comparable> toList(Collection<? extends Comparable> value) {
 		if(value instanceof List) {
 			return (List<Comparable>)value;

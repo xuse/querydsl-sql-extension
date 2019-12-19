@@ -350,8 +350,11 @@ public class TestCase1 {
 		AvsAuthParams p=new AvsAuthParams();
 		p.setAuthContent("123");
 		p.setAuthType(0);
-		p.setCreateTime(new Date[] {new Date(0),new Date()});
-		
+		p.setLimit(100);
+		p.setOffset(2);
+		p.setDateGt(new Date());
+		p.setDateLoe(new Date());
+//		p.setCreateTime(new Date[] {new Date(0),new Date()});
 		List<AvsUserAuthority> values= factory.selectFrom(t).where(p, t).fetch();
 		System.out.println(values);
 		

@@ -34,4 +34,12 @@ public interface IRelationPathEx<T> extends RelationalPath<T>{
 	 * @return
 	 */
 	ColumnMapping getColumnMetadata(Path<?> path);
+	
+	
+	/**
+	 * 根据名称获得path
+	 * @param name
+	 * @return
+	 */
+	Path<?> getColumn(String name);
 }

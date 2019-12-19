@@ -3,11 +3,11 @@ package com.github.xuse.querydsl.entity;
 import java.util.Date;
 
 import com.github.xuse.querydsl.annotation.Condition;
-import com.github.xuse.querydsl.sql.ConditionBean;
+import com.github.xuse.querydsl.annotation.ConditionBean;
 import com.querydsl.core.types.Ops;
 
-//@Builder
-public class AvsAuthParams implements ConditionBean {
+@ConditionBean(additional = {"dateGt","dateLoe"},limitField = "limit",offsetField = "offset")
+public class AvsAuthParams {
 	@Condition(Ops.STARTS_WITH)
 	private String authContent;
 	@Condition(Ops.GT)
@@ -17,6 +17,17 @@ public class AvsAuthParams implements ConditionBean {
 
 	@Condition(Ops.BETWEEN)
 	private Date[] createTime;
+	
+	private Integer limit;
+	
+	private Integer offset;
+	
+	@Condition(value=Ops.GT,name="createTime")
+	private Date dateGt;
+	
+	@Condition(value=Ops.LOE,name="createTime")
+	private Date dateLoe;
+	
 
 	public String getAuthContent() {
 		return authContent;
@@ -50,4 +61,35 @@ public class AvsAuthParams implements ConditionBean {
 		this.createTime = createTime;
 	}
 
+	public Integer getLimit() {
+		return limit;
+	}
+
+	public void setLimit(Integer limit) {
+		this.limit = limit;
+	}
+
+	public Integer getOffset() {
+		return offset;
+	}
+
+	public void setOffset(Integer offset) {
+		this.offset = offset;
+	}
+
+	public Date getDateGt() {
+		return dateGt;
+	}
+
+	public void setDateGt(Date dateGt) {
+		this.dateGt = dateGt;
+	}
+
+	public Date getDateLoe() {
+		return dateLoe;
+	}
+
+	public void setDateLoe(Date dateLoe) {
+		this.dateLoe = dateLoe;
+	}
 }
