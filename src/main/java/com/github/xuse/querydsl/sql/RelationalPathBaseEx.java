@@ -43,7 +43,7 @@ import com.querydsl.sql.SchemaAndTable;
  * @param <T>
  */
 @SuppressWarnings("rawtypes")
-public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPath<T>, IRelationPathEx {
+public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPathEx<T> {
 	private static final long serialVersionUID = -3351359519644416084L;
 	@Nullable
 	private PrimaryKey<T> primaryKey;

@@ -65,7 +65,7 @@ public class ConfigurationEx {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public void registerExType(IRelationPathEx path) {
+	public void registerExType(IRelationPathEx<?> path) {
 		if (registeredclasses.add(path)) {
 			for (Path<?> p : path.getColumns()) {
 				ColumnMapping c = path.getColumnMetadata(p);

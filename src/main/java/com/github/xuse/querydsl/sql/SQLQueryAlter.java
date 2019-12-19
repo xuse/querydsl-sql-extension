@@ -15,12 +15,14 @@ package com.github.xuse.querydsl.sql;
 
 import static com.google.common.collect.Lists.newArrayList;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +33,11 @@ import javax.xml.ws.Holder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuse.querydsl.annotation.Condition;
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.column.ColumnMapping;
+import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
+import com.github.xuse.querydsl.sql.expression.QBeanEx;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.result.Projection;
 import com.google.common.collect.ImmutableList;
@@ -45,10 +51,15 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
+import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.ComparableExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.SimpleExpression;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.AbstractSQLQuery;
@@ -72,8 +83,7 @@ import com.querydsl.sql.StatementOptions;
 public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private static final long serialVersionUID = -3451422354253107107L;
 	private static final Logger logger = LoggerFactory.getLogger(SQLQueryAlter.class);
-	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
-			", count(*) over() ");
+	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION, ", count(*) over() ");
 
 	////////////// 覆盖检查字段开始 <p>////////////
 	/*
@@ -83,9 +93,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 */
 
 	private SQLListenerContext parentContext;
-	
+
 	private final ConfigurationEx configEx;
-	
 
 	@Nullable
 	private Provider<Connection> connProvider;
@@ -96,43 +105,43 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	public SQLQueryAlter() {
 		super((Connection) null, new Configuration(SQLTemplates.DEFAULT), new DefaultQueryMetadata());
-		this.configEx=new ConfigurationEx(super.getConfiguration());
+		this.configEx = new ConfigurationEx(super.getConfiguration());
 	}
 
 	public SQLQueryAlter(Connection conn, ConfigurationEx configuration, QueryMetadata metadata) {
 		super(conn, configuration.get(), metadata);
 		this.conn = conn;
-		this.configEx=configuration;
+		this.configEx = configuration;
 	}
 
 	public SQLQueryAlter(Connection conn, ConfigurationEx configuration) {
 		super(conn, configuration.get());
 		this.conn = conn;
-		this.configEx=configuration;
+		this.configEx = configuration;
 	}
 
 	public SQLQueryAlter(Connection conn, SQLTemplates templates, QueryMetadata metadata) {
 		super(conn, new Configuration(templates), metadata);
 		this.conn = conn;
-		this.configEx=new ConfigurationEx(super.getConfiguration());
+		this.configEx = new ConfigurationEx(super.getConfiguration());
 	}
 
 	public SQLQueryAlter(Connection conn, SQLTemplates templates) {
 		super(conn, new Configuration(templates));
 		this.conn = conn;
-		this.configEx=new ConfigurationEx(super.getConfiguration());
+		this.configEx = new ConfigurationEx(super.getConfiguration());
 	}
 
 	public SQLQueryAlter(Provider<Connection> connProvider, ConfigurationEx configuration, QueryMetadata metadata) {
 		super(connProvider, configuration.get(), metadata);
 		this.connProvider = connProvider;
-		this.configEx=configuration;
+		this.configEx = configuration;
 	}
 
 	public SQLQueryAlter(Provider<Connection> connProvider, ConfigurationEx configuration) {
 		super(connProvider, configuration.get(), new DefaultQueryMetadata());
 		this.connProvider = connProvider;
-		this.configEx=configuration;
+		this.configEx = configuration;
 	}
 
 	@Override
@@ -316,6 +325,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		} catch (SQLException e) {
 			onException(context, e);
 			throw configuration.translate(queryString, constants, e);
+		} catch (RuntimeException e) {
+			onException(context, e);
+			throw e;
 		} finally {
 			endContext(context);
 			reset();
@@ -480,34 +492,34 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	/**
 	 * 设置本次查询载入的最大行数
+	 * 
 	 * @param maxRows
 	 */
 	public SQLQueryAlter<T> setMaxRows(int maxRows) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(),
-				options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(), options.getFetchSize()));
 		return this;
 	}
-	
+
 	/**
 	 * 设置本次查询每批获取大小
+	 * 
 	 * @param fetchSize
 	 */
 	public SQLQueryAlter<T> setFetchSisze(int fetchSize) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), options.getQueryTimeout(),
-				fetchSize));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), options.getQueryTimeout(), fetchSize));
 		return this;
 	}
-	
+
 	/**
 	 * 设置查询超时（秒）
+	 * 
 	 * @param queryTimeout
 	 */
 	public SQLQueryAlter<T> setQueryTimeout(int queryTimeout) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout,
-				options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout, options.getFetchSize()));
 		return this;
 	}
 
@@ -631,6 +643,11 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			reset();
 			endContext(context);
 			throw configuration.translate(queryString, constants, e);
+		} catch (RuntimeException e) {
+			onException(context, e);
+			reset();
+			endContext(context);
+			throw e;
 		}
 	}
 
@@ -665,7 +682,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
-		if(this.configEx.getSlowSqlWarnMillis()<=cost) {
+		if (this.configEx.getSlowSqlWarnMillis() <= cost) {
 			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
 		}
 		listeners.executed(context);
@@ -689,11 +706,194 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	/**
 	 * 设置动态查询条件
+	 * 
 	 * @param enable
 	 * @param e
 	 * @return
 	 */
-    public final SQLQueryAlter<T> whereIf(boolean enable,Predicate e) {
-    	return enable? queryMixin.where(e):queryMixin.getSelf();
-    }
+	public final SQLQueryAlter<T> whereIf(boolean enable, Predicate e) {
+		return enable ? queryMixin.where(e) : queryMixin.getSelf();
+	}
+
+	/**
+	 * 支持使用一个参数Bean自动拼装查询条件。
+	 * @param <X>
+	 * @param conditionBean
+	 * @param beanPath
+	 * @return
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public final <X> SQLQueryAlter<T> where(X conditionBean, IRelationPathEx<T> beanPath) {
+		List<Path<?>> pathes = beanPath.getColumns();
+		QBeanEx<X> qb = ProjectionsAlter.bean((Class<X>) conditionBean.getClass(), beanPath);
+
+		List<Expression<?>> exps = qb.getArgs();
+		Object[] values = qb.getBeanCodec().values(conditionBean);
+		int len = pathes.size();
+		Field[] fields = qb.getBeanCodec().getFields();
+
+		for (int i = 0; i < len; i++) {
+			Field field = fields[i];
+			if (field == null) {
+				continue;
+			}
+			Condition annotation = field.getAnnotation(Condition.class);
+			Object value = values[i];
+			if(annotation.value()==Ops.IN || annotation.value()==Ops.BETWEEN) {
+				if(!hasElements(value)) {
+					continue;
+				}
+			}else {
+				ColumnMapping cm = beanPath.getColumnMetadata(pathes.get(i));
+				if (cm.isUnsavedValue(value)) {
+					continue;
+				}
+			}
+			Expression<?> exp1=exps.get(i);
+			switch (annotation.value()) {
+			case IN:{
+				SimpleExpression exp = (SimpleExpression) exp1;
+				if(value instanceof Collection<?>) {
+					queryMixin.where(exp.in((Collection<?>)value));	
+				}else if(value instanceof Object[]) {
+					queryMixin.where(exp.in((Object[])value));
+				}
+				break;
+			}
+			case EQ: {
+				SimpleExpression exp = (SimpleExpression) exp1;
+				queryMixin.where(exp.eq(value));
+				break;
+			}
+			case LT: {
+				if(exp1 instanceof NumberExpression) {
+					NumberExpression exp=(NumberExpression)exp1;
+					queryMixin.where(exp.lt((Number) value));	
+				}else {
+					ComparableExpression exp = (ComparableExpression) exp1;
+					queryMixin.where(exp.lt((Comparable) value));
+				}
+				break;
+			}
+			case LOE: {
+				if(exp1 instanceof NumberExpression) {
+					NumberExpression exp=(NumberExpression)exp1;
+					queryMixin.where(exp.loe((Number) value));	
+				}else {
+					ComparableExpression exp = (ComparableExpression) exp1;
+					queryMixin.where(exp.loe((Comparable) value));
+				}
+				break;
+			}
+			case GT:{
+				if(exp1 instanceof NumberExpression) {
+					NumberExpression exp=(NumberExpression)exp1;
+					queryMixin.where(exp.gt((Number) value));	
+				}else {
+					ComparableExpression exp = (ComparableExpression) exp1;
+					queryMixin.where(exp.gt((Comparable) value));
+				}
+				break;
+			}
+			case GOE:{
+				if(exp1 instanceof NumberExpression) {
+					NumberExpression exp=(NumberExpression)exp1;
+					queryMixin.where(exp.goe((Number) value));	
+				}else {
+					ComparableExpression exp = (ComparableExpression) exp1;
+					queryMixin.where(exp.goe((Comparable) value));
+				}
+				break;
+			}
+			case BETWEEN:{
+				ComparableExpression exp = (ComparableExpression) exp1;
+				if(value instanceof Collection<?>) {
+					List<? extends Comparable> list=toList((Collection<Comparable>)value);
+					if(list.size()<2) {
+						throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
+					}
+					queryMixin.where(exp.between(list.get(0),list.get(1)));
+				}else if(value instanceof Object[]) {
+					Object[] bvalue=(Object[])value;
+					if(bvalue.length<2) {
+						throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
+					}
+					queryMixin.where(exp.in((Comparable)bvalue[0],(Comparable)bvalue[1]));
+				}
+				break;
+			}
+			case STARTS_WITH:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.startsWith(String.valueOf(value)));
+				break;
+			}
+			case STARTS_WITH_IC:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.startsWithIgnoreCase(String.valueOf(value)));
+				break;
+			}
+			case ENDS_WITH:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.endsWith(String.valueOf(value)));
+				break;
+			}
+			case ENDS_WITH_IC:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.endsWithIgnoreCase(String.valueOf(value)));
+				break;
+			}
+			case STRING_CONTAINS:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.contains(String.valueOf(value)));
+				break;
+			}
+			case LIKE:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.like(String.valueOf(value)));
+				break;
+			}
+			case LIKE_IC:{
+				StringExpression exp=(StringExpression)exp1;
+				queryMixin.where(exp.likeIgnoreCase(String.valueOf(value)));
+				break;
+			}
+			case IS_NULL:	{
+				SimpleExpression exp = (SimpleExpression) exp1;
+				queryMixin.where(exp.isNull());
+				break;
+			}
+			case IS_NOT_NULL:{
+				SimpleExpression exp = (SimpleExpression) exp1;
+				queryMixin.where(exp.isNotNull());
+				break;
+			}
+			default:
+				throw new UnsupportedOperationException("Ops." + annotation.value() + " is not supported on field " + field.getDeclaringClass().getName() + "." + field.getName());
+			}
+		}
+		return this;
+	}
+
+	private boolean hasElements(Object value) {
+		if(value==null) {
+			return false;
+		}
+		if(value instanceof Collection) {
+			return ((Collection) value).isEmpty();
+		}
+		if(value instanceof Object[]) {
+			return ((Object[])value).length==0;
+		}
+		return true;
+	}
+
+	private List<? extends Comparable> toList(Collection<? extends Comparable> value) {
+		if(value instanceof List) {
+			return (List<Comparable>)value;
+		}else {
+			return new ArrayList<>(value);
+		}
+		
+	}
+
 }

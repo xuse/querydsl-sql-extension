@@ -13,10 +13,12 @@
  */
 package com.github.xuse.querydsl.sql.expression;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.github.xuse.querydsl.sql.IRelationPathEx;
 import com.google.common.collect.ImmutableMap;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
@@ -87,6 +89,21 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	 */
 	protected QBeanEx(Class<? extends T> type, Expression<?>... args) {
 		this(type, createBindings(args));
+	}
+	
+	/**
+	 * 构造
+	 * @param type
+	 * @param ex
+	 */
+	protected QBeanEx(Class<? extends T> type, IRelationPathEx<?> ex) {
+		super(type);
+		Map<String, Expression<?>> bindings = new HashMap<>();
+		for(Path<?> p:ex.getColumns()) {
+			bindings.put(p.getMetadata().getName(),(Expression<?>)	p);
+		}
+		this.bindings=ImmutableMap.copyOf(bindings);
+		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), this.bindings.keySet().asList());
 	}
 
 	/**

@@ -26,4 +26,11 @@ public class FieldProperty {
 	public Field getField() {
 		return field;
 	}
+
+	@Override
+	public String toString() {
+		return "getter=" + getter + ", setter=" + setter + ", field=" + field;
+	}
+	
+	
 }

@@ -17,12 +17,12 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.entity.Aaa;
+import com.github.xuse.querydsl.entity.AvsAuthParams;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
-import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.expression.Streams;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
@@ -333,6 +333,7 @@ public class TestCase1 {
 		a.setName("张222");
 		a.setGender(Gender.FEMALE);
 		a.setCreated(new Timestamp(System.currentTimeMillis()));
+		
 		int id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
 		System.out.println("id=" + id);
 
@@ -342,4 +343,19 @@ public class TestCase1 {
 
 	}
 
+	
+	@Test
+	public void testConditionBean() {
+		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
+		AvsAuthParams p=new AvsAuthParams();
+		p.setAuthContent("123");
+		p.setAuthType(0);
+		p.setCreateTime(new Date[] {new Date(0),new Date()});
+		
+		List<AvsUserAuthority> values= factory.selectFrom(t).where(p, t).fetch();
+		System.out.println(values);
+		
+		
+		
+	}
 }

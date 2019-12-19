@@ -203,7 +203,7 @@ public class SQLInsertClauseAlter extends SQLInsertClause {
 	 * @param beans
 	 * @return
 	 */
-	public SQLInsertClauseAlter populateBatch(Collection<Object> beans) {
+	public SQLInsertClauseAlter populateBatch(Collection<?> beans) {
 		for(Object obj:beans) {
 			Map<Path<?>, Object> values = AdvancedMapper.INSTANCE_NULLS_BINGIND.createMap(entity, obj);
 			for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
