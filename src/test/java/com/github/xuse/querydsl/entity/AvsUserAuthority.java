@@ -8,6 +8,7 @@ import javax.annotation.Generated;
 import com.github.xuse.querydsl.annotation.CustomType;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.types.EnumByCodeType;
+import com.github.xuse.querydsl.types.JSONObjectType;
 import com.github.xuse.querydsl.types.StringAsDateTimeType;
 
 /**
@@ -36,6 +37,9 @@ public class AvsUserAuthority {
     
     @CustomType(EnumByCodeType.class)
 	private Gender gender;
+    
+    @CustomType(JSONObjectType.class)
+    private CaAsset asserts;
 	
 	private Map<String,String> map;
 
@@ -117,6 +121,16 @@ public class AvsUserAuthority {
 
 	public void setMap(Map<String, String> map) {
 		this.map = map;
+	}
+	
+	
+
+	public CaAsset getAsserts() {
+		return asserts;
+	}
+
+	public void setAsserts(CaAsset asserts) {
+		this.asserts = asserts;
 	}
 
 	@Override

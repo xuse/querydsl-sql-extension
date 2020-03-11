@@ -52,6 +52,8 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
     public final EnumPath<Gender> gender =super.createEnum("gender",Gender.class);
     
 	public final SimplePath<Map<String,String>> map = createSimple("map", Map.class);
+	
+	public final SimplePath<CaAsset> asserts = createSimple("asserts", CaAsset.class);
     
     public final com.querydsl.sql.PrimaryKey<AvsUserAuthority> sql181012120126200 = createPrimaryKey(id);
 
@@ -91,6 +93,7 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
         addMetadata(updateTime, ColumnMetadata.named("UPDATE_TIME").withIndex(8).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
         addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(9).ofType(Types.VARCHAR).withSize(64));
         addMetadata(map, ColumnMetadata.named("MAP_DATA").withIndex(10).ofType(Types.VARCHAR).withSize(512)).withCustomType(new JSONObjectType<Map>(Map.class));
+        addMetadata(asserts, ColumnMetadata.named("ASSERTS").withIndex(9).ofType(Types.VARCHAR).withSize(256));
     }
 }
 

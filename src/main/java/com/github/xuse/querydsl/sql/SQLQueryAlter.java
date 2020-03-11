@@ -417,7 +417,13 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			int offset = 0;
 			Object[] args = new Object[argSize];
 			for (int i = 0; i < args.length; i++) {
-				args[i] = configuration.get(rs, argPath.get(i), offset + i + 1, argTypes.get(i));
+				try{
+					args[i] = configuration.get(rs, argPath.get(i), offset + i + 1, argTypes.get(i));
+				}catch(SQLException ex) {
+					throw ex;
+				}catch(Exception ex) {
+					throw new SQLException("get field:"+argPath.get(i)+"error",ex);
+				}
 			}
 			return c.newInstance(args);
 		}
