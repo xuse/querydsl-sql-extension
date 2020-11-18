@@ -72,6 +72,8 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
                 stmt = createStatement();
                 if(queryTimeout!=null) {
                 	stmt.setQueryTimeout(queryTimeout);
+                }else if(configEx.getDefaultQueryTimeout()>0){
+					stmt.setQueryTimeout(configEx.getDefaultQueryTimeout());
                 }
                 listeners.notifyDelete(entity, metadata);
 
@@ -85,7 +87,11 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
                 if(queryTimeout!=null) {
                 	for(PreparedStatement st:stmts) {
                     	st.setQueryTimeout(queryTimeout);
-                    }	
+                    }
+                }else if(configEx.getDefaultQueryTimeout()>0){
+                	for(PreparedStatement st:stmts) {
+                		st.setQueryTimeout(configEx.getDefaultQueryTimeout());
+                    }
                 }
                 listeners.notifyDeletes(entity, batches);
 

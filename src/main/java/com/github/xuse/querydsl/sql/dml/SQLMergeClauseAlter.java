@@ -94,6 +94,8 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 					stmt = createStatement(true);
 					if (queryTimeout != null) {
 						stmt.setQueryTimeout(queryTimeout);
+					}else if(configEx.getDefaultQueryTimeout()>0){
+						stmt.setQueryTimeout(configEx.getDefaultQueryTimeout());
 					}
 					listeners.notifyMerge(entity, metadata, keys, columns, values, subQuery);
 
@@ -110,6 +112,8 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 					stmt = stmts.iterator().next();
 					if (queryTimeout != null) {
 						stmt.setQueryTimeout(queryTimeout);
+					}else if(configEx.getDefaultQueryTimeout()>0){
+						stmt.setQueryTimeout(configEx.getDefaultQueryTimeout());
 					}
 					listeners.notifyMerges(entity, metadata, batches);
 
@@ -139,6 +143,8 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 					SQLUpdateClauseAlter update = new SQLUpdateClauseAlter(connection(), configEx, entity);
 					if (queryTimeout != null) {
 						update.setQueryTimeout(queryTimeout);
+					}else if(configEx.getDefaultQueryTimeout()>0){
+						update.setQueryTimeout(configEx.getDefaultQueryTimeout());
 					}
 					update.addListener(listeners);
 					//必须在populate之前执行

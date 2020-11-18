@@ -173,6 +173,8 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
         PreparedStatement stmt = connection().prepareStatement(queryString);
         if(queryTimeout!=null) {
         	stmt.setQueryTimeout(queryTimeout);
+        }else if(configEx.getDefaultQueryTimeout()>0){
+			stmt.setQueryTimeout(configEx.getDefaultQueryTimeout());
         }
         setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
         context.addPreparedStatement(stmt);

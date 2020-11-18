@@ -546,6 +546,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 		if (statementOptions.getQueryTimeout() != null) {
 			statement.setQueryTimeout(statementOptions.getQueryTimeout());
+		}else if(configEx.getDefaultQueryTimeout()>0){
+			statement.setQueryTimeout(configEx.getDefaultQueryTimeout());
 		}
 		if (statementOptions.getMaxRows() != null) {
 			statement.setMaxRows(statementOptions.getMaxRows());

@@ -38,6 +38,12 @@ public class ConfigurationEx {
 	 * 就会记录为错误日志
 	 */
 	private long slowSqlWarnMillis = 10000;
+	
+	
+	/**
+	 * 默认的查询最大超时时间
+	 */
+	private int defaultQueryTimeout;
 
 	/**
 	 * 已完成类型注册的Class
@@ -119,7 +125,6 @@ public class ConfigurationEx {
 
 	public void register(Type<?> type) {
 		configuration.register(type);
-
 	}
 
 	public void registerType(String typeName, Class<?> clazz) {
@@ -136,5 +141,13 @@ public class ConfigurationEx {
 
 	public void setSlowSqlWarnMillis(long slowSqlWarnMillis) {
 		this.slowSqlWarnMillis = slowSqlWarnMillis;
+	}
+
+	public int getDefaultQueryTimeout() {
+		return defaultQueryTimeout;
+	}
+
+	public void setDefaultQueryTimeout(int defaultQueryTimeout) {
+		this.defaultQueryTimeout = defaultQueryTimeout;
 	}
 }
