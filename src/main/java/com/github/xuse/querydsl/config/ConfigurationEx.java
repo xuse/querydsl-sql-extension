@@ -48,7 +48,7 @@ public class ConfigurationEx {
 	/**
 	 * 已完成类型注册的Class
 	 */
-	private final Set<IRelationPathEx> registeredclasses = new HashSet<>();
+	private final Set<IRelationPathEx<?>> registeredclasses = new HashSet<>();
 
 	public Configuration get() {
 		return configuration;
@@ -70,6 +70,10 @@ public class ConfigurationEx {
 		configuration.addListener(listener);
 	}
 
+	/**
+	 * 注册一个表映射实例。通过扫描该对象上的注解，来识别表定义中的信息。
+	 * @param path
+	 */
 	@SuppressWarnings("rawtypes")
 	public void registerExType(IRelationPathEx<?> path) {
 		if (registeredclasses.add(path)) {
@@ -139,6 +143,10 @@ public class ConfigurationEx {
 		return slowSqlWarnMillis;
 	}
 
+	/**
+	 * 设置一个慢SQL监测阈值。当SQL执行耗时大于这个数值时，日志打印警告。
+	 * @param slowSqlWarnMillis 慢SQL阈值，单位毫秒
+	 */
 	public void setSlowSqlWarnMillis(long slowSqlWarnMillis) {
 		this.slowSqlWarnMillis = slowSqlWarnMillis;
 	}
@@ -147,6 +155,10 @@ public class ConfigurationEx {
 		return defaultQueryTimeout;
 	}
 
+	/**
+	 * 设置通用的查询超时时间，对应JDBC的查询超时，查询超时后让数据库放弃任务，保护数据库不被慢查挂死。
+	 * @param defaultQueryTimeout 超时保护，单位秒。不建议设置5秒内的数值。
+	 */
 	public void setDefaultQueryTimeout(int defaultQueryTimeout) {
 		this.defaultQueryTimeout = defaultQueryTimeout;
 	}
