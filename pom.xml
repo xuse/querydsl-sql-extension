@@ -5,7 +5,7 @@
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r6</version>
+	<version>5.0.0-r8</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>

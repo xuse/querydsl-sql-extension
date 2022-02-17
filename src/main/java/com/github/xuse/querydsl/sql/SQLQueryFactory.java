@@ -39,8 +39,8 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.MySQLWithJSONTemplates;
 import com.querydsl.sql.DerbyTemplates;
-import com.querydsl.sql.MySQLTemplates;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.RelationalPathBase;
 import com.querydsl.sql.SQLCloseListener;
@@ -89,7 +89,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 
 	public static SQLTemplates calcSQLTemplate(String url) {
 		if(url.startsWith("jdbc:mysql:")) {
-			return MySQLTemplates.builder().newLineToSingleSpace().build();
+			return new MySQLWithJSONTemplates();
 		}else if(url.startsWith("jdbc:derby:")) {
 			return DerbyTemplates.builder().newLineToSingleSpace().build();
 		}

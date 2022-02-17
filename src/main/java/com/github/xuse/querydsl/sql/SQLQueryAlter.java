@@ -68,6 +68,7 @@ import com.querydsl.sql.SQLListenerContext;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLResultIterator;
 import com.querydsl.sql.SQLSerializer;
+import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.StatementOptions;
 
@@ -194,6 +195,13 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			throw configuration.translate(e);
 		}
 	}
+	
+    @Override
+    protected SQLSerializer createSerializer() {
+        SQLSerializer serializer = new SQLSerializerAlter(configuration);
+        serializer.setUseLiterals(useLiterals);
+        return serializer;
+    }
 
 	private long unsafeCount() throws SQLException {
 		SQLListenerContextImpl context = startContext(connection(), getMetadata());

@@ -44,6 +44,7 @@ import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLNoCloseListener;
 import com.querydsl.sql.SQLSerializer;
+import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.dml.EmptyResultSet;
 import com.querydsl.sql.dml.SQLMergeClause;
 
@@ -168,6 +169,12 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			throw configuration.translate(queryString, constants, e);
 		}
 	}
+	
+    protected SQLSerializer createSerializer() {
+        SQLSerializer serializer = new SQLSerializerAlter(configuration, true);
+        serializer.setUseLiterals(useLiterals);
+        return serializer;
+    }
 
 	private long executeBatch(PreparedStatement stmt) throws SQLException {
 		int[] rcs = stmt.executeBatch();

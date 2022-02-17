@@ -158,9 +158,9 @@ public final class UnsavedValuePredicateFactory {
 	 * @param annotation
 	 * @return
 	 */
-	public static Predicate<Object> create(Class<?> type, UnsavedValue annotation) {
-		if (annotation != null) {
-			return parseValue(type, annotation.value());
+	public static Predicate<Object> create(Class<?> type, String annotationValue) {
+		if (annotationValue != null && annotationValue.length()>0) {
+			return parseValue(type, annotationValue);
 		}
 		if (type.isPrimitive()) {
 			return new NonNullConstantFilter(Primitives.defaultValueOfPrimitive(type));

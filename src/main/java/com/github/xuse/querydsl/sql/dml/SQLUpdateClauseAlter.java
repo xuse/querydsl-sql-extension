@@ -39,14 +39,14 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
+import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.dml.AbstractSQLUpdateClause;
-import com.querydsl.sql.dml.SQLUpdateClause;
 
 /**
  * Defines an UPDATE clause. If you need to subtype this, use
  * {@link AbstractSQLUpdateClause} instead.
  */
-public class SQLUpdateClauseAlter extends SQLUpdateClause {
+public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClauseAlter> {
 	
 	private final ConfigurationEx configEx;
 	
@@ -170,7 +170,8 @@ public class SQLUpdateClauseAlter extends SQLUpdateClause {
 	
     protected PreparedStatement createStatement() throws SQLException {
         listeners.preRender(context);
-        SQLSerializer serializer = createSerializer();
+        SQLSerializer serializer = new SQLSerializerAlter(configuration, true);
+        serializer.setUseLiterals(useLiterals);
         serializer.serializeUpdate(metadata, entity, updates);
         SQLBindings bindings = createBindings(metadata, serializer);
         context.addSQL(bindings);

@@ -30,6 +30,7 @@ import com.querydsl.sql.AbstractSQLQuery;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLCommonQueryFactory;
+import com.querydsl.sql.SQLCommonQueryFactoryAlter;
 
 
 
@@ -40,7 +41,7 @@ import com.querydsl.sql.SQLCommonQueryFactory;
  *
  * @author tiwe
  */
-public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactory<Q,
+public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactoryAlter<Q,
     SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,SQLMetadataQueryFactory,ISQLFactoryEx {
 
     protected final ConfigurationEx configuration;

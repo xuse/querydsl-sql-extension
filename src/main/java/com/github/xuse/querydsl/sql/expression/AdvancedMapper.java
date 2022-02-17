@@ -198,6 +198,7 @@ public class AdvancedMapper {
 			List<Entry<Path<?>, Object>> data = new ArrayList<>(columns.size());
 			for (Map.Entry<String, Path<?>> entry : columns.entrySet()) {
 				Path<?> path = entry.getValue();
+				//性能比较差
 				Field beanField = ReflectionUtils.getFieldOrNull(beanClass, entry.getKey());
 				if (beanField != null && !Modifier.isStatic(beanField.getModifiers())) {
 					beanField.setAccessible(true);
@@ -223,7 +224,8 @@ public class AdvancedMapper {
 
 
 	private boolean isNullValue(Field field, Object propertyValue) {
-		return UnsavedValuePredicateFactory.create(field.getType(), field.getAnnotation(UnsavedValue.class)).test(propertyValue);
+		UnsavedValue anno= field.getAnnotation(UnsavedValue.class);
+		return UnsavedValuePredicateFactory.create(field.getType(),anno==null?null:anno.value()).test(propertyValue);
 	}
 	
 	public static boolean isNullValue(ColumnMapping columnMetadata, Object value) {
