@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.sql.column;
 
 import java.util.function.Predicate;
 
-import javax.annotation.Nonnull;
-
 import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Primitives;
@@ -95,7 +93,6 @@ public final class UnsavedValuePredicateFactory {
 	}
 
 	private static class NonNullConstantFilter implements Predicate<Object> {
-		@Nonnull
 		private Object object1;
 
 		NonNullConstantFilter(Object obj) {

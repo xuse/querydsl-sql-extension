@@ -13,19 +13,17 @@
  */
 package com.github.xuse.querydsl.sql.dml;
 
-import static com.google.common.collect.Lists.newArrayList;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Provider;
+import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -63,7 +61,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		this.configEx=configuration;
 	}
 
-	public SQLMergeClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	public SQLMergeClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx=configuration;
 	}
@@ -251,7 +249,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	@Override
 	protected SQLBindingsAlter createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
-		List<Object> args = newArrayList();
+		List<Object> args = new ArrayList<>();
 		Map<ParamExpression<?>, Object> params = metadata.getParams();
 		for (Object o : serializer.getConstants()) {
 			if (o instanceof ParamExpression) {

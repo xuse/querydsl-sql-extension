@@ -1,24 +1,20 @@
 package com.github.xuse.querydsl.sql;
 
-import static com.google.common.collect.ImmutableList.copyOf;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExt;
 import com.github.xuse.querydsl.sql.column.MetadataBuilder;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Primitives;
+import com.github.xuse.querydsl.util.Primitives;
 import com.mysema.commons.lang.Assert;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
@@ -46,16 +42,16 @@ import com.querydsl.sql.SchemaAndTable;
 @SuppressWarnings("rawtypes")
 public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPathEx<T> {
 	private static final long serialVersionUID = -3351359519644416084L;
-	@Nullable
+
 	private PrimaryKey<T> primaryKey;
 
 	private final Map<Path<?>, ColumnMetadataExt> columnMetadata = new LinkedHashMap<>();
 	
 	private final Map<String, Path<?>> bindingsMap = new HashMap<>();
 
-	private final List<ForeignKey<?>> foreignKeys = Lists.newArrayList();
+	private final List<ForeignKey<?>> foreignKeys = new ArrayList<>();
 
-	private final List<ForeignKey<?>> inverseForeignKeys = Lists.newArrayList();
+	private final List<ForeignKey<?>> inverseForeignKeys = new ArrayList<>();
 
 	private final String schema, table;
 
@@ -88,7 +84,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	}
 
 	protected <F> ForeignKey<F> createForeignKey(List<? extends Path<?>> local, List<String> foreign) {
-		ForeignKey<F> foreignKey = new ForeignKey<F>(this, copyOf(local), copyOf(foreign));
+		ForeignKey<F> foreignKey = new ForeignKey<F>(this, new ArrayList<>(local), new ArrayList<>(foreign));
 		foreignKeys.add(foreignKey);
 		return foreignKey;
 	}
@@ -100,7 +96,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	}
 
 	protected <F> ForeignKey<F> createInvForeignKey(List<? extends Path<?>> local, List<String> foreign) {
-		ForeignKey<F> foreignKey = new ForeignKey<F>(this, copyOf(local), copyOf(foreign));
+		ForeignKey<F> foreignKey = new ForeignKey<F>(this, new ArrayList<>(local), new ArrayList<>(foreign));
 		inverseForeignKeys.add(foreignKey);
 		return foreignKey;
 	}
@@ -260,7 +256,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 
 	@Override
 	public List<Path<?>> getColumns() {
-		return Lists.newArrayList(this.columnMetadata.keySet());
+		return new ArrayList<>(this.columnMetadata.keySet());
 	}
 
 	@Override
@@ -379,7 +375,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	}
 
 	private static Class<?> normalize(Class<?> cl) {
-		return cl.isPrimitive() ? Primitives.wrap(cl) : cl;
+		return cl.isPrimitive() ? Primitives.toWrapperClass(cl) : cl;
 	}
 
 	protected void typeMismatch(Class<?> type, Expression<?> expr) {

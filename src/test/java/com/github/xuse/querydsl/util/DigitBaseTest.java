@@ -17,6 +17,25 @@ public class DigitBaseTest {
 	}
 
 	@Test
+	public void testPerformance2() {
+		String s = null;
+		s=Radix.D16.encode(100000);
+		long time = System.nanoTime();
+		for (int i = 0; i < 100000; i++) {
+			s=Radix.D16.encode(i);
+		}
+		System.out.println(System.nanoTime() - time);
+		System.out.println(s);
+		
+		time = System.nanoTime();
+		for (int i = 0; i < 100000; i++) {
+			s=Integer.toHexString(i);
+		}
+		System.out.println(System.nanoTime() - time);
+		System.out.println(s);
+	}
+
+	@Test
 	public void testPerformance() {
 		for (int i = 0; i < 1000; i++) {
 			Radix.D64.encode(i);
@@ -30,6 +49,13 @@ public class DigitBaseTest {
 		time = System.nanoTime();
 		for (int i = 0; i < 100000; i++) {
 			Radix.D16.encode(i);
+		}
+		System.out.println(System.nanoTime() - time);
+		
+		time = System.nanoTime();
+		String s;
+		for (int i = 0; i < 100000; i++) {
+			s=Integer.toHexString(i);
 		}
 		System.out.println(System.nanoTime() - time);
 

@@ -147,6 +147,11 @@ public class BeanCodecManager {
 		int count = 0;
 		int len = args.size();
 		try {
+			targetClz.getDeclaredConstructor();
+		} catch (NoSuchMethodException|SecurityException e1) {
+			throw Exceptions.illegalArgument("Class {} must has a constructor with empry parameter.",targetClz.getName());
+		}
+		try {
 			List<FieldProperty> propereties = new ArrayList<>(len);
 			BeanInfo beanInfo = Introspector.getBeanInfo(targetClz);
 			PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();

@@ -5,7 +5,7 @@
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>4.2.1-r8</version>
+	<version>5.0.0-r6</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -16,14 +16,11 @@
 		<maven.compiler.target>8</maven.compiler.target>
 		<maven.compiler.testSource>8</maven.compiler.testSource>
 		<maven.compiler.testTarget>8</maven.compiler.testTarget>
-		<querydsl.version>4.2.1</querydsl.version>
+		<querydsl.version>5.0.0</querydsl.version>
 		<springframework.version>4.3.19.RELEASE</springframework.version>
-		<geequery.version>1.13.0-SNAPSHOT</geequery.version>
 	</properties>
 
 	<dependencies>
-		<!-- <dependency> <groupId>org.easyframe</groupId> <artifactId>common-orm</artifactId> 
-			<version>${geequery.version}</version> </dependency> -->
 		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-jpa_2.1_spec</artifactId>
@@ -32,13 +29,13 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
-			<version>1.2.61</version>
+			<version>1.2.62</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.25</version>
+			<version>1.7.30</version>
 		</dependency>
 		<dependency>
 			<groupId>com.querydsl</groupId>
@@ -90,7 +87,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
-			<version>1.7.25</version>
+			<version>1.7.30</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -101,6 +98,7 @@
 	</dependencies>
 	<build>
 		<plugins>
+		<!-- 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -124,6 +122,21 @@
 					</execution>
 				</executions>
 			</plugin>
+			 -->
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<configuration>
+					<attach>true</attach>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>compile</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- <plugin> <groupId>com.querydsl</groupId> <artifactId>querydsl-maven-plugin</artifactId> 
 				<version>${querydsl.version}</version> <configuration> <jdbcDriver>org.apache.derby.jdbc.EmbeddedDriver</jdbcDriver> 
 				<jdbcUrl>jdbc:derby:db;create=true</jdbcUrl> <exportBeans>true</exportBeans> 
@@ -135,9 +148,9 @@
 	</build>
 	<distributionManagement>
 		<repository>
-			<id>civil-release</id>
-			<name>civil-release</name>
-			<url>http://10.1.74.162:80/artifactory/civil-release/</url>
+			<id>af-fsdmdept-release</id>
+			<name>af-fsdmdept-release</name>
+			<url>http://10.1.74.162:80/artifactory/fsdmdept-release/</url>
 			<layout>default</layout>
 		</repository>
 		<snapshotRepository>

@@ -14,8 +14,8 @@
 package com.github.xuse.querydsl.sql.spring;
 
 import java.sql.Connection;
+import java.util.function.Supplier;
 
-import javax.inject.Provider;
 import javax.sql.DataSource;
 
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -32,7 +32,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
  * }
  * </pre>
  */
-public class SpringProvider implements Provider<Connection> {
+public class SpringProvider implements Supplier<Connection> {
 
     private final DataSource dataSource;
 

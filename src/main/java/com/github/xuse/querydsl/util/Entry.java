@@ -19,8 +19,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.base.Objects;
+import java.util.Objects;
 
 /**
  * 描述由两个值构成的值对
@@ -86,7 +85,7 @@ public class Entry<K, V> implements Serializable, java.util.Map.Entry<K, V> {
 	public boolean equals(Object obj) {
 		if (obj instanceof Entry) {
 			Entry e = (Entry) obj;
-			return Objects.equal(e.key, this.key) && Objects.equal(e.value, this.value);
+			return Objects.equals(e.key, this.key) && Objects.equals(e.value, this.value);
 		}
 		return false;
 	}

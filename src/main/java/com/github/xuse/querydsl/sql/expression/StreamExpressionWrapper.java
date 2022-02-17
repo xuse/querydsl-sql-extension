@@ -3,8 +3,6 @@ package com.github.xuse.querydsl.sql.expression;
 import java.util.List;
 import java.util.function.Function;
 
-import javax.annotation.Nullable;
-
 import com.mysema.commons.lang.Assert;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionBase;
@@ -29,15 +27,13 @@ public class StreamExpressionWrapper<T, K> extends ExpressionBase<K> implements 
 		return expr.getArgs();
 	}
 
-	@Nullable
 	@Override
 	public K newInstance(Object... args) {
 		return function.apply(expr.newInstance(args));
 	}
 
-	@Nullable
 	@Override
-	public <R, C> R accept(Visitor<R, C> v, @Nullable C context) {
+	public <R, C> R accept(Visitor<R, C> v, C context) {
 		return expr.accept(v, context);
 	}
 

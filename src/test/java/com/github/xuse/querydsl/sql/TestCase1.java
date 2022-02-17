@@ -76,11 +76,12 @@ public class TestCase1 {
 		// 枚举自动注册功能
 		// JSON自动转换功能
 		//
-	//	configuration.register(new EnumByCodeType<>(Gender.class));
+		configuration.register(new EnumByCodeType<>(Gender.class));
 		configuration.register(new EnumByCodeType<>(TaskStatus.class));
 
 		// 如果使用了自定义映射，需要提前注册
-		configuration.registerExType(QAvsUserAuthority.avsUserAuthority);
+//		configuration.registerExType(QAvsUserAuthority.avsUserAuthority);
+		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
 	}
 
@@ -142,15 +143,18 @@ public class TestCase1 {
 
 	@Test
 	public void test1() {
+		boolean flag=true;
 		QAaa t1 = QAaa.aaa;
 		Aaa a = new Aaa();
 //		a.setId(1);
 		a.setName("张三");
 		a.setGender(Gender.FEMALE);
 		a.setTaskStatus(TaskStatus.INIT);
-		a.setCreated(new Timestamp(System.currentTimeMillis()));
+	//	a.setCreated(new Timestamp(System.currentTimeMillis()));
 		Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
-
+		if(flag) {
+			return;
+		}
 		System.out.println("===========查询t1===========");
 
 		Aaa b = factory.selectFrom(t1).where(t1.id.eq(id)).fetchFirst();
@@ -350,7 +354,7 @@ public class TestCase1 {
 		System.out.println("id=" + id);
 
 		Integer count = factory.merge(t1).keys(t1.id).columns(t1.id, t1.created, t1.gender)
-				.values(999, new Date(), Gender.MALE).executeWithKey(t1.id);
+				.values(id, new Date(), Gender.MALE).executeWithKey(t1.id);
 		System.out.println("返回:" + count);
 
 	}

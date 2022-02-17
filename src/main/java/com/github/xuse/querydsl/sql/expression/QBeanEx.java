@@ -13,13 +13,14 @@
  */
 package com.github.xuse.querydsl.sql.expression;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import com.github.xuse.querydsl.sql.IRelationPathEx;
-import com.google.common.collect.ImmutableMap;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -49,8 +50,8 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 		return beanCodec;
 	}
 
-	private static ImmutableMap<String, Expression<?>> createBindings(Expression<?>... args) {
-		ImmutableMap.Builder<String, Expression<?>> rv = ImmutableMap.builder();
+	private static Map<String, Expression<?>> createBindings(Expression<?>... args) {
+		Map<String, Expression<?>> rv = new LinkedHashMap<>();
 		for (Expression<?> expr : args) {
 			if (expr instanceof Path<?>) {
 				Path<?> path = (Path<?>) expr;
@@ -72,14 +73,14 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 				throw new IllegalArgumentException("Unsupported expression " + expr);
 			}
 		}
-		return rv.build();
+		return rv;
 	}
 
 	private static boolean isCompoundExpression(Expression<?> expr) {
 		return expr instanceof FactoryExpression || expr instanceof GroupExpression;
 	}
 
-	private final ImmutableMap<String, Expression<?>> bindings;
+	private final Map<String, Expression<?>> bindings;
 
 	/**
 	 * Create a new QBean instance
@@ -98,12 +99,12 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	 */
 	protected QBeanEx(Class<? extends T> type, IRelationPathEx<?> ex) {
 		super(type);
-		Map<String, Expression<?>> bindings = new HashMap<>();
+		Map<String, Expression<?>> bindings = new LinkedHashMap<>();
 		for(Path<?> p:ex.getColumns()) {
 			bindings.put(p.getMetadata().getName(),(Expression<?>)	p);
 		}
-		this.bindings=ImmutableMap.copyOf(bindings);
-		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), this.bindings.keySet().asList());
+		this.bindings=Collections.unmodifiableMap(bindings);
+		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), new ArrayList<>(this.bindings.keySet()));
 	}
 
 	/**
@@ -115,8 +116,8 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	 */
 	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		super(type);
-		this.bindings = ImmutableMap.copyOf(bindings);
-		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), this.bindings.keySet().asList());
+		this.bindings = Collections.unmodifiableMap(bindings);
+		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), new ArrayList<>(this.bindings.keySet()));
 
 	}
 
@@ -130,49 +131,46 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	public T newInstance(Object... a) {
 		return (T) beanCodec.newInstance(a);
 	}
+	 /**
+     * Create an alias for the expression
+     *
+     * @return this as alias
+     */
+    public Expression<T> as(Path<T> alias) {
+        return ExpressionUtils.operation(getType(),Ops.ALIAS, this, alias);
+    }
 
-	/**
-	 * Create an alias for the expression
-	 *
-	 * @return this as alias
-	 */
-	public Expression<T> as(Path<T> alias) {
-		return ExpressionUtils.operation(getType(), Ops.ALIAS, this, alias);
-	}
-	
-	
+    /**
+     * Create an alias for the expression
+     *
+     * @return this as alias
+     */
+    public Expression<T> as(String alias) {
+        return as(ExpressionUtils.path(getType(), alias));
+    }
 
-	/**
-	 * Create an alias for the expression
-	 *
-	 * @return this as alias
-	 */
-	public Expression<T> as(String alias) {
-		return as(ExpressionUtils.path(getType(), alias));
-	}
+    @Override
+    public <R,C> R accept(Visitor<R,C> v, C context) {
+        return v.visit(this, context);
+    }
 
-	@Override
-	public <R, C> R accept(Visitor<R, C> v, C context) {
-		return v.visit(this, context);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof QBean<?>) {
+            QBean<?> c = (QBean<?>) obj;
+            return getArgs().equals(c.getArgs()) && getType().equals(c.getType());
+        } else {
+            return false;
+        }
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this) {
-			return true;
-		} else if (obj instanceof QBeanEx<?>) {
-			QBeanEx<?> c = (QBeanEx<?>) obj;
-			return bindings.equals(c.bindings) && getType().equals(c.getType());
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public List<Expression<?>> getArgs() {
-		return bindings.values().asList();
-	}
-
+    @Override
+    public List<Expression<?>> getArgs() {
+        return new ArrayList<>(bindings.values());
+    }
+    
 	public <K> StreamExpressionWrapper<T, K> map(Function<T, K> function, Class<K> clz) {
 		return new StreamExpressionWrapper<>(this, function, clz);
 	}

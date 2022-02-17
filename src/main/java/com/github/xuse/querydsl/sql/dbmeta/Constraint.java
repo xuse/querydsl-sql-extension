@@ -3,8 +3,8 @@ package com.github.xuse.querydsl.sql.dbmeta;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
-import com.google.common.base.Objects;
 
 /**
  * 描述一个数据库中的Constraint
@@ -268,21 +268,21 @@ public class Constraint {
 		if(!(obj instanceof Constraint)) return false;
 		Constraint con = (Constraint)obj;
 //		if(!Objects.equal(this.catalog, con.catalog))return false;
-		if(!Objects.equal(this.schema, con.schema))return false;
-		if(!Objects.equal(this.name, con.name))return false;
+		if(!Objects.equals(this.schema, con.schema))return false;
+		if(!Objects.equals(this.name, con.name))return false;
 //		if(!Objects.equal(this.tableCatalog, con.tableCatalog))return false;
-		if(!Objects.equal(this.tableSchema, con.tableSchema))return false;
-		if(!Objects.equal(this.tableName, con.tableName))return false;
-		if(!Objects.equal(this.type, con.type))return false;
-		if(!Objects.equal(this.deferrable, con.deferrable))return false;
-		if(!Objects.equal(this.initiallyDeferred, con.initiallyDeferred))return false;
+		if(!Objects.equals(this.tableSchema, con.tableSchema))return false;
+		if(!Objects.equals(this.tableName, con.tableName))return false;
+		if(!Objects.equals(this.type, con.type))return false;
+		if(!Objects.equals(this.deferrable, con.deferrable))return false;
+		if(!Objects.equals(this.initiallyDeferred, con.initiallyDeferred))return false;
 		if(!Arrays.equals(this.columns.toArray(), con.columns.toArray()))return false;
-		if(!Objects.equal(this.refTableName, con.refTableName))return false;
+		if(!Objects.equals(this.refTableName, con.refTableName))return false;
 		if(!Arrays.equals(this.refColumns.toArray(), con.refColumns.toArray()))return false;
-		if(!Objects.equal(this.updateRule, con.updateRule))return false;
-		if(!Objects.equal(this.deleteRule, con.deleteRule))return false;
-		if(!Objects.equal(this.matchType, con.matchType))return false;
-		if(!Objects.equal(this.enabled, con.enabled))return false;
+		if(!Objects.equals(this.updateRule, con.updateRule))return false;
+		if(!Objects.equals(this.deleteRule, con.deleteRule))return false;
+		if(!Objects.equals(this.matchType, con.matchType))return false;
+		if(!Objects.equals(this.enabled, con.enabled))return false;
 		return true;
 	}
 	

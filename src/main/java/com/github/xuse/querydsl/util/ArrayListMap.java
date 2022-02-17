@@ -8,11 +8,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlElement;
-
-import com.google.common.base.Objects;
 
 /**
  * 用List实现的最简单的Map，目标是占用内存最小，不考虑性能，事实上元素不多的情况下性能不是什么问题。
@@ -96,7 +95,7 @@ public final class ArrayListMap<K, V> extends AbstractMap<K, V> implements Map<K
 	public V put(K key, V value) {
 		int index = -1;
 		for (int i = 0; i < entries.size(); i++) {
-			if (Objects.equal(entries.get(i).getKey(), key)) {
+			if (Objects.equals(entries.get(i).getKey(), key)) {
 				index = i;
 				break;
 			}

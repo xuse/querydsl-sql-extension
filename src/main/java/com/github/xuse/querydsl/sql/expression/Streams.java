@@ -10,8 +10,5 @@ public class Streams {
 			Function<T, K> function) {
 		return new StreamExpressionWrapper<>(fac, function, clz);
 	}
-	
-	
-	
 
 }
