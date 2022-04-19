@@ -13,16 +13,14 @@
  */
 package com.github.xuse.querydsl.sql.dml;
 
-import static com.google.common.collect.Lists.newArrayList;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Provider;
+import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -34,10 +32,11 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
-import com.querydsl.sql.dml.SQLDeleteClause;
+import com.querydsl.sql.SQLSerializerAlter;
+import com.querydsl.sql.dml.AbstractSQLDeleteClause;
 
 
-public class SQLDeleteClauseAlter extends SQLDeleteClause {
+public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClauseAlter> {
 	private final ConfigurationEx configEx;
 	
 
@@ -46,7 +45,7 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
         this.configEx=configuration;
     }
 
-    public SQLDeleteClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+    public SQLDeleteClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
         super(connection, configuration.get(), entity);
         this.configEx=configuration;
     }
@@ -116,10 +115,10 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
         }
     }
     
-
     protected PreparedStatement createStatement() throws SQLException {
         listeners.preRender(context);
-        SQLSerializer serializer = createSerializer();
+        SQLSerializer serializer =  new SQLSerializerAlter(configuration, true);
+        serializer.setUseLiterals(useLiterals);
         serializer.serializeDelete(metadata, entity);
         
         SQLBindings bindings= createBindings(metadata, serializer);
@@ -142,7 +141,7 @@ public class SQLDeleteClauseAlter extends SQLDeleteClause {
 	@Override
 	protected SQLBindings createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
-        List<Object> args = newArrayList();
+        List<Object> args = new ArrayList<>();
         Map<ParamExpression<?>, Object> params = metadata.getParams();
         for (Object o : serializer.getConstants()) {
             if (o instanceof ParamExpression) {

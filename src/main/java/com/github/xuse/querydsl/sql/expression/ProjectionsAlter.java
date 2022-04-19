@@ -1,10 +1,12 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.xuse.querydsl.sql.IRelationPathEx;
+import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Path;
@@ -90,6 +92,11 @@ public class ProjectionsAlter {
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, Expression<?>... exprs) {
 		return new QBeanEx<T>(type, exprs);
 	}
+	
+	
+	public static QBeanBuilder on(Expression<?>... exprs) {
+		return new QBeanBuilder(exprs);
+	}
 
 	/**
 	 * Create a Bean populating projection for the given type and expressions
@@ -159,4 +166,49 @@ public class ProjectionsAlter {
 
 	private ProjectionsAlter() {
 	}
+	
+	 /**
+     * Create a constructor invocation projection for the given type and expressions
+     *
+     * <p>Example</p>
+     * <pre>
+     * UserDTO dto = query.singleResult(
+     *     Projections.constructor(UserDTO.class, user.firstName, user.lastName));
+     * </pre>
+     *
+     * @param <T> type projection
+     * @param type type of the projection
+     * @param exprs arguments for the projection
+     * @return factory expression
+     */
+    public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Expression<?>... exprs) {
+        return Projections.constructor(type, exprs);
+    }
+
+    /**
+     * Create a constructor invocation projection for given type, parameter types and expressions
+     *
+     * @param type type of the projection
+     * @param paramTypes constructor parameter types
+     * @param exprs constructor parameters
+     * @param <T> type of projection
+     * @return factory expression
+     */
+    public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, Expression<?>... exprs) {
+        return Projections.constructor(type, paramTypes, exprs);
+    }
+
+    /**
+     * Create a constructor invocation projection for given type, parameter types and expressions
+     *
+     * @param type type of the projection
+     * @param paramTypes constructor parameter types
+     * @param exprs constructor parameters
+     * @param <T> type of projection
+     * @return factory expression
+     */
+    public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, List<Expression<?>> exprs) {
+        return Projections.constructor(type, paramTypes, exprs);
+    }
+
 }

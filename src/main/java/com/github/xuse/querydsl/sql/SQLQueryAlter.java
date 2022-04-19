@@ -13,8 +13,6 @@
  */
 package com.github.xuse.querydsl.sql;
 
-import static com.google.common.collect.Lists.newArrayList;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -23,12 +21,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
-import javax.inject.Provider;
-import javax.xml.ws.Holder;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +38,7 @@ import com.github.xuse.querydsl.sql.expression.QBeanEx;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.result.Projection;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.google.common.collect.ImmutableList;
+import com.github.xuse.querydsl.util.Holder;
 import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryException;
@@ -71,6 +67,7 @@ import com.querydsl.sql.SQLListenerContext;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLResultIterator;
 import com.querydsl.sql.SQLSerializer;
+import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.StatementOptions;
 
@@ -97,10 +94,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	private final ConfigurationEx configEx;
 
-	@Nullable
-	private Provider<Connection> connProvider;
+	private Supplier<Connection> connProvider;
 
-	@Nullable
 	private Connection conn;
 	///////////// 覆盖检查字段结束/////////////
 
@@ -133,13 +128,13 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		this.configEx = new ConfigurationEx(super.getConfiguration());
 	}
 
-	public SQLQueryAlter(Provider<Connection> connProvider, ConfigurationEx configuration, QueryMetadata metadata) {
+	public SQLQueryAlter(Supplier<Connection> connProvider, ConfigurationEx configuration, QueryMetadata metadata) {
 		super(connProvider, configuration.get(), metadata);
 		this.connProvider = connProvider;
 		this.configEx = configuration;
 	}
 
-	public SQLQueryAlter(Provider<Connection> connProvider, ConfigurationEx configuration) {
+	public SQLQueryAlter(Supplier	<Connection> connProvider, ConfigurationEx configuration) {
 		super(connProvider, configuration.get(), new DefaultQueryMetadata());
 		this.connProvider = connProvider;
 		this.configEx = configuration;
@@ -185,7 +180,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			}
 		} finally {
 			endContext(parentContext);
-			reset();
 			parentContext = null;
 		}
 	}
@@ -200,10 +194,17 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			throw configuration.translate(e);
 		}
 	}
+	
+    @Override
+    protected SQLSerializer createSerializer() {
+        SQLSerializer serializer = new SQLSerializerAlter(configuration);
+        serializer.setUseLiterals(useLiterals);
+        return serializer;
+    }
 
 	private long unsafeCount() throws SQLException {
 		SQLListenerContextImpl context = startContext(connection(), getMetadata());
-		List<Object> constants = ImmutableList.of();
+		List<Object> constants = Collections.emptyList();
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		String queryString = null;
@@ -250,7 +251,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				}
 			}
 			endContext(context);
-			cleanupMDC();
 		}
 	}
 
@@ -273,7 +273,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private List<T> fetch(Holder<Object> getLastCell) {
 		SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
 		String queryString = null;
-		List<Object> constants = ImmutableList.of();
+		List<Object> constants = Collections.emptyList();
 
 		try {
 			listeners.preRender(context);
@@ -331,7 +331,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			throw e;
 		} finally {
 			endContext(context);
-			reset();
 		}
 	}
 
@@ -491,10 +490,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 	}
 
-	private void reset() {
-		cleanupMDC();
-	}
-
 	private StatementOptions statementOptions = StatementOptions.DEFAULT;
 
 	/**
@@ -563,7 +558,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private CloseableIterator<T> iterateSingle(QueryMetadata metadata) {
 		SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
 		String queryString = null;
-		List<Object> constants = ImmutableList.of();
+		List<Object> constants = Collections.emptyList();
 
 		try {
 			listeners.preRender(context);
@@ -596,8 +591,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		} catch (RuntimeException e) {
 			logger.error("Caught " + e.getClass().getName() + " for " + queryString);
 			throw e;
-		} finally {
-			reset();
 		}
 	}
 
@@ -609,7 +602,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	public ResultSet getResults() {
 		final SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
 		String queryString = null;
-		List<Object> constants = ImmutableList.of();
+		List<Object> constants = Collections.emptyList();
 
 		try {
 			listeners.preRender(context);
@@ -642,26 +635,23 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 						super.close();
 					} finally {
 						stmt.close();
-						reset();
 						endContext(context);
 					}
 				}
 			};
 		} catch (SQLException e) {
 			onException(context, e);
-			reset();
 			endContext(context);
 			throw configuration.translate(queryString, constants, e);
 		} catch (RuntimeException e) {
 			onException(context, e);
-			reset();
 			endContext(context);
 			throw e;
 		}
 	}
 
 	protected SQLBindings getSQL(SQLSerializer serializer) {
-		List<Object> args = newArrayList();
+		List<Object> args = new ArrayList<>();
 		Map<ParamExpression<?>, Object> params = getMetadata().getParams();
 		for (Object o : serializer.getConstants()) {
 			if (o instanceof ParamExpression) {

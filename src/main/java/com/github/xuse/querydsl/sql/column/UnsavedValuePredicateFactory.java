@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.sql.column;
 
 import java.util.function.Predicate;
 
-import javax.annotation.Nonnull;
-
 import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Primitives;
@@ -18,6 +16,15 @@ public final class UnsavedValuePredicateFactory {
 	 * @return
 	 */
 	public static Predicate<Object> parseValue(Class<?> containerType, String value) {
+		if ("null".equalsIgnoreCase(value)) {
+			return Null;
+		} else if (UnsavedValue.MinusNumber.equals(value)) {
+			return MinusNumber;
+		} else if (UnsavedValue.ZeroAndMinus.equals(value)) {
+			return ZeroAndMinus;
+		} else if (UnsavedValue.NullOrEmpty.equals(value)) {
+			return NullOrEmpty;
+		}
 		// int 226
 		// short 215
 		// long 221
@@ -60,15 +67,7 @@ public final class UnsavedValuePredicateFactory {
 				break;
 			default:
 			}
-		} else if ("null".equalsIgnoreCase(value)) {
-			return Null;
-		} else if (UnsavedValue.MinusNumber.equals(value)) {
-			return MinusNumber;
-		} else if (UnsavedValue.ZeroAndMinus.equals(value)) {
-			return ZeroAndMinus;
-		} else if (UnsavedValue.NullOrEmpty.equals(value)) {
-			return NullOrEmpty;
-		} else if (String.class == containerType) {
+		}else if (String.class == containerType) {
 			condition = value;
 		} else {
 			throw Exceptions.illegalArgument("Unsupport type [{}] for annotation @UnsavedValue.", containerType);
@@ -95,7 +94,6 @@ public final class UnsavedValuePredicateFactory {
 	}
 
 	private static class NonNullConstantFilter implements Predicate<Object> {
-		@Nonnull
 		private Object object1;
 
 		NonNullConstantFilter(Object obj) {
@@ -161,9 +159,9 @@ public final class UnsavedValuePredicateFactory {
 	 * @param annotation
 	 * @return
 	 */
-	public static Predicate<Object> create(Class<?> type, UnsavedValue annotation) {
-		if (annotation != null) {
-			return parseValue(type, annotation.value());
+	public static Predicate<Object> create(Class<?> type, String annotationValue) {
+		if (annotationValue != null && annotationValue.length()>0) {
+			return parseValue(type, annotationValue);
 		}
 		if (type.isPrimitive()) {
 			return new NonNullConstantFilter(Primitives.defaultValueOfPrimitive(type));

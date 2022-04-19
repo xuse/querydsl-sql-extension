@@ -206,5 +206,23 @@ public class StringUtils {
 	public static boolean isNotEmpty(String user) {
 		return user != null && user.length() > 0;
 	}
+	
+	/**
+	 * 用于字符串的拼接
+	 * 
+	 * @param data 数据
+	 * @param sep  分隔符
+	 */
+	public static String join(List<String> data, char sep) {
+		if (data == null || data.isEmpty())
+			return "";
+		StringBuilder sb=new StringBuilder(32);
+		sb.append(data.get(0));
+		int max=data.size();
+		for (int i = 1; i < max; i++) {
+			sb.append(sep).append(data.get(i));
+		}
+		return sb.toString();
+	}
 
 }

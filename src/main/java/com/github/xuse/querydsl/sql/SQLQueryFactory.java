@@ -15,8 +15,8 @@ package com.github.xuse.querydsl.sql;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.function.Supplier;
 
-import javax.inject.Provider;
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
@@ -39,8 +39,8 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.MySQLWithJSONTemplates;
 import com.querydsl.sql.DerbyTemplates;
-import com.querydsl.sql.MySQLTemplates;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.RelationalPathBase;
 import com.querydsl.sql.SQLCloseListener;
@@ -62,12 +62,12 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 
 	Logger log = LoggerFactory.getLogger(SQLQueryFactory.class);
 
-	public SQLQueryFactory(SQLTemplates templates, Provider<Connection> connection) {
+	public SQLQueryFactory(SQLTemplates templates, Supplier<Connection> connection) {
 		this(new ConfigurationEx(templates), connection);
 		
 	}
 
-	public SQLQueryFactory(ConfigurationEx configuration, Provider<Connection> connProvider) {
+	public SQLQueryFactory(ConfigurationEx configuration, Supplier<Connection> connProvider) {
 		super(configuration, connProvider);
 		this.configEx=configuration;
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
@@ -89,7 +89,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 
 	public static SQLTemplates calcSQLTemplate(String url) {
 		if(url.startsWith("jdbc:mysql:")) {
-			return MySQLTemplates.builder().newLineToSingleSpace().build();
+			return new MySQLWithJSONTemplates();
 		}else if(url.startsWith("jdbc:derby:")) {
 			return DerbyTemplates.builder().newLineToSingleSpace().build();
 		}
@@ -102,7 +102,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		return new SQLQueryFactory(configuration, new SpringProvider(datasource));
 	}
 
-	static class DataSourceProvider implements Provider<Connection> {
+	static class DataSourceProvider implements Supplier<Connection> {
 		private final DataSource ds;
 
 		public DataSourceProvider(DataSource ds) {

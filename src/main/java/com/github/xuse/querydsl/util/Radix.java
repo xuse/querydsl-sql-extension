@@ -169,6 +169,45 @@ public enum Radix {
 	}
 
 	/**
+	 * 按指定进制编码，带填充。（解码时无需去除填充字符）
+	 * @param num
+	 * @param minDigit 最少字符位数，不足时会在字符前方填充该种编码下的‘0’字符
+	 * @return 编码后的数值表达
+	 */
+	public String encodeIntWithPadding(int num,int minDigit) {
+		if (num < 0) {
+			return encode(num + 0x0100000000L);
+		} else {
+			StringBuilder sb = new StringBuilder();
+			encode1(num,sb);
+			for(int i=sb.length();i<minDigit;i++) {
+				sb.append(codeTable[0]);
+			}
+			return sb.reverse().toString();
+		}
+	}
+	
+	/**
+	 * 按指定进制编码，带填充。（解码时无需去除填充字符）
+	 * @param num
+	 * @param minDigit 最少字符位数，不足时会在字符前方填充该种编码下的‘0’字符
+	 * @return
+	 */
+	public String encodeWithPadding(long num,int minDigit) {
+		StringBuilder sb = new StringBuilder();
+		if (num < 0) {
+			encode0(-num, sb);
+			sb.append('-');
+		} else {
+			encode0(num, sb);
+		}
+		for(int i=sb.length();i<minDigit;i++) {
+			sb.append(codeTable[0]);
+		}
+		return sb.reverse().toString();
+	}
+	
+	/**
 	 * 对int进行序列化 (支持负数)
 	 * 
 	 * @param num
@@ -178,13 +217,14 @@ public enum Radix {
 		if (num < 0) {
 			return encode(num + 0x0100000000L);
 		} else {
-			return encode((long) num);
+			StringBuilder sb = new StringBuilder();
+			encode1(num,sb);
+			return sb.reverse().toString();
 		}
 	}
 
 	/**
 	 * 解码为整数 (支持负数)
-	 * 
 	 * @param val
 	 * @return
 	 */
@@ -262,6 +302,15 @@ public enum Radix {
 		}
 		sb.append(codeTable[(int) num]);
 	}
+	
+	protected void encode1(int num, StringBuilder sb) {
+		while (num >= scale) {
+			int num1 = num / scale;
+			sb.append(codeTable[num - num1 * scale]);
+			num = num1;
+		}
+		sb.append(codeTable[num]);
+	}
 
 	/**
 	 * 对于无序码表，遍历查找
@@ -299,6 +348,13 @@ public enum Radix {
 			}
 		}
 		return -1;
+	}
+
+	public static void main(String[] args) {
+		System.out.println(D36.encodeIntWithPadding(38,3));
+		System.out.println(D36.decode("012"));
+		System.out.println(D84.encodeIntWithPadding(72,3));
+		System.out.println(D84.decode("!!s"));
 	}
 
 }

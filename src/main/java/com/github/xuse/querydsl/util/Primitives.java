@@ -241,6 +241,41 @@ public final class Primitives {
 			throw Exceptions.illegalArgument("Cann't convert {} to a short value.",num);
 		}
 		return (short)num;
-		
+	}
+	
+	/**
+	 * 判断是否为奇数
+	 * @param i
+	 * @return
+	 */
+	public static boolean isOdd(int i) {
+		return (i & 1) == 1;
+	}
+	
+	/**
+	 * 判断是否为偶数
+	 * @param i
+	 * @return
+	 */
+	public static boolean isEven(int i) {
+		return (i & 1) ==0;
+	}
+	
+	/**
+	 * 判断是否为奇数
+	 * @param i
+	 * @return
+	 */
+	public static boolean isOdd(long i) {
+		return (i & 1) == 1;
+	}
+	
+	/**
+	 * 判断是否为偶数 
+	 * @param i
+	 * @return
+	 */
+	public static boolean isEven(long i) {
+		return (i & 1) == 0;
 	}
 }

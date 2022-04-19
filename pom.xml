@@ -1,11 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>4.2.1-r8</version>
+	<version>5.0.0-r15</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -16,14 +14,22 @@
 		<maven.compiler.target>8</maven.compiler.target>
 		<maven.compiler.testSource>8</maven.compiler.testSource>
 		<maven.compiler.testTarget>8</maven.compiler.testTarget>
-		<querydsl.version>4.2.1</querydsl.version>
+		<querydsl.version>5.0.0</querydsl.version>
 		<springframework.version>4.3.19.RELEASE</springframework.version>
-		<geequery.version>1.13.0-SNAPSHOT</geequery.version>
 	</properties>
 
 	<dependencies>
-		<!-- <dependency> <groupId>org.easyframe</groupId> <artifactId>common-orm</artifactId> 
-			<version>${geequery.version}</version> </dependency> -->
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>jsr250-api</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.16.22</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-jpa_2.1_spec</artifactId>
@@ -32,13 +38,13 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
-			<version>1.2.61</version>
+			<version>1.2.78</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.25</version>
+			<version>1.7.30</version>
 		</dependency>
 		<dependency>
 			<groupId>com.querydsl</groupId>
@@ -90,7 +96,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
-			<version>1.7.25</version>
+			<version>1.7.30</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -101,26 +107,23 @@
 	</dependencies>
 	<build>
 		<plugins>
+			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-javadoc-plugin</artifactId> 
+				<version>2.10.4</version> <configuration> <charset>UTF-8</charset> <docencoding>UTF-8</docencoding> 
+				<encoding>UTF-8</encoding> <aggregate>true</aggregate> <show>public</show> 
+				</configuration> <executions> <execution> <id>attach-javadocs</id> <goals> 
+				<goal>jar</goal> </goals> <configuration> <additionalparam>-Xdoclint:none</additionalparam> 
+				</configuration> </execution> </executions> </plugin> -->
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.10.4</version>
+				<artifactId>maven-source-plugin</artifactId>
 				<configuration>
-					<charset>UTF-8</charset>
-					<docencoding>UTF-8</docencoding>
-					<encoding>UTF-8</encoding>
-					<aggregate>true</aggregate>
-					<show>public</show>
+					<attach>true</attach>
 				</configuration>
 				<executions>
 					<execution>
-						<id>attach-javadocs</id>
+						<phase>compile</phase>
 						<goals>
 							<goal>jar</goal>
 						</goals>
-						<configuration>
-							<additionalparam>-Xdoclint:none</additionalparam>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -135,9 +138,10 @@
 	</build>
 	<distributionManagement>
 		<repository>
-			<id>civil-release</id>
-			<name>civil-release</name>
-			<url>http://10.1.74.162:80/artifactory/civil-release/</url>
+			<id>af-fsdmdept-release</id>
+			<name>af-fsdmdept-release</name>
+			<url>http://10.1.74.162:80/artifactory/fsdmdept-release/
+			</url>
 			<layout>default</layout>
 		</repository>
 		<snapshotRepository>

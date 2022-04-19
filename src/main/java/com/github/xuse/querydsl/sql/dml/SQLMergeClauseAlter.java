@@ -13,23 +13,23 @@
  */
 package com.github.xuse.querydsl.sql.dml;
 
-import static com.google.common.collect.Lists.newArrayList;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Provider;
+import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
+import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.FilteredClause;
 import com.querydsl.core.QueryMetadata;
@@ -46,6 +46,7 @@ import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLNoCloseListener;
 import com.querydsl.sql.SQLSerializer;
+import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.dml.EmptyResultSet;
 import com.querydsl.sql.dml.SQLMergeClause;
 
@@ -63,7 +64,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		this.configEx=configuration;
 	}
 
-	public SQLMergeClauseAlter(Provider<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	public SQLMergeClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx=configuration;
 	}
@@ -170,6 +171,27 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			throw configuration.translate(queryString, constants, e);
 		}
 	}
+	
+    protected SQLSerializer createSerializer() {
+        SQLSerializer serializer = new SQLSerializerAlter(configuration, true);
+        serializer.setUseLiterals(useLiterals);
+        return serializer;
+    }
+    
+	private static final AdvancedMapper FOR_UPDATE = new AdvancedMapper(AdvancedMapper.SCENARIO_UPDATE);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public SQLMergeClauseAlter populate(Object bean) {
+		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
+				? entity.getPrimaryKey().getLocalColumns()
+				: Collections.<Path<?>>emptyList();
+		Map<Path<?>, Object> values = FOR_UPDATE.createMap(entity, bean, configEx);
+		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+			if (!primaryKeyColumns.contains(entry.getKey())) {
+				set((Path) entry.getKey(), entry.getValue());
+			}
+		}
+		return this;
+    }
 
 	private long executeBatch(PreparedStatement stmt) throws SQLException {
 		int[] rcs = stmt.executeBatch();
@@ -251,7 +273,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	@Override
 	protected SQLBindingsAlter createBindings(QueryMetadata metadata, SQLSerializer serializer) {
 		String queryString = serializer.toString();
-		List<Object> args = newArrayList();
+		List<Object> args = new ArrayList<>();
 		Map<ParamExpression<?>, Object> params = metadata.getParams();
 		for (Object o : serializer.getConstants()) {
 			if (o instanceof ParamExpression) {

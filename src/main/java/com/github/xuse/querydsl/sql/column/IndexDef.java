@@ -6,7 +6,6 @@ import java.util.List;
 import javax.persistence.Index;
 
 import com.github.xuse.querydsl.util.StringUtils;
-import com.google.common.base.Joiner;
 
 /**
  * Index描述。 注意：内部的colums都是Java中的字段名
@@ -94,7 +93,7 @@ public class IndexDef {
 			}
 			result.add(s);
 		}
-		this.definition = Joiner.on(' ').join(result);
+		this.definition = StringUtils.join(result,' ');
 	}
 
 	public boolean isUnique() {

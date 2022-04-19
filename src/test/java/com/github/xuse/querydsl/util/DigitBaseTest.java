@@ -1,5 +1,8 @@
 package com.github.xuse.querydsl.util;
 
+import java.util.Calendar;
+import java.util.Date;
+
 import org.junit.Test;
 import org.springframework.util.Assert;
 
@@ -17,6 +20,25 @@ public class DigitBaseTest {
 	}
 
 	@Test
+	public void testPerformance2() {
+		String s = null;
+		s=Radix.D16.encode(100000);
+		long time = System.nanoTime();
+		for (int i = 0; i < 100000; i++) {
+			s=Radix.D16.encode(i);
+		}
+		System.out.println(System.nanoTime() - time);
+		System.out.println(s);
+		
+		time = System.nanoTime();
+		for (int i = 0; i < 100000; i++) {
+			s=Integer.toHexString(i);
+		}
+		System.out.println(System.nanoTime() - time);
+		System.out.println(s);
+	}
+
+	@Test
 	public void testPerformance() {
 		for (int i = 0; i < 1000; i++) {
 			Radix.D64.encode(i);
@@ -30,6 +52,13 @@ public class DigitBaseTest {
 		time = System.nanoTime();
 		for (int i = 0; i < 100000; i++) {
 			Radix.D16.encode(i);
+		}
+		System.out.println(System.nanoTime() - time);
+		
+		time = System.nanoTime();
+		String s;
+		for (int i = 0; i < 100000; i++) {
+			s=Integer.toHexString(i);
 		}
 		System.out.println(System.nanoTime() - time);
 
@@ -74,5 +103,23 @@ public class DigitBaseTest {
 		long value = hex.decode(s);
 		// System.out.println(hex.scale + "进制：" + value);
 		Assert.isTrue(value == num, hex + "错误：" + num + " -> " + value);
+	}
+	
+	@Test
+	public void snowFlake() {
+		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) {
+			@Override
+			protected long timeGen() {
+				return get(2050,1,10,12,0,0).getTime();
+			}
+		};
+		System.out.println(worker.nextId());
+	}
+	
+	public static final Date get(int year, int month, int date, int hour, int minute, int second) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(year, month - 1, date, hour, minute, second);
+		calendar.set(Calendar.MILLISECOND, 0);
+		return calendar.getTime();
 	}
 }

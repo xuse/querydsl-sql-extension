@@ -67,10 +67,6 @@ public class MetadataBuilder<T> {
 	 * 缺省值：仅当指定了default关键字后才有值
 	 */
 	private SimpleExpression<T> defaultExpression = null;
-	/**
-	 * 自增
-	 */
-	private GenerateTypeDef generatedValue;
 	
 	private boolean qsPk;
 	

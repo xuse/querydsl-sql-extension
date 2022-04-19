@@ -14,8 +14,7 @@
 package com.github.xuse.querydsl.sql;
 
 import java.sql.Connection;
-
-import javax.inject.Provider;
+import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
@@ -31,6 +30,7 @@ import com.querydsl.sql.AbstractSQLQuery;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLCommonQueryFactory;
+import com.querydsl.sql.SQLCommonQueryFactoryAlter;
 
 
 
@@ -41,14 +41,14 @@ import com.querydsl.sql.SQLCommonQueryFactory;
  *
  * @author tiwe
  */
-public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactory<Q,
+public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactoryAlter<Q,
     SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,SQLMetadataQueryFactory,ISQLFactoryEx {
 
     protected final ConfigurationEx configuration;
 
-    protected final Provider<Connection> connection;
+    protected final Supplier<Connection> connection;
 
-    public AbstractSQLQueryFactory(ConfigurationEx configuration, Provider<Connection> connProvider) {
+    public AbstractSQLQueryFactory(ConfigurationEx configuration, Supplier<Connection> connProvider) {
         this.configuration = configuration;
         this.connection = connProvider;
     }
