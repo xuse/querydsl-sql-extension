@@ -4,8 +4,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-import com.github.xuse.querydsl.sql.IRelationPathEx;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
@@ -19,9 +20,9 @@ public class ProjectionsAlter {
 
 	final static class CackeKey {
 		private final Class<?> clz;
-		private final IRelationPathEx<?> beanpath;
+		private final RelationalPathEx<?> beanpath;
 
-		public CackeKey(Class<?> type, IRelationPathEx<?> beanPath) {
+		public CackeKey(Class<?> type, RelationalPathEx<?> beanPath) {
 			this.clz=type;
 			this.beanpath=beanPath;
 		}
@@ -59,7 +60,7 @@ public class ProjectionsAlter {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> QBeanEx<T> bean(Class<? extends T> type, IRelationPathEx<?> beanPath) {
+	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPathEx<?> beanPath) {
 		if (type == beanPath.getType()) {
 			return (QBeanEx<T>) beanPath.getProjection();
 		}
@@ -93,6 +94,18 @@ public class ProjectionsAlter {
 		return new QBeanEx<T>(type, exprs);
 	}
 	
+	/**
+	 * create a StreamExpression to apply function on result.
+	 * @param fac
+	 * @param clz
+	 * @param function
+	 * @return StreamExpressionWrapper
+	 */
+	public static <T, K> StreamExpressionWrapper<T, K> map(FactoryExpression<T> fac, Class<K> clz,
+			Function<T, K> function) {
+		return new StreamExpressionWrapper<>(fac, function, clz);
+	}
+
 	
 	public static QBeanBuilder on(Expression<?>... exprs) {
 		return new QBeanBuilder(exprs);

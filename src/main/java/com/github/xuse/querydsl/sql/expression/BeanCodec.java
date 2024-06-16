@@ -12,14 +12,14 @@ public abstract class BeanCodec {
 	/**
 	 * 根据字段值（按元数据顺序排列）拼装成对象
 	 * @param fields
-	 * @return
+	 * @return Object
 	 */
 	public abstract Object newInstance(Object[] fields);
 	
 	/**
 	 * 根据元数据字段序得到所有字段值（按元数据顺序排列）
 	 * @param bean
-	 * @return
+	 * @return 所有字段值（按元数据顺序排列）
 	 */
 	public abstract Object[] values(Object bean);
 	

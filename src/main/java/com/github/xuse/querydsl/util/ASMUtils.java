@@ -134,6 +134,7 @@ public class ASMUtils {
 	 * @param mw
 	 * @param primitive
 	 *            原生类型
+	 * @param wrapped 包装类型
 	 */
 	public static void doUnwrap(MethodVisitor mw, Class<?> primitive, Class<?> wrapped) {
 		String name = primitive.getName() + "Value";
@@ -144,12 +145,12 @@ public class ASMUtils {
 	 * 生成装箱方法
 	 * 
 	 * @param mw
-	 * @param type
+	 * @param primitive
 	 *            原生类型
+	 * @param wrapped           
 	 */
-	public static void doWrap(MethodVisitor mw, Class<?> type) {
-		Class<?> wrapped = Primitives.toWrapperClass(type);
-		mw.visitMethodInsn(Opcodes.INVOKESTATIC, getType(wrapped), "valueOf", getMethodDesc(wrapped, type),false);
+	public static void doWrap(MethodVisitor mw, Class<?> primitive, Class<?> wrapped) {
+		mw.visitMethodInsn(Opcodes.INVOKESTATIC, getType(wrapped), "valueOf", getMethodDesc(wrapped, primitive),false);
 	}
 
 	public static void doWrap(MethodVisitor mw, com.github.xuse.querydsl.asm.Type paramType) {
@@ -188,7 +189,7 @@ public class ASMUtils {
 	/**
 	 * 获得加载指令。要注LLOAD和DLOAD都是64位操作
 	 * @param paramType
-	 * @return
+	 * @return loadIns
 	 */
 	public static int getLoadIns(com.github.xuse.querydsl.asm.Type paramType) {
 		switch (paramType.getSort()) {
@@ -251,7 +252,7 @@ public class ASMUtils {
 	 * 
 	 * @param returnType
 	 * @param params
-	 * @return
+	 * @return 方法签名
 	 */
 	public static String getMethodDesc(Class<?> returnType, Class<?>... params) {
 		StringBuilder sb = new StringBuilder("(");
@@ -266,7 +267,7 @@ public class ASMUtils {
 	/**
 	 * 获得Java类名
 	 * @param cr
-	 * @return
+	 * @return className
 	 */
 	public static String getJavaClassName(ClassReader cr) {
 		return cr.getClassName().replace('/', '.');
@@ -275,7 +276,7 @@ public class ASMUtils {
 	/**
 	 * 获得父类名	
 	 * @param cr
-	 * @return
+	 * @return 父类名	
 	 */
 	public static String getSuperClassName(ClassReader cr) {
 		return cr.getSuperName().replace('/', '.');

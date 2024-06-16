@@ -128,7 +128,7 @@ public enum Radix {
 	 * 
 	 * @param base
 	 * @param pow
-	 * @return
+	 * @return 乘方结果
 	 */
 	public static long pow(long base, int pow) {
 		long n = 1;
@@ -191,7 +191,7 @@ public enum Radix {
 	 * 按指定进制编码，带填充。（解码时无需去除填充字符）
 	 * @param num
 	 * @param minDigit 最少字符位数，不足时会在字符前方填充该种编码下的‘0’字符
-	 * @return
+	 * @return 编码后的数值
 	 */
 	public String encodeWithPadding(long num,int minDigit) {
 		StringBuilder sb = new StringBuilder();
@@ -211,7 +211,7 @@ public enum Radix {
 	 * 对int进行序列化 (支持负数)
 	 * 
 	 * @param num
-	 * @return
+	 * @return 编码后的数值
 	 */
 	public String encodeInt(int num) {
 		if (num < 0) {
@@ -226,7 +226,7 @@ public enum Radix {
 	/**
 	 * 解码为整数 (支持负数)
 	 * @param val
-	 * @return
+	 * @return 解码后数值
 	 */
 	public int decodeInt(String val) {
 		long num = decode(val);
@@ -352,7 +352,7 @@ public enum Radix {
 
 	public static void main(String[] args) {
 		System.out.println(D36.encodeIntWithPadding(38,3));
-		System.out.println(D36.decode("012"));
+		System.out.println(D36.decode("2R"));
 		System.out.println(D84.encodeIntWithPadding(72,3));
 		System.out.println(D84.decode("!!s"));
 	}

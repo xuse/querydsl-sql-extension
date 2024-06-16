@@ -13,9 +13,22 @@ public final class UnsavedValuePredicateFactory {
 	 * 根据类型和默认值来生成
 	 * @param containerType
 	 * @param value
-	 * @return
+	 * @return Predicate
 	 */
 	public static Predicate<Object> parseValue(Class<?> containerType, String value) {
+		if ("null".equalsIgnoreCase(value)) {
+			return Null;
+		} else if (UnsavedValue.MinusNumber.equals(value)) {
+			return MinusNumber;
+		} else if (UnsavedValue.ZeroAndMinus.equals(value)) {
+			return ZeroAndMinus;
+		} else if (UnsavedValue.NullOrEmpty.equals(value)) {
+			if(containerType.isPrimitive()) {
+				return Null;
+			}else {
+				return NullOrEmpty;
+			}
+		}
 		// int 226
 		// short 215
 		// long 221
@@ -58,15 +71,7 @@ public final class UnsavedValuePredicateFactory {
 				break;
 			default:
 			}
-		} else if ("null".equalsIgnoreCase(value)) {
-			return Null;
-		} else if (UnsavedValue.MinusNumber.equals(value)) {
-			return MinusNumber;
-		} else if (UnsavedValue.ZeroAndMinus.equals(value)) {
-			return ZeroAndMinus;
-		} else if (UnsavedValue.NullOrEmpty.equals(value)) {
-			return NullOrEmpty;
-		} else if (String.class == containerType) {
+		}else if (String.class == containerType) {
 			condition = value;
 		} else {
 			throw Exceptions.illegalArgument("Unsupport type [{}] for annotation @UnsavedValue.", containerType);
@@ -105,6 +110,9 @@ public final class UnsavedValuePredicateFactory {
 		}
 	}
 
+	/**
+	 *  default policy: null is null.
+	 */
 	private static final Predicate<Object> Null = new Predicate<Object>() {
 		public boolean test(Object obj) {
 			return obj == null;
@@ -155,8 +163,8 @@ public final class UnsavedValuePredicateFactory {
 	/**
 	 * 根据类上的注解来解析生成
 	 * @param type
-	 * @param annotation
-	 * @return
+	 * @param annotationValue
+	 * @return Predicate
 	 */
 	public static Predicate<Object> create(Class<?> type, String annotationValue) {
 		if (annotationValue != null && annotationValue.length()>0) {

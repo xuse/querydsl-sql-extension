@@ -17,7 +17,6 @@ import java.sql.Connection;
 import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
@@ -29,20 +28,15 @@ import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.sql.AbstractSQLQuery;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLCommonQuery;
-import com.querydsl.sql.SQLCommonQueryFactory;
 import com.querydsl.sql.SQLCommonQueryFactoryAlter;
 
 
 
 /**
- * {@code AbstractSQLQueryFactory} is the base class for {@link SQLCommonQueryFactory} implementations
- *
- * @param <Q> query type
- *
- * @author tiwe
+ * this is a copy of {@code com.querydsl.sql.AbstractSQLQueryFactory<Q>}  
  */
 public abstract class AbstractSQLQueryFactory<Q extends SQLCommonQuery<?>> implements SQLCommonQueryFactoryAlter<Q,
-    SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,SQLMetadataQueryFactory,ISQLFactoryEx {
+    SQLDeleteClauseAlter, SQLUpdateClauseAlter, SQLInsertClauseAlter, SQLMergeClauseAlter>,ISQLFactoryEx {
 
     protected final ConfigurationEx configuration;
 

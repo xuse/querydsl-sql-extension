@@ -14,13 +14,14 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.github.xuse.querydsl.sql.IRelationPathEx;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -97,14 +98,14 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	 * @param type
 	 * @param ex
 	 */
-	protected QBeanEx(Class<? extends T> type, IRelationPathEx<?> ex) {
+	protected QBeanEx(Class<? extends T> type, RelationalPathEx<?> ex) {
 		super(type);
 		Map<String, Expression<?>> bindings = new LinkedHashMap<>();
 		for(Path<?> p:ex.getColumns()) {
 			bindings.put(p.getMetadata().getName(),(Expression<?>)	p);
 		}
 		this.bindings=Collections.unmodifiableMap(bindings);
-		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), new ArrayList<>(this.bindings.keySet()));
+		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), new DefaultBindingProvider(this.bindings));
 	}
 
 	/**
@@ -117,8 +118,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		super(type);
 		this.bindings = Collections.unmodifiableMap(bindings);
-		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), new ArrayList<>(this.bindings.keySet()));
-
+		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(),  new DefaultBindingProvider(this.bindings));
 	}
 
 	protected void typeMismatch(Class<?> type, Expression<?> expr) {
@@ -129,6 +129,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T newInstance(Object... a) {
+		System.out.println(Arrays.toString(a));
 		return (T) beanCodec.newInstance(a);
 	}
 	 /**
@@ -171,6 +172,13 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
         return new ArrayList<>(bindings.values());
     }
     
+    /**
+     * convert the result to another type using the function input.
+     * @param <K>
+     * @param function
+     * @param clz the type K
+     * @return StreamExpressionWrapper
+     */
 	public <K> StreamExpressionWrapper<T, K> map(Function<T, K> function, Class<K> clz) {
 		return new StreamExpressionWrapper<>(this, function, clz);
 	}

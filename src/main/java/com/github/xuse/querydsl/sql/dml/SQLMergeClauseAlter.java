@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.function.Supplier;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
+import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.FilteredClause;
 import com.querydsl.core.QueryMetadata;
@@ -171,9 +173,24 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	}
 	
     protected SQLSerializer createSerializer() {
-        SQLSerializer serializer = new SQLSerializerAlter(configuration, true);
+        SQLSerializer serializer = new SQLSerializerAlter(configEx, true);
         serializer.setUseLiterals(useLiterals);
         return serializer;
+    }
+    
+	private static final AdvancedMapper FOR_UPDATE = new AdvancedMapper(AdvancedMapper.SCENARIO_UPDATE);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public SQLMergeClauseAlter populate(Object bean) {
+		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
+				? entity.getPrimaryKey().getLocalColumns()
+				: Collections.<Path<?>>emptyList();
+		Map<Path<?>, Object> values = FOR_UPDATE.createMap(entity, bean, configEx);
+		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+			if (!primaryKeyColumns.contains(entry.getKey())) {
+				set((Path) entry.getKey(), entry.getValue());
+			}
+		}
+		return this;
     }
 
 	private long executeBatch(PreparedStatement stmt) throws SQLException {

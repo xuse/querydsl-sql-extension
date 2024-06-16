@@ -220,7 +220,7 @@ public class Exceptions {
 	 * 将指定的异常封装为IllegalArgumentException
 	 * 
 	 * @param t
-	 * @return
+	 * @return IllegalArgumentException
 	 */
 	public static IllegalArgumentException asIllegalArgument(Throwable t) {
 		return illegalArgument(t, true);
@@ -230,7 +230,7 @@ public class Exceptions {
 	 * 将异常转换为RuntimeException
 	 * 
 	 * @param t
-	 * @return
+	 * @return RuntimeException
 	 */
 	public static RuntimeException toRuntime(Throwable t) {
 		if (t instanceof RuntimeException) {
@@ -247,7 +247,7 @@ public class Exceptions {
 	 * 
 	 * @param message
 	 * @param objects
-	 * @return
+	 * @return {@link IllegalArgumentException}
 	 */
 	public static IllegalArgumentException illegalArgument(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
@@ -306,7 +306,7 @@ public class Exceptions {
 	 * 
 	 * @param message
 	 * @param objects
-	 * @return
+	 * @return {@link IllegalStateException}
 	 */
 	public static IllegalStateException illegalState(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
@@ -355,7 +355,7 @@ public class Exceptions {
 	 * 
 	 * @param message
 	 * @param objects
-	 * @return
+	 * @return formatted String
 	 */
 	public static String format(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);

@@ -57,8 +57,7 @@ public enum DateGenerateType {
 
 	/**
 	 * 如果是由java生成时间，并且精度为转换为long的毫秒数来管理（因为Oracle和MySQL的时间精度都只到秒）
-	 * 则生成当前时间戳
-	 * @return
+	 * @return 生成当前时间戳
 	 */
 	public abstract long generateLong();
 

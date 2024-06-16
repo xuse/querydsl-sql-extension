@@ -24,8 +24,6 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.TimeZone;
 
-import com.github.xuse.querydsl.util.StringUtils;
-
 /**
  * 用于提供各种线程安全的时间日期格式
  * <li>G 年代标志符</li>
@@ -126,7 +124,6 @@ public abstract class DateFormats {
 		/**
 		 * 格式化时间
 		 * @param time
-		 * @return
 		 */
 		public String format(long time) {
 			return get().format(time);
@@ -144,8 +141,8 @@ public abstract class DateFormats {
 
 		/**
 		 * 格式化日期
-		 * @param date
-		 * @return
+		 * @param date 可以为null
+		 * @return  Optional<String> 
 		 */
 		public Optional<String> format2(Date date) {
 			return date == null ? Optional.empty() : Optional.of(get().format(date));
@@ -177,7 +174,6 @@ public abstract class DateFormats {
 		 * 格式化日期，按指定的时区进行输出
 		 * @param date
 		 * @param utcOffset
-		 * @return
 		 */
 		public Optional<String> format2(Date date, int utcOffset) {
 			return Optional.ofNullable(format0(date, utcOffset + 12));
@@ -206,7 +202,7 @@ public abstract class DateFormats {
 		 * 
 		 * @param text 时间文字
 		 * @param zone 时区
-		 * @return
+		 * @return 解析日期
 		 * @throws IllegalArgumentException
 		 */
 		public Date parse(String text, TimeZone zone) throws IllegalArgumentException {
@@ -225,7 +221,6 @@ public abstract class DateFormats {
 		 * 
 		 * @param text
 		 * @param utcOffset 相对国际原子时的时差，从-12到+14(中国为8)
-		 * @return
 		 * @throws IllegalArgumentException
 		 */
 		public Date parse(String text, int utcOffset) throws IllegalArgumentException {
@@ -262,7 +257,7 @@ public abstract class DateFormats {
 		 * 
 		 * @param text
 		 * @param defaultValue
-		 * @return
+		 * @return 解析日期
 		 */
 		public Date parse(String text, Date defaultValue, TimeZone timeZone) {
 			if (StringUtils.isEmpty(text)) {
@@ -290,6 +285,8 @@ public abstract class DateFormats {
 	/**
 	 * 支持全时区的DateFormat对象,共计27个UTC。包括 -12,0,+12 (东西十二区分为东十二区和西十二区)。 加上太平洋上的特殊时区
 	 * 菲尼克斯群岛(UTC+13) 莱恩群岛(UTF+14)
+	 * 
+	 * TODO 支持印度的半时区
 	 */
 	public static final class SuperDataFormat extends DateFormat {
 		private static final long serialVersionUID = 5040737257964931800L;
@@ -329,7 +326,6 @@ public abstract class DateFormats {
 	 * 得到ThreadLocal对象的DateFormat
 	 * 
 	 * @param pattern
-	 * @return
 	 */
 	public static final TLDateFormat create(String pattern) {
 		return new TLDateFormat(pattern);

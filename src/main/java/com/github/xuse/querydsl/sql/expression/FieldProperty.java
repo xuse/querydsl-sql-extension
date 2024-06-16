@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.sql.expression;
 
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -8,11 +7,12 @@ public class FieldProperty {
 	private final Method getter;
 	private final Method setter;
 	private final Field field;
+	private Class<?> bindingType;
 
-	public FieldProperty(Method getter,Method setter, Field field) {
-		this.getter=getter;
-		this.setter=setter;
-		this.field=field;
+	public FieldProperty(Method getter, Method setter, Field field) {
+		this.getter = getter;
+		this.setter = setter;
+		this.field = field;
 	}
 
 	public Method getGetter() {
@@ -31,6 +31,12 @@ public class FieldProperty {
 	public String toString() {
 		return "getter=" + getter + ", setter=" + setter + ", field=" + field;
 	}
-	
-	
+
+	public Class<?> getBindingType() {
+		return bindingType;
+	}
+
+	public void setBindingType(Class<?> bindingType) {
+		this.bindingType = bindingType;
+	}
 }

@@ -49,4 +49,9 @@ public class SpringProvider implements Supplier<Connection> {
         return connection;
     }
 
+	public boolean isTx() {
+		Connection connection = DataSourceUtils.getConnection(dataSource);
+		return DataSourceUtils.isConnectionTransactional(connection, dataSource);
+	}
+
 }

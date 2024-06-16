@@ -1,0 +1,13 @@
+com.querydsl.sql.DerbyTemplates=com.github.xuse.querydsl.sql.dialect.DerbySQLTemplatesEx
+com.querydsl.sql.H2Templates=
+com.querydsl.sql.HSQLDBTemplates=
+com.querydsl.sql.SQLiteTemplates=
+com.querydsl.sql.CUBRIDTemplates=
+com.querydsl.sql.OracleTemplates=
+com.querydsl.sql.SQLServerTemplates=
+com.querydsl.sql.SQLServer2005Templates=
+com.querydsl.sql.SQLServer2008Templates=
+com.querydsl.sql.SQLServer2012Templates=
+com.querydsl.sql.PostgreSQLTemplates=
+com.querydsl.sql.DB2Templates=
+com.querydsl.sql.TeradataTemplates=

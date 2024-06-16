@@ -117,7 +117,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
     
     protected PreparedStatement createStatement() throws SQLException {
         listeners.preRender(context);
-        SQLSerializer serializer =  new SQLSerializerAlter(configuration, true);
+        SQLSerializer serializer =  new SQLSerializerAlter(configEx, true);
         serializer.setUseLiterals(useLiterals);
         serializer.serializeDelete(metadata, entity);
         

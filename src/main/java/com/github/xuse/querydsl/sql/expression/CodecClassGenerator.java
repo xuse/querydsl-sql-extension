@@ -17,6 +17,7 @@ import com.github.xuse.querydsl.asm.ClassWriter;
 import com.github.xuse.querydsl.asm.MethodVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
 import com.github.xuse.querydsl.util.ASMUtils;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.Primitives;
 
@@ -83,8 +84,7 @@ public class CodecClassGenerator implements Opcodes {
 			} catch (NoSuchMethodException e) {
 				e.printStackTrace();
 			}
-			mw.visitVarInsn(ASTORE, 2);// 创建对象并存入 S0
-
+			mw.visitVarInsn(ASTORE, 2);// 存入 V2
 			int index = 0;
 			for (FieldProperty property : methods) {
 				Method setter = property.getSetter();
@@ -94,17 +94,22 @@ public class CodecClassGenerator implements Opcodes {
 					continue;
 				}
 				mw.visitVarInsn(ALOAD, 2);// S1
-				mw.visitVarInsn(ALOAD, 1);// S2
+				mw.visitVarInsn(ALOAD, 1);// S2, 读取V1，即数组
 				iconst(mw, index++);// S3
 				mw.visitInsn(AALOAD);// S2
 				// 类型转换
 				Class<?> target = setter.getParameterTypes()[0];
 				if (target.isPrimitive()) {
 					Class<?> wrapped = Primitives.toWrapperClass(target);
-					mw.visitTypeInsn(CHECKCAST, getType(wrapped));// 类型转换
-					doUnwrap(mw, target, wrapped); // 拆箱
+					boolean primitive=tryTypeConvert(mw,wrapped, property.getBindingType());
+					if(!primitive) {
+						doUnwrap(mw, target, wrapped); // 拆箱
+					}
 				} else {
-					mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换
+					boolean primitive=tryTypeConvert(mw,target, property.getBindingType());
+					if(primitive) {
+						ASMUtils.doWrap(mw, Primitives.toPrimitiveClass(target), target);
+					}
 				}
 				mw.visitMethodInsn(INVOKEVIRTUAL, getType(beanType), setter.getName(), getDesc(setter), false);
 			}
@@ -142,7 +147,7 @@ public class CodecClassGenerator implements Opcodes {
 
 				Class<?> target = getter.getReturnType();
 				if (target.isPrimitive()) {
-					ASMUtils.doWrap(mw, target);
+					ASMUtils.doWrap(mw, target, Primitives.toWrapperClass(target));
 				}
 				mw.visitInsn(AASTORE); // 写入数组,S0
 			}
@@ -155,5 +160,37 @@ public class CodecClassGenerator implements Opcodes {
 		}
 		cw.visitEnd();
 		return cw.toByteArray();
+	}
+
+	private boolean tryTypeConvert(MethodVisitor mw, Class<?> target, Class<?> bindingType) {
+		if(bindingType == null || target.isAssignableFrom(bindingType)) {
+			mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换	
+			return false;
+		}
+		if(Number.class.isAssignableFrom(bindingType) && Number.class.isAssignableFrom(target)) {
+			//基于Number的方式进行特殊拆箱
+			mw.visitTypeInsn(CHECKCAST, getType(Number.class));
+			switch(target.getName()) {
+			case "java.lang.Integer":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "intValue", "()I", false);
+				return true;
+			case "java.lang.Double":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "doubleValue", "()D", false);
+				return true;
+			case "java.lang.Float":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "floatValue", "()F", false);
+				return true;
+			case "java.lang.Long":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "longValue", "()J", false);
+				return true;
+			case "java.lang.Short":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "shortValue", "()S", false);
+				return true;
+			default:
+				throw Exceptions.illegalState("Can not generate unbox method for type {} -> {}", bindingType,target);
+			}
+		}
+		mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换
+		return false;
 	}
 }

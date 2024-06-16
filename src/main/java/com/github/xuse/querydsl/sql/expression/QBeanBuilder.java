@@ -14,7 +14,7 @@ public class QBeanBuilder {
 	 * 构造
 	 * @param <T>
 	 * @param type
-	 * @return
+	 * @return QBeanEx
 	 */
 	public <T> QBeanEx<T> as(Class<T> type){
 		return new QBeanEx<T>(type, exprs);
@@ -24,7 +24,7 @@ public class QBeanBuilder {
 	 * 构造
 	 * @param <T>
 	 * @param type
-	 * @return
+	 * @return QBeanEx
 	 */
 	public <T> QBeanEx<T> as(Path<? extends T> type){
 		return new QBeanEx<T>(type.getType(), exprs);

@@ -2,31 +2,39 @@ package com.github.xuse.querydsl.entity;
 
 import java.util.Date;
 
-import com.github.xuse.querydsl.annotation.Condition;
-import com.github.xuse.querydsl.annotation.ConditionBean;
+import com.github.xuse.querydsl.annotation.query.Condition;
+import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.querydsl.core.types.Ops;
 
-@ConditionBean(additional = {"dateGt","dateLoe"},limitField = "limit",offsetField = "offset")
+/**
+ *  满足这样一种场景。有一些固定的组合条件查询。（比如从前端页面传入若干字段）其中一些字段可以为空，即不作为过滤条件。凡是传入有效数值的条件，都要参与查询过滤。
+ * 为此，可以定义一个Bean，将查询条件固定下来。通过@Condition注解，配置每个条件的运算操作符。
+ * @author jiyi
+*/
+@ConditionBean(limitField = "limit",offsetField = "offset")
 public class AvsAuthParams {
+	
 	@Condition(Ops.STARTS_WITH)
 	private String authContent;
+	
 	@Condition(Ops.GT)
 	private int authType;
+	
 	@Condition
 	private Integer channelNo;
 
 	@Condition(Ops.BETWEEN)
 	private Date[] createTime;
 	
+	@Condition(value=Ops.GT,path="createTime")
+	private Date dateGt;
+	
+	@Condition(value=Ops.LOE,path="createTime")
+	private Date dateLoe;
+	
 	private Integer limit;
 	
 	private Integer offset;
-	
-	@Condition(value=Ops.GT,name="createTime")
-	private Date dateGt;
-	
-	@Condition(value=Ops.LOE,name="createTime")
-	private Date dateLoe;
 	
 
 	public String getAuthContent() {

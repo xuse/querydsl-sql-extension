@@ -122,33 +122,32 @@ public final class Primitives {
 	}
 
 	/**
-	 * 安全拆箱
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return 安全拆箱
 	 */
 	public static int unbox(Integer value, int defaultValue) {
 		return value == null ? defaultValue : value.intValue();
 	}
 
 	/**
-	 * 安全拆箱
+	 * 
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return 安全拆箱
 	 */
 	public static short unbox(Short value, short defaultValue) {
 		return value == null ? defaultValue : value.shortValue();
 	}
 
 	/**
-	 * 安全拆箱
+	 * 
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return 安全拆箱
 	 */
 	public static long unbox(Long value, long defaultValue) {
 		return value == null ? defaultValue : value.longValue();
@@ -159,7 +158,7 @@ public final class Primitives {
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return double value
 	 */
 	public static double unbox(Double value, double defaultValue) {
 		return value == null ? defaultValue : value.doubleValue();
@@ -170,7 +169,7 @@ public final class Primitives {
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return value
 	 */
 	public static float unbox(Float value, float defaultValue) {
 		return value == null ? defaultValue : value.floatValue();
@@ -181,7 +180,7 @@ public final class Primitives {
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return value
 	 */
 	public static char unbox(Character value, char defaultValue) {
 		return value == null ? defaultValue : value.charValue();
@@ -192,7 +191,7 @@ public final class Primitives {
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return value
 	 */
 	public static byte unbox(Byte value, byte defaultValue) {
 		return value == null ? defaultValue : value.byteValue();
@@ -203,7 +202,7 @@ public final class Primitives {
 	 * 
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return value
 	 */
 	public static boolean unbox(Boolean value, boolean defaultValue) {
 		return value == null ? defaultValue : value.booleanValue();
@@ -213,7 +212,7 @@ public final class Primitives {
 	 * 安全拆箱（扩展）
 	 * @param value
 	 * @param defaultValue
-	 * @return
+	 * @return value
 	 */
 	public static long unbox(Date value, long defaultValue) {
 		return value == null ? defaultValue : value.getTime();
@@ -241,6 +240,41 @@ public final class Primitives {
 			throw Exceptions.illegalArgument("Cann't convert {} to a short value.",num);
 		}
 		return (short)num;
-		
+	}
+	
+	/**
+	 * 
+	 * @param i
+	 * @return  判断是否为奇数
+	 */
+	public static boolean isOdd(int i) {
+		return (i & 1) == 1;
+	}
+	
+	/**
+	 * 
+	 * @param i
+	 * @return 判断是否为偶数
+	 */
+	public static boolean isEven(int i) {
+		return (i & 1) ==0;
+	}
+	
+	/**
+	 * 
+	 * @param i
+	 * @return 判断是否为奇数
+	 */
+	public static boolean isOdd(long i) {
+		return (i & 1) == 1;
+	}
+	
+	/**
+	 * 
+	 * @param i 
+	 * @return 判断是否为偶数 
+	 */
+	public static boolean isEven(long i) {
+		return (i & 1) == 0;
 	}
 }

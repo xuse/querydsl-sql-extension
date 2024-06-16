@@ -19,9 +19,16 @@ import java.lang.annotation.Target;
 public @interface UnsavedValue {
 	String value();
 	
-	String NullOrEmpty="null+";
-	
-	String MinusNumber="<0";
-	
-	String ZeroAndMinus="<=0";
+	/**
+	 * 空字符串当作null。
+	 * <p>
+	 * 此外对于primitive类型的字段，使用这个配置可以让false/0 之类的值变为有效值。
+	 * 如果没有定义UnsavedValue, int(0), boolean(false)都被认为是null值。
+	 * </p>
+	 */
+	String NullOrEmpty = "null+";
+
+	String MinusNumber = "<0";
+
+	String ZeroAndMinus = "<=0";
 }

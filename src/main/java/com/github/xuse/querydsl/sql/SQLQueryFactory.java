@@ -23,13 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.ddl.AlterTableQuery;
-import com.github.xuse.querydsl.sql.ddl.CreateConstraintQuery;
-import com.github.xuse.querydsl.sql.ddl.CreateIndexQuery;
-import com.github.xuse.querydsl.sql.ddl.CreateTableQuery;
-import com.github.xuse.querydsl.sql.ddl.DropConstraintQuery;
-import com.github.xuse.querydsl.sql.ddl.DropIndexQuery;
-import com.github.xuse.querydsl.sql.ddl.DropTableQuery;
+import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
@@ -39,11 +34,12 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.MySQLWithJSONTemplates;
 import com.querydsl.sql.DerbyTemplates;
+import com.querydsl.sql.OracleTemplates;
+import com.querydsl.sql.PostgreSQLTemplates;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.RelationalPathBase;
 import com.querydsl.sql.SQLCloseListener;
+import com.querydsl.sql.SQLServer2012Templates;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.UnmanagedConnectionCloseListener;
 import com.querydsl.sql.mssql.SQLServerQueryFactory;
@@ -86,12 +82,22 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
 	}
 
-
+	/**
+	 * 根据URL计算使用的SQL模板
+	 * @param url
+	 * @return SQLTemplates
+	 */
 	public static SQLTemplates calcSQLTemplate(String url) {
 		if(url.startsWith("jdbc:mysql:")) {
-			return new MySQLWithJSONTemplates();
+			return new MySQLWithJSONTemplates() ;
 		}else if(url.startsWith("jdbc:derby:")) {
-			return DerbyTemplates.builder().newLineToSingleSpace().build();
+			return DerbyTemplates.builder().build();
+		}else if(url.startsWith("jdbc:postgresql:")) {
+			return new PostgreSQLTemplates();
+		}else if(url.startsWith("jdbc:sqlserver")) {
+			return new SQLServer2012Templates();
+		}else if(url.startsWith("jdbc:oracle:")) {
+			return new OracleTemplates();
 		}
 		throw Exceptions.illegalArgument(url);
 	}
@@ -183,41 +189,6 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		return select(expr).from(expr);
 	}
 
-	@Override
-	public <T> CreateTableQuery createTable(RelationalPathBase<T> path) {
-		return new CreateTableQuery(connection, configuration, path);
-	}
-
-	@Override
-	public <T> DropTableQuery dropTable(RelationalPathBase<T> path) {
-		return new DropTableQuery(connection, configuration, path);
-	}
-
-	@Override
-	public <T> AlterTableQuery alterTable(RelationalPathBase<T> path) {
-		return new AlterTableQuery(connection, configuration, path);
-	}
-
-	@Override
-	public <T> CreateIndexQuery createIndex(RelationalPathBase<T> path) {
-		return new CreateIndexQuery(connection, configuration, path);
-	}
-
-	@Override
-	public <T> DropIndexQuery dropIndex(RelationalPathBase<T> path) {
-		return new DropIndexQuery(connection, configuration, path);
-	}
-
-	@Override
-	public <T> CreateConstraintQuery createContraint(RelationalPathBase<T> path) {
-		return new CreateConstraintQuery(connection, configuration, path);
-	}
-
-	@Override
-	public <T> DropConstraintQuery dropConstraint(RelationalPathBase<T> path) {
-		return new DropConstraintQuery(connection, configuration, path);
-	}
-
     @Override
     public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
         return new SQLDeleteClauseAlter(connection, configEx, path);
@@ -237,4 +208,16 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
     public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
         return new SQLUpdateClauseAlter(connection, configEx, path);
     }
+    
+    public boolean isInSpringTransaction() {
+    	if(connection instanceof  SpringProvider) {
+    		return ((SpringProvider) connection).isTx();
+    	}
+    	throw new UnsupportedOperationException();
+    }
+
+	@Override
+	public SQLMetadataQueryFactory getMetadataFactory() {
+		return new SQLMetadataFactoryImpl(connection,configEx);
+	}
 }

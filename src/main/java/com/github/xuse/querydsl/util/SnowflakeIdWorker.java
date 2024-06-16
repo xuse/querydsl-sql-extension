@@ -28,7 +28,6 @@ package com.github.xuse.querydsl.util;
      /**
       * 构造
       * @param workerId 工作ID (0~255)
-      * @param workerId
       */
      public SnowflakeIdWorker(int workerId) {
     	 this(workerId,0);

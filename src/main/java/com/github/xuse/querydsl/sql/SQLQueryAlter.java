@@ -22,24 +22,24 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.xml.ws.Holder;
+import org.apache.commons.lang3.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.xuse.querydsl.annotation.Condition;
-import com.github.xuse.querydsl.annotation.ConditionBean;
+import com.github.xuse.querydsl.annotation.query.Condition;
+import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
-import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
-import com.github.xuse.querydsl.sql.expression.QBeanEx;
+import com.github.xuse.querydsl.sql.expression.BeanCodec;
+import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
+import com.github.xuse.querydsl.sql.expression.FieldCollector;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.result.Projection;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.Holder;
 import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryException;
@@ -72,6 +72,8 @@ import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.StatementOptions;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * {@code SQLQuery} is a JDBC based implementation of the {@link SQLCommonQuery}
  * interface
@@ -79,10 +81,12 @@ import com.querydsl.sql.StatementOptions;
  * @param <T>
  * @author tiwe
  */
+@Slf4j
 public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private static final long serialVersionUID = -3451422354253107107L;
-	private static final Logger logger = LoggerFactory.getLogger(SQLQueryAlter.class);
-	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION, ", count(*) over() ");
+
+	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
+			", count(*) over() ");
 
 	////////////// 覆盖检查字段开始 <p>////////////
 	/*
@@ -90,7 +94,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * 检查所有引用该字段的位置，其位置数量应当和父类AbstractSQLQuery完全一致。
 	 * 相当于完全拦截了父类中字段的使用，使得父类的同名字段作废。使用子类的字段。 这一点也不优雅！ 2018-10-09 v4.2.1版本检查通过
 	 */
-
 	private SQLListenerContext parentContext;
 
 	private final ConfigurationEx configEx;
@@ -99,6 +102,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	private Connection conn;
 	///////////// 覆盖检查字段结束/////////////
+	private boolean exceedSizeLog;
 
 	public SQLQueryAlter() {
 		super((Connection) null, new Configuration(SQLTemplates.DEFAULT), new DefaultQueryMetadata());
@@ -135,7 +139,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		this.configEx = configuration;
 	}
 
-	public SQLQueryAlter(Supplier	<Connection> connProvider, ConfigurationEx configuration) {
+	public SQLQueryAlter(Supplier<Connection> connProvider, ConfigurationEx configuration) {
 		super(connProvider, configuration.get(), new DefaultQueryMetadata());
 		this.connProvider = connProvider;
 		this.configEx = configuration;
@@ -191,20 +195,21 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			return unsafeCount();
 		} catch (SQLException e) {
 			String error = "Caught " + e.getClass().getName();
-			logger.error(error, e);
+			log.error(error, e);
 			throw configuration.translate(e);
 		}
 	}
-	
-    @Override
-    protected SQLSerializer createSerializer() {
-        SQLSerializer serializer = new SQLSerializerAlter(configuration);
-        serializer.setUseLiterals(useLiterals);
-        return serializer;
-    }
+
+	@Override
+	protected SQLSerializer createSerializer() {
+		SQLSerializer serializer = new SQLSerializerAlter(configEx, false);
+		serializer.setUseLiterals(useLiterals);
+		return serializer;
+	}
 
 	private long unsafeCount() throws SQLException {
-		SQLListenerContextImpl context = startContext(connection(), getMetadata());
+		Connection conn;
+		SQLListenerContextImpl context = startContext(conn = connection(), getMetadata());
 		List<Object> constants = Collections.emptyList();
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -221,7 +226,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			constants = serializer.getConstants();
 			listeners.prePrepare(context);
 
-			stmt = getPreparedStatement(queryString);
+			stmt = getPreparedStatement(conn, queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), getMetadata().getParams());
 
 			context.addPreparedStatement(stmt);
@@ -258,7 +263,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private Connection connection() {
 		if (conn == null) {
 			if (connProvider != null) {
-				conn = connProvider.get();
+				return connProvider.get();
 			} else {
 				throw new IllegalStateException("No connection provided");
 			}
@@ -272,7 +277,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	private List<T> fetch(Holder<Object> getLastCell) {
-		SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
+		Connection conn;
+		SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
 
@@ -289,22 +295,20 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			constants = serializer.getConstants();
 
 			listeners.prePrepare(context);
-			final PreparedStatement stmt = getPreparedStatement(queryString);
-			try {
+			try (PreparedStatement stmt = getPreparedStatement(conn, queryString)) {
 				setParameters(stmt, constants, serializer.getConstantPaths(), queryMixin.getMetadata().getParams());
 				context.addPreparedStatement(stmt);
 				listeners.prepared(context);
 				listeners.preExecute(context);
-				long timeesp = System.currentTimeMillis();
-				ResultSet rs = stmt.executeQuery();
-				timeesp = System.currentTimeMillis() - timeesp;
-				try {
+				long timeElapsed = System.currentTimeMillis();
+				try (ResultSet rs = stmt.executeQuery()) {
+					timeElapsed = System.currentTimeMillis() - timeElapsed;
 					Projection<T> fe = getProjection(rs, getLastCell != null);
 					final List<T> result = fe.convert(rs);
 					if (getLastCell != null && fe instanceof AbstractProjection) {
 						getLastCell.value = ((AbstractProjection<?>) fe).lastCell;
 					}
-					postExecuted(context, timeesp, "Fetch", result.size());
+					postExecuted(context, timeElapsed, "Fetch", result.size());
 					return result;
 				} catch (IllegalAccessException e) {
 					onException(context, e);
@@ -318,11 +322,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				} catch (SQLException e) {
 					onException(context, e);
 					throw configuration.translate(queryString, constants, e);
-				} finally {
-					rs.close();
 				}
-			} finally {
-				stmt.close();
 			}
 		} catch (SQLException e) {
 			onException(context, e);
@@ -417,12 +417,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			int offset = 0;
 			Object[] args = new Object[argSize];
 			for (int i = 0; i < args.length; i++) {
-				try{
+				try {
 					args[i] = configuration.get(rs, argPath.get(i), offset + i + 1, argTypes.get(i));
-				}catch(SQLException ex) {
+				} catch (SQLException ex) {
 					throw ex;
-				}catch(Exception ex) {
-					throw new SQLException("get field:"+argPath.get(i)+"error",ex);
+				} catch (Exception ex) {
+					throw new SQLException("get field:" + argPath.get(i) + "error", ex);
 				}
 			}
 			return c.newInstance(args);
@@ -497,10 +497,24 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * 设置本次查询载入的最大行数
 	 * 
 	 * @param maxRows
+	 * @return this
 	 */
 	public SQLQueryAlter<T> setMaxRows(int maxRows) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(), options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(),
+				options.getFetchSize()));
+		return this;
+	}
+
+	/**
+	 * 设置本次查询载入的最大行数，并且当达到最大行数时记录截断警告
+	 * 
+	 * @param maxRows
+	 * @return this
+	 */
+	public SQLQueryAlter<T> setMaxRowsWithWarn(int maxRows) {
+		setMaxRows(maxRows);
+		this.exceedSizeLog = true;
 		return this;
 	}
 
@@ -508,10 +522,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * 设置本次查询每批获取大小
 	 * 
 	 * @param fetchSize
+	 * @return this
 	 */
 	public SQLQueryAlter<T> setFetchSisze(int fetchSize) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), options.getQueryTimeout(), fetchSize));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(),
+				options.getQueryTimeout(), fetchSize));
 		return this;
 	}
 
@@ -519,10 +535,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * 设置查询超时（秒）
 	 * 
 	 * @param queryTimeout
+	 * @return this
 	 */
 	public SQLQueryAlter<T> setQueryTimeout(int queryTimeout) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout, options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout,
+				options.getFetchSize()));
 		return this;
 	}
 
@@ -531,8 +549,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		this.statementOptions = statementOptions;
 	}
 
-	private PreparedStatement getPreparedStatement(String queryString) throws SQLException {
-		PreparedStatement statement = connection().prepareStatement(queryString);
+	private PreparedStatement getPreparedStatement(Connection conn, String queryString) throws SQLException {
+		PreparedStatement statement = conn.prepareStatement(queryString);
 		StatementOptions statementOptions = this.statementOptions;
 		if (statementOptions.getFetchSize() != null) {
 			statement.setFetchSize(statementOptions.getFetchSize());
@@ -542,7 +560,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 		if (statementOptions.getQueryTimeout() != null) {
 			statement.setQueryTimeout(statementOptions.getQueryTimeout());
-		}else if(configEx.getDefaultQueryTimeout()>0){
+		} else if (configEx.getDefaultQueryTimeout() > 0) {
 			statement.setQueryTimeout(configEx.getDefaultQueryTimeout());
 		}
 		if (statementOptions.getMaxRows() != null) {
@@ -557,7 +575,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	private CloseableIterator<T> iterateSingle(QueryMetadata metadata) {
-		SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
+		Connection conn;
+		SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
 
@@ -574,7 +593,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			constants = serializer.getConstants();
 
 			listeners.prePrepare(context);
-			final PreparedStatement stmt = getPreparedStatement(queryString);
+			final PreparedStatement stmt = getPreparedStatement(conn, queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), metadata.getParams());
 			context.addPreparedStatement(stmt);
 			listeners.prepared(context);
@@ -582,15 +601,16 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
-			postExecuted(context, System.currentTimeMillis() - start, "Iterated", 1);
 			Projection<T> expr = getProjection(rs, false);
-			return expr.iterator(stmt, rs, context);
+			CloseableIterator<T> i = expr.iterator(stmt, rs, context);
+			postExecuted(context, System.currentTimeMillis() - start, "Iterated", i.hasNext() ? 1 : 0);
+			return i;
 		} catch (SQLException e) {
 			onException(context, e);
 			endContext(context);
 			throw configuration.translate(queryString, constants, e);
 		} catch (RuntimeException e) {
-			logger.error("Caught " + e.getClass().getName() + " for " + queryString);
+			log.error("Caught " + e.getClass().getName() + " for " + queryString);
 			throw e;
 		}
 	}
@@ -601,7 +621,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 * @return results as ResultSet
 	 */
 	public ResultSet getResults() {
-		final SQLListenerContextImpl context = startContext(connection(), queryMixin.getMetadata());
+		Connection conn;
+		final SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
 
@@ -619,7 +640,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			constants = serializer.getConstants();
 
 			listeners.prePrepare(context);
-			final PreparedStatement stmt = getPreparedStatement(queryString);
+			final PreparedStatement stmt = getPreparedStatement(conn, queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), getMetadata().getParams());
 			context.addPreparedStatement(stmt);
 			listeners.prepared(context);
@@ -685,6 +706,14 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		if (this.configEx.getSlowSqlWarnMillis() <= cost) {
 			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
 		}
+		if (this.exceedSizeLog && "Fetch".equals(action)) {
+			Integer maxSize = this.statementOptions.getMaxRows();
+			if (maxSize != null) {
+				if (count >= maxSize) {
+					context.setData(ContextKeyConstants.EXCEED, maxSize);
+				}
+			}
+		}
 		listeners.executed(context);
 	}
 
@@ -703,24 +732,28 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		SQLQueryAlter<Tuple> newType = (SQLQueryAlter<Tuple>) this;
 		return newType;
 	}
-	
+
 	/**
 	 * 设置Limit，如果传入值为null或零或负数，则设置无效
+	 * 
 	 * @param limit
-	 * @return
+	 * @return this
 	 */
 	public final SQLQueryAlter<T> limitIf(Integer limit) {
-		if(limit==null  || limit<=0) {
+		if (limit == null || limit <= 0) {
 			return queryMixin.getSelf();
 		}
 		return queryMixin.limit(limit);
 	}
-	
+
 	/**
 	 * 设置Offset，如果传入值为null或负数，则设置无效
+	 * 
+	 * @param offset
+	 * @return this
 	 */
 	public final SQLQueryAlter<T> offsetIf(Integer offset) {
-		if(offset==null || offset<0) {
+		if (offset == null || offset < 0) {
 			return queryMixin.getSelf();
 		}
 		return queryMixin.offset(offset);
@@ -728,262 +761,256 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	/**
 	 * 支持使用一个参数Bean自动拼装查询条件。
+	 * 
 	 * @param <X>
 	 * @param conditionBean
 	 * @param beanPath
-	 * @return
+	 * @return SQLQueryAlter
 	 */
-	public final <X> SQLQueryAlter<T> where(X conditionBean, IRelationPathEx<T> beanPath) {
-		List<Path<?>> pathes = beanPath.getColumns();
-		@SuppressWarnings({"unchecked" })
-		Class<X> clz=(Class<X>) conditionBean.getClass();
-		QBeanEx<X> qb = ProjectionsAlter.bean(clz, beanPath);
-		ConditionBean cb=conditionBean.getClass().getAnnotation(ConditionBean.class);
-		if(cb==null) {
+	public final <X> SQLQueryAlter<T> where(X conditionBean, RelationalPathEx<T> beanPath) {
+		@SuppressWarnings({ "unchecked" })
+		Class<X> clz = (Class<X>) conditionBean.getClass();
+		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
+		if (cb == null) {
 			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
 		}
+		BeanCodec codec=BeanCodecManager.getInstance().getPopulator(clz, new FieldCollector());
+		Field[] fields = codec.getFields();
+		Object[] values = codec.values(conditionBean);
 		
-		List<Expression<?>> exps = qb.getArgs();
-		Object[] values = qb.getBeanCodec().values(conditionBean);
-		int len = pathes.size();
-		Field[] fields = qb.getBeanCodec().getFields();
-		for (int i = 0; i < len; i++) {
-			Field field = fields[i];
-			if (field == null) {
-				continue;
-			}
+		Map<String, Path<?>> bindings = new HashMap<>();
+		for(Path<?> p:beanPath.getColumns()) {
+			bindings.put(p.getMetadata().getName(),p);
+		}
+		Number limit = null;
+		Number offset = null;
+		for (int i = 0; i < fields.length; i++) {
+			Field field=fields[i];
 			Object value = values[i];
-			Expression<?> exp1=exps.get(i);
-			ColumnMapping cm = beanPath.getColumnMetadata(pathes.get(i));
-			Condition annotation = field.getAnnotation(Condition.class);
-			if(annotation!=null && annotation.name().length()>0 && !cm.get().getName().equals(annotation.name())) {
-				throw Exceptions.illegalArgument("Field {}.{} has matched a property, but name of annotation pointer to another field.{} ", clz.getName(),field.getName(),annotation.name());
-			}
-			appendCondition(field,value,exp1,cm, annotation==null? Ops.EQ :annotation.value());
-		}
-		for(String key:cb.additional()) {
-			Field field=getField(clz,key);
-			if(field==null) {
-				logger.error("@ConditionBean on{} field {} not found.",clz,key);
+			if(field.getName().equals(cb.limitField())) {
+				limit = (Number)value;
 				continue;
 			}
-			field.setAccessible(true);
-			Condition annotation = field.getAnnotation(Condition.class);
-			if(annotation==null || annotation.name().isEmpty()) {
-				throw Exceptions.illegalArgument("Miss real field name in annotation, please check @Condition annotation. field is {}", field);
+			if(field.getName().equals(cb.offsetField())) {
+				offset = (Number)value;
+				continue;
 			}
-			Path<?> path=beanPath.getColumn(annotation.name());
+			Condition condition = field.getAnnotation(Condition.class);
+			if(condition==null) {
+				continue;
+			}
+			String pathName=condition.path();
+			if(StringUtils.isEmpty(pathName)) {
+				pathName=field.getName();
+			}
+			Path<?> path=bindings.get(pathName);
 			if(path==null) {
-				throw Exceptions.illegalArgument("can't find path {} in {}, which annotated in field {}",annotation.name(),beanPath.getType(),field);
+				throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
 			}
+			
 			ColumnMapping cm = beanPath.getColumnMetadata(path);
-			try {
-				Object value = field.get(conditionBean);
-				appendCondition(field,value,(Expression<?>)path,cm, annotation==null? Ops.EQ :annotation.value());
-			} catch (IllegalAccessException e) {
-				throw new IllegalStateException(e);
+			if(condition.ignoreUnsavedValue() && isUnsavedValue(cm, value, condition.value())) {
+				continue;
 			}
+			appendCondition(value, path, condition.value());
 		}
-		if(!cb.limitField().isEmpty()) {
-			Number limit=getNumber(cb.limitField(),conditionBean);
-			if(limit!=null) {
-				limitIf(limit.intValue());
-			}
+		if (limit != null && limit.intValue()>=0) {
+			limit(limit.intValue());	
 		}
-		if(!cb.offsetField().isEmpty()) {
-			Number offset=getNumber(cb.offsetField(), conditionBean);
-			if(offset!=null) {
-				offsetIf(offset.intValue());
-			}
+		if (offset != null && offset.intValue()>=0) {
+			offsetIf(offset.intValue());
 		}
 		return this;
 	}
 
-	private Number getNumber(String limitField, Object conditionBean) {
-		Field field=getField(conditionBean.getClass(),limitField);
-		if(field==null) {
-			throw Exceptions.illegalArgument("Can not find limit field {}", limitField);
-		}
-		field.setAccessible(true);
-		try {
-			Object value = field.get(conditionBean);
-			if(value instanceof Number) {
-				return (Number)value;
+	private boolean isUnsavedValue(ColumnMapping cm, Object value, Ops operator) {
+		if(operator==Ops.IN || operator==Ops.BETWEEN) {
+			if(value==null) {
+				return true;
 			}
-			return null;
-		} catch (IllegalAccessException e) {
-			throw new IllegalStateException(e);
+			if (value instanceof Collection) {
+				for(Object e:(Collection<?>)value) {
+					if(cm.isUnsavedValue(e)) {
+						return true;
+					}
+				}
+				return false;
+			}
+			if (value instanceof Object[]) {
+				for(Object e:(Object[])value) {
+					if(cm.isUnsavedValue(e)) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}else {
+			return cm.isUnsavedValue(value);
 		}
-	}
-
-	private Field getField(Class<?> clz, String key) {
-		Field field = null;
-		try {
-			field=clz.getDeclaredField(key);
-		}catch(NoSuchFieldException e) {
-		}
-		if(field!=null || clz.getSuperclass()==Object.class) {
-			return field;
-		}
-		return getField(clz.getSuperclass(),key);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void appendCondition(Field field, Object value,Expression<?> exp1,ColumnMapping cm,Ops ops) {
-		
-		if(ops==Ops.IN || ops==Ops.BETWEEN) {
-			if(!hasElements(value)) {
+	private void appendCondition(Object value, Path<?> path, Ops ops) {
+		if (ops == Ops.IN) {
+			if (!hasElements(value,1)) {
 				return;
 			}
-		}else {
-			if (cm.isUnsavedValue(value)) {
+		} else if(ops == Ops.BETWEEN) {
+			if (!hasElements(value,2)) {
 				return;
 			}
-		}
+		} 
 		switch (ops) {
-		case IN:{
-			SimpleExpression exp = (SimpleExpression) exp1;
-			if(value instanceof Collection<?>) {
-				queryMixin.where(exp.in((Collection<?>)value));	
-			}else if(value instanceof Object[]) {
-				queryMixin.where(exp.in((Object[])value));
+		case IN: {
+			SimpleExpression exp = (SimpleExpression) path;
+			if (value instanceof Collection<?>) {
+				queryMixin.where(exp.in((Collection<?>) value));
+			} else if (value instanceof Object[]) {
+				queryMixin.where(exp.in((Object[]) value));
 			}
 			break;
 		}
 		case EQ: {
-			SimpleExpression exp = (SimpleExpression) exp1;
-			queryMixin.where(exp.eq(value));
+			SimpleExpression exp = (SimpleExpression) path;
+			if(value==null) {
+				queryMixin.where(exp.isNull());
+			}else {
+				queryMixin.where(exp.eq(value));	
+			}
 			break;
 		}
 		case LT: {
-			if(exp1 instanceof NumberExpression) {
-				NumberExpression exp=(NumberExpression)exp1;
-				queryMixin.where(exp.lt((Number) value));	
-			}else {
-				ComparableExpression exp = (ComparableExpression) exp1;
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				queryMixin.where(exp.lt((Number) value));
+			} else {
+				ComparableExpression exp = (ComparableExpression) path;
 				queryMixin.where(exp.lt((Comparable) value));
 			}
 			break;
 		}
 		case LOE: {
-			if(exp1 instanceof NumberExpression) {
-				NumberExpression exp=(NumberExpression)exp1;
-				queryMixin.where(exp.loe((Number) value));	
-			}else {
-				ComparableExpression exp = (ComparableExpression) exp1;
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				queryMixin.where(exp.loe((Number) value));
+			} else {
+				ComparableExpression exp = (ComparableExpression) path;
 				queryMixin.where(exp.loe((Comparable) value));
 			}
 			break;
 		}
-		case GT:{
-			if(exp1 instanceof NumberExpression) {
-				NumberExpression exp=(NumberExpression)exp1;
-				queryMixin.where(exp.gt((Number) value));	
-			}else {
-				ComparableExpression exp = (ComparableExpression) exp1;
+		case GT: {
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				queryMixin.where(exp.gt((Number) value));
+			} else {
+				ComparableExpression exp = (ComparableExpression) path;
 				queryMixin.where(exp.gt((Comparable) value));
 			}
 			break;
 		}
-		case GOE:{
-			if(exp1 instanceof NumberExpression) {
-				NumberExpression exp=(NumberExpression)exp1;
-				queryMixin.where(exp.goe((Number) value));	
-			}else {
-				ComparableExpression exp = (ComparableExpression) exp1;
+		case GOE: {
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				queryMixin.where(exp.goe((Number) value));
+			} else {
+				ComparableExpression exp = (ComparableExpression) path;
 				queryMixin.where(exp.goe((Comparable) value));
 			}
 			break;
 		}
-		case BETWEEN:{
-			ComparableExpression exp = (ComparableExpression) exp1;
-			if(value instanceof Collection<?>) {
-				List<? extends Comparable> list=toList((Collection<Comparable>)value);
-				if(list.size()<2) {
-					throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
+		case BETWEEN: {
+			ComparableExpression exp = (ComparableExpression) path;
+			if (value instanceof Collection<?>) {
+				List<? extends Comparable> list = toList((Collection<Comparable>) value);
+				if (list.size() < 2) {
+					throw new IllegalArgumentException(
+							"Invalid param, the value for between condition must be 2 elements.");
 				}
-				queryMixin.where(exp.between(list.get(0),list.get(1)));
-			}else if(value instanceof Object[]) {
-				Object[] bvalue=(Object[])value;
-				if(bvalue.length<2) {
-					throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
+				queryMixin.where(exp.between(list.get(0), list.get(1)));
+			} else if (value instanceof Object[]) {
+				Object[] bvalue = (Object[]) value;
+				if (bvalue.length < 2) {
+					throw new IllegalArgumentException(
+							"Invalid param, the value for between condition must be 2 elements.");
 				}
-				queryMixin.where(exp.in((Comparable)bvalue[0],(Comparable)bvalue[1]));
+				queryMixin.where(exp.between((Comparable) bvalue[0], (Comparable) bvalue[1]));
 			}
 			break;
 		}
-		case STARTS_WITH:{
-			StringExpression exp=(StringExpression)exp1;
+		case STARTS_WITH: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.startsWith(String.valueOf(value)));
 			break;
 		}
-		case STARTS_WITH_IC:{
-			StringExpression exp=(StringExpression)exp1;
+		case STARTS_WITH_IC: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.startsWithIgnoreCase(String.valueOf(value)));
 			break;
 		}
-		case ENDS_WITH:{
-			StringExpression exp=(StringExpression)exp1;
+		case ENDS_WITH: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.endsWith(String.valueOf(value)));
 			break;
 		}
-		case ENDS_WITH_IC:{
-			StringExpression exp=(StringExpression)exp1;
+		case ENDS_WITH_IC: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.endsWithIgnoreCase(String.valueOf(value)));
 			break;
 		}
-		case STRING_CONTAINS:{
-			StringExpression exp=(StringExpression)exp1;
+		case STRING_CONTAINS: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.contains(String.valueOf(value)));
 			break;
 		}
-		case LIKE:{
-			StringExpression exp=(StringExpression)exp1;
+		case LIKE: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.like(String.valueOf(value)));
 			break;
 		}
-		case LIKE_IC:{
-			StringExpression exp=(StringExpression)exp1;
+		case LIKE_IC: {
+			StringExpression exp = (StringExpression) path;
 			queryMixin.where(exp.likeIgnoreCase(String.valueOf(value)));
 			break;
 		}
-		case IS_NULL:	{
-			SimpleExpression exp = (SimpleExpression) exp1;
+		case IS_NULL: {
+			SimpleExpression exp = (SimpleExpression) path;
 			queryMixin.where(exp.isNull());
 			break;
 		}
-		case IS_NOT_NULL:{
-			SimpleExpression exp = (SimpleExpression) exp1;
+		case IS_NOT_NULL: {
+			SimpleExpression exp = (SimpleExpression) path;
 			queryMixin.where(exp.isNotNull());
 			break;
 		}
 		default:
-			throw new UnsupportedOperationException("Ops." + ops + " is not supported on field " + field.getDeclaringClass().getName() + "." + field.getName());
+			throw new UnsupportedOperationException("Ops." + ops + " is not supported on field "
+					+ path);
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes"})
-	private boolean hasElements(Object value) {
-		if(value==null) {
+	@SuppressWarnings({ "rawtypes" })
+	private boolean hasElements(Object value, int minElement) {
+		if (value == null) {
 			return false;
 		}
-		if(value instanceof Collection) {
-			return ((Collection) value).isEmpty();
+		if (value instanceof Collection) {
+			return ((Collection) value).size()>=minElement;
 		}
-		if(value instanceof Object[]) {
-			return ((Object[])value).length==0;
+		if (value instanceof Object[]) {
+			return ((Object[]) value).length >=minElement;
 		}
-		return true;
+		return false;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private List<? extends Comparable> toList(Collection<? extends Comparable> value) {
-		if(value instanceof List) {
-			return (List<Comparable>)value;
-		}else {
+		if (value instanceof List) {
+			return (List<Comparable>) value;
+		} else {
 			return new ArrayList<>(value);
 		}
-		
+
 	}
 
 }

@@ -30,7 +30,7 @@ public abstract class AbstractBase64EncryptStringType extends AbstractType<Strin
 	@Override
 	public String getValue(ResultSet rs, int startIndex) throws SQLException {
 		String value=rs.getString(startIndex);
-		return StringUtils.isEmpty(value)? value:decrypt(JefBase64.decodeFast(value));
+		return StringUtils.isEmpty(value)? value:decrypt(JefBase64.decode(value));
 	}
 
 	@Override

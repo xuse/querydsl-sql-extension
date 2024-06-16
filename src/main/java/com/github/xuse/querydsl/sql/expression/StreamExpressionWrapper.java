@@ -21,7 +21,7 @@ public class StreamExpressionWrapper<T, K> extends ExpressionBase<K> implements 
 		this.expr = expr;
 		this.function = function;
 	}
-
+	
 	@Override
 	public List<Expression<?>> getArgs() {
 		return expr.getArgs();

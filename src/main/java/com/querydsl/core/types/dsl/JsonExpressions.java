@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.xuse.querydsl.sql.json.JsonOps;
+import com.github.xuse.querydsl.util.Primitives;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -19,6 +20,11 @@ import com.querydsl.core.types.Operator;
  */
 public class JsonExpressions {
 	private JsonExpressions() {
+	}
+
+	public static <T> SimpleOperation<T> simpleOperation(Class<? extends T> type, Operator operator,
+			Expression<?>... args) {
+		return new SimpleOperation<T>(type, operator, args);
 	}
 
 	/**
@@ -42,7 +48,7 @@ public class JsonExpressions {
 	public static BooleanOperation booleanOperation(Operator operator, Expression<?>... args) {
 		return new BooleanOperation(operator, args);
 	}
-	
+
 	/**
 	 * Create a new Integer operation
 	 *
@@ -50,18 +56,16 @@ public class JsonExpressions {
 	 * @param args     operation arguments
 	 * @return operation expression
 	 */
-    public static NumberOperation<Integer> integerOperation(Operator operator, Expression<?>... args) {
-        return new NumberOperation<>(Integer.class, operator, args);
-    }
-    
+	public static NumberOperation<Integer> integerOperation(Operator operator, Expression<?>... args) {
+		return new NumberOperation<>(Integer.class, operator, args);
+	}
 
 	/**
 	 * JSON_ARRAY([val[, val] ...]) Evaluates a (possibly empty) list of values and
 	 * returns a JSON array containing those values.
 	 * 
 	 * @param elements Elements of JSON array.
-	 * @return
-	 * @author jiyi
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonArray(Object... elements) {
 		List<?> list = Arrays.asList(elements);
@@ -76,8 +80,7 @@ public class JsonExpressions {
 	 * number of arguments is odd.
 	 * 
 	 * @param elements
-	 * @return
-	 * @author jiyi
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonObject(Object... elements) {
 		List<?> list = Arrays.asList(elements);
@@ -92,7 +95,7 @@ public class JsonExpressions {
 	 * as a utf8mb4 string. Returns NULL if the argument is NULL.
 	 * 
 	 * @param text
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonQuote(String text) {
 		return stringOperation(JsonOps.JSON_QUOTE, ConstantImpl.create(text));
@@ -102,7 +105,7 @@ public class JsonExpressions {
 	 * @see #jsonContains(Expression, String, String)
 	 * @param jsonDoc
 	 * @param text
-	 * @return
+	 * @return BooleanOperation
 	 */
 	public static BooleanOperation jsonContains(Expression<String> jsonDoc, String text) {
 		return jsonContains(jsonDoc, text, null);
@@ -122,7 +125,7 @@ public class JsonExpressions {
 	 * @param jsonDoc
 	 * @param text
 	 * @param path
-	 * @return
+	 * @return StringOperation
 	 */
 	public static BooleanOperation jsonContains(Expression<String> jsonDoc, String text, String path) {
 		if (StringUtils.isEmpty(path)) {
@@ -144,7 +147,7 @@ public class JsonExpressions {
 	 * @param jsonDoc
 	 * @param trueAsAll
 	 * @param paths
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonContainsPath(Expression<String> jsonDoc, boolean trueAsAll, String... paths) {
 		Expression<String> oneAll = Expressions.asString(trueAsAll ? "all" : "one");
@@ -163,7 +166,7 @@ public class JsonExpressions {
 	 * @param jsonDoc
 	 * @param trueAsAll
 	 * @param paths
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonExtract(Expression<String> jsonDoc, boolean trueAsAll, String... paths) {
 		Expression<String> oneAll = Expressions.asString(trueAsAll ? "all" : "one");
@@ -175,7 +178,7 @@ public class JsonExpressions {
 	 * 
 	 * @see #jsonKeys(Expression, String)
 	 * @param jsonDoc
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonKeys(Expression<String> jsonDoc) {
 		return jsonKeys(jsonDoc, null);
@@ -197,7 +200,7 @@ public class JsonExpressions {
 	 * 
 	 * @param jsonDoc
 	 * @param path
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonKeys(Expression<String> jsonDoc, String path) {
 		if (path == null) {
@@ -219,7 +222,7 @@ public class JsonExpressions {
 	 * @param jsonDoc
 	 * @param trueAsAll
 	 * @param text
-	 * @return
+	 * @return vStringOperation
 	 */
 	public static StringOperation jsonSearch(Expression<String> jsonDoc, boolean trueAsAll, String text) {
 		return jsonSearch(jsonDoc, trueAsAll, text, '\\');
@@ -230,8 +233,11 @@ public class JsonExpressions {
 	 * 
 	 * @see #jsonSearch(Expression, boolean, String)
 	 * @param jsonDoc
-	 * @param path
-	 * @return
+	 * @param trueAsAll
+	 * @param text
+	 * @param escapeChar
+	 * @param paths
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonSearch(Expression<String> jsonDoc, boolean trueAsAll, String text,
 			char escapeChar, String... paths) {
@@ -252,7 +258,7 @@ public class JsonExpressions {
 	 * 
 	 * @param jsonDoc
 	 * @param path
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonValue(Expression<String> jsonDoc, String path) {
 		return stringOperation(JsonOps.JSON_VALUE, jsonDoc, ConstantImpl.create(path));
@@ -262,7 +268,9 @@ public class JsonExpressions {
 	 * JSON_ARRAY_APPEND(json_doc, path, val[, path, val] ...)
 	 * 
 	 * @see #jsonArrayAppend(Expression, List)
-	 * 
+	 * @param jsonDoc
+	 * @param pathAndValues
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonArrayAppend(Expression<String> jsonDoc, String... pathAndValues) {
 		return stringOperation(JsonOps.JSON_ARRAY_APPEND, jsonDoc, ConstantImpl.create(pathAndValues));
@@ -283,6 +291,9 @@ public class JsonExpressions {
 	 * If a path selects a scalar or object value, that value is autowrapped within
 	 * an array and the new value is added to that array. Pairs for which the path
 	 * does not identify any value in the JSON document are ignored.
+	 * @param jsonDoc
+	 * @param pathAndValues
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonArrayAppend(Expression<String> jsonDoc,
 			List<Pair<String, String>> pathAndValues) {
@@ -322,20 +333,21 @@ public class JsonExpressions {
 	 * array, then extended with the new value.</li>
 	 * 
 	 * @param jsonDoc
-	 * @return
+	 * @param pathAndValues
+	 * @return SimpleOperation
 	 */
-	public static StringOperation jsonSet(Expression<String> jsonDoc, List<Pair<String, String>> pathAndValues) {
+	public static <T> SimpleOperation<T> jsonSet(Expression<T> jsonDoc, List<Pair<String, String>> pathAndValues) {
 		if (pathAndValues == null || pathAndValues.isEmpty()) {
 			throw new IllegalArgumentException();
 		}
-		Object[] arrays = new Object[pathAndValues.size() * 2];
+		Expression<?>[] arrays = new Expression[pathAndValues.size() * 2];
 		for (int i = 0; i < pathAndValues.size(); i++) {
 			Pair<String, String> pair = pathAndValues.get(i);
 			int index = i * 2;
-			arrays[index] = pair.getFirst();
-			arrays[index + 1] = pair.getSecond();
+			arrays[index] = ConstantImpl.create(pair.getFirst());
+			arrays[index + 1] =  Expressions.simpleTemplate(jsonDoc.getType(),"CAST({0} AS JSON)",pair.getSecond());
 		}
-		return stringOperation(JsonOps.JSON_ARRAY_APPEND, jsonDoc, ConstantImpl.create(arrays));
+		return simpleOperation(jsonDoc.getType(), JsonOps.JSON_SET, jsonDoc, ConstantImpl.create(arrays));
 	}
 
 	/**
@@ -343,10 +355,25 @@ public class JsonExpressions {
 	 * 
 	 * @param jsonDoc
 	 * @param pathAndValues
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonSet(Expression<String> jsonDoc, String... pathAndValues) {
-		return stringOperation(JsonOps.JSON_SET, jsonDoc, ConstantImpl.create(pathAndValues));
+		Expression<?>[] exps = convertJSONparams(pathAndValues, jsonDoc.getType());
+		return stringOperation(JsonOps.JSON_SET, jsonDoc, ConstantImpl.create(exps));
+	}
+
+	private static Expression<?>[] convertJSONparams(String[] pathAndValues,Class<?> valueType) {
+		if(pathAndValues==null || pathAndValues.length==0 || Primitives.isOdd(pathAndValues.length)) {
+			throw new IllegalArgumentException("Input path is null or size is odd-number!");
+		}
+		Expression<?>[] result=new Expression<?>[pathAndValues.length];
+		for (int i = 0; i < pathAndValues.length; i++) {
+			String path=pathAndValues[i];
+			result[i]=ConstantImpl.create(path);
+			String value = pathAndValues[++i];
+			result[i] = Expressions.simpleTemplate(valueType, "CAST({0} AS JSON)", value);
+		}
+		return result;
 	}
 
 	/**
@@ -383,7 +410,7 @@ public class JsonExpressions {
 	 * <li>OPAQUE (raw bits)</li>
 	 * 
 	 * @param jsonDoc
-	 * @return
+	 * @return StringOperation
 	 */
 	public static StringOperation jsonType(Expression<String> jsonDoc) {
 		return stringOperation(JsonOps.JSON_TYPE, jsonDoc);
@@ -401,7 +428,7 @@ public class JsonExpressions {
 	 * 
 	 * @param jsonDoc
 	 * @param path
-	 * @return
+	 * @return NumberOperation
 	 */
 	public static NumberOperation<Integer> jsonLength(Expression<String> jsonDoc, String path) {
 		path = path == null || path.isEmpty() ? "$" : path;
@@ -418,7 +445,7 @@ public class JsonExpressions {
 	 * 
 	 * @param keyword
 	 * @param jsDoc
-	 * @return
+	 * @return BooleanOperation
 	 */
 	public static BooleanOperation memberOf(Expression<String> keyword, Expression<String> jsDoc) {
 		return booleanOperation(JsonOps.MEMBER_OF, keyword, jsDoc);
@@ -430,7 +457,7 @@ public class JsonExpressions {
 	 * @see #memberOf(Expression, Expression)
 	 * @param keyword
 	 * @param jsDoc
-	 * @return
+	 * @return BooleanOperation
 	 */
 	public static BooleanOperation memberOf(String keyword, Expression<String> jsDoc) {
 		return memberOf(ConstantImpl.create(keyword), jsDoc);

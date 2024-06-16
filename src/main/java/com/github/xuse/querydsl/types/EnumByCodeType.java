@@ -37,7 +37,8 @@ public class EnumByCodeType<T extends Enum<T> & CodeEnum<T>> extends AbstractTyp
     private final Class<T> type;
     private final Map<Integer,T> index=new HashMap<>();
     
-    private static final Logger log=LoggerFactory.getLogger(EnumByCodeType.class);
+    @SuppressWarnings("unused")
+	private static final Logger log=LoggerFactory.getLogger(EnumByCodeType.class);
 
     public EnumByCodeType(Class<T> type) {
         this(Types.INTEGER, type);

@@ -16,8 +16,14 @@ public enum JsonOps implements Operator {
 	 */
 	JSON_CONTAINS(Boolean.class),
 
+	/**
+	 * 参见MySQL官方文档
+	 */
 	JSON_CONTAINS_UNDER_PATH(Boolean.class),
 
+	/**
+	 * 是否有指定路径的节点
+	 */
 	JSON_CONTAINS_PATH(Boolean.class),
 	/**
 	 * 查询数据

@@ -1,5 +1,8 @@
 package com.github.xuse.querydsl.util;
 
+import java.util.Calendar;
+import java.util.Date;
+
 import org.junit.Test;
 import org.springframework.util.Assert;
 
@@ -100,5 +103,23 @@ public class DigitBaseTest {
 		long value = hex.decode(s);
 		// System.out.println(hex.scale + "进制：" + value);
 		Assert.isTrue(value == num, hex + "错误：" + num + " -> " + value);
+	}
+	
+	@Test
+	public void snowFlake() {
+		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) {
+			@Override
+			protected long timeGen() {
+				return get(2050,1,10,12,0,0).getTime();
+			}
+		};
+		System.out.println(worker.nextId());
+	}
+	
+	public static final Date get(int year, int month, int date, int hour, int minute, int second) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(year, month - 1, date, hour, minute, second);
+		calendar.set(Calendar.MILLISECOND, 0);
+		return calendar.getTime();
 	}
 }

@@ -32,8 +32,6 @@ public class ClassScanner {
 
     /**
      * class path根路径，如果不指定那么就在所有ClassPath下寻找
-     * 
-     * @return
      */
     private URL rootClasspath;
 
@@ -54,11 +52,9 @@ public class ClassScanner {
     /**
      * 扫描包
      * 
-     * @param basePackage
+     * @param packages
      *            基础包
-     * @param recursive
-     *            是否递归搜索子包
-     * @return Set
+     * @return List of resources
      */
     public List<Resource> scan(String[] packages) {
      // 这里设置父classloader为null
@@ -91,8 +87,9 @@ public class ClassScanner {
     /**
 	 * 查找符合Pattern的所有资源
 	 * @param locationPattern
-	 * @return
-	 * @throws IOException
+	 * @param cl
+	 * @param excludeInnerClass
+	 * @return list of Resource
 	 */
 	public static List<Resource> findResources(ClassLoader cl,String locationPattern,boolean excludeInnerClass) {
 		ResourcePatternResolver rl= new PathMatchingResourcePatternResolver(cl);
@@ -119,7 +116,7 @@ public class ClassScanner {
 	 * 
 	 * @param source
 	 * @param filter
-	 * @return
+	 * @return filtered elements.
 	 */
 	public static <T> List<T> filter(T[] source, Predicate<T> filter) {
 		if (source == null)

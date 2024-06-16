@@ -7,17 +7,21 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Radix;
 import com.mysema.commons.lang.Assert;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.util.ReflectionUtils;
+import com.querydsl.sql.Column;
 
 public class BeanCodecManager {
 
@@ -39,6 +43,7 @@ public class BeanCodecManager {
 	private static class CacheKey {
 		private Class<?> targetClass;
 		private List<String> fieldNames;
+		private int hash;
 
 		static CacheKey of(Class<?> target, List<String> fieldNames) {
 			Assert.notNull(target, "targetClass");
@@ -46,6 +51,7 @@ public class BeanCodecManager {
 			CacheKey ck = new CacheKey();
 			ck.targetClass = target;
 			ck.fieldNames = fieldNames;
+			ck.hash = fieldNames.hashCode();
 			return ck;
 		}
 
@@ -56,7 +62,7 @@ public class BeanCodecManager {
 
 		@Override
 		public int hashCode() {
-			return targetClass.hashCode() * 37 + fieldNames.hashCode();
+			return targetClass.hashCode() * 37 + hash;
 		}
 
 		@Override
@@ -69,11 +75,12 @@ public class BeanCodecManager {
 		}
 
 		public String getClassName() {
-			return targetClass.getName() + "_" + Radix.D64.encodeInt(fieldNames.hashCode());
+			return targetClass.getName() + "_" + Radix.D64.encodeInt(hash);
 		}
 	}
 
-	public BeanCodec getPopulator(Class<?> target, List<String> fieldNames) {
+	public BeanCodec getPopulator(Class<?> target, BindingProvider bindings) {
+		List<String> fieldNames = bindings.fieldNames();
 		CacheKey key = CacheKey.of(target, fieldNames);
 		BeanCodec result = populators.get(key);
 		if (result != null) {
@@ -84,7 +91,7 @@ public class BeanCodecManager {
 			//使用双重检查锁定来提高并发安全性
 			if(result==null) {
 				try {
-					result = generateAccessor(key);
+					result = generateAccessor(key, bindings);
 					populators.putIfAbsent(key, result);
 				} catch (RuntimeException e) {
 					result = populators.get(key);
@@ -107,7 +114,7 @@ public class BeanCodecManager {
 		// do nothing
 	}
 
-	private BeanCodec generateAccessor(CacheKey key) throws InstantiationException, IllegalAccessException {
+	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings) throws InstantiationException, IllegalAccessException {
 		String clzName = key.getClassName();
 		Class<?> clz;
 		try {
@@ -116,9 +123,9 @@ public class BeanCodecManager {
 		} catch (ClassNotFoundException e) {
 			// do nothing..
 		}
-		List<FieldProperty> methods = initMethods(key);
+		List<FieldProperty> properties = initMethods(key, bindings);
 		CodecClassGenerator g = new CodecClassGenerator(cl);
-		clz = g.generate(key.targetClass, methods, clzName);
+		clz = g.generate(key.targetClass, properties, clzName);
 		BeanCodec bc;
 		if (clz == null) {
 			// 无法生成类
@@ -129,23 +136,28 @@ public class BeanCodecManager {
 			}
 		}
 		if (clz == null) {
-			bc = new ReflectCodec(key.targetClass, methods);
+			bc = new ReflectCodec(key.targetClass, properties);
 		}else{
 			bc = (BeanCodec) clz.newInstance();
 		}
-		Field[] fields = new Field[methods.size()];
-		for (int i = 0; i < methods.size(); i++) {
-			fields[i] = methods.get(i).getField();
+		Field[] fields = new Field[properties.size()];
+		for (int i = 0; i < properties.size(); i++) {
+			fields[i] = properties.get(i).getField();
 		}
 		bc.setFields(fields);
 		return bc;
 	}
-
-	private static List<FieldProperty> initMethods(CacheKey key) {
-		List<String> args = key.fieldNames;
+	
+	/**
+	 * @since 20240524,支持按@Column注解的字段名来返回结果
+	 * @param key
+	 * @param bindings
+	 * @return
+	 */
+	private static List<FieldProperty> initMethods(CacheKey key,BindingProvider bindings) {
 		Class<?> targetClz = key.targetClass;
 		int count = 0;
-		int len = args.size();
+		int len = bindings.size();
 		try {
 			targetClz.getDeclaredConstructor();
 		} catch (NoSuchMethodException|SecurityException e1) {
@@ -153,25 +165,44 @@ public class BeanCodecManager {
 		}
 		try {
 			List<FieldProperty> propereties = new ArrayList<>(len);
+			
 			BeanInfo beanInfo = Introspector.getBeanInfo(targetClz);
-			PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
-			for (String property : args) {
-				Method setter = null, getter = null;
-				Field field = null;
-				for (PropertyDescriptor prop : propertyDescriptors) {
-					if (prop.getName().equals(property)) {
-						setter = prop.getWriteMethod();
-						getter = prop.getReadMethod();
-						field = ReflectionUtils.getFieldOrNull(targetClz, property);
-						break;
+			PropertyDescriptor[] props=beanInfo.getPropertyDescriptors();
+			
+			Map<String, FieldProperty> maps = new HashMap<>();
+			for(PropertyDescriptor p:props) {
+				if (p.getReadMethod().getDeclaringClass() == Object.class) {
+					continue;
+				}
+				String name=p.getName();
+				Method setter=p.getWriteMethod();
+				Field field = ReflectionUtils.getFieldOrNull(targetClz, name);
+				Column c;
+				if(field!=null && (c=field.getAnnotation(Column.class))!=null) {
+					String alias=c.value();
+					if(StringUtils.isNotEmpty(alias)) {
+						name=alias;
+					}
+				}else if(setter!=null && (c=setter.getAnnotation(Column.class))!=null) {
+					String alias=c.value();
+					if(StringUtils.isNotEmpty(alias)) {
+						name=alias;
 					}
 				}
-				if (setter == null || getter == null) {
-					propertyNotFound(property);
-				} else {
+				maps.put(name, new FieldProperty(p.getReadMethod(), p.getWriteMethod(), field));
+			}
+			
+			for (String property : bindings.names(maps)) {
+				FieldProperty prop = maps.get(property);
+				if(prop!=null) {
 					count++;
+				}else {
+					propertyNotFound(property);
+					continue;
 				}
-				propereties.add(new FieldProperty(getter, setter, field));
+				Expression<?> expression=bindings.get(property);
+				prop.setBindingType(expression.getType());
+				propereties.add(prop);
 			}
 			if (count == 0) {
 				throw new IllegalArgumentException(

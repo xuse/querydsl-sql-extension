@@ -5,6 +5,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.github.xuse.querydsl.sql.support.ToStringVisitor2;
+import com.querydsl.core.types.ConstraintType;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.Templates;
+import com.querydsl.sql.ColumnMetadata;
+import com.querydsl.sql.PrimaryKey;
+import com.querydsl.sql.RelationalPath;
+
+import lombok.Getter;
+import lombok.Setter;
+
 
 /**
  * 描述一个数据库中的Constraint
@@ -22,6 +36,8 @@ import java.util.Objects;
  *         table Column O Read Only on a view P Primary Key R Referential AKA
  *         Foreign Key U Unique Key V Check Option on a view
  */
+@Getter
+@Setter
 public class Constraint {
 
 	/**
@@ -57,20 +73,27 @@ public class Constraint {
 	/**
 	 * 约束类型
 	 */
-	private ConstraintType type;
+	private ConstraintType constraintType;
+	
 	/**
 	 * 检测延迟
 	 */
 	private boolean deferrable;
+	
 	/**
 	 * 检测延迟
 	 */
 	private boolean initiallyDeferred;
 	
 	/**
-	 * 约束字段列表
+	 * 约束数据库列
 	 */
-	private List<String> columns = new ArrayList<String>();
+	private List<String> columnNames = new ArrayList<String>();
+	
+	/**
+	 * 约束的Path列表 
+	 */
+	private List<Path<?>> paths = new ArrayList<>();
 	
 	/**
 	 * 外键参照表所在schema
@@ -104,179 +127,103 @@ public class Constraint {
 	
 	/**
 	 * 检查约束定义
+	 * 
+	 * 检查的情况下有效
 	 */
-	private String checkClause;
+	private Expression<Boolean> checkClause;
 	
 	/**
 	 * 约束是否启用
 	 */
 	private boolean enabled = true;
 
-	public String getCatalog() {
-		return catalog;
+	/**
+	 * 内部使用
+	 */
+	private String indexQualifier;
+	
+	/**
+	 * 内部使用
+	 */
+	private String comment;
+	
+	
+	//内部使用，小写的列名，用于比较
+	private transient volatile List<String> lowerColumnNames;
+	
+	public List<String> getLowerColumnNames(){
+		if(lowerColumnNames==null) {
+			List<String> cNames;
+			if(columnNames!=null && !columnNames.isEmpty()) {
+				cNames = new ArrayList<>(columnNames.size());
+				for(String s:columnNames) {
+					cNames.add(StringUtils.lowerCase(s));
+				}
+			}else {
+				cNames = new ArrayList<>(paths.size());
+				for(Path<?> path:paths) {
+					Path<?> parent=path.getMetadata().getParent();
+					if(parent instanceof RelationalPath<?>) {
+						ColumnMetadata column=((RelationalPath<?>) parent).getMetadata(path);
+						cNames.add(StringUtils.lowerCase(column.getName()));
+					}
+				}
+			}
+			return lowerColumnNames = cNames;
+		}else {
+			return lowerColumnNames;
+		}
 	}
-
-	public void setCatalog(String catalog) {
-		this.catalog = catalog;
+	
+	public void setCheckClause(Expression<Boolean> expr) {
+		this.checkClause=expr;
 	}
-
-	public String getSchema() {
-		return schema;
-	}
-
-	public void setSchema(String schema) {
-		this.schema = schema;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getTableCatalog() {
-		return tableCatalog;
-	}
-
-	public void setTableCatalog(String tableCatalog) {
-		this.tableCatalog = tableCatalog;
-	}
-
-	public String getTableSchema() {
-		return tableSchema;
-	}
-
-	public void setTableSchema(String tableSchema) {
-		this.tableSchema = tableSchema;
-	}
-
-	public String getTableName() {
-		return tableName;
-	}
-
-	public void setTableName(String tableName) {
-		this.tableName = tableName;
-	}
-
-	public ConstraintType getType() {
-		return type;
-	}
-
-	public void setType(ConstraintType type) {
-		this.type = type;
-	}
-
-	public boolean isDeferrable() {
-		return deferrable;
-	}
-
-	public void setDeferrable(boolean deferrable) {
-		this.deferrable = deferrable;
-	}
-
-	public boolean isInitiallyDeferred() {
-		return initiallyDeferred;
-	}
-
-	public void setInitiallyDeferred(boolean initiallyDeferred) {
-		this.initiallyDeferred = initiallyDeferred;
-	}
-
-	public List<String> getColumns() {
-		return columns;
-	}
-
-	public void setColumns(List<String> columns) {
-		this.columns = columns;
-	}
-
-	public String getRefTableName() {
-		return refTableName;
-	}
-
-	public void setRefTableName(String refTableName) {
-		this.refTableName = refTableName;
-	}
-
-	public List<String> getRefColumns() {
-		return refColumns;
-	}
-
-	public void setRefColumns(List<String> refColumns) {
-		this.refColumns = refColumns;
-	}
-
-	public ForeignKeyAction getUpdateRule() {
-		return updateRule;
-	}
-
-	public void setUpdateRule(ForeignKeyAction updateRule) {
-		this.updateRule = updateRule;
-	}
-
-	public ForeignKeyAction getDeleteRule() {
-		return deleteRule;
-	}
-
-	public void setDeleteRule(ForeignKeyAction deleteRule) {
-		this.deleteRule = deleteRule;
-	}
-
-	public ForeignKeyMatchType getMatchType() {
-		return matchType;
-	}
-
-	public void setMatchType(ForeignKeyMatchType matchType) {
-		this.matchType = matchType;
-	}
-
-	public boolean isEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
-
-	public String getRefTableSchema() {
-		return refTableSchema;
-	}
-
-	public void setRefTableSchema(String refTableSchema) {
-		this.refTableSchema = refTableSchema;
-	}
-
-	public String getCheckClause() {
-		return checkClause;
-	}
-
-	public void setCheckClause(String checkClause) {
-		this.checkClause = checkClause;
-	}
-
+	
 	@Override
 	public String toString() {
-		return "Constraint [name=" + name + ", tableName=" + tableName + ", type=" + type + ", columns=" + columns + ", refTableName=" + refTableName
-				+ ", refColumns=" + refColumns + ", enabled=" + enabled + "]";
+		return "Constraint [name=" + name + ", tableName=" + tableName + ", type=" + constraintType + ", columns=" + columnNames + ", refTableName=" + refTableName
+				+ ", refColumns=" + refColumns + ", enabled=" + enabled + ", check="+checkClause+"]";
 	}
+	
+	public boolean contentEquals(Constraint rhs) {
+		ConstraintType type=getConstraintType();
+		if(type.isIgnored() || rhs.getConstraintType().isIgnored()) {
+			return false;
+		}
+		if(rhs.getConstraintType()!=type) {
+			return false;
+		}
+		if(type.isColumnList()) {
+			List<String> lc=getLowerColumnNames();
+			List<String> rc=rhs.getLowerColumnNames();
+			return Objects.equals(lc, rc);
+		}else if(type.isCheckClause()) {
+			Expression<?> l=getCheckClause();
+			Expression<?> r=rhs.getCheckClause();
+			if(!Objects.equals(l, r)) {
+				String s1=l.accept(ToStringVisitor2.DEFAULT, Templates.DEFAULT);
+				String s2=r.accept(ToStringVisitor2.DEFAULT, Templates.DEFAULT);
+				return Objects.equals(s1,s2);	
+			}
+			return true;
+		}
+		return false;
+	}
+	
 
 	@Override
 	public boolean equals(Object obj) {
 		if(obj == this) return true;
 		if(!(obj instanceof Constraint)) return false;
 		Constraint con = (Constraint)obj;
-//		if(!Objects.equal(this.catalog, con.catalog))return false;
 		if(!Objects.equals(this.schema, con.schema))return false;
 		if(!Objects.equals(this.name, con.name))return false;
-//		if(!Objects.equal(this.tableCatalog, con.tableCatalog))return false;
 		if(!Objects.equals(this.tableSchema, con.tableSchema))return false;
 		if(!Objects.equals(this.tableName, con.tableName))return false;
-		if(!Objects.equals(this.type, con.type))return false;
+		if(!Objects.equals(this.constraintType, con.constraintType))return false;
 		if(!Objects.equals(this.deferrable, con.deferrable))return false;
 		if(!Objects.equals(this.initiallyDeferred, con.initiallyDeferred))return false;
-		if(!Arrays.equals(this.columns.toArray(), con.columns.toArray()))return false;
+		if(!Arrays.equals(this.columnNames.toArray(), con.columnNames.toArray()))return false;
 		if(!Objects.equals(this.refTableName, con.refTableName))return false;
 		if(!Arrays.equals(this.refColumns.toArray(), con.refColumns.toArray()))return false;
 		if(!Objects.equals(this.updateRule, con.updateRule))return false;
@@ -292,5 +239,16 @@ public class Constraint {
 		result = result * 31 + name.hashCode();  
 		result = result * 31 + tableName.hashCode();  
 		return result; 
+	}
+
+	public static Constraint valueOf(PrimaryKey<?> primaryKey) {
+		if(primaryKey==null) {
+			return null;
+		}
+		Constraint c=new Constraint();
+		c.setConstraintType(ConstraintType.PRIMARY_KEY);
+		c.setTableName(primaryKey.getEntity().getTableName());
+		c.setPaths(new ArrayList<>(primaryKey.getLocalColumns()));
+		return c;
 	}
 }

@@ -17,7 +17,6 @@ import java.lang.annotation.Target;
 public @interface CustomType {
 	/**
 	 * 自定义的java和数据库类型映射实现
-	 * @return
 	 */
 	@SuppressWarnings("rawtypes")
 	Class<? extends com.querydsl.sql.types.Type> value();

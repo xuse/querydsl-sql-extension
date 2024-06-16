@@ -2,20 +2,33 @@ package com.github.xuse.querydsl.sql;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.sql.column.ColumnMetadataExt;
-import com.github.xuse.querydsl.sql.column.MetadataBuilder;
+import com.github.xuse.querydsl.annotation.dbdef.Check;
+import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
+import com.github.xuse.querydsl.annotation.dbdef.Comment;
+import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
+import com.github.xuse.querydsl.sql.column.AbstractColumnMetadataEx;
+import com.github.xuse.querydsl.sql.column.ColumnBuilder;
+import com.github.xuse.querydsl.sql.column.PathMapping;
+import com.github.xuse.querydsl.sql.dbmeta.Collate;
+import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Assert;
+import com.querydsl.core.types.ConstraintType;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
@@ -40,18 +53,23 @@ import com.querydsl.sql.SchemaAndTable;
  * @param <T>
  */
 @SuppressWarnings("rawtypes")
-public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPathEx<T> {
+public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPathEx<T> {
 	private static final long serialVersionUID = -3351359519644416084L;
 
 	private PrimaryKey<T> primaryKey;
 
-	private final Map<Path<?>, ColumnMetadataExt> columnMetadata = new LinkedHashMap<>();
+	private final Map<Path<?>, PathMapping> columnMetadata = new LinkedHashMap<>();
 	
+	/**
+	 * path name <-> path
+	 */
 	private final Map<String, Path<?>> bindingsMap = new HashMap<>();
 
 	private final List<ForeignKey<?>> foreignKeys = new ArrayList<>();
 
 	private final List<ForeignKey<?>> inverseForeignKeys = new ArrayList<>();
+
+	private final List<Constraint> constraints = new ArrayList<>();
 
 	private final String schema, table;
 
@@ -60,6 +78,10 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	private transient volatile QBeanEx<T> projection;
 
 	private transient NumberExpression<Long> count, countDistinct;
+	
+	private String comment;
+	
+	private Collate collate;
 
 	public RelationalPathBaseEx(Class<? extends T> type, String variable, String schema, String table) {
 		this(type, PathMetadataFactory.forVariable(variable), schema, table);
@@ -67,11 +89,65 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 
 	public RelationalPathBaseEx(Class<? extends T> type, PathMetadata metadata, String schema, String table) {
 		super(type, metadata);
+		TableSpec spec=type.getAnnotation(TableSpec.class);
+		if(spec!=null) {
+			if(StringUtils.isNotEmpty(spec.name())) {
+				table=spec.name();
+			}
+			if(StringUtils.isNotEmpty(spec.schema())) {
+				schema=spec.schema();
+			}
+		}
 		this.schema = schema;
 		this.table = table;
 		this.schemaAndTable = new SchemaAndTable(schema, table);
 	}
+	
 
+	/**
+	 * 创建check类型的约束
+	 * @param name 名称。在某些不支持指定CHECK名称的数据库（如MySQL 5.x）上会被忽略。
+	 * @param checkExpression 表达式。两端无需加上括号。
+	 * @return
+	 */
+	protected Constraint createCheck(String name, Expression<Boolean> checkExpression) {
+		Constraint constraint=new Constraint();
+		constraint.setName(name);
+		constraint.setConstraintType(ConstraintType.CHECK);
+		constraint.setCheckClause(checkExpression);
+		this.constraints.add(constraint);
+		return constraint;
+	}
+
+	/**
+	 * Create a check constraint.
+	 * @param name 名称。在某些不支持指定CHECK名称的数据库（如MySQL 5.x）上会被忽略。
+	 * @param checkExpression 表达式。两端无需加上括号。
+	 * @return Constraint
+	 */
+	protected Constraint createCheck(String name, String checkExpression) {
+		return createCheck(name, Expressions.template(Boolean.class, checkExpression));
+	}
+	
+	/**
+	 * Create a normal constraint or index.
+	 * @param name
+	 * @param type
+	 * @param columns
+	 * @return Constraint
+	 */
+	protected Constraint createConstraint(String name, ConstraintType type, Path<?>... columns) {
+		if(type==ConstraintType.PRIMARY_KEY) {
+			throw Exceptions.unsupportedOperation("please use #createPrimaryKey() method for columns",Arrays.toString(columns));
+		}
+		Constraint constraint=new Constraint();
+		constraint.setName(name);
+		constraint.setConstraintType(type);
+		constraint.setPaths(Arrays.asList(columns));
+		this.constraints.add(constraint);
+		return constraint;
+	}
+	
 	protected PrimaryKey<T> createPrimaryKey(Path<?>... columns) {
 		primaryKey = new PrimaryKey<T>(this, columns);
 		return primaryKey;
@@ -101,7 +177,21 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 		return foreignKey;
 	}
 
-	protected <P extends Path<?>> ColumnMetadataExt addMetadata(P expr, ColumnMetadata metadata) {
+	/**
+	 * 定义一个数据库列。可以指定列的各个属性。
+	 * 
+	 * @implNote
+	 * 以下是一些使用的注意点
+	 *           <ul>
+	 *           <li>对于Timestamp数据类型(包括MySQL的datetime)，其小数位数精度使用 {@link ColumnMetadata#withSize(int)}, 而不是withDigits()。</li>
+	 *           </ul>
+	 * 
+	 * @param <P>
+	 * @param expr
+	 * @param metadata
+	 * @return
+	 */
+	protected <P> ColumnBuilder<P> addMetadata(Path<P> expr, ColumnMetadata metadata) {
 		Class<?> beanType = super.getType();
 		Field field = null;
 		while (!beanType.equals(Object.class)) {
@@ -119,14 +209,14 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 			}
 		}
 		Assert.notNull(field, "Can't find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
-		boolean isPk=this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(expr);
-		ColumnMetadataExt metadataExt=new ColumnMetadataExt(field, metadata,isPk);
+//		boolean isPk=this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(expr);
+		PathMapping metadataExt=new PathMapping(expr, field, metadata);
 		columnMetadata.put(expr, metadataExt);
 		bindingsMap.put(expr.getMetadata().getName(), expr);
-		return metadataExt;
+		return new ColumnBuilder<P>(metadataExt);
 	}
 
-	protected <P extends Path<?>> P addMetadata(P path, ColumnMetadataExt metadata) {
+	protected <P extends Path<?>> P addMetadata(P path, PathMapping metadata) {
 		columnMetadata.put(path, metadata);
 		bindingsMap.put(path.getMetadata().getName(), path);
 		return path;
@@ -291,8 +381,8 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
-		ColumnMetadataExt metadata = columnMetadata.get(column);
-		return metadata == null ? null : metadata.get();
+		AbstractColumnMetadataEx metadata = columnMetadata.get(column);
+		return metadata == null ? null : metadata.getColumn();
 	}
 
 	/**
@@ -306,64 +396,144 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}
+				if(!Path.class.isAssignableFrom(field.getType())) {
+					continue;
+				}
 				Path<?> path = (Path<?>) field.get(this);
-				MetadataBuilder<?> metadata = getMetadataBuilder(beanType, path, field);
-				metadata.hasQueryDSLPk(this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(path));
-				this.addMetadata(path, metadata.build());
+				this.addMetadata(path, builderMetadata(beanType, path, field));
 			}
+			initByClassAnnotation(beanType,QClz);
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private MetadataBuilder<?> getMetadataBuilder(Class<? extends T> beanClz, Path<?> expr, Field metadataField) {
-		Class<?> beanType=beanClz;
+	private PathMapping builderMetadata(Class<? extends T> beanType, Path<?> path, Field metadataField) {
 		while (!beanType.equals(Object.class)) {
 			try {
-				Field field = beanType.getDeclaredField(expr.getMetadata().getName());
+				Field field = beanType.getDeclaredField(path.getMetadata().getName());
 				field.setAccessible(true);
-				if (!isAssignableFrom(field.getType(), expr.getType())) {
-					typeMismatch(field.getType(), expr);
+				if (!isAssignableFrom(field.getType(), path.getType())) {
+					typeMismatch(field.getType(), path);
 				}
-				return new MetadataBuilder(field, expr, metadataField);
+				
+				String columnName = path.getMetadata().getName().toUpperCase();
+				//解析QueryDSL的名称注解 
+				com.querydsl.sql.Column c = field.getAnnotation(com.querydsl.sql.Column.class);
+				{
+					if (c!=null && StringUtils.isNotEmpty(c.value())) {
+						columnName = c.value();
+					}
+				}
+				ColumnSpec columnSpec=field.getAnnotation(ColumnSpec.class);
+				if (columnSpec!=null) {
+					if(StringUtils.isNotEmpty(columnSpec.name())) {
+						columnName = columnSpec.name();	
+					}
+				}
+				ColumnMetadata column=ColumnMetadata.named(columnName);
+				if(columnSpec!=null) {
+					column=column.ofType(calcJdbcType(columnSpec.type(),field)).withSize(columnSpec.size()).withDigits(columnSpec.digits());
+					if(!columnSpec.nullable()) {
+						column=column.notNull();
+					}
+				}
+				PathMapping columnMapping = new PathMapping(path, field, column);
+				return columnMapping;
 			} catch (SecurityException e) {
-				// do nothing
+				throw Exceptions.toRuntime(e);
 			} catch (NoSuchFieldException e) {
-				beanType = beanType.getSuperclass();
+				throw Exceptions.toRuntime(e);
 			}
 		}
-		throw new IllegalArgumentException("Not found field [" + expr.getMetadata().getName() + "] in bean " + beanType.getName());
+		throw new IllegalArgumentException("Not found field [" + path.getMetadata().getName() + "] in bean " + beanType.getName());
 	}
-	
-	
-	
-	
-//	public ColumnTypeBuilder(Column col, java.lang.reflect.Field field, Class<?> treatJavaType, FieldAnnotationProvider fieldProvider) {
-//		this.field = field;
-//		this.javaType = treatJavaType;
-//		this.fieldProvider = fieldProvider;
-//		init(col);
-//	}
-//
-//	private void init(Column col) {
-//		generatedValue = GenerateTypeDef.create(fieldProvider.getAnnotation(javax.persistence.GeneratedValue.class));
-//		version = fieldProvider.getAnnotation(javax.persistence.Version.class) != null;
-//		lob = fieldProvider.getAnnotation(Lob.class) != null;
-//		if (col != null) {
-//			length = col.length();
-//			precision = col.precision();
-//			scale = col.scale();
-//			nullable = col.nullable();
-//			unique = col.unique();
-//			if (col.columnDefinition().length() > 0) {
-//				parseColumnDef(col.columnDefinition());
-//			}
-//		} else {
-//			nullable = !javaType.isPrimitive();
-//		}
-//	}
-	
+
+	private int calcJdbcType(int sqlType, Field field) {
+		if (sqlType != Types.NULL) {
+			return sqlType;
+		}
+		Class<?> type=field.getType();
+		switch(type.getName()) {
+		case "int":
+		case "java.lang.Integer":
+			return Types.INTEGER;
+		case "java.lang.Long":
+			return Types.BIGINT;
+		case "java.lang.Double":
+			return Types.DOUBLE;
+		case "java.lang.Float":
+			return Types.FLOAT;
+		case "java.lang.String":
+			return Types.VARCHAR;
+		case "java.sql.Date":
+		case "java.time.LocalDate":
+			return Types.DATE; 
+		case "java.util.Date":
+		case "java.sql.Timestamp":
+			return Types.TIMESTAMP;
+		case "java.sql.Time":
+			return Types.TIME;
+		case "java.time.LocalTime":
+			return Types.TIME_WITH_TIMEZONE;
+		case "java.time.LocalDateTime":
+			return Types.TIME_WITH_TIMEZONE;
+		}
+		throw Exceptions.illegalArgument("Please assign the jdbc data type of field {}", field);
+	}
+
+	private void initByClassAnnotation(Class<? extends T> beanType, Class<?> qClz) {
+		TableSpec spec=qClz.getAnnotation(TableSpec.class);
+		if(spec==null) {
+			spec=beanType.getAnnotation(TableSpec.class);
+		}
+		if(spec!=null) {
+			if(StringUtils.isNotEmpty(spec.collate())) {
+				this.setCollate(Collate.findValueOf(spec.collate()));
+			}
+			if(spec.primaryKeyPath().length>0) {
+				List<Path<?>> paths=new ArrayList<>();
+				for(String n:spec.primaryKeyPath()) {
+					Path<?> path=findPathByName(n);
+					if(path==null) {
+						throw Exceptions.illegalArgument("Invalid primary key column {} on class {}", n, beanType);
+					}
+					paths.add(path);
+				}
+				this.createPrimaryKey(paths.toArray(new Path[paths.size()]));
+			}
+			for(com.github.xuse.querydsl.annotation.dbdef.Key k:spec.keys()) {
+				List<Path<?>> paths=new ArrayList<>();
+				for(String n:k.path()) {
+					Path<?> path=findPathByName(n);
+					if(path==null) {
+						throw Exceptions.illegalArgument("Invalid key=[{}] column {} on class {}",k.name(), n, beanType);
+					}
+					paths.add(path);
+				}
+				this.createConstraint(k.name(), k.type(), paths.toArray(new Path[paths.size()]));
+			}
+			for(Check c:spec.checks()) {
+				this.createCheck(c.name(), c.value());
+			}
+		}
+		Comment comment=qClz.getAnnotation(Comment.class);
+		if(comment==null) {
+			comment=beanType.getAnnotation(Comment.class);
+		}
+		if(comment!=null) {
+			this.setComment(comment.value());
+		}
+	}
+
+	private Path<?> findPathByName(String n) {
+		for(Path<?> p:getColumns()) {
+			if(p.getMetadata().getName().equalsIgnoreCase(n)) {
+				return p;
+			}
+		}
+		return null;
+	}
 
 	@Override
 	public Path<?> getColumn(String name) {
@@ -384,7 +554,28 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements IRelationPat
 	}
 
 	@Override
-	public ColumnMetadataExt getColumnMetadata(Path<?> path) {
+	public PathMapping getColumnMetadata(Path<?> path) {
 		return columnMetadata.get(path);
+	}
+
+	@Override
+	public Collection<Constraint> getConstraints() {
+		return Collections.unmodifiableCollection(constraints);
+	}
+	
+	protected void setComment(String comment) {
+		this.comment = comment;
+	}
+
+	protected void setCollate(Collate collate) {
+		this.collate=collate;
+	}
+
+	public String getComment() {
+		return comment;
+	}
+
+	public Collate getCollate() {
+		return collate;
 	}
 }
