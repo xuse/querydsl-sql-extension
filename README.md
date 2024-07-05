@@ -4,7 +4,7 @@
 
 query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
-本框架是在 querydsl-sql （https://github.com/querydsl/querydsl）上的扩展，querydsl-sql的使用手册，请参见http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html。
+本框架是在 querydsl-sql (https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，请参见http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html。
 
 本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
 
