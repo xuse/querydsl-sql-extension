@@ -39,7 +39,6 @@ import com.github.xuse.querydsl.util.Assert;
 
 /**
  * 集合操作工具类 v2.0
- * 
  * @author Joey
  */
 public class CollectionUtils {
@@ -69,6 +68,7 @@ public class CollectionUtils {
 		}
 		return buckets;
 	}
+	
 
 	/**
 	 * 将数组转换为Map。（Map不保证顺序）
@@ -632,5 +632,10 @@ public class CollectionUtils {
 		public void remove() throws UnsupportedOperationException {
 			throw new UnsupportedOperationException("Not supported");
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> cast(List<? extends T> source){
+		return (List<T>) source;
 	}
 }

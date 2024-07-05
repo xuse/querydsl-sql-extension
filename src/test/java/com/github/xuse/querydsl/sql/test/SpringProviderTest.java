@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.sql.test;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -15,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
+import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.test.beans.AaaRpository;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,10 +29,18 @@ import lombok.extern.slf4j.Slf4j;
 public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContextTests {
 	@Resource
 	private SQLQueryFactory factory;
+	
+	@Resource
+	private AaaRpository repository;
 
 	@PostConstruct
 	public void initTables() throws SQLException {
 	}
+	
+	@Test
+	public void testAutoInit() {
+	}
+	
 	
 	@Test
 	public void reCreateTables() {
@@ -38,6 +49,25 @@ public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContext
 		meta.createTable(QAaa.aaa).execute();
 	}
 
+	@Test
+	public void testRepository() {
+		Aaa a = new Aaa();
+		a.setName("刘备");
+		a.setDataBool(false);
+		a.setDataFloat(2f);
+		a.setDataDouble(3d);
+		a.setTaskStatus(TaskStatus.INIT);
+		repository.insert(a);
+		
+		QAaa t=QAaa.aaa;
+		List<Aaa> list=repository.query().where(t.name.startsWith("张")).fetch();
+		for(Aaa aaa:list) {
+			System.out.println(aaa);
+		}
+		int count=repository.delete(7L);
+		System.out.println(count);
+	}
+	
 	@Test
 	public void test1() {
 		System.out.println("================test1");
@@ -74,7 +104,7 @@ public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContext
 		for(Constraint c:cs) {
 			log.info("constraint:{}",c);
 		}
-		Collection<Constraint> is = metadata.getIndexes(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> is = metadata.getIndecies(QAaa.aaa.getSchemaAndTable());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
 		}

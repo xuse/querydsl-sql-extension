@@ -181,7 +181,7 @@ public class Constraint {
 	
 	@Override
 	public String toString() {
-		return "Constraint [name=" + name + ", tableName=" + tableName + ", type=" + constraintType + ", columns=" + columnNames + ", refTableName=" + refTableName
+		return "Constraint [name=" + name + ", tableName=" + tableCatalog+":"+tableSchema+":"+tableName + ", type=" + constraintType + ", columns=" + columnNames + ", refTableName=" + refTableName
 				+ ", refColumns=" + refColumns + ", enabled=" + enabled + ", check="+checkClause+"]";
 	}
 	

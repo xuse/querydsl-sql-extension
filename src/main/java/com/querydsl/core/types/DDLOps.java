@@ -1,11 +1,13 @@
 package com.querydsl.core.types;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.querydsl.sql.SQLTemplates;
 
 /**
  * DDL Options
  * 
- * @author jiyi
+ * @author Joey
  *
  */
 public enum DDLOps implements Operator {
@@ -18,11 +20,6 @@ public enum DDLOps implements Operator {
 	 * TRUNCATE TABLE {0}
 	 */
 	TRUNCATE_TABLE,
-
-	/**
-	 * DROP TABLE {0} [{CASCADE}]
-	 */
-	DROP_TABLE,
 
 	/**
 	 * {0}=Column_NAME(Path) {1}=DataType {2}=ColumnLevel Constraint
@@ -115,20 +112,12 @@ public enum DDLOps implements Operator {
 	}
 
 	public enum AlterTableOps implements Operator {
+		
 		/**
-		 * ADD PARTITION {0:partition def}
+		 * ADD
 		 */
-		ADD_PARTITION,
-		/**
-		 * DROP PARTITION {0:names}
-		 */
-		DROP_PARTITION,
-
-		/**
-		 * DISCARD PARTITION {0:names}
-		 */
-		DISCARD_PARTITION,
-
+		ALTER_TABLE_ADD,
+		
 		/**
 		 * ADD COLUMN {0:COLUMN_SPEC}
 		 */
@@ -169,6 +158,105 @@ public enum DDLOps implements Operator {
 		 * COMMENT = {0}
 		 */
 		COMMENT,;
+
+		@Override
+		public Class<?> getType() {
+			return Object.class;
+		}
+	}
+	
+	public enum AlterTableConstraintOps implements Operator{
+		ALTER_TABLE_DROP_CONSTRAINT,	
+		
+		ALTER_TABLE_DROP_PRIMARYKEY,
+		
+		ALTER_TABLE_DROP_FOREIGNKEY,
+		
+		ALTER_TABLE_DROP_CHECK,
+		
+		ALTER_TABLE_DROP_UNIQUE,
+		
+		ALTER_TABLE_DROP_KEY,
+		
+		ALTER_TABLE_DROP_BITMAP,
+		;
+		
+		@Override
+		public Class<?> getType() {
+			return Object.class;
+		}
+	}
+	
+	public enum AlterTablePartitionOps implements Operator{
+		/**
+		 * 增加一个分区
+		 * ADD PARTITION {0:partition def}
+		 */
+		ADD_PARTITION,
+		/**
+		 * 删除分区，以及分区内的所有数据
+		 * DROP PARTITION {0:names}
+		 */
+		DROP_PARTITION,
+		
+		/**
+		 * 对于Hash类分区，收缩分区，会造成数据重新分布
+		 * COALESCE PARTITION {0:count}
+		 */
+		COALESCE_PARTITION,
+		
+		/**
+		 * ADD PARTITION PARTITIONS {0:count}
+		 */
+		ADD_PARTITION_COUNT,
+		
+		/**
+		 * 去除表的分区设置，不影响数据
+		 * REMOVE PARTITIONING
+		 */
+		REMOVE_PARTITIONING,
+		TRUNCATE_PARTITION,
+		EXCHANGE_PARTITION,
+		
+		/**
+		 * REORGANIZE PARTITION {0} INTO {1}
+		 */
+		REORGANIZE_PARTITION,
+		OPTMIZE_PARTITION,
+		
+		
+
+		//以下是维护分区（包括迁移）等操作
+		/**
+		 * 这个操作是用于放弃分区文件，分区文件数据可以被IMPORT指令迁移到别的实例上，
+		 * DISCARD PARTITION {0:names} TABLESPACE
+		 */
+		DISCARD_PARTITION,
+		
+		/**
+		 * IMPORT PARTITION {0:names} TABLESPACE，用在迁移场景的
+		 */
+		IMPORT_PARTITION,
+		/**
+		 * 重建分区
+		 */
+		REBUILD_PARTITION,
+		
+		/**
+		 * 修复分区
+		 */
+		REPAIR_PARTITION,
+		
+		/**
+		 * 检查分区
+		 */
+		CHECK_PARTITION,
+		
+		/**
+		 * 分析分区
+		 */
+		ANALYZE_PARTITION,
+		;
 
 		@Override
 		public Class<?> getType() {
@@ -246,13 +334,31 @@ public enum DDLOps implements Operator {
 			return Object.class;
 		}
 	}
-	public enum IndexConstraintOps implements Operator{
+	public enum DropStatement implements Statement{
+		/**
+		 * DROP TABLE {0} [{CASCADE}]
+		 */
+		DROP_TABLE,
 		/**
 		 * For independent SQL drop index...
 		 * DROP INDEX {0}
 		 */
-		DOPR_INDEX,
+		DROP_INDEX,
 		
+		DROP_DATABASE,
+		DROP_FUNCTION,
+		DROP_PROCEDURE,
+		DROP_TABLESPACE,
+		DROP_EVENT,
+		DROP_TRIGGER,
+		DROP_VIEW,
+		;
+		@Override
+		public Class<?> getType() {
+			return Void.class;
+		}
+	}
+	public enum CreateStatement implements Statement{
 		/**
 		 * Index definition of creation.
 		 */
@@ -281,21 +387,46 @@ public enum DDLOps implements Operator {
 		 * BITMAP index definition of creation.
 		 */
 		CREATE_BITMAP,
+	}
+
+	public enum PartitionMethod implements Operator{
+		/**
+		 * HASH({0:expr}) PARTITIONS {1:count}
+		 */
+		HASH,
 		
+		/**
+		 * LINEAR HASH({0}) PARTITIONS {1:count}
+		 */
+		LINEAR_HASH,
 		
-		ALTER_TABLE_DROP_CONSTRAINT,	
+		/**
+		 * 和hash的区别。hash的表达式必须为一个INT表达式，KEY可以是一个字符串表达式
+		 * KEY({0:expr}) PARTITIONS {1:count}
+		 */
+		KEY,
 		
-		ALTER_TABLE_DROP_PRIMARYKEY,
+		/**
+		 * RANGE ({0:expr}) ({1:partitions})
+		 */
+		RANGE,
 		
-		ALTER_TABLE_DROP_FOREIGNKEY,
+		/**
+		 * RANGE COLUMNS({0:expr}) ({1:partitions})
+		 */
+		RANGE_COLUMNS,
 		
-		ALTER_TABLE_DROP_CHECK,
+		/**
+		 * LIST ({0:expr}) ({1:partitions})
+		 */
+		LIST,
 		
-		ALTER_TABLE_DROP_UNIQUE,
+		/**
+		 * LIST COLUMNS({0:expr}) ({1:partitions})
+		 */
+		LIST_COLUMNS,
 		
-		ALTER_TABLE_DROP_KEY,
-		
-		ALTER_TABLE_ADD,
+		NOT_PARTITIONED
 		;
 
 		@Override
@@ -303,5 +434,36 @@ public enum DDLOps implements Operator {
 			return Object.class;
 		}
 
+		public static PartitionMethod parse(String text) {
+			if(StringUtils.isEmpty(text)) {
+				return NOT_PARTITIONED;
+			}
+			text = text.replace(' ', '_');
+			return PartitionMethod.valueOf(text);
+		}
+	}
+	
+	public enum PartitionDefineOps implements Operator{
+		/**
+		 * PARTITION BY {0:DEFINE}
+		 */
+		PARTITION_BY,
+		
+		/**
+		 * PARTITION {0:name} VALUES IN ({1:lists})
+		 */
+		PARTITION_IN_LIST,
+		
+		/**
+		 * PARTITION {0:name} VALUE LESS THAN ({1:value})
+		 */
+		PARTITION_LESS_THAN
+		
+		;
+		@Override
+		public Class<?> getType() {
+			return Object.class;
+		}
+		
 	}
 }

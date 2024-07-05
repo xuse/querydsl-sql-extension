@@ -68,6 +68,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.JefBase64;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 
 public class EncrypterUtil {
 	private static final Logger log = LoggerFactory.getLogger(EncrypterUtil.class);
@@ -705,33 +706,24 @@ public class EncrypterUtil {
 	}
 	
 	static {
-		Class<Provider> clz=loadClz("org.bouncycastle.jce.provider.BouncyCastleProvider",Provider.class);
-		if(clz!=null) {
-		try {
-			Security.addProvider(clz.newInstance());
-			log.info("Security Provider Found: {} ",clz.getName());
-		} catch (InstantiationException|IllegalAccessException e) {
-			log.error("Instantiation error",e);
+		Class<Provider> clz = loadClz("org.bouncycastle.jce.provider.BouncyCastleProvider", Provider.class);
+		if (clz != null) {
+			try {
+				Security.addProvider(TypeUtils.newInstance(clz));
+				log.info("Security Provider Found: {} ", clz.getName());
+			} catch (InstantiationException | IllegalAccessException e) {
+				log.error("Instantiation error", e);
+			}
 		}
+		clz = loadClz("com.ibm.crypto.provider.IBMJCE", Provider.class);
+		if (clz != null) {
+			try {
+				Security.addProvider(TypeUtils.newInstance(clz));
+				log.info("Security Provider Found: {} ", clz.getName());
+			} catch (InstantiationException | IllegalAccessException e) {
+				log.error("Instantiation error", e);
+			}
 		}
-		clz=loadClz("com.ibm.crypto.provider.IBMJCE",Provider.class);
-		if(clz!=null) {
-		try {
-			Security.addProvider(clz.newInstance());
-			log.info("Security Provider Found: {} ",clz.getName());
-		} catch (InstantiationException|IllegalAccessException e) {
-			log.error("Instantiation error",e);
-		}	
-		}
-//		clz=loadClz("com.sun.crypto.provider.SunJCE",Provider.class);
-//		if(clz!=null) {
-//		try {
-//			Security.addProvider(clz.newInstance());
-//			log.info("Security Provider Found: {} ",clz.getName());
-//		} catch (InstantiationException|IllegalAccessException e) {
-//			log.error("Instantiation error",e);
-//		}
-//		}
 	}
 
 	/**

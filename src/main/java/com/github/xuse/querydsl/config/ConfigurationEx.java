@@ -1,7 +1,5 @@
 package com.github.xuse.querydsl.config;
 
-import static com.github.xuse.querydsl.sql.expression.AdvancedMapper.SCENARIO_INSERT;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -12,6 +10,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -22,11 +22,11 @@ import org.springframework.core.io.Resource;
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.Opcodes;
 import com.github.xuse.querydsl.config.util.ClassScanner;
+import com.github.xuse.querydsl.init.ScanOptions;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dialect.DefaultSQLTemplatesEx;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
-import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.SnowflakeIdWorker;
@@ -48,13 +48,10 @@ import com.querydsl.sql.types.Type;
  *
  */
 public class ConfigurationEx {
+	public static boolean FREE_PRIMITIVE = false; 
 
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);
 
-	private static final AdvancedMapper FOR_INSERT=new AdvancedMapper(SCENARIO_INSERT);
-	
-	private static final AdvancedMapper FOR_INSERT_BATCH=AdvancedMapper.ofNullsAsDefaultBingding(SCENARIO_INSERT);
-	
 	/**
 	 * QueryDSL配置
 	 */
@@ -83,11 +80,6 @@ public class ConfigurationEx {
 	private final Set<RelationalPath<?>> withSchemas = new HashSet<>();
 
 	/**
-	 * 雪花ID生成器
-	 */
-	private SnowflakeIdWorker snowflakeWorker;
-
-	/**
 	 * 达到最大maxRows后按错误日志记录
 	 */
 	private Level levelOfReachMaxRows = Level.ERROR;
@@ -98,7 +90,12 @@ public class ConfigurationEx {
 	private boolean allowTableDropAndCreate = false;
 	
 	/**
-	 * 加载资源文件
+	 * batch操作时日志最多打印条数
+	 */
+	private int maxRecordsLogInBatch = 5;
+	
+	/**
+	 * 资源文件，用于寻找扩展方言类
 	 */
 	private Map<String,String> dialectMapping=IOUtils.loadProperties(this.getClass().getResource("/META-INF/dialect_mapping"));
 	
@@ -107,13 +104,32 @@ public class ConfigurationEx {
 	private LetterCase letterCase;
 	
 	private static Field quoteStrField;
+	
+	/**
+	 * 数据初始化功能：是否启用
+	 */
+	private final ScanOptions scanOptions = new ScanOptions();
+	
+	/*
+	 * 在包扫描时识别到的数据库初始化任务，由于当时没有SQLQueryFactory实例化无法执行，故将初始化任务缓存起来，以便后续执行
+	 */
+	final BlockingQueue<TableInitTask> initTasks = new LinkedBlockingQueue<>();
+	
 	static {
 		try {
-			quoteStrField=SQLTemplates.class.getDeclaredField("quoteStr");
+			quoteStrField = SQLTemplates.class.getDeclaredField("quoteStr");
 			quoteStrField.setAccessible(true);
 		}catch(Exception e) {
 			log.error("get field 'quoteStr' error, from {}",SQLTemplates.class);
 		}
+	}
+	
+	public int getMaxRecordsLogInBatch() {
+		return maxRecordsLogInBatch;
+	}
+
+	public void setMaxRecordsLogInBatch(int maxRecordsLogInBatch) {
+		this.maxRecordsLogInBatch = maxRecordsLogInBatch;
 	}
 
 	public Configuration get() {
@@ -125,13 +141,16 @@ public class ConfigurationEx {
 		return this;
 	}
 
-	public ConfigurationEx(Configuration configuration) {
-		this.configuration = configuration;
-		initConfiguration(configuration);
-		initTemplateEx();
+	public String getDataInitFileSuffix() {
+		return scanOptions.getDataInitFileSuffix();
 	}
 
-	protected void initConfiguration(Configuration c) {
+	public void setDataInitFileSuffix(String dataInitFileSuffix) {
+		this.scanOptions.setDataInitFileSuffix(dataInitFileSuffix);
+	}
+
+	public ScanOptions getScanOptions() {
+		return scanOptions;
 	}
 
 	private synchronized SQLTemplatesEx initTemplateEx() {
@@ -162,7 +181,8 @@ public class ConfigurationEx {
 
 
 	public ConfigurationEx(SQLTemplates templates) {
-		this(new Configuration(templates));
+		this.configuration = new Configuration(templates);
+		initTemplateEx();
 	}
 
 	public String getQuoteString() {
@@ -173,7 +193,6 @@ public class ConfigurationEx {
 			throw Exceptions.illegalState(e);
 		}
 	}
-	
 
 	/**
 	 * @return 获得扩展方言对象
@@ -196,11 +215,11 @@ public class ConfigurationEx {
 	 * @param datacenterId
 	 */
 	public void initSnowflake(int workerId, int datacenterId) {
-		this.snowflakeWorker = new SnowflakeIdWorker(workerId, datacenterId);
+		SnowflakeIdManager.init(workerId,datacenterId);
 	}
 
 	public SnowflakeIdWorker getSnowflakeWorker() {
-		return snowflakeWorker;
+		return SnowflakeIdManager.getInstance();
 	}
 
 	public void registerPrintSchemas(RelationalPath<?> path) {
@@ -265,7 +284,8 @@ public class ConfigurationEx {
      * @param exceptionTranslator exception translator
      */
     public void setExceptionTranslator(SQLExceptionTranslator exceptionTranslator) {
-		configuration.setExceptionTranslator(exceptionTranslator);
+    	if(exceptionTranslator!=null)
+    		configuration.setExceptionTranslator(exceptionTranslator);
 	}
 	
 	/**
@@ -339,7 +359,7 @@ public class ConfigurationEx {
 			}
 			if (cls.getFilename().startsWith("Q")) {
 				try {
-					if (processEnhance(cls, cl)) {
+					if (loadMetaModel(cls, cl)) {
 						n++;
 					}
 				} catch (Exception e) {
@@ -375,19 +395,6 @@ public class ConfigurationEx {
 			//如果用户没有设置表名大小写转换，就使用方言自带的case。
 			initLetterCase(lc);
 		}
-		//兼容处理，似乎没有兼容的必要。
-//		String schema=table.getSchema();
-//		String matchName = table.getTable();
-//		if (matchName != null) {
-//			// 兼容处理，带schema的情况
-//			int n = matchName.indexOf('.');
-//			if (n > -1) {
-//				schema = matchName.substring(0, n);
-//				matchName = matchName.substring(n + 1);
-//				table=new SchemaAndTable(schema, matchName);
-//			}
-//		}
-		//要处理为null的情况
 		return configuration.getOverride(table);
 	}
 	
@@ -401,7 +408,7 @@ public class ConfigurationEx {
 	}
 
 	
-	private boolean processEnhance(Resource res, ClassLoader cl) {
+	private boolean loadMetaModel(Resource res, ClassLoader cl) {
 		byte[] data;
 		try (InputStream in = res.getInputStream()) {
 			data = IOUtils.toByteArray(in);
@@ -416,7 +423,14 @@ public class ConfigurationEx {
 		// 如果父类在，直接加载即可
 		if ("com/github/xuse/querydsl/sql/RelationalPathBaseEx".equals(superName)) {
 			try {
-				doRegiste(reader, cl);
+				RelationalPathEx<?> table=getMetaModel(reader, cl);
+				if(table==null) {
+					return false;
+				}
+				log.info("Scan register entity class:{}", table.getSchemaName());
+				registerExType(table);
+				TableInitTask task=new TableInitTask(table,this.scanOptions);
+				initTasks.offer(task);	
 				return true;
 			} catch (Exception e) {
 				log.error("registe for {} error.", res, e);
@@ -425,31 +439,30 @@ public class ConfigurationEx {
 		return false;
 	}
 
-	@SuppressWarnings("rawtypes")
-	private void doRegiste(ClassReader res, ClassLoader cl)
-			throws IOException, ClassNotFoundException {
+	private RelationalPathEx<?> getMetaModel(ClassReader res, ClassLoader cl) {
 		String name = res.getClassName().replace('/', '.');
-		Class<?> clz = cl.loadClass(name);
+		Class<?> clz;
+		try {
+			 clz = cl.loadClass(name);
+		}catch(ClassNotFoundException e) {
+			log.error("class {} load error.",name,e);
+			return null;
+		}
 		for (Field field : clz.getDeclaredFields()) {
 			if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {
 				try {
-					Object obj = field.get(null);
-					log.info("Scan register entity class:{}", name);
-					this.registerExType((RelationalPathEx) obj);
+					RelationalPathEx<?> obj = (RelationalPathEx<?>) field.get(null);
+					return obj;
 				}catch(IllegalArgumentException | IllegalAccessException e) {
 					log.error("registe class {}",name,e);
 					throw Exceptions.toRuntime(e);
 				}
-				break;
 			}
 		}
+		return null;
 	}
 	
 	public boolean has(SpecialFeature feature) {
 		return getTemplates().supports(feature);
-	}
-	
-	public AdvancedMapper getInsertBindingMap(boolean batch) {
-		return batch ? FOR_INSERT_BATCH : FOR_INSERT;
 	}
 }

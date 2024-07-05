@@ -1,6 +1,7 @@
 package com.querydsl.core.types;
 
-import com.querydsl.core.types.DDLOps.IndexConstraintOps;
+import com.querydsl.core.types.DDLOps.CreateStatement;
+import com.querydsl.core.types.DDLOps.AlterTableConstraintOps;
 
 /**
  * The type of database constraints.
@@ -28,47 +29,47 @@ public enum ConstraintType implements Operator{
 	/**
 	 * SPATIAL索引
 	 */
-	SPATIAL("A", "SPATIAL", ConstraintClassify.INDEX_COLUMNS, IndexConstraintOps.CREATE_SPATIAL,IndexConstraintOps.ALTER_TABLE_DROP_KEY),
+	SPATIAL("A", "SPATIAL", ConstraintClassify.INDEX_COLUMNS, CreateStatement.CREATE_SPATIAL, AlterTableConstraintOps.ALTER_TABLE_DROP_KEY),
 
 	/**
 	 * Equivalent to 'FULLTEXT INDEX'
 	 */
-	FULLTEXT("T", "FULLTEXT", ConstraintClassify.INDEX_COLUMNS, IndexConstraintOps.CREATE_FULLTEXT,IndexConstraintOps.ALTER_TABLE_DROP_KEY), // full text全文索引
+	FULLTEXT("T", "FULLTEXT", ConstraintClassify.INDEX_COLUMNS, CreateStatement.CREATE_FULLTEXT,AlterTableConstraintOps.ALTER_TABLE_DROP_KEY), // full text全文索引
 	
 	/**
 	 * Equivalent to 'INDEX'; Always use BTREE
 	 */
-	KEY("K", "KEY", ConstraintClassify.INDEX_COLUMNS, IndexConstraintOps.CREATE_INDEX,IndexConstraintOps.ALTER_TABLE_DROP_KEY), // 其实就是索引，MYSQL的默认行为
+	KEY("K", "KEY", ConstraintClassify.INDEX_COLUMNS, CreateStatement.CREATE_INDEX,AlterTableConstraintOps.ALTER_TABLE_DROP_KEY), // 其实就是索引，MYSQL的默认行为
 	
 	/**
 	 * Equivalent to 'INDEX USING HASH'
 	 */
-	HASH("H", "HASH INDEX", ConstraintClassify.INDEX_COLUMNS,IndexConstraintOps.CREATE_HASH,IndexConstraintOps.ALTER_TABLE_DROP_KEY), // Hash expression.
+	HASH("H", "HASH INDEX", ConstraintClassify.INDEX_COLUMNS,CreateStatement.CREATE_HASH,AlterTableConstraintOps.ALTER_TABLE_DROP_KEY), // Hash expression.
 	
 	/**
 	 * Equivalent to 'BITMAP INDEX'
 	 */
-	BITMAP("B","BITMAP INDEX", ConstraintClassify.INDEX_COLUMNS,IndexConstraintOps.CREATE_BITMAP,null),
+	BITMAP("B","BITMAP INDEX", ConstraintClassify.INDEX_COLUMNS,CreateStatement.CREATE_BITMAP,AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP),
 	
 	/**
 	 * Equivalent to 'UNIQUE INDEX'
 	 * 本框架中UNIQUE按约束处理，其实现索引不视为用户管理的索引。
 	 */
-	UNIQUE("U", "UNIQUE", ConstraintClassify.COLUMNS,IndexConstraintOps.CREATE_UNIQUE,IndexConstraintOps.ALTER_TABLE_DROP_UNIQUE),  //Unique Key，唯一索引或唯一约束，取决于RDBMS的实现方式
+	UNIQUE("U", "UNIQUE", ConstraintClassify.COLUMNS,CreateStatement.CREATE_UNIQUE,AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE),  //Unique Key，唯一索引或唯一约束，取决于RDBMS的实现方式
 	
 	/**
 	 * PRIMARY KEY
 	 */
-	PRIMARY_KEY("P", "PRIMARY KEY", ConstraintClassify.COLUMNS, null,IndexConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY),  //Primary Key，主键
+	PRIMARY_KEY("P", "PRIMARY KEY", ConstraintClassify.COLUMNS, null,AlterTableConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY),  //Primary Key，主键
 	
 	/**
 	 * Constraint CHECK (a rule on a column.) 
 	 */
-	CHECK("C", "CHECK", ConstraintClassify.CHECK, null,IndexConstraintOps.ALTER_TABLE_DROP_CONSTRAINT),  //Check on a table，数值检查，比如非0，或一些规则 
+	CHECK("C", "CHECK", ConstraintClassify.CHECK, null,AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT),  //Check on a table，数值检查，比如非0，或一些规则 
 	
 	//Below are not supported yet.
 	
-	FOREIGN_KEY("R", "FOREIGN KEY", ConstraintClassify.REF, null,IndexConstraintOps.ALTER_TABLE_DROP_CONSTRAINT),  //Referential a Foreign Key
+	FOREIGN_KEY("R", "FOREIGN KEY", ConstraintClassify.REF, null,AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT),  //Referential a Foreign Key
 	
 	REF("F", "REF", ConstraintClassify.REF, null,null), // Constraint that involves a REF column
 	
@@ -86,9 +87,9 @@ public enum ConstraintType implements Operator{
 	 * 约束在数据库操作有两种方式，一种是在create table / alter table的定义语句中写入，一种是作为独立的SQL语句进行操作。两种场景下语法有轻微区别。
 	 * 因此ConstraintType作为操作符时，都是指作为建表或修改表进行声明的语法，而CREATE_OPS的才是独立语句进行操作时的语法。
 	 */
-	final IndexConstraintOps independentCreateOps;
+	final CreateStatement independentCreateOps;
 	
-	final IndexConstraintOps dropOpsInAlterTable;
+	final AlterTableConstraintOps dropOpsInAlterTable;
 	
 	/**
 	 * true表示定义为columnList
@@ -96,10 +97,17 @@ public enum ConstraintType implements Operator{
 	 */
 	final ConstraintClassify classify;
 	
-	private ConstraintType(String typeName, String typeFullName, ConstraintClassify columnList, IndexConstraintOps createOps, IndexConstraintOps alterDropOps){
+	/**
+	 * @param typeName 名称缩写
+	 * @param typeFullName 完整明证
+	 * @param classify 分类
+	 * @param createOps 独立创建操作符(大部分数据库倾向于在表内维护约束，使用独立语句维护索引。)
+	 * @param alterDropOps 表内删除操作符(大部分数据库倾向于在表内维护约束，使用独立语句维护索引。)
+	 */
+	private ConstraintType(String typeName, String typeFullName, ConstraintClassify classify, CreateStatement createOps, AlterTableConstraintOps alterDropOps){
 		this.typeName = typeName;
 		this.typeFullName = typeFullName;
-		this.classify = columnList;
+		this.classify = classify;
 		this.independentCreateOps = createOps;
 		this.dropOpsInAlterTable = alterDropOps;
 	}
@@ -132,7 +140,7 @@ public enum ConstraintType implements Operator{
 		return typeFullName;
 	}
 
-	public IndexConstraintOps getIndependentCreateOps() {
+	public CreateStatement getIndependentCreateOps() {
 		return independentCreateOps;
 	}
 	
@@ -140,7 +148,7 @@ public enum ConstraintType implements Operator{
 	 * returns the operator of drop constraint.
 	 * @return null if current index can not modify in an alter table clause.
 	 */
-	public IndexConstraintOps getDropOpsInAlterTable() {
+	public AlterTableConstraintOps getDropOpsInAlterTable() {
 		return dropOpsInAlterTable;
 	}
 

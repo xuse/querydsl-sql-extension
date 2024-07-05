@@ -7,23 +7,31 @@ import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.support.Where.WhereBuilder;
+import com.querydsl.core.types.Path;
 
 /**
  * 基于QueryDSL封装的通用CRUD仓库
- * @author jiyi
+ * @author Joey
  *
  * @param <T>
- * @param <ID>
+ * @param <ID> type of primary key 
  */
 public interface CRUDRepository<T, ID> {
-
+	/**
+	 * load entity by primary key.
+	 * @param key
+	 * @return null if record is not exist.
+	 */
 	T load(ID key);
-
-	List<T> findByExample(T t);
+	
+	/**
+	 * Find records by a example bean.
+	 * @param t
+	 * @return list
+	 */
+	List<T> findByExample(T example);
 	
 	List<T> find(Consumer<SQLQueryAlter<T>> consumer);
-	
-	T load(Where<T> where);
 
 	ID insert(T t);
 	
@@ -36,12 +44,14 @@ public interface CRUDRepository<T, ID> {
 	int deleteByExample(T t);
 
 	int update(ID key, T t);
+	
+	int updateByKeys(T obj, Path<?>... bizKeys);
 
 	int update(Consumer<SQLUpdateClauseAlter> consumer);
-
+	
 	int count(Consumer<SQLQueryAlter<T>> consumer);
 	
-	int count(Where<T> where);
+	int countByExample(T example);
 	
 	WhereBuilder<T> query();
 }

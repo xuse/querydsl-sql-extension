@@ -2,6 +2,8 @@ package com.github.xuse.querydsl.sql.expression;
 
 import java.util.List;
 
+import com.github.xuse.querydsl.util.TypeUtils;
+
 /**
  * 基于反射的对象访问器，万一ASM失效后启用
  * 
@@ -20,7 +22,7 @@ public class ReflectCodec extends BeanCodec {
 	@Override
 	public Object newInstance(Object[] fields) {
 		try {
-			Object o = targetClass.newInstance();
+			Object o = TypeUtils.newInstance(targetClass);
 			int len = methods.size();
 			for (int i = 0; i < len; i++) {
 				methods.get(i).getSetter().invoke(o, fields[i]);

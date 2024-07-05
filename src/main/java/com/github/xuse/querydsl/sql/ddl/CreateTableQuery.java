@@ -25,13 +25,14 @@ import lombok.extern.slf4j.Slf4j;
   CREATE [TEMPORARY] TABLE [IF NOT EXISTS] tbl_name
     { LIKE old_tbl_name | (LIKE old_tbl_name) }
     
- * @author jiyi
  *
  */
 @Slf4j
 public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 	
 	private CheckExists check = CheckExists.ABORT;
+	
+	private boolean processPartition = true;
 	
 	public CreateTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
 		super(connection, configuration, path);
@@ -40,19 +41,21 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 	@Override
 	protected List<String> generateSQLs() {
 		List<String> sqls=new ArrayList<>();
+		List<Constraint> others;
 		//开始建
-		SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
-		List<Constraint> others= serializer.serializeTableCreate(table);
 		{
+			SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
+			serializer.setRouting(routing);
+			others = serializer.serializeTableCreate(table, processPartition);
 			String sql=serializer.toString();
-			//log.info(sql);
 			sqls.add(sql);	
 		}
 		for(Constraint c:others) {
 			if(configuration.getTemplates().supports(c.getConstraintType().getIndependentCreateOps())) {
-				SQLSerializerAlter serializer2=new SQLSerializerAlter(configuration,true);
-				serializer2.serialzeConstraintIndepentCreate(table,c);
-				String sql=serializer2.toString();
+				SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
+				serializer.serialzeConstraintIndepentCreate(table,c);
+				serializer.setRouting(routing);
+				String sql=serializer.toString();
 				//log.info(sql);
 				sqls.add(sql);	
 			}else {
@@ -63,8 +66,13 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 	}
 
 	@Override
-	protected void finished(List<String> sqls) {
-		log.info("Create table {} finished, {} sqls executed.",table.getSchemaAndTable(),sqls.size());
+	protected int finished(List<String> sqls) {
+		SchemaAndTable actual=this.table.getSchemaAndTable();
+		if(routing!=null) {
+			actual=routing.getOverride(actual, configuration); 
+		}
+		log.info("Create table {} finished, {} sqls executed.", actual, sqls.size());
+		return super.finished(sqls);
 	}
 
 	@Override
@@ -72,11 +80,43 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 		//Never used.
 		throw new UnsupportedOperationException();
 	}
+	
+	/**
+	 * 如果表已存在，那么什么也不做。
+	 * @return this
+	 */
+	public CreateTableQuery ifExists() {
+		this.check=CheckExists.IGNORE;
+		return this;
+	}
+	
+	/**
+	 * 如果发现表已存在就删除重建，必须在全局开启允许删除表后才能生效，建议仅在单元测试等情况下使用。
+	 * @return this
+	 */
+	public CreateTableQuery reCreate() {
+		this.check=CheckExists.DROP_CREATE;
+		return this;
+	}
+	
+	/**
+	 * 对于设置了分区策略的表，创建时是否同时创建分区。
+	 * 默认true
+	 * @param flag 是否创建分区
+	 * @return this
+	 */
+	public CreateTableQuery partitions(boolean flag) {
+		this.processPartition = flag;
+		return this;
+	}
 
 	@Override
 	protected boolean preExecute(MetadataQuerySupport connection) {
 		if(check!=CheckExists.NOT_CHECK) {
 			SchemaAndTable actualTable=connection.asInCurrentSchema(table.getSchemaAndTable());
+			if(routing!=null) {
+				actualTable=routing.getOverride(actualTable, configuration);
+			}
 			TableInfo t = connection.getTable(connection.asInCurrentSchema(actualTable));
 			if(t!=null) {
 				switch(check) {
@@ -92,6 +132,7 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 					}else {
 						throw Exceptions.illegalState("The table {} has already exist, and drop table action was disabled.",table.getSchemaAndTable());
 					}
+					return true;
 				case MERGE:
 					throw Exceptions.unsupportedOperation("Merge table feature was not implemented now.");
 				case NOT_CHECK:

@@ -2400,4 +2400,24 @@ public class StringUtils {
 	public static String trimToEmpty(String value) {
 		return value==null? "": value.trim();
 	}
+	
+
+	/**
+	 * 文本截断
+	 * 
+	 * @param str
+	 * @param maxLength
+	 * @param append    阶段后要添加的内容
+	 * @return
+	 */
+	public static String truncate(String str, int maxLength, String... append) {
+		if (str.length() <= maxLength)
+			return str;
+		str = str.substring(0, maxLength);
+		if (append.length > 0) {
+			return str.concat(append[0]);
+		} else {
+			return str;
+		}
+	}
 }

@@ -29,10 +29,10 @@ import java.util.function.Supplier;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
-import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.FilteredClause;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.NullExpression;
@@ -42,6 +42,7 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLListener;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLNoCloseListener;
@@ -58,6 +59,7 @@ import com.querydsl.sql.dml.SQLMergeClause;
  */
 public class SQLMergeClauseAlter extends SQLMergeClause {
 	private final ConfigurationEx configEx;
+	private RoutingStrategy routing;
 	
 	public SQLMergeClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
@@ -173,18 +175,21 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	}
 	
     protected SQLSerializer createSerializer() {
-        SQLSerializer serializer = new SQLSerializerAlter(configEx, true);
+    	SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
         serializer.setUseLiterals(useLiterals);
+        serializer.setRouting(routing);
         return serializer;
     }
     
-	private static final AdvancedMapper FOR_UPDATE = new AdvancedMapper(AdvancedMapper.SCENARIO_UPDATE);
+//	private static final MapperEx FOR_UPDATE = new AdvancedMapper(AdvancedMapper.SCENARIO_UPDATE);
+	
     @SuppressWarnings({ "unchecked", "rawtypes" })
 	public SQLMergeClauseAlter populate(Object bean) {
 		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
 				? entity.getPrimaryKey().getLocalColumns()
 				: Collections.<Path<?>>emptyList();
-		Map<Path<?>, Object> values = FOR_UPDATE.createMap(entity, bean, configEx);
+		boolean tuple=(bean instanceof Tuple);
+		Map<Path<?>, Object> values = SQLUpdateClauseAlter.getUpdateBindingMapper(tuple).createMap(entity, bean);
 		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
 			if (!primaryKeyColumns.contains(entry.getKey())) {
 				set((Path) entry.getKey(), entry.getValue());
@@ -323,5 +328,10 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
 		}
 		listeners.executed(context);
+	}
+	
+	public SQLMergeClauseAlter withRouting(RoutingStrategy routing){
+		this.routing = routing;
+		return this;
 	}
 }

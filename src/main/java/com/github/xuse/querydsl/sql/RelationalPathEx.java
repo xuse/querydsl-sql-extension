@@ -1,12 +1,13 @@
 package com.github.xuse.querydsl.sql;
 
 import java.util.Collection;
-import java.util.List;
 
+import com.github.xuse.querydsl.annotation.init.InitializeData;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
+import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.querydsl.core.types.Path;
 import com.querydsl.sql.RelationalPath;
 
@@ -17,18 +18,12 @@ import com.querydsl.sql.RelationalPath;
  * @param <T> 
  *
  */
-public interface RelationalPathEx<T> extends RelationalPath<T>{
+public interface RelationalPathEx<T> extends RelationalPath<T>, Cloneable{
 
 	/**
 	 * @return 获得Bean转换器。
 	 */
 	BeanCodec getBeanCodec();
-
-	/**
-	 * 
-	 * @return list of path 获得所有的列（字段）
-	 */
-	List<Path<?>> getColumns();
 	
 	/**
 	 * @param path
@@ -51,8 +46,24 @@ public interface RelationalPathEx<T> extends RelationalPath<T>{
 	 */
 	Collection<Constraint> getConstraints();
 	
-	
+	/**
+	 * @return 表的字符集
+	 */
 	Collate getCollate();
 	
+	/**
+	 * @return 表注释
+	 */
 	String getComment();
+	
+	/**
+	 * @return 表分区配置
+	 */
+	PartitionBy getPartitionBy();
+	
+	
+	RelationalPathEx<T> clone();
+	
+	InitializeData getInitializeData();
+	
 }

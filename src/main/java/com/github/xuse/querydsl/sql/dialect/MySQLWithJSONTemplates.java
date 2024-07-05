@@ -17,14 +17,19 @@ import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
+import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.json.JsonOps;
 import com.github.xuse.querydsl.sql.support.QueryWrapper;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.types.ConstraintType;
+import com.querydsl.core.types.DDLOps.AlterTableConstraintOps;
 import com.querydsl.core.types.DDLOps.AlterTableOps;
+import com.querydsl.core.types.DDLOps.AlterTablePartitionOps;
 import com.querydsl.core.types.DDLOps.Basic;
-import com.querydsl.core.types.DDLOps.IndexConstraintOps;
+import com.querydsl.core.types.DDLOps.CreateStatement;
+import com.querydsl.core.types.DDLOps.PartitionDefineOps;
+import com.querydsl.core.types.DDLOps.PartitionMethod;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.MySQLTemplates;
@@ -73,28 +78,40 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		super(escape, quote);
 		super.setPrintSchema(false);
 		this.usingInfoSchema = usingInfoSchema;
-		initJsonFunctions();
-		// MySQL最大的秒以下时间精度只能保留到6位。
+		
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
-
+		initJsonFunctions();
+		initPartitionOps();
+		
 		add(ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");
-		add(IndexConstraintOps.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}");
+		
 		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
 		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1}");
 		add(AlterTableOps.COMMENT, "COMMMENT = {0}");
-		add(IndexConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0}");
-		add(IndexConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0}");
+		
+		add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
+		add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
+		
+		add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}, ALGORITHM=INPLACE, LOCK=SHARED");
+		add(CreateStatement.CREATE_INDEX, "INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=SHARED");
+		add(CreateStatement.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_HASH, "INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(SpecialFeature.PARTITION_SUPPORT,"");
+		
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
 		if(!supportsCheckConstraint) {
 			unsupports.add(ConstraintType.CHECK);
 		}
-
-
+		unsupports.add(CreateStatement.CREATE_BITMAP);
+		
 		typeNames.put(Types.BOOLEAN, "bit(1)").type(Types.BIT);
 		typeNames.put(Types.FLOAT, "float").type(Types.REAL);
 
+		// MySQL最大的秒以下时间精度只能保留到6位。
 		typeNames.put(Types.TIMESTAMP, "datetime").size(0);
 		typeNames.put(Types.TIMESTAMP, 6, "datetime($l)");
 		typeNames.put(Types.TIMESTAMP, 1024, "datetime($l)").size(6);
@@ -102,8 +119,8 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		typeNames.put(Types.TIME, 6, "time($l)");
 		typeNames.put(Types.TIME, 1024, "time($l)").size(6);
 
-		typeNames.put(Types.CHAR, 255, "char($l)"); // 255以内
-		typeNames.put(Types.BINARY, 255, "binary($l)"); // 255以内
+		typeNames.put(Types.CHAR, 255, "char($l)");
+		typeNames.put(Types.BINARY, 255, "binary($l)");
 
 		typeNames.put(Types.VARCHAR, 16383, "varchar($l)");
 		typeNames.put(Types.VARBINARY, 16383, "varbinary($l)");
@@ -111,9 +128,33 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.CLOB);
 		typeNames.put(Types.VARBINARY, 65535, "blob").type(Types.BLOB);
 
+		typeNames.put(Types.LONGVARCHAR, 65535, "text").type(Types.CLOB);
+		typeNames.put(Types.LONGVARBINARY, 65535, "blob").type(Types.BLOB);
+		
 		typeNames.put(Types.VARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB);
 		typeNames.put(Types.VARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.BLOB);
+		
+		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB);
+		typeNames.put(Types.LONGVARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.BLOB);
 
+	}
+
+	private void initPartitionOps() {
+		add(PartitionDefineOps.PARTITION_BY,"PARTITION BY {0}");
+		
+		add(PartitionMethod.KEY,"KEY({0}) PARTITIONS {1}");
+		add(PartitionMethod.HASH,"HASH({0}) PARTITIONS {1}");
+		add(PartitionMethod.LINEAR_HASH," LINEAR HASH({0}) PARTITIONS {1}");
+		add(PartitionMethod.RANGE,"RANGE ({0}) {1}");
+		add(PartitionMethod.RANGE_COLUMNS,"RANGE COLUMNS({0}) {1}");
+		add(PartitionMethod.LIST,"LIST ({0}) {1}");
+		add(PartitionMethod.LIST_COLUMNS,"LIST COLUMNS({0}) {1}");
+		add(PartitionDefineOps.PARTITION_IN_LIST," PARTITION {0} VALUES IN ({1})");
+		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({1})");
+		
+		add(AlterTablePartitionOps.ADD_PARTITION," ADD PARTITION ({0})");
+		add(AlterTablePartitionOps.REORGANIZE_PARTITION," REORGANIZE PARTITION {0} INTO {1}");
+		
 	}
 
 	private void initJsonFunctions() {
@@ -175,6 +216,32 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		// add(template, DDLOps.ALTER_COLUMN,"CHANGE {0} {0} {1}");
 	}
 
+	
+	
+	@Override
+	public List<PartitionInfo> getPartitions(String schema, String tableName, QueryWrapper w) {
+		if (StringUtils.isEmpty(schema)) {
+			schema = "%";
+		}
+		SQLBindings sql = new SQLBindings(
+				"SELECT * FROM information_schema.partitions WHERE table_name=? AND TABLE_SCHEMA LIKE ? ORDER BY PARTITION_ORDINAL_POSITION ASC",
+				Arrays.asList(tableName, schema));
+		List<PartitionInfo> partitions = w.query(sql, rs -> {
+			PartitionInfo c = new PartitionInfo();
+			c.setTableCat(rs.getString("TABLE_CATALOG"));
+			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
+			c.setTableName(rs.getString("TABLE_NAME"));
+			c.setName(rs.getString("PARTITION_NAME"));
+			c.setMethod(PartitionMethod.parse(rs.getString("PARTITION_METHOD")));
+			c.setCreateTime(rs.getTimestamp("CREATE_TIME"));
+			c.setPartitionExpression(rs.getString("PARTITION_EXPRESSION"));
+			c.setPartitionOrdinal(rs.getInt("PARTITION_ORDINAL_POSITION"));
+			c.setPartitionDescription(rs.getString("PARTITION_DESCRIPTION"));
+			return c;
+		});
+		return partitions;
+	}
+	
 	@Override
 	public List<Constraint> getConstraints(String schema, String tableName, QueryWrapper w, boolean detail) {
 		if (StringUtils.isEmpty(schema)) {
@@ -282,6 +349,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		}
 	}
 	
+
 	private TableInfo fromRsEx(ResultSet rs) throws SQLException {
 		TableInfo info = new TableInfo();
 		info.setCatalog(rs.getString("TABLE_CAT"));

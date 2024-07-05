@@ -16,6 +16,11 @@ public enum SpecialFeature implements Operator{
 	 * 在执行ALTER TABLE语句的时候一次只能操作一个列 (Derby)
 	 */
 	ONE_COLUMN_IN_SINGLE_DDL,
+	
+	/**
+	 * 支持分区表
+	 */
+	PARTITION_SUPPORT
 	;
 
 	@Override

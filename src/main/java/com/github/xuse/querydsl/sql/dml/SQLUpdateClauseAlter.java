@@ -29,9 +29,11 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
+import com.github.xuse.querydsl.sql.expression.TupleMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
@@ -39,11 +41,13 @@ import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.dml.AbstractSQLUpdateClause;
+import com.querydsl.sql.dml.Mapper;
 
 /**
  * Defines an UPDATE clause. If you need to subtype this, use
@@ -52,6 +56,7 @@ import com.querydsl.sql.dml.AbstractSQLUpdateClause;
 public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClauseAlter> {
 	
 	private final ConfigurationEx configEx;
+	private RoutingStrategy routing;
 	
 	public SQLUpdateClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
@@ -63,18 +68,36 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		this.configEx=configuration;
 	}
 	
+	private final static AdvancedMapper FOR_UPDATE = new AdvancedMapper(AdvancedMapper.SCENARIO_UPDATE);
 	
-	private static final AdvancedMapper FOR_UPDATE = new AdvancedMapper(AdvancedMapper.SCENARIO_UPDATE);
-	
-	private static final AdvancedMapper FOR_UPDATE_NO_GENERATE = new AdvancedMapper(0);
+	private final static TupleMapper FOR_TUPLE_UPDATE = new TupleMapper(AdvancedMapper.SCENARIO_UPDATE);
 	
     /**
      * 根据传入对象来指定要更新的字段
      */
 	public SQLUpdateClauseAlter populate(Object bean) {
-		return populate(bean,FOR_UPDATE, false);
+		boolean tuple=(bean instanceof Tuple);
+		populate0(bean,getUpdateBindingMapper(tuple), false);
+		return this;
     }
-	
+    
+	@SuppressWarnings("rawtypes")
+	static Mapper getUpdateBindingMapper(boolean tuple) {
+		return tuple ? FOR_TUPLE_UPDATE : FOR_UPDATE;
+	}
+
+	/**
+	 * 根据传入的对象来指定要更新的字段
+	 * @param bean
+	 * @param pkAsWhere 在指定set子句的同时，主键作为where条件，即按主键更新。
+	 * @return SQLUpdateClauseAlter
+	 * @implSpec 如果设置主键作为更新条件，复合主键的所有值都必须设置。
+	 */
+    public SQLUpdateClauseAlter populate(Object bean, boolean pkAsWhere) {
+    	boolean tuple=(bean instanceof Tuple);
+    	populate0(bean, getUpdateBindingMapper(tuple), pkAsWhere);
+    	return this;
+	}
 	
 	/**
 	 * 当向数据库更新一个数值时，查出旧数值。新旧对象进行对比，仅当新对象有数值和旧对象不同时才会写入更新字段。
@@ -93,8 +116,9 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 				? entity.getPrimaryKey().getLocalColumns()
 				: Collections.<Path<?>>emptyList();
 				
-		Map<Path<?>, Object> values = FOR_UPDATE_NO_GENERATE.createMap(entity, bean, configEx);
-		Map<Path<?>, Object> oldvalues = old==null? Collections.emptyMap():FOR_UPDATE_NO_GENERATE.createMap(entity, old, configEx);
+    	AdvancedMapper mapper = AdvancedMapper.DEFAULT;
+		Map<Path<?>, Object> values = mapper.createMap(entity, bean);
+		Map<Path<?>, Object> oldvalues = old==null? Collections.emptyMap():mapper.createMap(entity, old);
 		
 		
 		RelationalPathEx<?> entityEx=null;
@@ -127,16 +151,6 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		return this;
     }
     
-	/**
-	 * 根据传入的对象来指定要更新的字段
-	 * @param bean
-	 * @param pkAsWhere 在指定set字句的同时，就将where条件设置为主键条件。这种情况下复合主键的所有值都必须设置。
-	 * @return SQLUpdateClauseAlter
-	 */
-    public SQLUpdateClauseAlter populate(Object bean, boolean pkAsWhere) {
-    	return populate(bean, FOR_UPDATE, pkAsWhere);
-	}
-    
     /*
      * 这个方法通过AdvancedMapper提供了更具体的字段映射行为，一般来说外部无需使用。
      * @param bean 数据对象
@@ -144,12 +158,17 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
      * @param pkAsWhere 在指定set字句的同时，就将where条件设置为主键条件。这种情况下复合主键的所有值都必须设置。
      * @return SQLUpdateClauseAlter
      */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-    public SQLUpdateClauseAlter populate(Object bean, AdvancedMapper mapper, boolean pkAsWhere) {
-    	Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
+    public <T> SQLUpdateClauseAlter populate(T bean, Mapper<T> mapper, boolean pkAsWhere) {
+    	populate0(bean,mapper,pkAsWhere);
+    	return this;
+	}
+	
+    @SuppressWarnings({"rawtypes","unchecked"})
+	private <T> void populate0(Object bean, Mapper mapper, boolean pkAsWhere) {
+		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
 				? entity.getPrimaryKey().getLocalColumns()
 				: Collections.<Path<?>>emptyList();
-		Map<Path<?>, Object> values = mapper.createMap(entity, bean, configEx);
+		Map<Path<?>, Object> values = mapper.createMap(entity, bean);
 		int pkConditionFilled=0;
 		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
 			if (primaryKeyColumns.contains(entry.getKey())) {
@@ -164,16 +183,15 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 			}
 		}
 		if(pkAsWhere) {
-			int totalPK=entity.getPrimaryKey().getLocalColumns()==null? 0: entity.getPrimaryKey().getLocalColumns().size();
+			int totalPK = primaryKeyColumns.size();
 			//如果主键条件不完整，可能导致update范围扩大甚至全表更新。为避免出现这种危险，检查主键条件的完整性。
-			if(pkConditionFilled<totalPK){
+			if (pkConditionFilled < totalPK) {
 				throw Exceptions.illegalArgument("There is null value on some primary key columns. ({}/{}) entity:{},where:{}",
 						pkConditionFilled,totalPK,entity.getClass().getName(),metadata.getWhere());
 			}
 		}
-		return this;
 	}
-	
+
 	@Override
 	public long execute() {
 		if(isEmpty()) {
@@ -268,8 +286,9 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	
     protected PreparedStatement createStatement() throws SQLException {
         listeners.preRender(context);
-        SQLSerializer serializer = new SQLSerializerAlter(configEx, true);
+        SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
         serializer.setUseLiterals(useLiterals);
+		serializer.setRouting(routing);
         serializer.serializeUpdate(metadata, entity, updates);
         SQLBindings bindings = createBindings(metadata, serializer);
         context.addSQL(bindings);
@@ -311,7 +330,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
     		if(metadata.getGenerated()==null || this.updates.get(p)!=null) {
     			continue;
     		}
-    		Object value=AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AdvancedMapper.SCENARIO_UPDATE,configEx);
+    		Object value=AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AdvancedMapper.SCENARIO_UPDATE);
     		if (value instanceof Expression<?>) {
     			updates.put(p, (Expression<?>)value);
     	    }else if(!metadata.isUnsavedValue(value)) {
@@ -331,7 +350,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
     	RelationalPathEx<?> entity=(RelationalPathEx<?>)this.entity;
     	for(Path<?> p:paths) {
     		ColumnMapping metadata=entity.getColumnMetadata(p);
-    		Object value=AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AdvancedMapper.SCENARIO_UPDATE,configEx);
+    		Object value=AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AdvancedMapper.SCENARIO_UPDATE);
     		if (value instanceof Expression<?>) {
     			updates.put(p, (Expression<?>)value);
     	    }else if(!metadata.isUnsavedValue(value)) {
@@ -388,6 +407,11 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		for(Path<?> p:path) {
 			updates.remove(p);
 		}
+		return this;
+	}
+	
+	public SQLUpdateClauseAlter withRouting(RoutingStrategy routing){
+		this.routing = routing;
 		return this;
 	}
 }

@@ -21,12 +21,13 @@ import com.querydsl.sql.SchemaAndTable;
  * Args{2} 内部字段或CHECK表达式。如果是外键就是引用关系（待扩展）
  */
 public class ConstraintOperation implements Operation<Object>{
+	private static final long serialVersionUID = 1L;
 	private Operation<Object> op;
 
 	public ConstraintOperation(SchemaAndTable name, Operator type,RelationalPath<?> table,Expression<?> definition) {
 		Assert.notNull(name);
 		SimplePath<?> constraintPath=Expressions.path(Object.class,null, name.getTable());
-		op=ExpressionUtils.operation(Object.class, type, table, constraintPath,definition);
+		op=ExpressionUtils.operation(Void.class, type, table, constraintPath,definition);
 	}
 
 	@Override

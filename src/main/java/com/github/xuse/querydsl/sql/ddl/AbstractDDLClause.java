@@ -16,6 +16,7 @@ import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLListeners;
@@ -32,6 +33,8 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 	  
     protected SQLListenerContextImpl context;
     
+    protected RoutingStrategy routing;
+    
 	public AbstractDDLClause(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
 		this.connection = connection;
 		this.configuration = configuration;
@@ -46,9 +49,9 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 	protected static QueryMetadata DEFAULT = new DefaultQueryMetadata();
 	 
 	@Override
-	public void execute() {
+	public int execute() {
 		if(!preExecute(connection)) {
-			return;
+			return 0;
 		}
 		try{
 			Connection c=connection.getConnection();
@@ -64,8 +67,6 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 		        listeners.prePrepare(context);
 				try (PreparedStatement st = c.prepareStatement(s)) {
 					listeners.prepared(context);
-					
-					listeners.notifyUpdate(table, DEFAULT, null);
 					listeners.preExecute(context);
 					int result = st.executeUpdate();
 					postExecuted(context, System.currentTimeMillis() - start, "DDL", result);
@@ -74,13 +75,18 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 					throw configuration.get().translate(s, null, e);
 				}
 			}
-			finished(sqls);
+			return finished(sqls);
 		}finally {
 			listeners.end(context);
 		}
 	}
 	
-    protected void finished(List<String> sqls) {
+    protected int finished(List<String> sqls) {
+    	if(sqls.isEmpty()) {
+    		return 0;
+    	}
+		int count = (int) sqls.stream().filter(e -> e != null).count();
+		return count;
 	}
 
 	protected boolean preExecute(MetadataQuerySupport metadata) {
@@ -125,5 +131,10 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
     }
 
 	protected abstract String generateSQL();
+	
+	public DDLClause<C> withRouting(RoutingStrategy routing) {
+		this.routing=routing;
+		return this;
+	}
 	
 }

@@ -14,7 +14,6 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -129,7 +128,6 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T newInstance(Object... a) {
-		System.out.println(Arrays.toString(a));
 		return (T) beanCodec.newInstance(a);
 	}
 	 /**

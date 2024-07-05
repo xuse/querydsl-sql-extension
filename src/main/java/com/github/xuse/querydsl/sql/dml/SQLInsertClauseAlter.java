@@ -31,8 +31,10 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
+import com.github.xuse.querydsl.sql.expression.TupleMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
@@ -41,12 +43,14 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.ColumnMetadata;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.AbstractSQLInsertClause;
+import com.querydsl.sql.dml.Mapper;
 import com.querydsl.sql.dml.SQLInsertBatch;
 
 import lombok.extern.slf4j.Slf4j;
@@ -60,8 +64,17 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClauseAlter>  {
+
+	private static final AdvancedMapper FOR_INSERT = new AdvancedMapper(AdvancedMapper.SCENARIO_INSERT);
+	
+	private static final AdvancedMapper FOR_BATCHINSERT = AdvancedMapper.ofNullsAsDefaultBinding(AdvancedMapper.SCENARIO_INSERT);
+
+	private static final TupleMapper FOR_TUPLE_INSERT = new TupleMapper(AdvancedMapper.SCENARIO_INSERT);
+
+	private static final TupleMapper FOR_TUPLE_BATCHINSERT = TupleMapper.ofNullsAsDefaultBingding(AdvancedMapper.SCENARIO_INSERT);
 	
 	private final ConfigurationEx configEx;
+	private RoutingStrategy routing;
 	
 	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity) {
 		this(connection, new ConfigurationEx(templates), entity);
@@ -106,7 +119,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
     		if(columns.indexOf(p)>=0) {
     			continue;
     		}
-    		Object value=AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AdvancedMapper.SCENARIO_INSERT, configEx);
+    		Object value=AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AdvancedMapper.SCENARIO_INSERT);
     		if (value instanceof Expression<?>) {
     			columns.add(p);
     			values.add((Expression<?>)value);
@@ -235,28 +248,47 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			endContext(context);
 		}
 	}
-	
+
 	/**
 	 * 使用带NULLBinding的方式设置变量，批量装配时，无论是否为null值，都会在SQL中显示声明，因此数据库的默认值将无效
 	 * @param beans
 	 * @return this
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public SQLInsertClauseAlter populateBatch(Collection<?> beans) {
+		populateBatch0(beans, FOR_BATCHINSERT);
+		return this;
+	}
+	
+	public <T> SQLInsertClauseAlter populateBatch(Collection<T> beans, Mapper<T> mapper) {
+		populateBatch0(beans, mapper);
+		return this;		
+	}
+	
+	/**
+	 * 批量写入动态数据（用Tuple类型表示）
+	 * @param beans 数据
+	 * @param mapper Tuple
+	 * @return this
+	 */
+	public <T> SQLInsertClauseAlter populateTuples(Collection<Tuple> beans) {
+		populateBatch0(beans, FOR_TUPLE_BATCHINSERT);
+		return this;		
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void populateBatch0(Collection beans, Mapper mapper) {
 		if(beans==null || beans.isEmpty()) {
 			populatedEmptyBatch = true;
-			return this;
+			return;
 		}
-		for(Object obj:beans) {
-			Map<Path<?>, Object> values = configEx.getInsertBindingMap(true).createMap(entity, obj, configEx);
+		for (Object obj : beans) {
+			Map<Path<?>, Object> values = mapper.createMap(entity, obj);
 			for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
 				set((Path) entry.getKey(), entry.getValue());
 			}
 			addBatch();
 		}
-		return this;
 	}
-	
 	
 	private transient boolean populatedEmptyBatch; 
 	
@@ -264,18 +296,22 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 * 覆盖父类实现，使用默认的AdvancedMapper，支持primtive类型字段，并可支持注解@UnsavedValue
 	 */
 	public SQLInsertClauseAlter populate(Object bean) {
-		return populate(bean, configEx.getInsertBindingMap(false));
+		return populate(bean, FOR_INSERT);
+	}
+	
+	public SQLInsertClauseAlter populate(Tuple bean) {
+		return populate(bean, FOR_TUPLE_INSERT);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public SQLInsertClauseAlter populate(Object bean, AdvancedMapper mapper) {
-		Map<Path<?>, Object> values = mapper.createMap(entity, bean, configEx);
-		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
-			set((Path) entry.getKey(), entry.getValue());
-		}
-		return this;
-	}
-
+//	@SuppressWarnings({ "unchecked", "rawtypes" })
+//	public SQLInsertClauseAlter populate(Object bean, Mapper<?> mapper) {
+//		Map<Path<?>, Object> values = mapper.createMap(entity, bean);
+//		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+//			set((Path) entry.getKey(), entry.getValue());
+//		}
+//		return this;
+//	}
+	
     protected Collection<PreparedStatement> createStatements(boolean withKeys) throws SQLException {
         boolean addBatches = !configuration.getUseLiterals();
         listeners.preRender(context);
@@ -289,9 +325,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 
         // add first batch
         {
-        	SQLSerializer serializer = createSerializer();
-            serializer.serializeInsert(metadata, entity, batches.get(0).getColumns(), batches
-                    .get(0).getValues(), batches.get(0).getSubQuery());
+        	SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
+        	serializer.setUseLiterals(useLiterals);
+        	serializer.setRouting(routing);
+			SQLInsertBatch batch = batches.get(0);
+            serializer.serializeInsert(metadata, entity, batch.getColumns(), batch.getValues(), batch.getSubQuery());
             String sql=serializer.toString();
             
             PreparedStatement stmt = prepareStatementAndSetParameters(new SQLBindingsAlter(sql,serializer.getConstants(),serializer.getConstantPaths()), withKeys);
@@ -303,17 +341,18 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
             listeners.rendered(context);	
         }
         // add other batches
+		int maxLoginBatch = configEx.getMaxRecordsLogInBatch();
         for (int i = 1; i < batches.size(); i++) {
             SQLInsertBatch batch = batches.get(i);
 
             listeners.preRender(context);
-            SQLSerializer serializer = createSerializer();
-            serializer.serializeInsert(metadata, entity, batch.getColumns(),
-                    batch.getValues(), batch.getSubQuery());
+        	SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
+        	serializer.setUseLiterals(useLiterals);
+        	serializer.setRouting(routing);
+            serializer.serializeInsert(metadata, entity, batch.getColumns(),batch.getValues(), batch.getSubQuery());
             String sql=serializer.toString();
             
-            if(i<=5) {
-            	//TODO 改为配置
+			if (i <= maxLoginBatch) {
             	context.addSQL(createBindings(metadata, serializer));
                 listeners.rendered(context);	
             }
@@ -330,9 +369,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
             }
         }
         if(stmts.size()>1) {
-        	for(String s:stmts.keySet()) {
-        		System.err.println(s);
-        	}
+        	log.warn("There are multi sqls in this batch.{}",stmts.keySet());
         }
         return stmts.values();
     }
@@ -340,8 +377,9 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	
 	protected PreparedStatement createStatement(boolean withKeys) throws SQLException {
 		listeners.preRender(context);
-		SQLSerializer serializer = new SQLSerializerAlter(configEx, true);
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
         serializer.setUseLiterals(useLiterals);
+        serializer.setRouting(routing);
 		if (subQueryBuilder != null) {
 			subQuery = subQueryBuilder.select(values.toArray(new Expression[values.size()])).clone();
 			values.clear();
@@ -436,5 +474,10 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
 		}
 		listeners.executed(context);
+	}
+	
+	public SQLInsertClauseAlter withRouting(RoutingStrategy routing){
+		this.routing = routing;
+		return this;
 	}
 }

@@ -322,6 +322,18 @@ public class DateUtils {
 		c.setTime(d);
 		return c.get(Calendar.YEAR);
 	}
+	
+
+	public static int getWeekOfYear(Date date) {
+		return getWeekOfYear(date,TimeZone.getDefault());
+	}
+	
+	public static int getWeekOfYear(Date date, TimeZone zone) {
+		final Calendar c = new GregorianCalendar(zone);
+		c.setTime(date);
+		return c.get(Calendar.WEEK_OF_YEAR);
+	}
+	
 
 	/**
 	 * 得到月份 (1~12)
@@ -1035,7 +1047,7 @@ public class DateUtils {
 	public static Date today() {
 		return truncateToDay(new Date());
 	}
-
+	
 	/**
 	 * @return 返回现在
 	 */

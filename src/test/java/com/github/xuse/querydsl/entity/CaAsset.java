@@ -18,7 +18,7 @@ import com.querydsl.core.types.ConstraintType;
 import lombok.Data;
 
 @Data
-@TableSpec(name="ca_asset",primaryKeyPath="id",collate = "utf8mb4_general_ci",
+@TableSpec(name="ca_asset",primaryKeys="id",collate = "utf8mb4_general_ci",
 keys = {
 		@Key(path= {"code"},type=ConstraintType.UNIQUE),
 		@Key(path= {"content"},type=ConstraintType.FULLTEXT),

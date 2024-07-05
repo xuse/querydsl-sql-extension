@@ -21,7 +21,7 @@ public class H2SQLTemplatesEx extends DefaultSQLTemplatesEx {
 	}
 
 	@Override
-	public boolean supportedInTableCreateClause(ConstraintType type) {
+	public boolean supportCreateInTableDefinition(ConstraintType type) {
 		return !(type == ConstraintType.KEY || type == ConstraintType.HASH);
 	}
 

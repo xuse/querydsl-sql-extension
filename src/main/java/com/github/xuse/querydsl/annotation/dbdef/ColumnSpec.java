@@ -56,13 +56,12 @@ public @interface ColumnSpec {
 	boolean autoIncrement() default false;
 	
 	/**
-	 * 尚未实现
-	 * not implemented.
+	 * 在更新时除非显式指定set(path, value)，否则不会写入
 	 */
 	boolean updatable() default true;
 	
 	/**
-	 * @return not implemented.
+	 * 在插入数据库时除非显式指定set(path, value)，否则不会写入
 	 */
 	boolean insertable() default true;
 	

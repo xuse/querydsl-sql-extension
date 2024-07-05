@@ -12,18 +12,23 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.ClonedRelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.github.xuse.querydsl.sql.column.ColumnBuilderHandler;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
+import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.types.Constant;
 import com.querydsl.core.types.ConstantImpl;
+import com.querydsl.core.types.ConstraintType;
 import com.querydsl.core.types.DDLOps;
 import com.querydsl.core.types.DDLOps.AlterTableOps;
 import com.querydsl.core.types.DDLOps.Basic;
@@ -58,14 +63,20 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	private boolean logSQL;
 
 	private MetadataQuerySupport metadata;
+	
+	private ClonedRelationalPathBaseEx<?> table;
 
 	public AlterTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPathEx<?> path) {
 		super(connection, configuration, path);
+		table = (ClonedRelationalPathBaseEx<?>)path.clone();
 	}
-
+	
 	@Override
 	protected List<String> generateSQLs() {
 		SchemaAndTable acutalTable = metadata.asInCurrentSchema(table.getSchemaAndTable());
+		if(routing!=null) {
+			acutalTable=routing.getOverride(acutalTable, configuration);
+		}
 		List<ColumnDef> columns = metadata.getColumns(acutalTable);
 		if (columns.isEmpty()) {
 			// 无表，变为创建
@@ -74,7 +85,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		CompareResult difference = new CompareResult();
 		compareColumns(difference, columns);
 		compareConstraints(difference, metadata.getIndexes(acutalTable, MetadataQuerySupport.INDEX_POILCY_MERGE_CONSTRAINTS));
-		compareTableAttributes(difference,this.table,metadata.getTable(acutalTable));
+		compareTableAttributes(difference,table,metadata.getTable(acutalTable));
 		
 		if (difference.isEmpty()) {
 			log.info("TABLE [{}] compare finished, there's no difference between database and java definitions.",
@@ -88,6 +99,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		if (configuration.has(SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL)) {
 			for (ColumnMapping cp : difference.getAddColumns()) {
 				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+				serializer.setRouting(routing);
 				if (serializer.serializeAlterTable(this.table, difference.ofAddSingleColumn(cp),
 						independentOperations) > 0) {
 					sqls.add(serializer.toString());
@@ -96,6 +108,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 
 			for (String cp : difference.getDropColumns()) {
 				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+				serializer.setRouting(routing);
 				if (serializer.serializeAlterTable(this.table, difference.ofDropSingleColumn(cp),
 						independentOperations) > 0) {
 					sqls.add(serializer.toString());
@@ -105,6 +118,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			for (ColumnModification cp : difference.getChangeColumns()) {
 				if (cp.getChanges().size() == 1) {
 					SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+					serializer.setRouting(routing);
 					if (serializer.serializeAlterTable(this.table, difference.ofSingleChangeColumn(cp),
 							independentOperations) > 0) {
 						sqls.add(serializer.toString());
@@ -112,6 +126,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 				} else {
 					for (ColumnChange cg : cp.getChanges()) {
 						SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+						serializer.setRouting(routing);
 						ColumnModification param = cp.ofSingleChange(cg);
 						if (serializer.serializeAlterTable(this.table, difference.ofSingleChangeColumn(param),
 								independentOperations) > 0) {
@@ -122,6 +137,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			}
 			for (Constraint c : difference.getDropConstraints()) {
 				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+				serializer.setRouting(routing);
 				if (serializer.serializeAlterTable(this.table, difference.ofDropSingleConstraint(c),
 						independentOperations) > 0) {
 					sqls.add(serializer.toString());
@@ -129,6 +145,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			}
 			for (Constraint c : difference.getAddConstraints()) {
 				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+				serializer.setRouting(routing);
 				if (serializer.serializeAlterTable(this.table, difference.ofAddSingleConstraint(c),
 						independentOperations) > 0) {
 					sqls.add(serializer.toString());
@@ -137,6 +154,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			}
 		} else {
 			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+			serializer.setRouting(routing);
 			if (serializer.serializeAlterTable(this.table, difference, independentOperations) > 0) {
 				sqls.add(serializer.toString());
 			}
@@ -145,6 +163,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		// 开始处理Alter table不支持的索引和约束
 		for (Constraint c : independentOperations.getDropConstraints()) {
 			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+			serializer.setRouting(routing);
 			serializer.serialzeConstraintIndepentDrop(this.table, c);
 			sqls.add(serializer.toString());
 		}
@@ -165,120 +184,100 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		}
 		return sqls;
 	}
-
-	private void compareTableAttributes(CompareResult difference, RelationalPath<?> table, TableInfo tableInfo) {
-		if (table instanceof RelationalPathEx) {
-			RelationalPathEx<?> entity = (RelationalPathEx<?>) table;
-			if(configuration.getTemplates().supports(DDLOps.COMMENT)) {
-				if(!stringEquals(entity.getComment(), tableInfo.getRemarks(),false)){
-					difference.setTableCommentChange(entity.getComment());
-				}	
-			}
-			if(configuration.getTemplates().supports(DDLOps.COLLATE)) {
-				if(!stringEquals(entity.getCollate().name(), tableInfo.getAttribute("COLLATE"),true)){
-					difference.setTableCollation(entity.getCollate().name());
-				}
-			}
-		}
-	}
-
-	private boolean stringEquals(String comment, String remarks, boolean ignoreCase) {
-		if (comment == remarks) {
-			return true;
-		}
-		if(StringUtils.isEmpty(comment) && StringUtils.isEmpty(remarks)) {
-			return true;
-		}
-		return comment == null ? false : ignoreCase ? comment.equalsIgnoreCase(remarks) : comment.equals(remarks);
-	}
-
-	private void compareConstraints(CompareResult differenceContainer, List<Constraint> dbConstraints) {
-		if (table instanceof RelationalPathEx) {
-			SQLTemplatesEx templates=configuration.getTemplates();
-			RelationalPathEx<?> entity = (RelationalPathEx<?>) table;
-			List<Constraint> toCreate = new ArrayList<>(entity.getConstraints());
-			List<Constraint> toDrop = new ArrayList<>(dbConstraints);
-			// 对比两个列表，去重后，位于toCreate里的就是需要创建的，位于toDrop的就是需要删除的。
-			for (Iterator<Constraint> iter = toCreate.iterator(); iter.hasNext();) {
-				Constraint constraint = iter.next();
-				if (constraint.getConstraintType().isIgnored()||templates.notSupports(constraint.getConstraintType())) {
-					// 当前框架还不支持的类型，不处理
-					iter.remove();
-					continue;
-				}
-				Constraint duplicate = findDuplicateConstraint(constraint, toDrop);
-				if (duplicate != null) {
-					toDrop.remove(duplicate);
-					iter.remove();
-				}
-			}
-			// 处理主键
-			Constraint pk = Constraint.valueOf(entity.getPrimaryKey());
-			if (pk != null) {
-				Constraint duplicate = findDuplicateConstraint(pk, toDrop);
-				if (duplicate != null) {
-					toDrop.remove(duplicate);
-				} else {
-					toCreate.add(pk);
-				}
-			}
-			// Filter toDrop
-			List<Constraint> toDropFiltered = new ArrayList<>();
-			for (Constraint d : toDrop) {
-				if (d.getConstraintType().isIgnored()||templates.notSupports(d.getConstraintType())) {
-					continue;
-				}
-				if (d.getConstraintType().isIndex()) {
-					if (allowIndexDrop) {
-						toDropFiltered.add(d);
-					}
-				} else if (allowConstraintDrop) {
-					toDropFiltered.add(d);
-				}
-			}
-			differenceContainer.setDropConstraints(toDropFiltered);
-			differenceContainer.setAddConstraints(toCreate);
-		}
+	
+	/**
+	 * 修改数据库中的数据库主键。
+	 * @implSpec
+	 *  仅用于对数据库进行修改，Java模型中的数据库主键不会发生变化。
+	 * @param paths 主键列。
+	 * @return this
+	 */
+	public AlterTableQuery changePrimaryKey(Path<?>... paths) {
+		table.createPrimaryKey(paths);
+		return this;
 	}
 
 	/**
-	 * 不是根据约束名称去判断，而是根据内容去判断
-	 * 
-	 * @param defined
-	 * @param toDrop
+	 * 为表增加索引
+	 * @implSpec
+	 *  等效于 createConstraint(name, ConstraintType.KEY, paths)
+	 * @param name
+	 * @param paths
+	 * @return this
+	 */
+	public AlterTableQuery createIndex(String name, Path<?>... paths) {
+		table.createConstraint(name, ConstraintType.KEY, paths);
+		return this;
+	}
+	
+	/**
+	 * 为表增加唯一约束
+	 * @implSpec
+	 *  等效于 createConstraint(name, ConstraintType.UNIQUE, paths)
+	 * @param name
+	 * @param paths
+	 * @return this
+	 */
+	public AlterTableQuery createUnique(String name, Path<?>... paths) {
+		table.createConstraint(name, ConstraintType.UNIQUE, paths);
+		return this;
+	}
+	
+	/**
+	 * 删除指定名称的索引或约束
+	 * @param name
 	 * @return
 	 */
-	private Constraint findDuplicateConstraint(Constraint defined, List<Constraint> toDrop) {
-		for (Constraint c : toDrop) {
-			if (defined.contentEquals(c)) {
-				return c;
+	public AlterTableQuery removeConstraintOrIndex(String name) {
+		int count=0;
+		for(Iterator<Constraint> iter=table.getConstraints().iterator();iter.hasNext();) {
+			Constraint c=iter.next();
+			if(name.equals(c.getName())) {
+				iter.remove();
+				count++;
 			}
 		}
-		return null;
-	}
-
-	private List<String> asCreateTable() {
-		List<String> sqls = new ArrayList<>();
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		List<Constraint> others = serializer.serializeTableCreate(table);
-		{
-			String sql = serializer.toString();
-			// log.info(sql);
-			sqls.add(sql);
+		if(count==0) {
+			throw Exceptions.illegalArgument("There is no Index or Constraint named {}", name);
 		}
-		for (Constraint c : others) {
-			SQLSerializerAlter serializer2 = new SQLSerializerAlter(configuration, true);
-			serializer2.serialzeConstraintIndepentCreate(table, c);
-			String sql = serializer2.toString();
-			// log.info(sql);
-			sqls.add(sql);
-		}
-		return sqls;
+		return this;
 	}
-
-	@Override
-	protected String generateSQL() {
-		throw new UnsupportedOperationException();
+	
+	/**
+	 * 增加一个列
+	 * @param <A> 
+	 * @param column 列定义，参见 {@link ColumnMetadata}
+	 * @param type Java数据类型
+	 * @return ColumnBuilderHandler，可配置该列的缺省值等信息。
+	 */
+	public <A> ColumnBuilderHandler<A,AlterTableQuery> addColumn(ColumnMetadata column,Class<A> type) {
+		String name=column.getName();
+		Path<A> path=table.createSimple(name, type);
+		PathMapping cb= table.addMetadataDynamic(path, column);
+		return new ColumnBuilderHandler<A,AlterTableQuery>(cb,this);
+	}
+	
+	/**
+	 * 为表增加索引或约束
+	 * @param name 名称
+	 * @param type 约束/索引类型
+	 * @param paths 字段
+	 * @return this
+	 */
+	public AlterTableQuery createConstraint(String name, ConstraintType type, Path<?>... paths) {
+		table.createConstraint(name, type, paths);
+		return this;
+	}
+	
+	/**
+	 * 为表增加一个检查约束
+	 * @param name 名称 
+	 * @param expr 检查表达式
+	 * @return this
+	 */
+	public AlterTableQuery createCheck(String name, Expression<Boolean> expr) {
+		table.createCheck(name, expr);
+		return this;
 	}
 
 	/**
@@ -515,14 +514,138 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		return false;
 	}
 
+	/**
+	 * 模拟操作：打印出SQL语句，实际不操作。 
+	 * @param flag this
+	 * @return
+	 */
 	public AlterTableQuery simulate(boolean flag) {
 		simulate = flag;
 		return this;
 	}
 	
 	@Override
-	protected void finished(List<String> sqls) {
+	protected int finished(List<String> sqls) {
 		log.info("Alter table {} finished, {} sqls executed.",table.getSchemaAndTable(),sqls.size());
+		return sqls.size();
 	}
 
+
+	private void compareTableAttributes(CompareResult difference, RelationalPath<?> table, TableInfo tableInfo) {
+		if (table instanceof RelationalPathEx) {
+			RelationalPathEx<?> entity = (RelationalPathEx<?>) table;
+			if(configuration.getTemplates().supports(DDLOps.COMMENT)) {
+				if(!stringEquals(entity.getComment(), tableInfo.getRemarks(),false)){
+					difference.setTableCommentChange(entity.getComment());
+				}	
+			}
+			if(configuration.getTemplates().supports(DDLOps.COLLATE) && entity.getCollate() != null) {
+				String collateName = entity.getCollate().name();
+				if(!stringEquals(collateName, tableInfo.getAttribute("COLLATE"),true)){
+					difference.setTableCollation(collateName);
+				}
+			}
+		}
+	}
+
+	private boolean stringEquals(String comment, String remarks, boolean ignoreCase) {
+		if (comment == remarks) {
+			return true;
+		}
+		if(StringUtils.isEmpty(comment) && StringUtils.isEmpty(remarks)) {
+			return true;
+		}
+		return comment == null ? false : ignoreCase ? comment.equalsIgnoreCase(remarks) : comment.equals(remarks);
+	}
+
+	private void compareConstraints(CompareResult differenceContainer, List<Constraint> dbConstraints) {
+		if (table instanceof RelationalPathEx) {
+			SQLTemplatesEx templates=configuration.getTemplates();
+			RelationalPathEx<?> entity = (RelationalPathEx<?>) table;
+			List<Constraint> toCreate = new ArrayList<>(entity.getConstraints());
+			List<Constraint> toDrop = new ArrayList<>(dbConstraints);
+			// 对比两个列表，去重后，位于toCreate里的就是需要创建的，位于toDrop的就是需要删除的。
+			for (Iterator<Constraint> iter = toCreate.iterator(); iter.hasNext();) {
+				Constraint constraint = iter.next();
+				if (constraint.getConstraintType().isIgnored()||templates.notSupports(constraint.getConstraintType())) {
+					// 当前框架还不支持的类型，不处理
+					iter.remove();
+					continue;
+				}
+				Constraint duplicate = findDuplicateConstraint(constraint, toDrop);
+				if (duplicate != null) {
+					toDrop.remove(duplicate);
+					iter.remove();
+				}
+			}
+			// 处理主键
+			Constraint pk = Constraint.valueOf(entity.getPrimaryKey());
+			if (pk != null) {
+				Constraint duplicate = findDuplicateConstraint(pk, toDrop);
+				if (duplicate != null) {
+					toDrop.remove(duplicate);
+				} else {
+					toCreate.add(pk);
+				}
+			}
+			// Filter toDrop
+			List<Constraint> toDropFiltered = new ArrayList<>();
+			for (Constraint d : toDrop) {
+				if (d.getConstraintType().isIgnored()||templates.notSupports(d.getConstraintType())) {
+					continue;
+				}
+				if (d.getConstraintType().isIndex()) {
+					if (allowIndexDrop) {
+						toDropFiltered.add(d);
+					}
+				} else if (allowConstraintDrop) {
+					toDropFiltered.add(d);
+				}
+			}
+			differenceContainer.setDropConstraints(toDropFiltered);
+			differenceContainer.setAddConstraints(toCreate);
+		}
+	}
+
+	/**
+	 * 不是根据约束名称去判断，而是根据内容去判断
+	 * 
+	 * @param defined
+	 * @param toDrop
+	 * @return
+	 */
+	private Constraint findDuplicateConstraint(Constraint defined, List<Constraint> toDrop) {
+		for (Constraint c : toDrop) {
+			if (defined.contentEquals(c)) {
+				return c;
+			}
+		}
+		return null;
+	}
+
+	private List<String> asCreateTable() {
+		List<String> sqls = new ArrayList<>();
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+		serializer.setRouting(routing);
+		List<Constraint> others = serializer.serializeTableCreate(table,true);
+		{
+			String sql = serializer.toString();
+			// log.info(sql);
+			sqls.add(sql);
+		}
+		for (Constraint c : others) {
+			SQLSerializerAlter serializer2 = new SQLSerializerAlter(configuration, true);
+			serializer.setRouting(routing);
+			serializer2.serialzeConstraintIndepentCreate(table, c);
+			String sql = serializer2.toString();
+			// log.info(sql);
+			sqls.add(sql);
+		}
+		return sqls;
+	}
+
+	@Override
+	protected String generateSQL() {
+		throw new UnsupportedOperationException();
+	}
 }

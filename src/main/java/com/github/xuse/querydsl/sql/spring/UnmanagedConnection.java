@@ -28,11 +28,11 @@ public class UnmanagedConnection implements Connection {
 
 	protected UnmanagedConnection(Connection conn) {
 		this.conn = conn;
-		try {
-			conn.setAutoCommit(true);
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
+//		try {
+//			conn.setAutoCommit(true);
+//		} catch (SQLException e) {
+//			throw new IllegalStateException(e);
+//		}
 		LOG.debug("UnmanagedConnection created, {}", conn);
 	}
 

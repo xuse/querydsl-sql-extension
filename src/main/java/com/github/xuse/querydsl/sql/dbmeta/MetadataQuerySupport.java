@@ -1,7 +1,12 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -28,15 +33,18 @@ import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.support.QueryFunction;
 import com.github.xuse.querydsl.sql.support.QueryWrapper;
+import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.ConstraintType;
 import com.querydsl.core.types.DDLOps.Basic;
+import com.querydsl.core.types.DDLOps.PartitionMethod;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.SQLTemplatesEx;
@@ -44,6 +52,7 @@ import com.querydsl.core.types.dsl.DDLExpressions;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Column;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLListeners;
@@ -162,6 +171,13 @@ public abstract class MetadataQuerySupport {
 		}
 		return tables.get(0);
 	}
+	
+
+	public boolean existsTable(SchemaAndTable table, RoutingStrategy routing) {
+		table=routing.getOverride(table, getConfiguration());
+		return !getDatabaseObject(ObjectType.TABLE, table, null).isEmpty();
+	}
+	
 
 	/**
 	 * 返回数据库中所有的表(当前schema下)
@@ -214,10 +230,11 @@ public abstract class MetadataQuerySupport {
 	 */
 	public List<ColumnDef> getColumns(SchemaAndTable schemaAndTable) {
 		schemaAndTable = getConfiguration().getOverride(schemaAndTable);
-		final String schema = processNamespace(schemaAndTable.getSchema());
+		final String namespace = processNamespace(schemaAndTable.getSchema());
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		final String tableName = processName(schemaAndTable.getTable(), Ops.EQ);
 		List<ColumnDef> columns = doMetadataQuery("getColumns[" + tableName + "]",
-				c -> c.getColumns(null, schema, tableName, "%"), this::populateColumn);
+				c -> c.getColumns(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, "%"), this::populateColumn);
 		Collections.sort(columns, (a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()));
 		log.debug("Table {} 's columns: {}", schemaAndTable, columns);
 		return columns;
@@ -237,6 +254,7 @@ public abstract class MetadataQuerySupport {
 		SizeParser sizeParser = getConfiguration().getTemplates().getColumnSizeParser(jdbcType);
 		int columnSize = rs.getInt("COLUMN_SIZE");
 		int digits = rs.getInt("DECIMAL_DIGITS");
+		column.setColumnName(rs.getString("COLUMN_NAME"));
 		column.setJdbcType(jdbcType);
 		column.setColumnSize(sizeParser.size(columnSize, digits));
 		column.setDecimalDigit(sizeParser.digits(columnSize, digits));
@@ -247,7 +265,7 @@ public abstract class MetadataQuerySupport {
 		column.setTableSchema(rs.getString("TABLE_SCHEM"));
 		column.setTableName(rs.getString("TABLE_NAME"));
 
-		column.setColumnName(rs.getString("COLUMN_NAME"));
+		
 		column.setOrdinal(rs.getInt("ORDINAL_POSITION"));
 		column.setDataType(rs.getString("TYPE_NAME"));
 		column.setCharOctetLength(rs.getInt("CHAR_OCTET_LENGTH"));
@@ -391,10 +409,10 @@ public abstract class MetadataQuerySupport {
 	 */
 	public Constraint getPrimaryKey(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
-		final String schema = processNamespace(table.getSchema());
+		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-
-		List<KeyColumn> ts = this.doMetadataQuery("getPrimaryKey", m -> m.getPrimaryKeys(null, schema, tableName),
+		SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
+		List<KeyColumn> ts = this.doMetadataQuery("getPrimaryKey", m -> m.getPrimaryKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName),
 				rs -> {
 					KeyColumn k = new KeyColumn();
 					k.setColumnName(rs.getString("COLUMN_NAME"));
@@ -430,10 +448,10 @@ public abstract class MetadataQuerySupport {
 	 */
 	public List<ForeignKeyItem> getForeignKey(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
-		final String schema = processNamespace(table.getSchema());
+		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-
-		List<ForeignKeyItem> result = doMetadataQuery("getForeignKey", m -> m.getImportedKeys(null, schema, tableName),
+		SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
+		List<ForeignKeyItem> result = doMetadataQuery("getForeignKey", m -> m.getImportedKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName),
 				r -> getFromResultSet(r, ForeignKeyItem.class));
 		return result;
 	}
@@ -488,7 +506,7 @@ public abstract class MetadataQuerySupport {
 	public <T> T getFromResultSet(ResultSet rs, Class<T> clz) {
 		List<FieldOrder> list = reflectCache.computeIfAbsent(clz, c -> generateAccessor(rs, c));
 		try {
-			T t = clz.newInstance();
+			T t = TypeUtils.newInstance(clz);
 			for (FieldOrder field : list) {
 				Object o = rs.getObject(field.index);
 				if (field.field.getType().isPrimitive() && o == null) {
@@ -518,6 +536,23 @@ public abstract class MetadataQuerySupport {
 		}
 		return constraints;
 	}
+	
+	public List<PartitionInfo> getPartitions(SchemaAndTable table){
+		table = getConfiguration().getOverride(table);
+		final String schema = processNamespace(table.getSchema());
+		final String tableName = processName(table.getTable(), Ops.EQ);
+		SQLTemplatesEx template = getConfiguration().getTemplates();
+		List<PartitionInfo> partitions = doSQLQuery(q -> template.getPartitions(schema, tableName, q),
+				"getPartitions");
+		if(partitions==null) {
+			throw new UnsupportedOperationException("Current database do not support PARTITION operation. "+driverInfo.getDatabaseProductName());
+		}
+		if(partitions.size()==1 && partitions.get(0).getMethod()==PartitionMethod.NOT_PARTITIONED) {
+			return Collections.emptyList();
+		}
+		return partitions;
+	}
+	
 
 	public static final int INDEX_POLICY_INDEX_ONLY = 0;
 	public static final int INDEX_POILCY_ALL_INDEX = 1;
@@ -527,7 +562,7 @@ public abstract class MetadataQuerySupport {
 	 * 得到指定实体的所有索引(基于JDBC驱动实现，实际在不同数据库上可能不准确。)
 	 * 
 	 * @param table  指定实体类型
-	 * @param policy {@link #INDEX_POLICY_INDEX_ONLY} 去除传统意义上的constraint （纯Index）
+	 * @param fetchPolicy {@link #INDEX_POLICY_INDEX_ONLY} 去除传统意义上的constraint （纯Index）
 	 *               {@link #INDEX_POILCY_ALL_INDEX}
 	 *               不去除Constraint。直接返回JDBC的getIndex的结果（单 JDBC）
 	 *               {@link #INDEX_POILCY_MERGE_CONSTRAINTS}
@@ -536,22 +571,22 @@ public abstract class MetadataQuerySupport {
 	 * @see Constraint
 	 * @return Constraints
 	 */
-	public List<Constraint> getIndexes(SchemaAndTable table, int policy) {
+	public List<Constraint> getIndexes(SchemaAndTable table, int fetchPolicy) {
 		table = getConfiguration().getOverride(table);
-		final String schema = processNamespace(table.getSchema());
+		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 
-		List<Constraint> constraints = policy == INDEX_POILCY_ALL_INDEX ? Collections.emptyList()
-				: getConstraints(table, policy == INDEX_POILCY_MERGE_CONSTRAINTS);
+		List<Constraint> constraints = fetchPolicy == INDEX_POILCY_ALL_INDEX ? Collections.emptyList()
+				: getConstraints(table, fetchPolicy == INDEX_POILCY_MERGE_CONSTRAINTS);
 		Set<String> constraintsNames = collectConstraintNames(constraints);
 
 		List<Constraint> result = new ArrayList<Constraint>();
-		if (policy == INDEX_POILCY_MERGE_CONSTRAINTS) {
+		if (fetchPolicy == INDEX_POILCY_MERGE_CONSTRAINTS) {
 			result.addAll(constraints);
 		}
-
+		SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
 		List<KeyColumn> indexColumns = doMetadataQuery("getIndexInfo",
-				m -> m.getIndexInfo(null, schema, tableName, false, false),
+				m -> m.getIndexInfo(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, false, false),
 				rs -> getFromResultSet(rs, KeyColumn.class));
 		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(indexColumns, e -> e.keyName, e -> e);
 
@@ -708,7 +743,11 @@ public abstract class MetadataQuerySupport {
 		try {
 			QueryWrapper q = new QueryWrapper(conn, getConfiguration());
 			R r = works.apply(q);
-			postExecuted(context, System.currentTimeMillis() - time, sqlAction, r);
+			int size=1;
+			if(r instanceof Collection) {
+				size = ((Collection<?>) r).size();
+			}
+			postExecuted(context, System.currentTimeMillis() - time, sqlAction, size);
 			return r;
 		} finally {
 			listeners.end(context);
@@ -732,6 +771,76 @@ public abstract class MetadataQuerySupport {
 			schemaAndTable = getConfiguration().getOverride(schemaAndTable);
 		}
 		return schemaAndTable;
-	};
+	}
+
+	
+	/**
+	 * 指定一个SQL脚本文件运行
+	 * 
+	 * @param url      the script file.
+	 * @param endChars 命令结束字符
+	 * @param charset
+	 * @param ignoreErrors 出现错误继续执行
+	 * @param exceptionCollector 执行错误的SQL的异常信息将被写入这个Map
+	 * @return 所有指令返回的行数总和
+	 */
+	public int executeScriptFile(URL url,Charset charset, String endChars, boolean ignoreErrors, Map<String,RuntimeException> exceptionCollector){
+		Assert.notNull(url);
+		char[] ends = endChars.toCharArray();
+		Connection conn = getConnection();
+		SQLListenerContextImpl context = startContext(conn, null);
+		QueryWrapper exe=new QueryWrapper(conn,getConfiguration());
+		int statements = 0, count = 0;
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(),charset))){
+			long time = System.currentTimeMillis();
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				line = line.trim();
+				if (line.length() == 0 || line.startsWith("--")) {
+					continue;
+				}
+				char end = line.charAt(line.length() - 1);
+				if (ArrayUtils.contains(ends, end)) {
+					sb.append(line.substring(0, line.length() - 1));
+					String sql = sb.toString();
+					sb.setLength(0);
+					try {
+						count += exe.executeQuery(sql, null, null);
+						statements++;
+					}catch(RuntimeException e) {
+						if(exceptionCollector!=null) {
+							exceptionCollector.put(sql, e);
+						}
+						if(!ignoreErrors) {
+							throw e;
+						}
+					}
+				} else {
+					sb.append(line).append('\n');
+				}
+			}
+			if (sb.length() > 0) {
+				String sql=sb.toString();
+				try {
+					count += exe.executeQuery(sql,null,null);
+					statements++;
+				}catch(RuntimeException e) {
+					if(exceptionCollector!=null) {
+						exceptionCollector.put(sql, e);
+					}
+					if(!ignoreErrors) {
+						throw e;
+					}
+				}
+			}
+			log.info("{} executed, sql={}, updated={}, time={}ms", url, statements, count,(System.currentTimeMillis() - time));
+		} catch (IOException e) {
+			throw Exceptions.toRuntime(e);
+		} finally {
+			listeners.end(context);
+		}
+		return count;
+	}
 
 }

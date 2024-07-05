@@ -6,15 +6,18 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.querydsl.core.FilteredClause;
+import com.querydsl.core.types.ConstantImpl;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.sql.types.Type;
 
 public class SQLTypeUtils {
-//	private static final int[] NUMERIC_TYPES = { Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT,
-//			Types.DOUBLE, Types.FLOAT, Types.DECIMAL, Types.NUMERIC };
-	
 	public static boolean isNumeric(int type) {
 		switch (type) {
 		case java.sql.Types.NUMERIC:
@@ -32,13 +35,31 @@ public class SQLTypeUtils {
 			return false;
 		}
 	}
+	
+	public static boolean isCharBinary(int type) {
+		switch (type) {
+		case java.sql.Types.VARBINARY:
+		case java.sql.Types.VARCHAR:
+		case java.sql.Types.CHAR:
+		case java.sql.Types.BINARY:
+		case java.sql.Types.LONGVARCHAR:
+		case java.sql.Types.LONGVARBINARY:
+		case java.sql.Types.NCHAR:
+		case java.sql.Types.NVARCHAR:
+		case java.sql.Types.LONGNVARCHAR:
+			return true;
+		default:
+			return false;
+		}
+	}
+	
 	/**
 	 * @param columnDef
 	 * @param type
 	 * @return 针对用户自己写的String常量在数据库中的表达
 	 */
 	public static String serializeLiteral(String columnDef, int type) {
-		if(columnDef==null || columnDef.length()==0) {
+		if(columnDef==null) {// || columnDef.length()==0
 			return null;
 		}
 		switch (type) {
@@ -114,12 +135,20 @@ public class SQLTypeUtils {
 				return (Type<?>) c.newInstance(ArrayUtils.addAll(new Object[] { fieldType }, (Object[]) parameters));
 			}
 		}
-//		for(Constructor<?> c:constructors) {
-//			if(c.getParameterCount()==0) {
-//				return (Type<?>) c.newInstance();
-//			}
-//		}
 		throw new IllegalArgumentException("can not Instant type " + clz.getName() + ".");
+	}
+	
+	public static void setWhere(List<Path<?>> mergeKey, FilteredClause<?> select, Map<Path<?>, Object> values) {
+		for(Path<?> p:mergeKey) {
+			SimpleExpression<?> key=(SimpleExpression<?>)p;
+			Object value=values.get(p);
+			//Set conditions, null value also be a condition. 
+			if(value == null) {
+				select.where(key.isNull());	
+			}else {
+				select.where(key.eq(ConstantImpl.create(value)));
+			}
+		}
 	}
 	
 	private static boolean isStringType(Class<?>[] parameterTypes) {

@@ -7,7 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * 用于定制数据初始化的行为
+ * 用于定制数据初始化的行为。这个注解是加在模型类上的（带Q的Class）
  * 
  * @author jiyi
  *

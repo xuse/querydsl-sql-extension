@@ -18,6 +18,8 @@ public final class UnsavedValuePredicateFactory {
 	public static Predicate<Object> parseValue(Class<?> containerType, String value) {
 		if ("null".equalsIgnoreCase(value)) {
 			return Null;
+		} else if (UnsavedValue.Zero.equals(value)) {
+			return ZeroNumber;
 		} else if (UnsavedValue.MinusNumber.equals(value)) {
 			return MinusNumber;
 		} else if (UnsavedValue.ZeroAndMinus.equals(value)) {
@@ -154,6 +156,21 @@ public final class UnsavedValuePredicateFactory {
 				return true;
 			if (obj instanceof Number) {
 				return ((Number) obj).longValue() <= 0;
+			} else {
+				return false;
+			}
+		}
+	};
+	
+	/**
+	 * 如果是零，视为未设置值
+	 */
+	public static final Predicate<Object> ZeroNumber = new Predicate<Object>() {
+		public boolean test(Object obj) {
+			if (obj == null)
+				return true;
+			if (obj instanceof Number) {
+				return ((Number) obj).longValue() == 0;
 			} else {
 				return false;
 			}

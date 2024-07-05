@@ -11,25 +11,37 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.annotation.dbdef.Check;
 import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
-import com.github.xuse.querydsl.sql.column.AbstractColumnMetadataEx;
+import com.github.xuse.querydsl.annotation.init.InitializeData;
+import com.github.xuse.querydsl.annotation.partition.HashPartition;
+import com.github.xuse.querydsl.annotation.partition.ListPartition;
+import com.github.xuse.querydsl.annotation.partition.RangePartition;
 import com.github.xuse.querydsl.sql.column.ColumnBuilder;
+import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
+import com.github.xuse.querydsl.sql.partitions.HashPartitionBy;
+import com.github.xuse.querydsl.sql.partitions.ListPartitionBy;
+import com.github.xuse.querydsl.sql.partitions.PartitionBy;
+import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
+import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Assert;
 import com.querydsl.core.types.ConstraintType;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.Path;
@@ -37,6 +49,7 @@ import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.PathMetadataFactory;
 import com.querydsl.core.types.dsl.BeanPath;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.DDLExpressions;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.sql.ColumnMetadata;
@@ -58,18 +71,20 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 
 	private PrimaryKey<T> primaryKey;
 
-	private final Map<Path<?>, PathMapping> columnMetadata = new LinkedHashMap<>();
+	final Map<Path<?>, ColumnMapping> columnMetadata = new LinkedHashMap<>();
+	
+	private transient Path<?>[] columns;
 	
 	/**
 	 * path name <-> path
 	 */
-	private final Map<String, Path<?>> bindingsMap = new HashMap<>();
+	final Map<String, Path<?>> bindingsMap = new HashMap<>();
 
 	private final List<ForeignKey<?>> foreignKeys = new ArrayList<>();
 
 	private final List<ForeignKey<?>> inverseForeignKeys = new ArrayList<>();
 
-	private final List<Constraint> constraints = new ArrayList<>();
+	protected final List<Constraint> constraints = new ArrayList<>();
 
 	private final String schema, table;
 
@@ -82,7 +97,15 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 	private String comment;
 	
 	private Collate collate;
+	
+	private PartitionBy partitionBy;
+	
+	private InitializeData initializeData;
 
+	public RelationalPathBaseEx(Class<? extends T> type, String variable) {
+		this(type, PathMetadataFactory.forVariable(variable), null, null);
+	}
+	
 	public RelationalPathBaseEx(Class<? extends T> type, String variable, String schema, String table) {
 		this(type, PathMetadataFactory.forVariable(variable), schema, table);
 	}
@@ -100,7 +123,37 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		}
 		this.schema = schema;
 		this.table = table;
+		if(StringUtils.isEmpty(table)) {
+			throw new IllegalArgumentException("Table name is empty. class is "+type.getName());
+		}
 		this.schemaAndTable = new SchemaAndTable(schema, table);
+		
+		InitializeData initializeData = this.getClass().getAnnotation(InitializeData.class);
+		if(initializeData==null) {
+			initializeData=type.getAnnotation(InitializeData.class);
+		}
+		this.initializeData=initializeData;
+		{
+			HashPartition hashPartition;
+			if ((hashPartition = type.getAnnotation(HashPartition.class)) != null) {
+				Expression<?> expr = DDLExpressions.text(hashPartition.expr());
+				setPartitionBy(new HashPartitionBy(hashPartition.type(),expr,hashPartition.count()));
+			}
+		}
+		{
+			ListPartition listPartition;
+			if ((listPartition = type.getAnnotation(ListPartition.class)) != null) {
+				Expression<?> expr = DDLExpressions.text(listPartition.expr());
+				setPartitionBy(new ListPartitionBy(listPartition.columns(),expr,listPartition.value()));
+			}
+		}
+		{
+			RangePartition rangePartition;
+			if ((rangePartition = type.getAnnotation(RangePartition.class)) != null) {
+				Expression<?> expr = DDLExpressions.text(rangePartition.expr());
+				setPartitionBy(new RangePartitionBy(rangePartition.columns(),expr,rangePartition.value(),rangePartition.auto()));
+			}
+		}
 	}
 	
 
@@ -199,7 +252,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 				field = beanType.getDeclaredField(expr.getMetadata().getName());
 				field.setAccessible(true);
 				if (!isAssignableFrom(field.getType(), expr.getType())) {
-					typeMismatch(field.getType(), expr);
+					typeMismatch(field, expr);
 				}
 				break;
 			} catch (SecurityException e) {
@@ -208,16 +261,59 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 				beanType = beanType.getSuperclass();
 			}
 		}
+		checkColumnLength(metadata);
 		Assert.notNull(field, "Can't find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
-//		boolean isPk=this.getPrimaryKey()!=null && this.getPrimaryKey().getLocalColumns().contains(expr);
 		PathMapping metadataExt=new PathMapping(expr, field, metadata);
 		columnMetadata.put(expr, metadataExt);
+		pathUpdate(expr, metadata);
 		bindingsMap.put(expr.getMetadata().getName(), expr);
 		return new ColumnBuilder<P>(metadataExt);
 	}
 
-	protected <P extends Path<?>> P addMetadata(P path, PathMapping metadata) {
+	private void checkColumnLength(ColumnMetadata metadata) {
+		if(SQLTypeUtils.isCharBinary(metadata.getJdbcType())){
+			if(metadata.getSize()<=0) {
+				throw Exceptions.illegalArgument("column {}.{}'s size must greater than 0.",this.getClass().getName(),metadata);
+			}
+		}
+	}
+
+	protected synchronized void pathUpdate(Path<?> expr, ColumnMetadata metadata) {
+		Path<?>[] columns = this.columns;
+		if(columns==null) {
+			columns = new Path<?>[] {expr};
+		}else {
+			List<Entry<Path<?>,ColumnMetadata>> list=new ArrayList<>();
+			for(Path<?> p:columns) {
+				list.add(new Entry<>(p,getMetadata(p)));
+			}
+			list.add(new Entry<>(expr,metadata));
+			//resort for columns
+			list.sort((a,b)->{
+				ColumnMetadata ma=a.getValue();
+				ColumnMetadata mb=b.getValue();
+//				try {
+//					Field field = ColumnMetadata.class.getDeclaredField("index");
+//					field.setAccessible(true);
+//					Object indexA=field.get(ma);
+//					Object indexB=field.get(ma);
+//					if(indexA==null || indexB==null) {
+//						System.out.println("aaa");
+//					}
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+				return Integer.compare(ma.getIndex(), mb.getIndex());
+			});
+			columns = list.stream().map(Entry::getKey).collect(Collectors.toList())
+					.toArray(new Path<?>[list.size()]); 
+		}
+		this.columns = columns;
+	}
+
+	protected <P extends Path<?>> P addMetadata(P path, ColumnMapping metadata) {
 		columnMetadata.put(path, metadata);
+		pathUpdate(path, metadata.getColumn());
 		bindingsMap.put(path.getMetadata().getName(), path);
 		return path;
 	}
@@ -323,30 +419,25 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 	}
 
 	@Override
-	public QBeanEx<T> getProjection() {
+	public FactoryExpression<T> getProjection() {
 		if (projection == null) {
-			projection = ProjectionsAlter.createBeanProjection(this);
+			this.projection = ProjectionsAlter.createBeanProjection(this);
 		}
 		return projection;
 	}
 
 	@Override
 	public BeanCodec getBeanCodec() {
-		return getProjection().getBeanCodec();
+		return ((QBeanEx<T>)getProjection()).getBeanCodec();
 	}
 
 	public Path<?>[] all() {
-		return columnMetadata.keySet().toArray(new Path<?>[columnMetadata.size()]);
-	}
-
-	@Override
-	protected <P extends Path<?>> P add(P path) {
-		return path;
+		return columns;
 	}
 
 	@Override
 	public List<Path<?>> getColumns() {
-		return new ArrayList<>(this.columnMetadata.keySet());
+		return Arrays.asList(columns);
 	}
 
 	@Override
@@ -381,7 +472,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
-		AbstractColumnMetadataEx metadata = columnMetadata.get(column);
+		ColumnMapping metadata = columnMetadata.get(column);
 		return metadata == null ? null : metadata.getColumn();
 	}
 
@@ -392,6 +483,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		Class<? extends T> beanType = super.getType();
 		Class<?> QClz = this.getClass();
 		try {
+			int count = 1;
 			for (Field field : QClz.getDeclaredFields()) {
 				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
@@ -400,7 +492,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 					continue;
 				}
 				Path<?> path = (Path<?>) field.get(this);
-				this.addMetadata(path, builderMetadata(beanType, path, field));
+				this.addMetadata(path, builderMetadata(beanType, path, field, count++));
 			}
 			initByClassAnnotation(beanType,QClz);
 		} catch (IllegalAccessException e) {
@@ -408,13 +500,13 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		}
 	}
 
-	private PathMapping builderMetadata(Class<? extends T> beanType, Path<?> path, Field metadataField) {
+	private PathMapping builderMetadata(Class<? extends T> beanType, Path<?> path, Field metadataField, int index) {
 		while (!beanType.equals(Object.class)) {
 			try {
 				Field field = beanType.getDeclaredField(path.getMetadata().getName());
 				field.setAccessible(true);
 				if (!isAssignableFrom(field.getType(), path.getType())) {
-					typeMismatch(field.getType(), path);
+					typeMismatch(field, path);
 				}
 				
 				String columnName = path.getMetadata().getName().toUpperCase();
@@ -431,7 +523,7 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 						columnName = columnSpec.name();	
 					}
 				}
-				ColumnMetadata column=ColumnMetadata.named(columnName);
+				ColumnMetadata column=ColumnMetadata.named(columnName).withIndex(index);
 				if(columnSpec!=null) {
 					column=column.ofType(calcJdbcType(columnSpec.type(),field)).withSize(columnSpec.size()).withDigits(columnSpec.digits());
 					if(!columnSpec.nullable()) {
@@ -491,9 +583,9 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 			if(StringUtils.isNotEmpty(spec.collate())) {
 				this.setCollate(Collate.findValueOf(spec.collate()));
 			}
-			if(spec.primaryKeyPath().length>0) {
+			if(spec.primaryKeys().length>0) {
 				List<Path<?>> paths=new ArrayList<>();
-				for(String n:spec.primaryKeyPath()) {
+				for(String n:spec.primaryKeys()) {
 					Path<?> path=findPathByName(n);
 					if(path==null) {
 						throw Exceptions.illegalArgument("Invalid primary key column {} on class {}", n, beanType);
@@ -548,21 +640,26 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 		return cl.isPrimitive() ? Primitives.toWrapperClass(cl) : cl;
 	}
 
-	protected void typeMismatch(Class<?> type, Expression<?> expr) {
-		final String msg = expr.getType().getName() + " is not compatible with " + type.getName();
+	protected void typeMismatch(Field field, Expression<?> expr) {
+		final String msg = expr.getType().getName() + " is not compatible with " + field.getType().getName()+" on field "+ field;
 		throw new IllegalArgumentException(msg);
 	}
 
-	@Override
-	public PathMapping getColumnMetadata(Path<?> path) {
+	public ColumnMapping getColumnMetadata(Path<?> path) {
 		return columnMetadata.get(path);
 	}
 
-	@Override
 	public Collection<Constraint> getConstraints() {
 		return Collections.unmodifiableCollection(constraints);
 	}
 	
+	protected void setPartitionBy(PartitionBy partitionBy) {
+		if (this.partitionBy != null) {
+			throw new IllegalArgumentException("One table has one partition rule only." + this.table);
+		}
+		this.partitionBy = partitionBy;
+	}
+
 	protected void setComment(String comment) {
 		this.comment = comment;
 	}
@@ -578,4 +675,35 @@ public class RelationalPathBaseEx<T> extends BeanPath<T> implements RelationalPa
 	public Collate getCollate() {
 		return collate;
 	}
+
+	public PartitionBy getPartitionBy() {
+		return partitionBy;
+	}
+
+	public InitializeData getInitializeData() {
+		return initializeData;
+	}
+
+	protected void setInitializeData(InitializeData initializeData) {
+		this.initializeData = initializeData;
+	}
+
+	@Override
+	public ClonedRelationalPathBaseEx<T> clone(){
+		RelationalPathBaseEx<T> t=new ClonedRelationalPathBaseEx<T>(this.getType(),this.getMetadata(),schema, table);
+		t.collate=this.collate;
+		t.comment=this.comment;
+		t.partitionBy = this.partitionBy;
+		t.primaryKey = this.primaryKey;
+		
+		t.columnMetadata.putAll(this.columnMetadata);
+		t.columns=Arrays.copyOf(columns, columns.length);
+		t.bindingsMap.putAll(this.bindingsMap);
+		t.constraints.addAll(this.constraints);
+		t.foreignKeys.addAll(this.foreignKeys);
+		t.inverseForeignKeys.addAll(this.inverseForeignKeys);
+		return (ClonedRelationalPathBaseEx<T>)t;
+	}
+	
+	
 }

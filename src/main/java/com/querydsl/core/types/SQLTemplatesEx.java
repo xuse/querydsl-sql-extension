@@ -7,15 +7,18 @@ import java.util.List;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
+import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.sql.dialect.SizeParser;
 import com.github.xuse.querydsl.sql.support.QueryWrapper;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.querydsl.core.types.DDLOps.AlterColumnOps;
+import com.querydsl.core.types.DDLOps.AlterTableConstraintOps;
 import com.querydsl.core.types.DDLOps.AlterTableOps;
 import com.querydsl.core.types.DDLOps.Basic;
-import com.querydsl.core.types.DDLOps.IndexConstraintOps;
+import com.querydsl.core.types.DDLOps.CreateStatement;
+import com.querydsl.core.types.DDLOps.DropStatement;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 
@@ -48,10 +51,11 @@ public interface SQLTemplatesEx{
 	ColumnDef getColumnDataType(int sqlTypes, int size, int scale);
 	
 	/**
+	 * Ask for how to create a index or a constraint in current RDBMS.
 	 * @param type ConstraintType
-	 * @return true if the ConstraintType supported in a table create clause; 
+	 * @return true if the ConstraintType supported in a create/alter table clause; 
 	 */
-	default boolean supportedInTableCreateClause(ConstraintType type) {
+	default boolean supportCreateInTableDefinition(ConstraintType type) {
 		return true;
 	}
 
@@ -60,7 +64,6 @@ public interface SQLTemplatesEx{
 	};
 
 	/**
-	 * 
 	 * @param table
 	 * @param conn
 	 * @param detail
@@ -69,6 +72,18 @@ public interface SQLTemplatesEx{
 	default List<Constraint> getConstraints(String schema, String table, QueryWrapper conn, boolean detail){
 		return null;	
 	}
+	
+	/**
+	 * @param schema
+	 * @param table
+	 * @param conn
+	 * @param detail
+	 * @return null means do not support partitions.
+	 */
+	default List<PartitionInfo> getPartitions(String schema, String table, QueryWrapper conn){
+		return null;	
+	}
+	
 
 	default LetterCase getDefaultLetterCase() {
 		return null;
@@ -84,12 +99,12 @@ public interface SQLTemplatesEx{
 		templates.add(DDLOps.ALTER_TABLE, "ALTER TABLE {0} {1}");
 		templates.add(AlterTableOps.ADD_COLUMN, "ADD COLUMN {0}");
 		templates.add(AlterTableOps.DROP_COLUMN, "DROP COLUMN {0} {1}");
-		
 		templates.add(AlterTableOps.ALTER_COLUMN, "ALTER COLUMN {0} {1}");
 		templates.add(AlterTableOps.RENAME_COLUMN, "RENAME COLUMN {0} TO {1}");
 		templates.add(AlterTableOps.RENAME_KEY, "RENAME KEY {0} TO {1}");
+		templates.add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}");
+		
 		templates.add(DDLOps.TRUNCATE_TABLE, "TRUNCATE TABLE {0}");
-		templates.add(DDLOps.DROP_TABLE, "DROP TABLE {0}");
 		
 		templates.add(DDLOps.COLUMN_SPEC, "{0} {1} {2}");
 		templates.add(DDLOps.DATA_TYPE, "{0} {1} {2}");
@@ -103,14 +118,23 @@ public interface SQLTemplatesEx{
 		templates.add(DDLOps.TABLE_DEFINITIONS, "{0},\n  {1}");
 		templates.add(DDLOps.DEF_LIST, "{0} {1}");
 
-		templates.add(IndexConstraintOps.ALTER_TABLE_ADD, "ADD {0}");
-		templates.add(IndexConstraintOps.ALTER_TABLE_DROP_CHECK, "DROP CHECK {0}");
-		templates.add(IndexConstraintOps.ALTER_TABLE_DROP_FOREIGNKEY, "DROP FOREIGN KEY {0}");
-		templates.add(IndexConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP UNIQUE {0}");
-		templates.add(IndexConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY, "DROP PRIMARY KEY");
-		templates.add(IndexConstraintOps.ALTER_TABLE_DROP_CONSTRAINT, "DROP CONSTRAINT {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CHECK, "DROP CHECK {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_FOREIGNKEY, "DROP FOREIGN KEY {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP UNIQUE {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY, "DROP PRIMARY KEY");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT, "DROP CONSTRAINT {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP, "DROP INDEX {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP INDEX {0}");
+
+		templates.add(DropStatement.DROP_TABLE, "DROP TABLE {0}");
+		templates.add(DropStatement.DROP_INDEX, " DROP INDEX {0}");
 		
-		templates.add(IndexConstraintOps.DOPR_INDEX, " DROP INDEX {0}");
+		// all constraint create def
+		templates.add(CreateStatement.CREATE_INDEX, "INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_HASH, "INDEX {1} ON {0} USING HASH");
+		templates.add(CreateStatement.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_BITMAP, "BITMAP INDEX {1} ON {0} {2}");
 		
 		//All Constraint inline def
 		templates.add(ConstraintType.CHECK, "CONSTRAINT {1} CHECK ({2})");
@@ -119,14 +143,6 @@ public interface SQLTemplatesEx{
 		templates.add(ConstraintType.KEY, "KEY {1} {2}");
 		templates.add(ConstraintType.HASH, "KEY {1} {2} USING HASH");
 		templates.add(ConstraintType.PRIMARY_KEY, "PRIMARY KEY {2}");
-		
-		// all constraint create def
-		templates.add(IndexConstraintOps.CREATE_INDEX, "INDEX {1} ON {0} {2}");
-		templates.add(IndexConstraintOps.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}");
-		templates.add(IndexConstraintOps.CREATE_HASH, "INDEX {1} ON {0} USING HASH");
-
-		templates.add(IndexConstraintOps.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}");
-		templates.add(IndexConstraintOps.CREATE_BITMAP, "BITMAP INDEX {1} ON {0} {2}");
 		
 		// all alter table columns
 		templates.add(AlterColumnOps.RESTART_WITH, "RESTART WITH {0}");

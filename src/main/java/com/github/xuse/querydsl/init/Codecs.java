@@ -20,6 +20,9 @@ public class Codecs {
         }
 
         public String fromString(String s) {
+        	if(DataInitializer.NULL_STRING_ESCAPE.equals(s)) {
+        		return null;
+        	}
             return s;
         }
     };
@@ -220,7 +223,7 @@ public class Codecs {
         CACHE.put(Boolean.class, Z);
         CACHE.put(Boolean.TYPE, Z);
 
-        CACHE.put(Byte[].class, BIN);
+        CACHE.put(byte[].class, BIN);
         CACHE.put(Date.class, uDate);
         CACHE.put(java.sql.Date.class, sDate);
         CACHE.put(java.sql.Time.class, sTime);

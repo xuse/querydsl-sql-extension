@@ -2,280 +2,367 @@ package com.github.xuse.querydsl.init;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import com.github.xuse.querydsl.annotation.init.InitializeData;
+import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.CloseableSQLQueryFactory;
+import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
-import com.github.xuse.querydsl.sql.column.ColumnMapping;
-import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
+import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
+import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
+import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
+import com.github.xuse.querydsl.util.Assert;
+import com.github.xuse.querydsl.util.Entry;
+import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.collection.CollectionUtils;
+import com.querydsl.core.QueryException;
+import com.querydsl.core.types.FactoryExpression;
+import com.querydsl.core.types.Path;
+import com.querydsl.sql.PrimaryKey;
+import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.RoutingStrategy;
+import com.querydsl.sql.dml.Mapper;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@SuppressWarnings("unused")
 public class DataInitializer {
-	private SQLQueryFactory session;
-	private volatile boolean enable = true;
+	public static final String NULL_STRING_ESCAPE = "@Null@";
+	//文件字符集
+	private Charset charset = StandardCharsets.UTF_8;
 
-	private int tableInit;
-	private int recordInit;
-	private Charset globalCharset = StandardCharsets.UTF_8;
+	//数据或脚本文件
+	private String resource;
+	
+	//基本信息
+	private final ConfigurationEx configuration;
+	private final SQLQueryFactory factory;
+	private final RelationalPath<?> table;
+	private final Map<String, Path<?>> pathMap;
+	
+	@SuppressWarnings("rawtypes")
+	private final Mapper mapper;
+	
+	//选项：允许手动Seq
+	private boolean manualSequence;
+	
+	//选项：表名路由
+	private RoutingStrategy routing;
+	
+	//提示：是新建的表（跳过数据检测）
+	private boolean isNewTable;
 
-	public DataInitializer(SQLQueryFactory session, Charset charset) {
-		this.session = session;
-		if (charset != null)
-			this.globalCharset = charset;
+	//选项：如果资源不存在抛出异常
+	private boolean ignoreIfResourceFileNotFound;
+
+	//选项：数据文件是SQL脚本
+	private boolean isSql;
+	
+	//选项：MergeKey
+	private List<Path<?>> mergeKeys;
+	
+	private boolean enable = true;
+
+	public DataInitializer(SQLQueryFactory session,RelationalPath<?> table) {
+		this.factory = session;
+		this.configuration = session.getConfiguration();
+		this.table=table;
+		this.pathMap = table.getColumns().stream().collect(Collectors.toMap(e -> e.getMetadata().getName(), e -> e));
+		this.mapper = AdvancedMapper.getDefaultMapper(table);
+		initMergeKeys();
+	}
+	
+	public DataInitializer from(String resource) {
+		this.resource = resource;
+		return this;
+	}
+	
+	public DataInitializer withRouting(RoutingStrategy routing) {
+		if(routing!=null) {
+			this.routing=routing;
+		}
+		return this;
+	}
+	
+	/**
+	 * 将数据表视作新表。设置true后会放弃Merge策略，仅尝试数据数据插入。
+	 * @param isNew
+	 * @return this
+	 */
+	public DataInitializer isNewTable(boolean isNew) {
+		this.isNewTable=isNew;
+		return this;
+	}
+	
+	/**
+	 * 设置资源文件的字符集
+	 * @param chartset
+	 * @return
+	 */
+	public DataInitializer charset(Charset chartset) {
+		this.charset=chartset;
+		return this;
+	}
+	
+	
+	public DataInitializer ignoreResource(boolean flag) {
+		ignoreIfResourceFileNotFound = flag;
+		return this;
 	}
 
-	private List<Object> readData(RelationalPathBaseEx<?> meta, URL url, String charset)
-			throws UnsupportedEncodingException, IOException {
-		CsvReader reader = new CsvReader(new InputStreamReader(url.openStream(), charset));
-		try {
+	/**
+	 * 指定资源文件是SQL脚本方式执行
+	 * @return this
+	 */
+	public DataInitializer isSqlFile() {
+		isSql = true;
+		return this;
+	}
+	
+	/**
+	 * 指定Merge的业务键。如果不指定会使用主键进行数据Merge/
+	 * @param keys 业务键
+	 * @return this
+	 */
+	public DataInitializer withKeys(String... keys) {
+		initMergeKeys(keys);
+		return this;
+	}
+	
+	/**
+	 * 指定Merge的业务键。如果不指定会使用主键进行数据Merge/
+	 * @param keys  业务键
+	 * @return this
+	 */
+	public DataInitializer withKeys(Path<?>... keys) {
+		if (keys.length > 0) {
+			this.mergeKeys = Arrays.asList(keys);
+		}
+		return this;
+	}
+
+	public final int execute() {
+		if(!enable) {
+			return 0;
+		}
+		URL url=getResourceURL();
+		if(url==null) {
+			return 0;
+		}
+		int count;
+		long time=System.currentTimeMillis();
+		String tableName = table.getTableName();
+		if(isSql) {
+			count=importSQLScript(url);
+			log.info("Table [{}] dataInit completed. {} statements executed, time={}.", tableName, count,(System.currentTimeMillis()-time));
+		}else {
+			try(CloseableSQLQueryFactory session=factory.oneConnectionSession(Connection.TRANSACTION_READ_COMMITTED)){
+				if(isNewTable ||  mergeKeys.isEmpty() || isEmptyTable()) {
+					log.info("Table [{}] already exists, begin merge data into database.", tableName);
+					count=importWithInsert(session, url);
+				}else {
+					log.info("Table [{}] already exists, begin merge data into database.", tableName);
+					count=importUsingMerge(session, url);
+				}
+				log.info("Table [{}] dataInit completed. {} records saved, time={}.", tableName, count,(System.currentTimeMillis()-time));	
+			}
+		}
+		return count;
+	}
+
+	private int importUsingMerge(SQLQueryFactory session, URL url) {
+		int count = 0;
+		for (Object obj : readData(url)) {
+			count+=doMerge(session, obj);
+		}
+		return count;
+	}
+
+	@SuppressWarnings("unchecked")
+	private int doMerge(SQLQueryFactory session, Object obj) {
+		SQLQueryAlter<?> select = session.selectFrom(table).withRouting(routing);
+		Map<Path<?>, Object> values = mapper.createMap(table, obj);
+		SQLTypeUtils.setWhere(mergeKeys, select, values);
+		List<?> list = select.limit(2).fetch();
+		int size = list.size();
+		if (size > 1) {
+			// Ignore this record
+			log.error("Table {}, key={} has more than one record match. Merge process on this record will be ignored.",table,values);
+			return 0;
+		} else if (size == 0) {
+			return (int) session.insert(table).withRouting(routing).populate(obj, mapper).execute();
+		}
+		SQLUpdateClauseAlter update = session.update(table).withRouting(routing).populateWithCompare(obj, list.get(0));
+		SQLTypeUtils.setWhere(mergeKeys, update, values);
+		return (int)update.execute();
+		
+	}
+
+	private int importWithInsert(SQLQueryFactory session, URL url) {
+		int count = 0;
+		List<Object> data = readData(url);
+		for (int i = 0; i < data.size(); i += 500) {
+			int batchIndex = Math.min(i + 500, data.size());
+			List<Object> currentBatch = data.subList(i, batchIndex);
+			try {
+				SQLInsertClauseAlter query = session.insert(table).withRouting(routing).populateBatch(currentBatch);
+				count += query.execute();
+				log.info("execute batch size={}: return {} ", currentBatch.size(), count);
+			} catch (QueryException e) {
+				if (e.getCause() instanceof SQLIntegrityConstraintViolationException) {
+					count += insertOnebyOne(session, currentBatch, e);
+				} else {
+					throw e;
+				}
+			} catch (DataIntegrityViolationException e) {
+				count += insertOnebyOne(session, currentBatch, e);
+			}
+		}
+		return count;
+		
+	}
+
+	private int importSQLScript(URL url) {
+		return factory.getMetadataFactory().executeScriptFile(url, charset, false, null);
+	}
+
+	private boolean isEmptyTable() {
+		List<?> obj=factory.selectFrom(table).limit(1).fetch();
+		return obj.isEmpty();
+	}
+
+	private URL getResourceURL() {
+		String resource = this.resource;
+		resource= calcResourceName(resource,table, configuration);
+		
+		//get resource file
+		URL url = table.getClass().getResource("/" + resource);
+		String tableName = table.getTableName();
+		if (url == null) {
+			if (!ignoreIfResourceFileNotFound) {
+				throw new IllegalStateException("Resource of table [" + tableName + "] was not found:" + resource);
+			}
+			log.warn("Data file was not found:{}", resource);
+		}
+		return url;
+	}
+
+	public static String calcResourceName(String resource, RelationalPath<?> table, ConfigurationEx configuration) {
+		if (StringUtils.isEmpty(resource)) {
+			resource = table.getType().getName() + configuration.getDataInitFileSuffix();
+		}
+		return resource;
+	}
+
+	private void initMergeKeys(String... mergeKey) {
+		List<Path<?>> paths = mergeKey == null ? Collections.emptyList()
+				: Arrays.asList(mergeKey).stream()
+						.map(e -> Assert.nonNull(pathMap.get(e), "Field {} not found in class {}", e, table))
+						.collect(Collectors.toList());
+
+		if (paths.isEmpty()) {
+			PrimaryKey<?> pk = table.getPrimaryKey();
+			paths = pk == null ? Collections.emptyList() : CollectionUtils.cast(pk.getLocalColumns());
+		}
+		this.mergeKeys = paths;
+	}
+
+	// TODO 优化改造为流式处理，节约内存
+	private List<Object> readData(URL url) {
+		List<Path<?>> paths = table.getColumns();
+		int count = 0;
+		try (CsvReader reader = new CsvReader(new InputStreamReader(url.openStream(), charset))) {
 			// 根据Header分析Property
-			List<ColumnMapping> props = new ArrayList<ColumnMapping>();
+
+			// 按照BeanColumn顺序重新组织序号。。
+			List<Entry<Path<?>, Integer>> props = new ArrayList<Entry<Path<?>, Integer>>();
 			if (reader.readHeaders()) {
 				for (String header : reader.getHeaders()) {
 					if (header.charAt(0) == '[') {
 						header = header.substring(1, header.length() - 1);
 					}
-					ColumnMapping field = meta.getColumnMetadata(meta.getColumn(header));
+					Path<?> field = pathMap.get(header);
 					if (field == null) {
 						throw new IllegalArgumentException(
 								String.format("The field [%s] in CSV file doesn't exsts in the entity [%s] metadata.",
-										header, meta.getTableName()));
+										header, table.getTableName()));
 					}
-					props.add(field);
+					int pathIndex = paths.indexOf(field);
+					props.add(new Entry<>(field, pathIndex));
 				}
 			}
 			// 根据预先分析好的Property读取属性
 			List<Object> result = new ArrayList<Object>();
+			int totalColumns = paths.size();
+			FactoryExpression<?> exp=(FactoryExpression<?>) table.getProjection();
 			while (reader.readRecord()) {
-				Object[] values = new Object[props.size()];
+				Object[] values = new Object[totalColumns];
 				for (int i = 0; i < props.size(); i++) {
-					ColumnMapping prop = props.get(i);
-					if (prop.getCustomType() != null) {
-						log.info("有customType:{}", prop.getCustomType());
-					}
-					values[i] = Codecs.fromString(reader.get(i), prop.getType());
+					Entry<Path<?>, Integer> entry = props.get(i);
+					Path<?> prop = entry.getKey();
+					int index = entry.getValue();
+					values[index] = Codecs.fromString(reader.get(i), prop.getType());
 				}
-				Object obj = meta.getBeanCodec().newInstance(values);
-				result.add(obj);
+				result.add(exp.newInstance(values));
+				count++;
+				if (count > 100_000) {
+					log.error(
+							"One table can process up to 100K records, more records will be ignored. current table is {}",
+							table.getTableName());
+					break;
+				}
 			}
 			return result;
-		} finally {
-			reader.close();
+		} catch (IOException e) {
+			throw Exceptions.toRuntime(e);
 		}
 	}
 
-	protected int initData0(RelationalPathBaseEx<?> meta, URL url, String charset, boolean manualSequence)
-			throws IOException {
-		int count = 0;
-		List<Object> data = readData(meta, url, charset);
-		for (int i = 0; i < data.size(); i += 500) {
-			int batchIndex = Math.min(i + 500, data.size());
-//			try {
-				doBatchInsert(meta,session, data.subList(i, batchIndex));
-				count += (batchIndex - i);
-//			} catch (SQLIntegrityConstraintViolationException e1) {
-//				// 主键冲突，改为逐条插入
-//				count += insertOnebyone(data.subList(i, batchIndex));
-//			} catch (SQLException e1) {
-//				throw Exceptions.toRuntime(e1);
-//			}
-		}
-		return count;
-	}
-
-	private void doBatchInsert(RelationalPathBaseEx<?> meta, SQLQueryFactory session, List<Object> subList) {
-		SQLMergeClauseAlter query = session.merge(meta);
-		for(Object o:subList) {
-			query.populate(o).addBatch();
-		}
-		long count=query.execute();
-		log.info("execute batch size={}: return {} ",subList.size(),count);
-	}
-
-	protected int insertOnebyone(List<Object> data, RelationalPathBaseEx<?> meta) {
+	/*
+	 * 主键或约束冲突，改为逐条插入
+	 */
+	protected int insertOnebyOne(SQLQueryFactory session, List<Object> data, Exception ex) {
+		log.warn("Encountering a data constraints conflicts, will try insert one by one.", ex);
 		int count = 0;
 		for (Object e : data) {
-			session.insert(meta).populate(e).execute();
+			session.insert(table).withRouting(routing).populate(e).execute();
 			count++;
 		}
 		return count;
 	}
 
-//	private int mergeData0(RelationalPathBaseEx<?> meta, URL url, String charset, boolean manualSequence,
-//			String[] mergeKey) throws IOException {
-//		int count = 0;
-//		boolean valueBackup = ORMConfig.getInstance().isManualSequence();
-//		// 如果manualSequence和默认配置不同，那么修改后再初始化，完成后改回来
-//		if (valueBackup != manualSequence)
-//			ORMConfig.getInstance().setManualSequence(manualSequence);
-//		try {
-//			for (Object e : readData(meta, url, charset)) {
-//				try {
-//					Object result = session.merge(e, mergeKey);
-//					if (result == null || result != e) {
-//						count++;
-//					}
-//				} catch (SQLException e1) {
-//					log.error("Insert error:{}", e, e1);
-//				}
-//			}
-//		} finally {
-//			if (valueBackup != manualSequence) {
-//				ORMConfig.getInstance().setManualSequence(valueBackup);
-//			}
-//		}
-//		return count;
-//	}
-
-	public final boolean isEnable() {
-		return enable;
+	public DataInitializer applyConfig(InitializeData anno) {
+		Assert.notNull(anno);
+		this.enable=anno.enable();
+		this.resource=anno.value();
+		if(StringUtils.isNotEmpty(anno.charset())) {
+			this.charset=Charset.forName(anno.charset());
+		}
+		this.ignoreIfResourceFileNotFound = !anno.ensureFileExists();
+		this.manualSequence=anno.manualSequence();
+		
+		if(anno.mergeKeys()!=null && anno.mergeKeys().length>0) {
+			withKeys(anno.mergeKeys());
+		}
+		if(StringUtils.isNotEmpty(anno.sqlFile())) {
+			this.resource=anno.sqlFile();
+			this.isSql = true;
+		}
+		return this;
 	}
-
-	/**
-	 * 对外暴露。初始化制定表的数据
-	 * 
-	 * @param meta  表结构元数据
-	 * @param isNew 表是否刚刚创建
-	 */
-//	public final void initData(RelationalPathBaseEx<?> meta, boolean isNew) {
-//		URL res=meta.getClass().getResource("/")
-//		
-////		
-////		String csvResouce = initRoot + meta.getThisType().getName() + extension;
-////		boolean ensureResourceExists = false;
-////		String charset = this.globalCharset;
-////		String tableName = meta.getTableName(false);
-////		boolean manualSequence = false;
-////		String sqlResouce = "";
-////		String[] mergeKeys = null;
-//		InitializeData config = meta.getClass().getAnnotation(InitializeData.class);
-//		if (config != null) {
-//			if (!config.enable()) {
-//				log.info("Table [{}] was's disabled on DataInitilalize feature by Annotation @InitializeData", tableName);
-//				return;
-//			}
-//			if (StringUtils.isNotEmpty(config.value())) {
-//				csvResouce = config.value();
-//			}
-//			if (StringUtils.isNotEmpty(config.charset())) {
-//				charset = config.charset();
-//			}
-//			if (config.mergeKeys().length > 0) {
-//				mergeKeys = config.mergeKeys();
-//			}
-//			ensureResourceExists = config.ensureFileExists();
-//			manualSequence = config.manualSequence();
-//			sqlResouce = config.sqlFile();
-//		}
-//		if (StringUtils.isEmpty(sqlResouce)) {
-//			initCSVData(meta, isNew, csvResouce, manualSequence, ensureResourceExists, charset, mergeKeys);
-//		} else {
-//			initSqlData(meta, isNew, sqlResouce, ensureResourceExists, charset);
-//		}
-//	}
-//
-//	private void initSqlData(RelationalPathBaseEx<?> meta, boolean isNew, String resName, boolean ensureResourceExists,
-//			String charset) {
-//		String tableName = meta.getTableName(false);
-//		URL url = meta.getThisType().getResource(resName);
-//		if (url == null) {
-//			if (ensureResourceExists) {
-//				throw new IllegalStateException("Resource of table [" + tableName + "] was not found:" + resName);
-//			}
-//			return;
-//		}
-//		try {
-//			session.getMetaData(null).executeScriptFile(url);
-//		} catch (SQLException e) {
-//			throw DbUtils.toRuntimeException(e);
-//		}
-//	}
-//
-//	private void initCSVData(RelationalPathBaseEx<?> meta, boolean isNew, String resName, boolean manualSequence,
-//			boolean ensureResourceExists, String charset, String[] mergeKey) {
-//		String tableName = meta.getTableName(false);
-//		URL url = meta.getThisType().getResource(resName);
-//		if (url != null) {
-//			try {
-//				if (isNew) {
-//					log.info("Table [{}] was created just now, begin insert data into database.", tableName);
-//					int n = initData0(meta, url, charset, manualSequence);
-//					recordInit += n;
-//					log.info("Table [{}] dataInit completed. {} records inserted.", tableName, n);
-//				} else {
-//					log.info("Table [{}] already exists, begin merge data into database.", tableName);
-//					int n = mergeData0(meta, url, charset, manualSequence, mergeKey);
-//					recordInit += n;
-//					log.info("Table [{}] dataInit completed. {} records saved.", tableName, n);
-//				}
-//				tableInit++;
-//
-//			} catch (RuntimeException e) {
-//				ex = e;
-//				throw e;
-//			} catch (IOException e) {
-//				ex = e;
-//				throw new IllegalStateException(e);
-//			}
-//		} else if (ensureResourceExists) {
-//			throw new IllegalStateException("Resource of table [" + tableName + "] was not found:" + resName);
-//		} else {
-//			log.debug("Data file was not found:{}", resName);
-//		}
-//
-//	}
-//
-//	/**
-//	 * 记录初始化任务结果
-//	 */
-//	private void recordResult(String message) {
-//		if (recordInit > 0) {
-//			try {
-//				AllowDataInitialize record = session.load(QB.create(AllowDataInitialize.class), false);
-//				record.getQuery().setAllRecordsCondition();
-//				record.getQuery().prepareUpdate(AllowDataInitialize.Field.doInit, false);
-//				record.getQuery().prepareUpdate(AllowDataInitialize.Field.lastDataInitTime, new Date());
-//				record.getQuery().prepareUpdate(AllowDataInitialize.Field.lastDataInitUser,
-//						ProcessUtil.getPid() + "@" + ProcessUtil.getHostname() + "(" + ProcessUtil.getLocalIp()
-//								+ ") OS:" + ProcessUtil.getOSName());
-//				record.getQuery().prepareUpdate(AllowDataInitialize.Field.lastDataInitResult,
-//						StringUtils.truncate(message, 300));
-//				session.update(record);
-//			} catch (SQLException e) {
-//				log.error("Record DataInitilizer Table failure! please check.", e);
-//			}
-//		}
-//	}
-//
-//	private Exception ex;
-//
-//	public void finish() {
-//		String message;
-//		if (ex == null) {
-//			message = "success. Tables init = " + tableInit + ", records = " + recordInit;
-//		} else {
-//			message = ex.toString();
-//		}
-//		if (useTable) {
-//			recordResult(message);
-//		} else {
-//			log.info(message);
-//		}
-//	}
-//
-//	public String getCharset() {
-//		return globalCharset;
-//	}
-//
-//	public void setCharset(String charset) {
-//		this.globalCharset = charset;
-//	}
 }

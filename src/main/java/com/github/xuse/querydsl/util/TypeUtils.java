@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.util;
 
+import java.lang.reflect.InvocationTargetException;
+
 public class TypeUtils {
 	private TypeUtils() {}
 	
@@ -20,4 +22,20 @@ public class TypeUtils {
 		return null;
 	}
 
+	/**
+	 * 在java9， Class.newInstance()被标记为@Deprecated， 用这个函数替代。
+	 */
+	public static <T> T newInstance(Class<T> clz) throws InstantiationException, IllegalAccessException {
+		try {
+			return clz.getConstructor().newInstance();
+		}catch(InvocationTargetException e) {
+			InstantiationException ex= new InstantiationException(clz.getName());
+			ex.initCause(e.getTargetException());
+			 throw ex;
+		}catch(NoSuchMethodException e) {
+			InstantiationException ex= new InstantiationException(clz.getName());
+			ex.initCause(e);
+			throw ex;
+		}
+	}
 }

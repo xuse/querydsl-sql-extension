@@ -147,16 +147,19 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		}
 
 		private void appendParams(StringBuilder sb,List<Object> params,List<Path<?>> constantPaths) {
-			paramsBegin(sb);
-			for (int count = 0; count < params.size(); count++) {
-				if (count > 0) {
-					newParamSep(sb);
+			int size=params.size();
+			if(size>0) {
+				paramsBegin(sb);
+				for (int count = 0; count < size; count++) {
+					if (count > 0) {
+						newParamSep(sb);
+					}
+					Path<?> p = constantPaths.get(count);
+					Object value = params.get(count);
+					append0(sb, p, value, count);
 				}
-				Path<?> p = constantPaths.get(count);
-				Object value = params.get(count);
-				append0(sb, p, value, count);
+				paramsEnd(sb);	
 			}
-			paramsEnd(sb);
 		}
 		
 		protected void paramsEnd(StringBuilder sb) {
@@ -307,10 +310,9 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	
 	@Override
 	public final void preExecute(SQLListenerContext context) {
-		if (!log.isInfoEnabled()) {
-			return;
+		if (log.isInfoEnabled()) {
+			log.info(infoFormatter.format(context.getAllSQLBindings()));
 		}
-		log.info(infoFormatter.format(context.getAllSQLBindings()));
 	}
 
 	

@@ -41,10 +41,10 @@ import lombok.extern.slf4j.Slf4j;
 public class InitDataExporter {
 	private SQLQueryFactory session;
 	private boolean deleteEmpty;
-	private File target = new File(System.getProperty("user.dir"));
-	private String extension = ".txt";
+	private File targetDirectory = new File(System.getProperty("user.dir"));
 	private Charset charset = StandardCharsets.UTF_8;
-	private int maxResults = 5000;
+	private int maxResults = 10000;
+	private boolean writeNullString = false;
 
 	/**
 	 * @param session 数据库客户端
@@ -60,22 +60,69 @@ public class InitDataExporter {
 	 */
 	public InitDataExporter(SQLQueryFactory session, File target) {
 		this.session = session;
-		this.target = target;
+		this.targetDirectory = target;
 	}
 
+	
+	/**
+	 * 由于CSV文件存储的特性，对于varchar等数据库字段，导出数据无法区分null和""。
+	 * 开启此选项后，null值将用特殊字符串表示，从而在数据导入时可以区分null和""。
+	 * @return this
+	 */
+	public InitDataExporter writeNullString() {
+		this.writeNullString=true;
+		return this;
+	}
+	
+	/**
+	 * 将数据库中的数据全部作为初始化数据导出到src/main/resources下。
+	 * 
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	public void exportPackage(String... packageName) throws ClassNotFoundException, IOException {
+		ClassLoader classLoader = this.getClass().getClassLoader();
+		Thread.currentThread().setContextClassLoader(classLoader);
+		for (Resource resource : new ClassScanner().scan(packageName)) {
+			if (!resource.isReadable()) {
+				continue;
+			}
+			ClassReader cl = new ClassReader(IOUtils.toByteArray(resource.getInputStream()));
+			if ((cl.getAccess() & Opcodes.ACC_PUBLIC) == 0) {
+				continue;// 非公有跳过
+			}
+			if (resource.getFilename().startsWith("Q")) {
+				String superName = cl.getSuperName();
+				if ("com/github/xuse/querydsl/sql/RelationalPathBaseEx".equals(superName)) {
+					try {
+						doExport(cl, classLoader);
+					} catch (Exception e) {
+						log.error("registe for {} error.", resource, e);
+					}
+				}
+			}
+		}
+	}
 	/**
 	 * 导出制定的实体类数据
 	 * @param anno
-	 * @param clz
+	 * @param modelClass
 	 */
-	public void export(Class<?> clz,InitializeData anno) {
+	public void export(Class<?> modelClass) {
 		try {
 			RelationalPathEx<?> obj = null;
-			for (Field field : clz.getDeclaredFields()) {
-				if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {
+			for (Field field : modelClass.getDeclaredFields()) {
+				if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == modelClass) {
 					obj = (RelationalPathEx<?>)field.get(null);
 					break;
 				}
+			}
+			
+			InitializeData anno=modelClass.getAnnotation(InitializeData.class);
+			if (anno == null) {
+				anno = obj.getType().getAnnotation(InitializeData.class);
 			}
 			if(obj!=null) {
 				export0(obj,anno);
@@ -88,9 +135,10 @@ public class InitDataExporter {
 			throw new IllegalArgumentException(e);
 		}
 	}
-
+	
 	private void export0(RelationalPathEx<?> meta,InitializeData anno) throws SQLException, IOException {
-		File file = new File(target, meta.getTableName() + extension);
+		String fileName=DataInitializer.calcResourceName(anno.value(),meta, session.getConfiguration());
+		File file = new File(targetDirectory,fileName);
 		List<?> records = session.selectFrom(meta).setFetchSisze(2000).setMaxRows(this.maxResults).fetch();
 		if (records.isEmpty()) {
 			if (deleteEmpty && file.exists()) {
@@ -116,7 +164,12 @@ public class InitDataExporter {
 					Object value= values[i];
 					ColumnMapping column=columnMetas.get(i);
 					String data = Codecs.toString(value, column.getType());
-					cw.write(data);
+					if(data==null && writeNullString && column.getType()==String.class){
+						cw.write(DataInitializer.NULL_STRING_ESCAPE);
+					}else {
+						cw.write(data);
+					}
+					
 				}
 				cw.endRecord();
 			}
@@ -125,40 +178,7 @@ public class InitDataExporter {
 		}
 		log.info("{} was updated.", file.getAbsolutePath());
 	}
-
-	/**
-	 * 将数据库中的数据全部作为初始化数据导出到src/main/resources下。
-	 * 
-	 * @throws ClassNotFoundException
-	 * @throws IOException
-	 * @throws ClassNotFoundException
-	 * @throws IOException
-	 */
-	public void exportPackage(String... packageName) throws ClassNotFoundException, IOException {
-		// 只有第一个Classpath是要扫描的
-		ClassLoader classLoader = this.getClass().getClassLoader();
-		Thread.currentThread().setContextClassLoader(classLoader);
-		for (Resource resource : new ClassScanner().scan(packageName)) {
-			if (!resource.isReadable()) {
-				continue;
-			}
-			ClassReader cl = new ClassReader(IOUtils.toByteArray(resource.getInputStream()));
-			if ((cl.getAccess() & Opcodes.ACC_PUBLIC) == 0) {
-				continue;// 非公有跳过
-			}
-			if (resource.getFilename().startsWith("Q")) {
-				String superName = cl.getSuperName();
-				if ("com/github/xuse/querydsl/sql/RelationalPathBaseEx".equals(superName)) {
-					try {
-						doExport(cl, classLoader);
-					} catch (Exception e) {
-						log.error("registe for {} error.", resource, e);
-					}
-				}
-			}
-		}
-	}
-
+	
 	private void doExport(ClassReader cl, ClassLoader loader) {
 		ClassAnnotationExtracter ae = new ClassAnnotationExtracter();
 		cl.accept(ae, ClassReader.SKIP_CODE);
@@ -167,19 +187,19 @@ public class InitDataExporter {
 			return;
 		}
 		if (ae.hasAnnotation(InitializeData.class)) {
-			Class<?> e;
+			Class<?> modelClass;
 			try {
-				e = loader.loadClass(ASMUtils.getJavaClassName(cl));
+				modelClass = loader.loadClass(ASMUtils.getJavaClassName(cl));
 			} catch (ClassNotFoundException ex) {
 				throw Exceptions.illegalState(ex);
 			}
-			InitializeData data = e.getAnnotation(InitializeData.class);
+			InitializeData data = modelClass.getAnnotation(InitializeData.class);
 			if (data != null && !data.enable()) {
-				log.info("The annotation @InitializeData on [{}] was disabled.", e.getName());
+				log.info("The annotation @InitializeData on [{}] was disabled.", modelClass.getName());
 				return;
 			}
-			log.info("Starting export data:{}", e.getName());
-			export(e,data);
+			log.info("Starting export data:{}", modelClass.getName());
+			export(modelClass);
 		}
 	}
 
@@ -205,23 +225,26 @@ public class InitDataExporter {
 		return charset;
 	}
 
-	public void setCharset(Charset charset) {
+	public InitDataExporter setCharset(Charset charset) {
 		this.charset = charset;
+		return this;
 	}
 
 	public File getTarget() {
-		return target;
+		return targetDirectory;
 	}
 
-	public void setTarget(File target) {
-		this.target = target;
+	public InitDataExporter targetDirectory(File target) {
+		this.targetDirectory = target;
+		return this;
 	}
 
 	public int getMaxResults() {
 		return maxResults;
 	}
 
-	public void setMaxResults(int maxResults) {
+	public InitDataExporter setMaxResults(int maxResults) {
 		this.maxResults = maxResults;
+		return this;
 	}
 }

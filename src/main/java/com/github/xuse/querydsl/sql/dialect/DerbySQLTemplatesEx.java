@@ -16,9 +16,10 @@ import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.types.ConstraintType;
 import com.querydsl.core.types.DDLOps;
-import com.querydsl.core.types.SQLTemplatesEx;
+import com.querydsl.core.types.DDLOps.AlterTableConstraintOps;
 import com.querydsl.core.types.DDLOps.AlterTableOps;
 import com.querydsl.core.types.DDLOps.Basic;
+import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.core.types.dsl.DDLExpressions;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLTemplates;
@@ -49,7 +50,7 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 	}
 
 	@Override
-	public boolean supportedInTableCreateClause(ConstraintType type) {
+	public boolean supportCreateInTableDefinition(ConstraintType type) {
 		return !type.isIndex();
 	}
 
@@ -66,7 +67,8 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 		add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
 		
 		add(templates, SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL, "");
-		addUnsupports(DDLOps.COMMENT,DDLOps.UNSIGNED,AlterTableOps.CHANGE_COLUMN,DDLOps.COLLATE);
+		addUnsupports(DDLOps.COMMENT,DDLOps.UNSIGNED,AlterTableOps.CHANGE_COLUMN,DDLOps.COLLATE, AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP,
+				AlterTableConstraintOps.ALTER_TABLE_DROP_KEY);
 		
 	}
 

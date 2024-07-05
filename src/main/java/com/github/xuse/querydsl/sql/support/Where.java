@@ -54,7 +54,7 @@ public class Where<T> {
 
 		public List<T> fetch(){
 			if(repository!=null) {
-				return repository.find(build());
+				return repository.find(build().conditions);
 			}else {
 				throw new IllegalArgumentException();
 			}
@@ -62,7 +62,7 @@ public class Where<T> {
 		
 		public int count() {
 			if(repository!=null) {
-				return repository.count(build());
+				return repository.count(build().conditions);
 			}else {
 				throw new IllegalArgumentException();
 			}
@@ -86,7 +86,7 @@ public class Where<T> {
 		
 		public T load() {
 			if(repository!=null) {
-				return repository.load(build());
+				return repository.load(build().conditions);
 			}else {
 				throw new IllegalArgumentException();
 			}

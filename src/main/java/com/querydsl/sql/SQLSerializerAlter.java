@@ -3,9 +3,11 @@ package com.querydsl.sql;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,6 +22,7 @@ import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.ColumnChange;
 import com.github.xuse.querydsl.sql.ddl.ColumnModification;
 import com.github.xuse.querydsl.sql.ddl.CompareResult;
+import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
@@ -28,8 +31,10 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.ConstraintType;
 import com.querydsl.core.types.DDLOps;
+import com.querydsl.core.types.DDLOps.AlterTableConstraintOps;
 import com.querydsl.core.types.DDLOps.AlterTableOps;
-import com.querydsl.core.types.DDLOps.IndexConstraintOps;
+import com.querydsl.core.types.DDLOps.DropStatement;
+import com.querydsl.core.types.DDLOps.PartitionDefineOps;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Operator;
@@ -58,6 +63,8 @@ import com.querydsl.sql.types.Null;
  */
 public class SQLSerializerAlter extends SQLSerializer {
 	private ConfigurationEx configurationEx;
+	
+	private RoutingStrategy routing = RoutingStrategy.DEFAULT;
 
 	public SQLSerializerAlter(ConfigurationEx conf, boolean dml) {
 		super(conf.get(), dml);
@@ -169,7 +176,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 	}
 	
     protected SchemaAndTable getSchemaAndTable(RelationalPath<?> path) {
-        return configurationEx.getOverride(path.getSchemaAndTable());
+        return routing.getOverride(path.getSchemaAndTable(),configurationEx);
     }
 
 	protected void handleJoinTarget(JoinExpression je) {
@@ -211,6 +218,19 @@ public class SQLSerializerAlter extends SQLSerializer {
 		this.visit(entity, null);
 	}
 	
+	public void serializeAction(String action, RelationalPath<?> entity, Object... spec) {
+		this.entity = entity;
+		append(action);
+		this.visit(entity, null);
+		for(Object s:spec) {
+			if(s instanceof String) {
+				append((String)s);		
+			}else if(s instanceof Expression<?>){
+				((Expression<?>) s).accept(this, null);
+			}
+		}
+	}
+	
 	public void serializePath(Path<?> entity, String... action) {
 		for (String s : action) {
 			if (s != null) {
@@ -220,7 +240,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		this.visit(entity, null);
 	}
 
-	public List<Constraint> serializeTableCreate(RelationalPath<?> table) {
+	public List<Constraint> serializeTableCreate(RelationalPath<?> table, boolean processPartition) {
 		this.useLiterals = true;
 		this.skipParent = true;
 		this.entity = table;
@@ -247,7 +267,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		// Add Constraint or index
 		if (tableEx != null && CollectionUtils.isNotEmpty(tableEx.getConstraints())) {
 			for (Constraint constraint : tableEx.getConstraints()) {
-				if (template.supportedInTableCreateClause(constraint.getConstraintType())) {
+				if (template.supportCreateInTableDefinition(constraint.getConstraintType())) {
 					tableDefExpressions.add(generateConstraintDefinition(constraint, table));
 				} else {
 					independentConstraints.add(constraint);
@@ -262,10 +282,37 @@ public class SQLSerializerAlter extends SQLSerializer {
 		}
 		//Generate SQL from the AST
 		tableCreateExpression.accept(this, null);
+		
+		//处理建表时的Partition定义
+		if (processPartition && tableEx != null && tableEx.getPartitionBy()!=null) {
+			if(configurationEx.getTemplates().supports(PartitionDefineOps.PARTITION_BY)){
+				serializePartitionBy(tableEx.getPartitionBy(), tableEx, true);
+			}
+		}
 		return independentConstraints;
 	}
 
-	
+	public void serializePartitionBy(PartitionBy partitionBy, RelationalPath<?> tableEx, boolean check) {
+		skipParent = true;
+		if(check) {
+			checkPartitionFields(partitionBy, tableEx);
+		}
+		Expression<?> partitionExpression = partitionBy.generateExpression(configurationEx);
+		append(" ");
+		partitionExpression.accept(this, null);
+	}
+
+	private void checkPartitionFields(PartitionBy pb, RelationalPath<?> table) {
+		if(table.getPrimaryKey()==null) {
+			throw new IllegalArgumentException("Partition table must have a primary key.");
+		}
+		Set<Path<?>> missedPath = new HashSet<>(pb.exprPath());
+		missedPath.removeAll(table.getPrimaryKey().getLocalColumns());
+		if (!missedPath.isEmpty()) {
+			throw new IllegalArgumentException("A PRIMARY KEY must include all columns in the table's partitioning function. " + missedPath);
+			//log.warn("The path {} not in primary key",missedPath);
+		}
+	}
 
 	// 创建独立的创建语句
 	public void serialzeConstraintIndepentCreate(RelationalPath<?> table, Constraint c) {
@@ -278,7 +325,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		Operator ops=type.getIndependentCreateOps();
 		Expression<?> defExp;
 		if (type.isColumnList()) {
-			defExp = DDLExpressions.warpList(c.getPaths());
+			defExp = DDLExpressions.wrapList(c.getPaths());
 		} else {
 			defExp = c.getCheckClause();
 		}
@@ -293,7 +340,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		this.skipParent = true;
 		Assert.isNotEmpty(c.getName());
 		SchemaAndTable name=generateConstraintName(c.getName(), table, false);
-		Expression<?> dropExpr = DDLExpressions.simple(IndexConstraintOps.DOPR_INDEX, Expressions.path(Object.class, name.getTable()));			
+		Expression<?> dropExpr = DDLExpressions.simple(DropStatement.DROP_INDEX, Expressions.path(Object.class, name.getTable()));			
 		dropExpr.accept(this, null);
 	}
 	
@@ -339,7 +386,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		//drop constraints
 		for(Constraint constraint:cr.getDropConstraints()) {
 			ConstraintType type=constraint.getConstraintType();
-			IndexConstraintOps ops=type.getDropOpsInAlterTable();
+			AlterTableConstraintOps ops=type.getDropOpsInAlterTable();
 			if(ops==null || configurationEx.getTemplates().notSupports(ops)) {
 				//无法支持在AlterTable语句中修改
 				unsupportedDrop.add(constraint);
@@ -353,12 +400,12 @@ public class SQLSerializerAlter extends SQLSerializer {
 		//add constraints
 		for(Constraint constraint:cr.getAddConstraints()) {
 			ConstraintType type=constraint.getConstraintType();
-			if(!configurationEx.getTemplates().supportedInTableCreateClause(type)) {
+			if(!configurationEx.getTemplates().supportCreateInTableDefinition(type)) {
 				unsupportedCreate.add(constraint);
 				continue;
 			}
 			Expression<?> expr = generateConstraintDefinition(constraint, table);
-			Expression<?> alterClause = DDLExpressions.simple(IndexConstraintOps.ALTER_TABLE_ADD, expr);
+			Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_TABLE_ADD, expr);
 			tableDefExpressions.add(alterClause);
 		}
 		resultContainer.addCreateConstraints(unsupportedCreate);
@@ -390,7 +437,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 			for (Path<?> p : constraint.getPaths()) {
 				exps.add(p);
 			}
-			defExp = DDLExpressions.warpList(exps);
+			defExp = DDLExpressions.wrapList(exps);
 		} else {
 			defExp = constraint.getCheckClause();
 		}
@@ -400,17 +447,19 @@ public class SQLSerializerAlter extends SQLSerializer {
 	/*
 	 * 这个方法主要的目的是处理schema和constraintName的Overide(包括处理大小写)
 	 */
-	private SchemaAndTable generateConstraintName(String name, RelationalPath<?> tableEntity, boolean  generate) {
-		SchemaAndTable constraintName;
+	private SchemaAndTable generateConstraintName(String name, RelationalPath<?> tableEntity, boolean generate) {
+		SchemaAndTable table = getSchemaAndTable(tableEntity);
+		
 		if(StringUtils.isEmpty(name)) {
 			if(generate) {
-				SchemaAndTable table=configurationEx.getOverride(tableEntity.getSchemaAndTable());
 				name = "idx_" + table.getTable() + "_" + com.github.xuse.querydsl.util.StringUtils.randomString();	
 			}else {
 				name = "";
 			}
+		}else {
+			name = name.replace("${table}", table.getTable());
 		}
-		constraintName=new SchemaAndTable(tableEntity.getSchemaName(), name);
+		SchemaAndTable constraintName=new SchemaAndTable(table.getSchema(), name);
 		constraintName = configurationEx.getOverride(constraintName);
 		return constraintName;
 	}
@@ -444,5 +493,15 @@ public class SQLSerializerAlter extends SQLSerializer {
 		Expression<?> defaultValue = cx.getDefaultExpression();
 		Expression<?> dataType = DDLExpressions.dataType(exp.getDataType(), cx.isNullable(), unsigned, defaultValue);
 		return dataType;
+	}
+
+	public RoutingStrategy getRouting() {
+		return routing;
+	}
+
+	public void setRouting(RoutingStrategy routing) {
+		if(routing!=null) {
+			this.routing = routing;
+		}
 	}
 }

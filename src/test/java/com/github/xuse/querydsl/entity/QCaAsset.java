@@ -15,7 +15,7 @@ import com.querydsl.core.types.dsl.StringPath;
 public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
 	private static final long serialVersionUID = -1972906214968601009L;
 
-	public static final QCaAsset caAsset = new QCaAsset("t33");
+	public static final QCaAsset caAsset = new QCaAsset("as");
 	
 	public final NumberPath<Integer> id = createNumber("id", int.class);
 

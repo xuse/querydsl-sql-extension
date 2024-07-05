@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.springframework.util.Assert;
 
 /**
- * 10进制、62进制互转 edited by zhibo on 2015/05/21.
+ * 10进制、62进制互转
  */
 public class DigitBaseTest {
 	@Test

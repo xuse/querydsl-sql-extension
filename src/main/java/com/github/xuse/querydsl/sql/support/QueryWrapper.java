@@ -10,11 +10,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.sql.SQLBindings;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * SQL查询器
@@ -22,8 +23,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author jiyi
  *
  */
-@Slf4j
 public class QueryWrapper {
+	
+	private static Logger log=LoggerFactory.getLogger("SQL");
+	
 	private static final int MAX_RECORDS = 50000;
 	private final Connection connection;
 	private final ConfigurationEx configuration;
@@ -75,7 +78,7 @@ public class QueryWrapper {
 		return result;
 	}
 	
-	public void executeQuery(String sql, List<Object> nullFriendlyBindings, Consumer<ResultSet> func){
+	public int executeQuery(String sql, List<Object> nullFriendlyBindings, Consumer<ResultSet> func){
 		if (nullFriendlyBindings == null) {
 			nullFriendlyBindings = Collections.emptyList();
 		}
@@ -83,18 +86,24 @@ public class QueryWrapper {
 		if(!nullFriendlyBindings.isEmpty()) {
 			log.info("{}",nullFriendlyBindings);
 		}
+		int count = 0;
 		try (PreparedStatement st = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY,
 				ResultSet.CONCUR_READ_ONLY)) {
 			for (int i = 0; i < nullFriendlyBindings.size(); i++) {
 				Object param = nullFriendlyBindings.get(i);
 				st.setObject(i + 1, param);
 			}
-			try (ResultSet resultSet = st.executeQuery()) {
-				func.accept(resultSet);
+			if(func!=null) {
+				try (ResultSet resultSet = st.executeQuery()) {
+					func.accept(resultSet);
+				}	
+			}else {
+				count = st.executeUpdate();
 			}
 		} catch (SQLException e) {
 			throw configuration.get().translate(e);
 		}
+		return count;
 	}
 
 	public <T> T metadataAccess(QueryFunction<DatabaseMetaData,T> callback) {

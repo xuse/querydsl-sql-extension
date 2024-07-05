@@ -17,6 +17,8 @@ package com.github.xuse.querydsl.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Collection;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -26,6 +28,20 @@ import java.util.Objects;
  *
  */
 public class Assert {
+	/**
+	 * 断言对象不为null
+	 * @param obj
+	 * @param template 错误信息模板
+	 * @param args 错误信息参数
+	 * @return t
+	 */
+	public static <T> T nonNull(T obj, String template, Object... args) {
+		if(obj==null) {
+			throw Exceptions.illegalArgument(template, args);
+		}
+		return obj;
+	}
+	
 	/**
 	 * 断言对象不为null
 	 * @param obj
@@ -171,7 +187,7 @@ public class Assert {
 	 */
 	public static void notEquals(Object obj1, Object obj2) {
 		if (Objects.equals(obj1, obj2))
-			throw new RuntimeException();
+			throw new IllegalArgumentException();
 	}
 
 	/**
@@ -182,7 +198,7 @@ public class Assert {
 	 */
 	public static void notEquals(Object obj1, Object obj2, String string) {
 		if (Objects.equals(obj1, obj2))
-			throw new RuntimeException(string);
+			throw new IllegalArgumentException(string);
 	}
 
 	/**
@@ -191,9 +207,9 @@ public class Assert {
 	 * @param o2
 	 * @param string
 	 */
-	public static void SameObject(Object o1, Object o2, String string) {
+	public static void sameObject(Object o1, Object o2, String string) {
 		if (o1 != o2)
-			throw new RuntimeException(string);
+			throw new IllegalArgumentException(string);
 	}
 
 	/**
@@ -305,7 +321,7 @@ public class Assert {
 	 */
 	public static void isNotEmpty(String text) {
 		if (text == null || text.length() == 0) {
-			throw new RuntimeException("String must not empty!");
+			throw new IllegalArgumentException("String must not empty!");
 		}
 	}
 
@@ -326,7 +342,7 @@ public class Assert {
 	 */
 	public static void hasLength(String text) {
 		if (text==null || text.length()==0)
-			throw new RuntimeException();
+			throw new IllegalArgumentException();
 	}
 
 	/**
@@ -336,9 +352,32 @@ public class Assert {
 	 */
 	public static void hasLength(String text, String msg) {
 		if (text==null || text.length()==0)
-			throw new RuntimeException(msg);
+			throw new IllegalArgumentException(msg);
+	}
+	
+	public static void hasElements(Collection<?> collection) {
+		if(collection==null || collection.isEmpty()) {
+			throw new IllegalArgumentException();
+		}
+	}
+	
+	public static void hasElements(Map<?,?> collection) {
+		if(collection==null || collection.isEmpty()) {
+			throw new IllegalArgumentException();
+		}
+	}
+	
+	public static void hasElements(Collection<?> collection, String msg) {
+		if(collection==null || collection.isEmpty()) {
+			throw new IllegalArgumentException(msg);
+		}
 	}
 
+	public static void hasElements(Map<?,?> collection, String msg) {
+		if(collection==null || collection.isEmpty()) {
+			throw new IllegalArgumentException(msg);
+		}
+	}
 	/**
 	 * Assert that an array has elements; that is, it must not be
 	 * <code>null</code> and must have at least one element.

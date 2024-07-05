@@ -28,9 +28,9 @@ public @interface TableSpec {
 	String name() default "";
 
 	/**
-	 * 主键字段
+	 * 主键字段，此处填写Java字段名（Path）
 	 */
-	String[] primaryKeyPath() default {};
+	String[] primaryKeys() default {};
 
 	/**
 	 * 索引和UNIQUE
@@ -46,5 +46,4 @@ public @interface TableSpec {
 	 * @return 字符集
 	 */
 	String collate() default "";
-
 }

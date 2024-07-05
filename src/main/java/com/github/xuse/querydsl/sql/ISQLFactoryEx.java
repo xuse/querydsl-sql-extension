@@ -1,6 +1,8 @@
 package com.github.xuse.querydsl.sql;
 
+import com.github.xuse.querydsl.init.DataInitializer;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.mssql.SQLServerQueryFactory;
 import com.querydsl.sql.mysql.MySQLQueryFactory;
 import com.querydsl.sql.oracle.OracleQueryFactory;
@@ -47,4 +49,5 @@ public interface ISQLFactoryEx {
 	 */
 	public SQLMetadataQueryFactory getMetadataFactory();
 
+	public DataInitializer initializeTable(RelationalPath<?> table);
 }

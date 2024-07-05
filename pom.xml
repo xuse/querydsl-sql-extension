@@ -5,7 +5,7 @@
 
 	<groupId>com.github.xuse.querydsl</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r100</version>
+	<version>5.0.0-r101</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -18,7 +18,7 @@
 		<maven.compiler.testTarget>8</maven.compiler.testTarget>
 		<querydsl.version>5.0.0</querydsl.version>
 		<!-- 备注5.1.0版本是55，即java11，java8用不了-->
-		<springframework.version>4.3.19.RELEASE</springframework.version>
+		<springframework.version>5.3.34</springframework.version>
 	</properties>
 
 	<dependencies>
@@ -39,13 +39,6 @@
 			<version>1.18.32</version>
 			<scope>provided</scope>
 		</dependency>
-		<!--
-		<dependency>
-			<groupId>org.apache.geronimo.specs</groupId>
-		<artifactId>geronimo-jpa_2.1_spec</artifactId>
-		<version>1.0-alpha-1</version>
-		</dependency>
-		-->
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
@@ -74,14 +67,6 @@
 			<version>10.14.2.0</version>
 			<scope>test</scope>
 		</dependency>
-		<!--
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.49</version>
-			<scope>test</scope>
-		</dependency>
-		-->
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
@@ -119,18 +104,29 @@
 	</dependencies>
 	<build>
 		<plugins>
-			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-javadoc-plugin</artifactId>
-			<version>2.10.4</version> <configuration> <charset>UTF-8</charset>
-			<docencoding>UTF-8</docencoding> 
-				<encoding>UTF-8</encoding>
-			<aggregate>true</aggregate> <show>public</show> 
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.4</version>
+				<configuration>
+					<charset>UTF-8</charset>
+					<docencoding>UTF-8</docencoding>
+					<encoding>UTF-8</encoding>
+					<aggregate>true</aggregate>
+					<show>public</show>
 				</configuration>
-			<executions> <execution> <id>attach-javadocs</id> <goals>
-			<goal>jar</goal> </goals> <configuration>
-			<additionalparam>-Xdoclint:none</additionalparam> 
-				</configuration>
-			</execution> </executions> </plugin> -->
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<additionalparam>-Xdoclint:none</additionalparam>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-source-plugin</artifactId>
 				<configuration>

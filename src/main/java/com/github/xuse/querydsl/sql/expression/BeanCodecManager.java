@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Radix;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Assert;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.util.ReflectionUtils;
@@ -119,7 +120,7 @@ public class BeanCodecManager {
 		Class<?> clz;
 		try {
 			clz = cl.loadClass(clzName);
-			return (BeanCodec) clz.newInstance();
+			return (BeanCodec) TypeUtils.newInstance(clz);
 		} catch (ClassNotFoundException e) {
 			// do nothing..
 		}
@@ -138,7 +139,7 @@ public class BeanCodecManager {
 		if (clz == null) {
 			bc = new ReflectCodec(key.targetClass, properties);
 		}else{
-			bc = (BeanCodec) clz.newInstance();
+			bc = (BeanCodec) TypeUtils.newInstance(clz);
 		}
 		Field[] fields = new Field[properties.size()];
 		for (int i = 0; i < properties.size(); i++) {

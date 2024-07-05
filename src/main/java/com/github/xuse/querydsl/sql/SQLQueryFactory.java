@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.init.DataInitializer;
+import com.github.xuse.querydsl.init.InitProcessor;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
@@ -67,6 +69,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		super(configuration, connProvider);
 		this.configEx=configuration;
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
+		tryInit(configuration);
 	}
 
 	public SQLQueryFactory(ConfigurationEx configuration, DataSource dataSource) {
@@ -80,7 +83,14 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 			configuration.addListener(SQLCloseListener.DEFAULT);
 		}
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
+		tryInit(configuration);
 	}
+
+	private void tryInit(ConfigurationEx configuration) {
+		InitProcessor task=new InitProcessor(this);
+		task.run();
+	}
+	
 
 	/**
 	 * 根据URL计算使用的SQL模板
@@ -213,11 +223,42 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
     	if(connection instanceof  SpringProvider) {
     		return ((SpringProvider) connection).isTx();
     	}
-    	throw new UnsupportedOperationException();
+    	return false;
     }
 
 	@Override
 	public SQLMetadataQueryFactory getMetadataFactory() {
 		return new SQLMetadataFactoryImpl(connection,configEx);
+	}
+	
+	/**
+	 * @param level one of the following <code>Connection</code> constants:
+     *        <code>Connection.TRANSACTION_READ_UNCOMMITTED</code>,
+     *        <code>Connection.TRANSACTION_READ_COMMITTED</code>,
+     *        <code>Connection.TRANSACTION_REPEATABLE_READ</code>, or
+     *        <code>Connection.TRANSACTION_SERIALIZABLE</code>.
+     *        (Note that <code>Connection.TRANSACTION_NONE</code> cannot be used
+     *        because it specifies that transactions are not supported.)
+	 * @return CloseableSQLQueryFactory. must call close method for resource release 
+	 */
+	public CloseableSQLQueryFactory oneConnectionSession(int level) {
+		try{
+			Connection conn=connection.get();
+			if(level>0) {
+				if(isInSpringTransaction()) {
+					log.warn("Can not set transaction isolation because current session is Spring managed transaction.");
+				}else {
+					conn.setTransactionIsolation(level);	
+				}
+			}
+			return new CloseableSQLQueryFactory(configEx, conn);
+		}catch(SQLException e) {
+			throw configuration.get().translate(e);
+		}
+	}
+
+	@Override
+	public DataInitializer initializeTable(RelationalPath<?> table) {
+		return new DataInitializer(this, table);
 	}
 }

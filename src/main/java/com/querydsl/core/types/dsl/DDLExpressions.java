@@ -36,7 +36,7 @@ public class DDLExpressions {
 	 * @param paths
 	 * @return expression;
 	 */
-	public static Expression<?> warpList(Expression<?>... paths) {
+	public static Expression<?> wrapList(Expression<?>... paths) {
 		return wrap(Expressions.list(paths));
 	}
 
@@ -45,7 +45,7 @@ public class DDLExpressions {
 	 * @param paths
 	 * @return expression;
 	 */
-	public static Expression<?> warpList(List<? extends Expression<?>> paths) {
+	public static Expression<?> wrapList(List<? extends Expression<?>> paths) {
 		int size = paths == null ? 0 : paths.size();
 		if (size == 0) {
 			return EMPTY;
@@ -135,7 +135,7 @@ public class DDLExpressions {
 	}
 
 	public static Expression<?> simple(Operator op, Expression<?>...expressions) {
-		return Expressions.simpleOperation(Object.class, op, expressions);
+		return Expressions.simpleOperation(Void.class, op, expressions);
 	}
 	
 	public static Expression<?> text(String str) {

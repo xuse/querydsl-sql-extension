@@ -34,7 +34,7 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 
 	private static final long serialVersionUID = -1389588466;
 
-	public static final QAaa aaa = new QAaa("t1");
+	public static final QAaa aaa = new QAaa("ta");
 
 	public final DateTimePath<Date> created = createDateTime("created", Date.class);
 
@@ -50,39 +50,37 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 	
 	public final EnumPath<Gender> genderWithChar = createEnum("genderWithChar", Gender.class);
 	
-	private final NumberPath<Integer> dataInt = createNumber("dataInt",Integer.class);
+	public final NumberPath<Integer> dataInt = createNumber("dataInt",Integer.class);
 	
-	private final NumberPath<Float> dataFloat =createNumber("dataFloat",Float.class);
+	public final NumberPath<Float> dataFloat =createNumber("dataFloat",Float.class);
 	
-	private final NumberPath<Double> dataDouble = createNumber("dataDouble",Double.class);
+	public final NumberPath<Double> dataDouble = createNumber("dataDouble",Double.class);
 	
-	private final NumberPath<Short> dataShort = createNumber("dataShort",Short.class);
+	public final NumberPath<Short> dataShort = createNumber("dataShort",Short.class);
 	
-	private final NumberPath<Long> dataBigint = createNumber("dataBigint",Long.class);
+	public final NumberPath<Long> dataBigint = createNumber("dataBigint",Long.class);
 	
-	private final NumberPath<BigDecimal> dataDecimal = createNumber("dataDecimal",BigDecimal.class);
+	public final NumberPath<BigDecimal> dataDecimal = createNumber("dataDecimal",BigDecimal.class);
 	
-	private final BooleanPath dataBit = createBoolean("dataBit");
+	public final BooleanPath dataBit = createBoolean("dataBit");
 	
-	private final BooleanPath dataBool = createBoolean("dataBool");
+	public final BooleanPath dataBool = createBoolean("dataBool");
 	
-	private final DateTimePath<Date> dataDate = createDateTime("dataDate",Date.class);;
+	public final DateTimePath<Date> dataDate = createDateTime("dataDate",Date.class);;
 	
-	private final DateTimePath<Time> dataTime = createDateTime("dataTime",Time.class);;
+	public final DateTimePath<Time> dataTime = createDateTime("dataTime",Time.class);;
 	
-	private final DateTimePath<Date> dateTimestamp =  createDateTime("dateTimestamp",Date.class);
+	public final DateTimePath<Date> dateTimestamp =  createDateTime("dateTimestamp",Date.class);
 	
-	private final StringPath dataText =  super.createString("dataText");;
+	public final StringPath dataText =  super.createString("dataText");;
 	
-	private final StringPath dataLongText = super.createString("dataLongText");
+	public final StringPath dataLongText = super.createString("dataLongText");
 	
-	private final SimplePath<byte[]> dateBinary = super.createSimple("dateBinary", byte[].class);
+	public final SimplePath<byte[]> dateBinary = super.createSimple("dateBinary", byte[].class);
 	
-	private final SimplePath<byte[]> dateVarBinary = super.createSimple("dateVarBinary", byte[].class);
+	public final SimplePath<byte[]> dateVarBinary = super.createSimple("dateVarBinary", byte[].class);
 	
 	
-	
-
 	public final com.querydsl.sql.PrimaryKey<Aaa> PK_Aaa = createPrimaryKey(id);
 
 	public QAaa(String variable) {
@@ -135,10 +133,10 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 		addMetadata(dateBinary, ColumnMetadata.named("C_BIN").withIndex(21).ofType(Types.BINARY).withSize(512)).comment("测试二进制");
 		addMetadata(dateVarBinary, ColumnMetadata.named("C_VARBIN").withIndex(22).ofType(Types.VARBINARY).withSize(1024)).comment("测试VARBIN123");
 		
-		createConstraint("unq_aaa_name_version",ConstraintType.UNIQUE,name, version);
-		createConstraint("idx_aaa_taskstatus",ConstraintType.KEY,taskStatus);
-		createCheck("cnt_check_int1", "TASK_STATUS < 10");
-		createCheck("cnt_float_lt_double", dataFloat.loe(dataDouble));
+		createConstraint("unq_${table}_name_version",ConstraintType.UNIQUE,name, version);
+		createConstraint("idx_${table}_taskstatus",ConstraintType.KEY,taskStatus);
+		createCheck("cnt_${table}_int1", "TASK_STATUS < 10");
+		createCheck("cnt_${table}_float_lt_double", dataFloat.loe(dataDouble));
 		setComment("测试表新的备32");
 		setCollate(Collate.utf8mb4_general_ci);
 	}

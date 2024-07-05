@@ -61,7 +61,7 @@ import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.AbstractSQLQuery;
-import com.querydsl.sql.Configuration;
+import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLListenerContext;
@@ -69,7 +69,6 @@ import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLResultIterator;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLSerializerAlter;
-import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.StatementOptions;
 
 import lombok.extern.slf4j.Slf4j;
@@ -103,11 +102,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private Connection conn;
 	///////////// 覆盖检查字段结束/////////////
 	private boolean exceedSizeLog;
-
-	public SQLQueryAlter() {
-		super((Connection) null, new Configuration(SQLTemplates.DEFAULT), new DefaultQueryMetadata());
-		this.configEx = new ConfigurationEx(super.getConfiguration());
-	}
+	
+	private RoutingStrategy routing;
 
 	public SQLQueryAlter(Connection conn, ConfigurationEx configuration, QueryMetadata metadata) {
 		super(conn, configuration.get(), metadata);
@@ -119,18 +115,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		super(conn, configuration.get());
 		this.conn = conn;
 		this.configEx = configuration;
-	}
-
-	public SQLQueryAlter(Connection conn, SQLTemplates templates, QueryMetadata metadata) {
-		super(conn, new Configuration(templates), metadata);
-		this.conn = conn;
-		this.configEx = new ConfigurationEx(super.getConfiguration());
-	}
-
-	public SQLQueryAlter(Connection conn, SQLTemplates templates) {
-		super(conn, new Configuration(templates));
-		this.conn = conn;
-		this.configEx = new ConfigurationEx(super.getConfiguration());
 	}
 
 	public SQLQueryAlter(Supplier<Connection> connProvider, ConfigurationEx configuration, QueryMetadata metadata) {
@@ -202,8 +186,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	@Override
 	protected SQLSerializer createSerializer() {
-		SQLSerializer serializer = new SQLSerializerAlter(configEx, false);
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, false);
 		serializer.setUseLiterals(useLiterals);
+        serializer.setRouting(routing);
 		return serializer;
 	}
 
@@ -1010,7 +995,11 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		} else {
 			return new ArrayList<>(value);
 		}
-
+	}
+	
+	public SQLQueryAlter<T> withRouting(RoutingStrategy routing){
+		this.routing = routing;
+		return this;
 	}
 
 }
