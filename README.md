@@ -203,8 +203,7 @@ QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成
 所以也将一些常用操作封装到了GenericRepository类，针对这些低代码需求者，简化日常CRUD操作。
 
 > 以QueryDSL的强大的Query AST机制封装这样一个工具没有任何难度，过去在我看来是这业务层做的事情。
->
-> 但很多朋友却更喜欢那种风格的API，后来我意识到并不是所有开发者都关注底层的AST和数据库衔接这些问题，他们更关注数据访问facade层，所以包装了GenericRepository，以支持一些更偏向“传统习惯”的用法。  
+>很多朋友却更喜欢那种风格的API，后来我意识到并不是所有开发者都关注底层的AST和数据库衔接这些问题，他们更关注数据访问facade层，希望用更少的代码完成常用业务功能。所以包装了GenericRepository，以支持一些更偏向“传统习惯”的用法。  
 
 #### 数据库结构访问与修改(DDL)
 
@@ -259,26 +258,6 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类�
 
 支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
 > 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
-
-## 使用方法
-
-详细介绍，请阅读同目录下的 quick_start.md文档。
-
-### 基于原生的SQLQueryFactory
-
-本框架是在 querydsl-sql （https://github.com/querydsl/querydsl）上的扩展，querydsl-sql的使用手册，请参见http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html。
-
-### 基于GenericRepository
-
-很多Java程序员习惯为每个表和映射类创建一个Repository对象，封装一个数据访问层。数据访问层可以限制上层业务获得过于灵活的数据库访问能力，每种数据库访问行为都需要在DAO/Repository对象中编码实现，对于复杂的业务可以增强管理能力并提升复用性。
-
-> 提供GenericRepository对发挥QueryDSL灵活强大的优势没什么帮助，但一个低代码工具还是可以让新手入门更快一些。
-
-GenericRepository中提供了对单表常用的增删该查等功能，也提供了基于纯POJO操作数据库的能力。详见文档
-
-[Manual]: quick_start.md	"Quick Start"
-
-
 
 ### 业务层分表支持
 
