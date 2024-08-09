@@ -16,11 +16,7 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 </dependency>
 ```
 
-See 
-
-[USER_GUIDE.MD]: USER_GUIDE.MD	"User  Guide"
-
-
+See file [文档](USER_GUIDE.md)
 
 ## 特性
 
