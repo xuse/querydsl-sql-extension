@@ -6,6 +6,22 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
 本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
 
+## User Guide
+
+```xml
+<dependency>
+	<groupId>io.github.xuse</groupId>
+	<artifactId>querydsl-sql-extension</artifactId>
+	<version>5.0.0-r104</version>
+</dependency>
+```
+
+See 
+
+[USER_GUIDE.MD]: USER_GUIDE.MD	"User  Guide"
+
+
+
 ## 特性
 
 ### 提升使用便利性
@@ -184,9 +200,6 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 #### 纯POJO使用 (无QueryClass)
 
 QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成query class。本框架在该基础上作了一些增强，允许用户不创建QueryClass类，通过纯POJO加上若干注解来替代query class模型。并使用lambda表达式来表示表或列的模型。
-该用法主要搭配GenericRepository使用，参见文档 
-
-[usage_generic_repository]: quick_start.md
 
 #### 多种风格的低代码API
 
