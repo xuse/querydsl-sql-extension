@@ -9,7 +9,7 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.StringPath;
 
 public class QDataInitLog extends RelationalPathBaseEx<DataInitLog>{
-	public static final QDataInitLog dataInitLog = new QDataInitLog("tinit");
+	public static final QDataInitLog dataInitLog = new QDataInitLog("tnt");
 	
 	public QDataInitLog(String variable) {
 		super(DataInitLog.class, variable);

@@ -16,10 +16,10 @@ import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.AbstractTestBase;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
+import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.sql.SQLTemplates;
-import com.querydsl.sql.UpdateDeleteProtectListener;
 import com.zaxxer.hikari.HikariDataSource;
 
 @Configuration
@@ -50,9 +50,12 @@ public class SpringConfiguration {
 		configuration.addListener(new UpdateDeleteProtectListener());
 		configuration.register(new EnumByCodeType<>(Gender.class));
 		configuration.register(new EnumByCodeType<>(TaskStatus.class));
-		configuration.getScanOptions().allowDrops()
+		configuration.getScanOptions()
+			.allowDrops()
+			.setCreateMissingTable(true)
 			.setDataInitBehavior(DataInitBehavior.FOR_ALL_TABLE)
-			.useDataInitTable();
+			.detectPermissions(true)
+			.useDataInitTable(true);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
 	}

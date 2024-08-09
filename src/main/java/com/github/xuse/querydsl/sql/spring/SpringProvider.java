@@ -22,7 +22,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 
 
 /**
- * {@code SpringConnectionProvider} is a Provider implementation which provides a transactionally bound connection
+ * {@code SpringConnectionProvider} is a Provider implementation which provides a transactional bound connection
  *
  * <p>Usage example</p>
  * <pre>

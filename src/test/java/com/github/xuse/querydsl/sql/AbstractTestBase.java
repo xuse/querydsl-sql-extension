@@ -7,16 +7,17 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
+import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.spring.SpringExceptionTranslator;
+import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.querydsl.sql.SQLTemplates;
-import com.querydsl.sql.UpdateDeleteProtectListener;
 
 public abstract class AbstractTestBase {
 
 	static String s1 = "r-o-o-t";
-	static String s2 = "88-07-59-98";
+	static String s2 = "pp-07-59-12";
 	private static DriverManagerDataSource dsDerby = new DriverManagerDataSource();
 	private static DriverManagerDataSource dsMySQL = new DriverManagerDataSource();
 	
@@ -24,13 +25,15 @@ public abstract class AbstractTestBase {
 	static {
 		System.setProperty("mysql.user", s1.replace("-", ""));
 		System.setProperty("mysql.password", s2.replace("-", ""));
-		System.err.println(System.getProperty("mysql.password"));
 
 		dsDerby.setDriverClassName("org.apache.derby.jdbc.EmbeddedDriver");
 		dsDerby.setUrl("jdbc:derby:db;create=true");
 
-		dsMySQL.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dsMySQL.setUrl("jdbc:mysql://10.86.16.12:3306/test?useSSL=false");
+		dsMySQL.setDriverClassName("com.mysql.jdbc.Driver");
+		dsMySQL.setUrl("jdbc:mysql://10.86.15.203:3306/test?useSSL=false");
+		//dsMySQL.setUrl("jdbc:mysql://10.86.16.12:3306/test3?useSSL=false");
+		
+		
 		dsMySQL.setUsername(System.getProperty("mysql.user"));
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
 	}
@@ -82,9 +85,11 @@ public abstract class AbstractTestBase {
 		configuration.register(new EnumByCodeType<>(TaskStatus.class));
 		configuration.setExceptionTranslator(new SpringExceptionTranslator());
 		// 如果使用了自定义映射，需要提前注册，或者扫描指定包
-		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		configuration.allowTableDropAndCreate();
-		configuration.getScanOptions().setAlterExistTable(false);
+		configuration.getScanOptions()
+		.setAlterExistTable(false)
+		.setDataInitBehavior(DataInitBehavior.NONE);
+		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
 	}
 

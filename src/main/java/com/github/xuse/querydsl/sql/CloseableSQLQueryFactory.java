@@ -1,14 +1,13 @@
 package com.github.xuse.querydsl.sql;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.spring.UnmanagedConnection;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLListeners;
+
+import java.sql.Connection;
 
 /**
  * This SQLQueryFactory has one connection, and call {@link #close()} is required on finish.
@@ -22,11 +21,11 @@ public class CloseableSQLQueryFactory extends SQLQueryFactory implements AutoClo
 	private final SQLListenerContextImpl context;
 	
 	static final class PooledConnection extends UnmanagedConnection{
-		protected PooledConnection(Connection conn) {
+		private PooledConnection(Connection conn) {
 			super(conn);
 		}
 		@Override
-		public void close() throws SQLException {
+		public void close() {
 		}
 	}
 
@@ -40,5 +39,9 @@ public class CloseableSQLQueryFactory extends SQLQueryFactory implements AutoClo
 	@Override
 	public void close(){
 		listeners.end(context);
+	}
+
+	@Override
+	protected void tryInitTask(ConfigurationEx configuration) {
 	}
 }

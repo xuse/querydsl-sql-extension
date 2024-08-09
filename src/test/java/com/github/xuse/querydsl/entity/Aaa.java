@@ -2,9 +2,11 @@ package com.github.xuse.querydsl.entity;
 
 import java.math.BigDecimal;
 import java.sql.Time;
+import java.time.Instant;
 import java.util.Date;
 
 import com.github.xuse.querydsl.annotation.UnsavedValue;
+import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 
@@ -16,9 +18,10 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@InitializeData(value="table_aaa",mergeKeys = {"name"})
 public class Aaa {
 
-	private Date created;
+	private Instant created;
 
 	private int id;
 

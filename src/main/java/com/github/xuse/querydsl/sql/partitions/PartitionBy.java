@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.querydsl.core.types.DDLOps.PartitionDefineOps;
+import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.querydsl.core.types.Constant;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
@@ -14,7 +15,6 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.core.types.TemplateExpression;
 import com.querydsl.core.types.Visitor;
-import com.querydsl.core.types.dsl.DDLExpressions;
 
 public interface PartitionBy {
 

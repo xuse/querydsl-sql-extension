@@ -43,11 +43,17 @@ public enum SchemaPolicy {
 	CATALOG_AND_SCHEMA;
 
 	public String asCatalog(String namespace) {
+		if(namespace==null){
+			return null;
+		}
 		int index=namespace.indexOf('.');
 		return namespace.substring(0,index);
 	}
 	
 	public String asSchema(String namespace) {
+		if(namespace==null){
+			return null;
+		}
 		int index=namespace.indexOf('.');
 		return namespace.substring(index+1);
 	} 

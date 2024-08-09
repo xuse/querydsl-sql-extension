@@ -25,6 +25,7 @@ public enum DataInitBehavior {
 	FOR_ALL_TABLE(5);
 	
 	public final int code;
+	
 	DataInitBehavior(int code){
 		this.code=code;
 	}

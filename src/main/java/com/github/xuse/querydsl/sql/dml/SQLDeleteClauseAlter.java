@@ -22,12 +22,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
-import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
-import com.github.xuse.querydsl.sql.expression.TupleMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.Tuple;
@@ -37,7 +36,6 @@ import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLSerializer;
@@ -46,7 +44,9 @@ import com.querydsl.sql.dml.AbstractSQLDeleteClause;
 import com.querydsl.sql.dml.Mapper;
 
 public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClauseAlter> {
+
 	private final ConfigurationEx configEx;
+
 	private RoutingStrategy routing;
 
 	public SQLDeleteClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
@@ -54,8 +54,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		this.configEx = configuration;
 	}
 
-	public SQLDeleteClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration,
-			RelationalPath<?> entity) {
+	public SQLDeleteClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
 	}
@@ -64,8 +63,9 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 
 	/**
 	 * 设置查询超时（秒）
-	 * 
-	 * @param queryTimeout
+	 *
+	 * @param queryTimeout queryTimeout
+	 * @return SQLDeleteClauseAlter
 	 */
 	public SQLDeleteClauseAlter setQueryTimeout(int queryTimeout) {
 		this.queryTimeout = queryTimeout;
@@ -86,7 +86,6 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 					stmt.setQueryTimeout(configEx.getDefaultQueryTimeout());
 				}
 				listeners.notifyDelete(entity, metadata);
-
 				listeners.preExecute(context);
 				long start = System.currentTimeMillis();
 				int rc = stmt.executeUpdate();
@@ -104,7 +103,6 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 					}
 				}
 				listeners.notifyDeletes(entity, batches);
-
 				listeners.preExecute(context);
 				long start = System.currentTimeMillis();
 				long rc = executeBatch(stmts);
@@ -132,21 +130,17 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		serializer.setUseLiterals(useLiterals);
 		serializer.serializeDelete(metadata, entity);
 		serializer.setRouting(routing);
-
 		SQLBindings bindings = createBindings(metadata, serializer);
 		context.addSQL(bindings);
 		queryString = bindings.getSQL();
 		constants = serializer.getConstants();
 		// logQuery(logger, queryString, constants);
 		listeners.rendered(context);
-
 		listeners.prePrepare(context);
 		PreparedStatement stmt = connection().prepareStatement(queryString);
 		setParameters(stmt, serializer.getConstants(), serializer.getConstantPaths(), metadata.getParams());
-
 		context.addPreparedStatement(stmt);
 		listeners.prepared(context);
-
 		return stmt;
 	}
 
@@ -181,23 +175,19 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		this.routing = routing;
 		return this;
 	}
-	
+
 	public SQLDeleteClauseAlter populatePrimaryKey(Object bean) {
-		boolean tuple=(bean instanceof Tuple);
-		populatePrimaryKey0(bean, tuple?TupleMapper.DEFAULT:AdvancedMapper.DEFAULT);
+		boolean tuple = (bean instanceof Tuple);
+		populatePrimaryKey0(bean, Mappers.getNormal(tuple));
 		return this;
 	}
-	
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private <T> void populatePrimaryKey0(Object bean, Mapper mapper) {
-		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
-				? entity.getPrimaryKey().getLocalColumns()
-				: Collections.<Path<?>>emptyList();
-		if(primaryKeyColumns.isEmpty()) {
+	private void populatePrimaryKey0(Object bean, Mapper mapper) {
+		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null ? entity.getPrimaryKey().getLocalColumns() : Collections.emptyList();
+		if (primaryKeyColumns.isEmpty()) {
 			return;
 		}
-		
 		Map<Path<?>, Object> values = mapper.createMap(entity, bean);
 		int pkConditionFilled = 0;
 		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
@@ -211,9 +201,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		int totalPK = primaryKeyColumns.size();
 		// 如果主键条件不完整，可能导致update范围扩大甚至全表更新。为避免出现这种危险，检查主键条件的完整性。
 		if (pkConditionFilled < totalPK) {
-			throw Exceptions.illegalArgument(
-					"There is null value on some primary key columns. ({}/{}) entity:{},where:{}", pkConditionFilled,
-					totalPK, entity.getClass().getName(), metadata.getWhere());
+			throw Exceptions.illegalArgument("There is null value on some primary key columns. ({}/{}) entity:{},where:{}", pkConditionFilled, totalPK, entity.getClass().getName(), metadata.getWhere());
 		}
 	}
 }

@@ -1,12 +1,13 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.querydsl.core.types.Expression;
 
-public class DefaultBindingProvider implements BindingProvider{
+final class DefaultBindingProvider implements BindingProvider{
 	private final Map<String, Expression<?>> bindings;
 	private final List<String> fieldNames;
 
@@ -26,13 +27,14 @@ public class DefaultBindingProvider implements BindingProvider{
 	}
 
 	@Override
-	public List<String> names(Map<String, FieldProperty> fieldOrder) {
+	public List<String> names(Collection<String> fieldOrder) {
 		return fieldNames;
 	}
 
 	@Override
-	public Expression<?> get(String property) {
-		return bindings.get(property);
+	public Class<?> getType(String prop,FieldProperty property) {
+		Expression<?> expr= bindings.get(prop);
+		return expr==null? null: expr.getType();
 	}
 
 	

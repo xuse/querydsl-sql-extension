@@ -2,14 +2,13 @@ package com.github.xuse.querydsl.annotation.partition;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
  * Example:
- * 
+ *
  * <pre>
  * PARTITION BY LIST(store_id) (
  *   PARTITION pNorth VALUES IN (3,5,6,9,17),
@@ -22,8 +21,11 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Documented
 public @interface ListPartition {
+
 	/**
-	 * Using COLUMNS keyword, example:
+	 * @return partition by range (column1[, column2]...),
+	 * the path is the name of java field which mapping to a database column.
+	 * Note: if this attribute was set, using COLUMNS keyword, Example:
 	 * <pre>
 	 * PARTITION BY LIST COLUMNS(city) (
 	 *   PARTITION pRegion_1 VALUES IN('Oskarshamn', 'Högsby', 'Mönsterås'),
@@ -32,16 +34,19 @@ public @interface ListPartition {
 	 * );
 	 * </pre>
 	 */
-	boolean columns() default true;
+	String[] columns() default {};
 
 	/**
-	 * the expression.
+	 * @return the expression.
+	 * Note: the expression will be set into database directly.
+	 * the name here must be a column name, not the java field name.
 	 */
-	String expr();
+	String expr() default "";
 
 	/**
-	 * 
-	 * @return
+	 * @return Partitions.
+	 * <h2>中文</h2>
+	 * 分区配置
 	 */
 	Partition[] value() default {};
 }

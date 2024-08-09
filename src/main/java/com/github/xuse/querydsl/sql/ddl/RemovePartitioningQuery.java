@@ -1,8 +1,9 @@
 package com.github.xuse.querydsl.sql.ddl;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
+import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
@@ -10,7 +11,12 @@ public class RemovePartitioningQuery extends AbstractDDLClause<RemovePartitionin
 
 	private boolean ignore;
 	
-	
+	/**
+	 * set to true, if there is no Partitioning on the table. do nothing.
+	 * <p>
+	 * 设置为true时，如果表上没有分区信息，那么就什么也不做。
+	 * @return thr current object.
+	 */
 	public RemovePartitioningQuery ignore() {
 		ignore = true;
 		return this;
@@ -18,18 +24,18 @@ public class RemovePartitioningQuery extends AbstractDDLClause<RemovePartitionin
 	
 	
 	public RemovePartitioningQuery(MetadataQuerySupport connection, ConfigurationEx configuration,
-			RelationalPathEx<?> path) {
-		super(connection, configuration, path);
+			RelationalPath<?> path) {
+		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(path));
 	}
 
 	@Override
 	protected String generateSQL() {
 		if(ignore) {
-			SchemaAndTable acutalTable = connection.asInCurrentSchema(table.getSchemaAndTable());
+			SchemaAndTable actualTable = connection.asInCurrentSchema(table.getSchemaAndTable());
 			if(routing!=null) {
-				acutalTable=routing.getOverride(acutalTable, configuration);
+				actualTable=routing.getOverride(actualTable, configuration);
 			}
-			if(connection.getPartitions(acutalTable).isEmpty()) {
+			if(connection.getPartitions(actualTable).isEmpty()) {
 				return null;
 			}
 		}

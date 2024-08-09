@@ -14,7 +14,6 @@ package com.github.xuse.querydsl.sql.dbmeta;
  * <li>{@link #PROCEDURE}<br>
  * 存储过程</li>
  * </ul>
- * <p>
  */
 public enum ObjectType {
 	/**

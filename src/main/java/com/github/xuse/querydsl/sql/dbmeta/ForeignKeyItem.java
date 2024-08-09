@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
-import  org.apache.commons.lang3.StringUtils;
-
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.Column;
 
 /**
@@ -215,42 +214,6 @@ public class ForeignKeyItem {
 				.append(name);
 		return sb.toString();
 	}
-	
-//	/**
-//	 * 生成修改表增加外键的SQL语句
-//	 * 
-//	 * @return
-//	 */
-//	public String toCreateSql(DatabaseDialect dialect) {
-//		StringBuilder sb = new StringBuilder();
-//		sb.append("alter table ").append(getTableName())
-//				.append(" add constraint ").append(name==null?generate():name);
-//		sb.append(" foreign key (").append(fromColumn).append(") references ");
-//		sb.append(referenceTable).append('(').append(referenceColumn)
-//				.append(')');
-//		
-//		
-//		if(dialect.getName()==RDBMS.oracle){
-//			if (this.deleteRule == DatabaseMetaData.importedKeyCascade) {
-//				sb.append(" on delete cascade"); // on　delete　cascade: 删除那些引用此记录的记录
-//			} else if (deleteRule == DatabaseMetaData.importedKeySetNull) {
-//				sb.append(" on delete set null");// on delete set null: 清空那些引用此记录的字段
-//			}
-//			if (this.updateRule == DatabaseMetaData.importedKeyCascade) {
-//				sb.append(" on update cascade");// ON UPDATE CASCADE :
-//												// 更新时也更新那些引用此字段的记录
-//			} else if (this.updateRule == DatabaseMetaData.importedKeySetNull) {
-//				sb.append(" on update set null");// ON UPDATE CASCADE :
-//													// 更新时也更新那些引用此字段的记录
-//			}	
-//		}
-//		if (this.deferrAbility == DatabaseMetaData.importedKeyInitiallyDeferred) {
-//			sb.append(" initially deferred");
-//		} else if (this.deferrAbility == DatabaseMetaData.importedKeyInitiallyImmediate) {
-//			sb.append(" Initially immediate");
-//		}
-//		return sb.toString();
-//	}
 
 	public String generateName() {
 		StringBuilder sb=new StringBuilder("FK_");

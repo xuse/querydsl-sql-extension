@@ -1,5 +1,5 @@
 /*
- * JEF - Copyright 2009-2010 Jiyi (mr.jiyi@gmail.com)
+ * querydsl-sql-extension - Copyright 2017-2024 Joey (mr.jiyi@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import com.github.xuse.querydsl.util.collection.BooleanList;
 import com.github.xuse.querydsl.util.collection.ByteList;
 import com.github.xuse.querydsl.util.collection.CharList;
@@ -42,22 +41,20 @@ import com.github.xuse.querydsl.util.collection.LongList;
 
 /**
  * 数组工具
- * 
+ *
  * @author Administrator
- * 
  */
 public class ArrayUtils {
-	
-    
-    public  static final String[] EMPTY_STRING_ARRAY=new String[0];
-    
-    public  static final byte[] EMPTY_BYTE_ARRAY=new byte[0];
-    
+
+	public static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+	public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+
 	/**
-	 * 数组对象遍历执行toString方法，获得String数组对象。
-	 * 
-	 * @param list
-	 * @return String数组
+	 *   数组对象遍历执行toString方法，获得String数组对象。
+	 *
+	 *   @param list source list.
+	 *   @return String数组
 	 */
 	public static String[] toStringArray(List<? extends Object> list) {
 		List<String> result = new ArrayList<String>();
@@ -68,10 +65,11 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 
-	 * @param source
-	 * @param function
-	 * @return 将数组进行转换 
+	 *  @param source source list
+	 *  @param function function.
+	 *  @return 将数组进行转换
+	 *  @param <K> The type of target object.
+	 *  @param <V> The type of target object.
 	 */
 	public static <K, V> List<V> convert(K[] source, Function<K, V> function) {
 		List<V> result = new ArrayList<V>(source.length);
@@ -84,22 +82,23 @@ public class ArrayUtils {
 	@SuppressWarnings("unchecked")
 	public static <T> T[] toArray(Enumeration<T> e, Class<T> type) {
 		List<T> result = new ArrayList<T>();
-		for (; e.hasMoreElements();) {
+		for (; e.hasMoreElements(); ) {
 			result.add(e.nextElement());
 		}
 		return result.toArray((T[]) Array.newInstance(type, result.size()));
 	}
 
 	/**
-	 * 
-	 * 这样就可以对CharBuffer,StringBuilder,Stringbuffer等对象进行Iterator模式的遍历了。
-	 * @param e
-	 * @return  将CharSequence变为可遍历的char对象
+	 *   这样就可以对CharBuffer,StringBuilder,Stringbuffer等对象进行Iterator模式的遍历了。
+	 *   @param e CharSequence
+	 *   @return  将CharSequence变为可遍历的char对象
 	 */
 	public static Iterable<Character> toIterable(final CharSequence e) {
 		return new Iterable<Character>() {
+
 			public Iterator<Character> iterator() {
 				return new Iterator<Character>() {
+
 					int n = 0;
 
 					public boolean hasNext() {
@@ -119,11 +118,11 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 
-	 * 
-	 * @param from
-	 * @param to
-	 * @return 将一个子类的数组转换为父类的数组 
+	 *  @param from from
+	 *  @param to to
+	 *  @return 将一个子类的数组转换为父类的数组
+	 *  @param <S> The type of target object.
+	 *  @param <T> The type of target object.
 	 */
 	@SuppressWarnings("unchecked")
 	public static <S, T> T[] cast(S[] from, Class<T> to) {
@@ -135,11 +134,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 
-	 * 
-	 * @param <T>
-	 * @param arr1
-	 * @return 从数组中移除null的元素 
+	 *   @param <T> type
+	 *   @param arr1 array
+	 *   @return 从数组中移除null的元素
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] removeNull(T[] arr1) {
@@ -159,8 +156,8 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * @param obj
-	 * @return 将原生八类型的数组容器转换为对象八类型数组
+	 *  @param obj obj
+	 *  @return 将原生八类型的数组容器转换为对象八类型数组
 	 */
 	public static Object[] toObject(Object obj) {
 		Class<?> c = obj.getClass();
@@ -189,11 +186,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 
-	 * 
-	 * @param obj
-	 * @param containerType
-	 * @return 将数组转换为指定类型的数组容器 
+	 *  @param obj obj
+	 *  @param containerType containerType
+	 *  @return 将数组转换为指定类型的数组容器
+	 *  @param <T> The type of target object.
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] toObject(Object obj, Class<T> containerType) {
@@ -207,9 +203,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 将由非原生八类型的数组转换为原生八类型的数组
-	 * @param obj
-	 * @return Object
+	 *  将由非原生八类型的数组转换为原生八类型的数组
+	 *  @param obj obj
+	 *  @return Object
 	 */
 	public static Object toPrimitive(Object[] obj) {
 		Class<?> c = obj.getClass();
@@ -237,10 +233,11 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array1
-	 * @param array2
-	 * @return 合并两个数组，消除重复的元素。
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return 合并两个数组，消除重复的元素。
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> T[] merge(T[] array1, T[] array2) {
 		List<T> list = new ArrayList<T>();
@@ -256,10 +253,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array1
-	 * @param array2
-	 * @return 合并数组，消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return 合并数组，消除重复
 	 */
 	public static int[] merge(int[] array1, int[] array2) {
 		IntList list = new IntList();
@@ -275,17 +272,16 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array1
-	 * @param array2
-	 * @return 合并数组，消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return 合并数组，消除重复
 	 */
 	public static char[] merge(char[] array1, char[] array2) {
 		CharList list = new CharList();
 		for (char str : array1) {
 			list.add(str);
 		}
-
 		for (char str : array2) {
 			if (!list.contains(str)) {
 				list.add(str);
@@ -295,17 +291,16 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array1
-	 * @param array2
-	 * @return 合并数组，消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return 合并数组，消除重复
 	 */
 	public static boolean[] merge(boolean[] array1, boolean[] array2) {
 		BooleanList list = new BooleanList();
 		for (boolean str : array1) {
 			list.add(str);
 		}
-
 		for (boolean str : array2) {
 			if (!list.contains(str)) {
 				list.add(str);
@@ -313,19 +308,18 @@ public class ArrayUtils {
 		}
 		return list.toArrayUnsafe();
 	}
-	
+
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array1
-	 * @param array2
-	 * @return 合并数组，消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return 合并数组，消除重复
 	 */
 	public static long[] merge(long[] array1, long[] array2) {
 		LongList list = new LongList();
 		for (long str : array1) {
 			list.add(str);
 		}
-
 		for (long str : array2) {
 			if (!list.contains(str)) {
 				list.add(str);
@@ -335,17 +329,16 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array1
-	 * @param array2
-	 * @return 合并数组，消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return 合并数组，消除重复
 	 */
 	public static byte[] merge(byte[] array1, byte[] array2) {
 		ByteList list = new ByteList();
 		for (byte str : array1) {
 			list.add(str);
 		}
-
 		for (byte str : array2) {
 			if (!list.contains(str)) {
 				list.add(str);
@@ -355,9 +348,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array
-	 * @return 消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array array
+	 *  @return 消除重复
 	 */
 	public static int[] removeDups(int[] array) {
 		IntList list = new IntList(array.length);
@@ -366,13 +359,12 @@ public class ArrayUtils {
 				list.add(str);
 		}
 		return list.toArrayUnsafe();
-
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array
-	 * @return 消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array array
+	 *  @return 消除重复
 	 */
 	public static char[] removeDups(char[] array) {
 		CharList list = new CharList();
@@ -384,9 +376,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array
-	 * @return 消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array array
+	 *  @return 消除重复
 	 */
 	public static byte[] removeDups(byte[] array) {
 		ByteList list = new ByteList();
@@ -398,9 +390,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array
-	 * @return 消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array array
+	 *  @return 消除重复
 	 */
 	public static double[] removeDups(double[] array) {
 		DoubleList list = new DoubleList();
@@ -409,13 +401,12 @@ public class ArrayUtils {
 				list.add(str);
 		}
 		return list.toArrayUnsafe();
-
 	}
 
 	/**
-	 * 算法效率不高，仅限于少量元素合并。 
-	 * @param array
-	 * @return 消除重复 
+	 *  算法效率不高，仅限于少量元素合并。
+	 *  @param array array
+	 *  @return 消除重复
 	 */
 	public static boolean[] removeDups(boolean[] array) {
 		BooleanList list = new BooleanList();
@@ -427,16 +418,16 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 去掉重复数据，过滤重复数据有两个算法， 1是简单算法（即遍历查找重复），例如 List<T> list=new ArrayList<T>();
+	 * 去掉重复数据，过滤重复数据有两个算法， 1是简单算法（即遍历查找重复），例如 List&lt;&gt; list=new ArrayList&lt;&gt;();
 	 * for (T obj : array) { if (!list.contains(obj)) list.add(obj); } return
 	 * list.toArray();
-	 * 
-	 * 2是复杂算法，使用hashset查找重复 Set<T> set=new LinkedHashSet<T>();
+	 * 2是复杂算法，使用hashset查找重复 Set&lt;&gt; set=new LinkedHashSet&lt;&gt;();
 	 * //因为前一算法保证了元素的顺序，为对相同功能比较，此处用linkedhashset for (T obj : array) {
 	 * set.add(obj); } return set.toArray();
 	 * 根据测试当元素数量少于50个时，前一算法要比后一算法快。当元素数量激增时，后者要更快 后者——更通用 前者——极限情况下针对特定场景的优化。
-	 * @param array
+	 * @param array array
 	 * @return 去掉重复数据
+	 * @param <T> The type of target object.
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] removeDups(T[] array) {
@@ -451,9 +442,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * @param otherContains
-	 * @param formats
-	 * @return 包含任意一个元素
+	 *  @param otherContains otherContains
+	 *  @param formats formats
+	 *  @return 包含任意一个元素
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> boolean containsAny(T[] otherContains, T[] formats) {
 		for (T obj1 : otherContains) {
@@ -466,15 +458,15 @@ public class ArrayUtils {
 	}
 
 	public static <T> boolean contains(T[] array, T obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj==null) {
-				if(array[i]==null) {
+		for (int i = 0; i < array.length; i++) {
+			if (obj == null) {
+				if (array[i] == null) {
 					return true;
 				}
-			}else if(obj.equals(array[i])){
+			} else if (obj.equals(array[i])) {
 				return true;
 			}
 		}
@@ -482,11 +474,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(long[] array, long obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -494,11 +486,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(short[] array, short obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -506,11 +498,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(char[] array, char obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -518,11 +510,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(double[] array, double obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -530,11 +522,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(float[] array, float obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -542,11 +534,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(byte[] array, byte obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -554,11 +546,11 @@ public class ArrayUtils {
 	}
 
 	public static boolean contains(int[] array, int obj) {
-		if(array==null) {
+		if (array == null) {
 			return false;
 		}
-		for(int i=0;i<array.length;i++) {
-			if(obj!=array[i]){
+		for (int i = 0; i < array.length; i++) {
+			if (obj != array[i]) {
 				return true;
 			}
 		}
@@ -566,11 +558,12 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 泛型的addArray
-	 * @param array 
-	 * @param data
-	 * @param componentType
-	 * @return result
+	 *  泛型的addArray
+	 *  @param array array
+	 *  @param data data
+	 *  @param componentType componentType
+	 *  @return result
+	 *  @param <T> The type of target object.
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] addElement(T[] array, T data, Class<T> componentType) {
@@ -583,9 +576,8 @@ public class ArrayUtils {
 			newArray[0] = data;
 		} else {
 			Class<?> containerType = array.getClass().getComponentType();
-			if (!containerType.isAssignableFrom(data.getClass())) {// prompt the
-																	// type
-																	// error.
+			if (!containerType.isAssignableFrom(data.getClass())) {
+				// error.
 				throw new ArrayStoreException("The new element which typed " + data.getClass().getName() + " can not be put into a array whoes type is " + containerType.getName());
 			}
 			newArray = (T[]) Array.newInstance(containerType, array.length + 1);
@@ -617,52 +609,50 @@ public class ArrayUtils {
 		return newArray;
 	}
 
-	  /**
-     * <p>Produces a new {@code byte} array containing the elements
-     * between the start and end indices.
-     *
-     * <p>The start index is inclusive, the end index exclusive.
-     * Null array input produces null output.
-     *
-     * @param array  the array
-     * @param startIndexInclusive  the starting index. Undervalue (&lt;0)
-     *      is promoted to 0, overvalue (&gt;array.length) results
-     *      in an empty array.
-     * @param endIndexExclusive  elements up to endIndex-1 are present in the
-     *      returned subarray. Undervalue (&lt; startIndex) produces
-     *      empty array, overvalue (&gt;array.length) is demoted to
-     *      array length.
-     * @return a new array containing the elements between
-     *      the start and end indices.
-     * @since 2.1
-     * @see Arrays#copyOfRange(byte[], int, int)
-     */
-    public static byte[] subArray(final byte[] array, int startIndexInclusive, int endIndexExclusive) {
-        if (array == null) {
-            return null;
-        }
-        if (startIndexInclusive < 0) {
-            startIndexInclusive = 0;
-        }
-        if (endIndexExclusive > array.length) {
-            endIndexExclusive = array.length;
-        }
-        final int newSize = endIndexExclusive - startIndexInclusive;
-        if (newSize <= 0) {
-            return EMPTY_BYTE_ARRAY;
-        }
-
-        final byte[] subarray = new byte[newSize];
-        System.arraycopy(array, startIndexInclusive, subarray, 0, newSize);
-        return subarray;
-    }
-    
 	/**
-	 * 获取子数组
-	 * 
-	 * @param array
-	 * @param len
-	 * @return 子数组
+	 *  <p>Produces a new {@code byte} array containing the elements
+	 *  between the start and end indices.
+	 *
+	 *  <p>The start index is inclusive, the end index exclusive.
+	 *  Null array input produces null output.
+	 *
+	 *  @param array  the array
+	 *  @param startIndexInclusive  the starting index. Undervalue (&lt;0)
+	 *       is promoted to 0, overvalue (&gt;array.length) results
+	 *       in an empty array.
+	 *  @param endIndexExclusive  elements up to endIndex-1 are present in the
+	 *       returned subarray. Undervalue (&lt; startIndex) produces
+	 *       empty array, overvalue (&gt;array.length) is demoted to
+	 *       array length.
+	 *  @return a new array containing the elements between
+	 *       the start and end indices.
+	 *  @since 2.1
+	 *  @see Arrays#copyOfRange(byte[], int, int)
+	 */
+	public static byte[] subArray(final byte[] array, int startIndexInclusive, int endIndexExclusive) {
+		if (array == null) {
+			return null;
+		}
+		if (startIndexInclusive < 0) {
+			startIndexInclusive = 0;
+		}
+		if (endIndexExclusive > array.length) {
+			endIndexExclusive = array.length;
+		}
+		final int newSize = endIndexExclusive - startIndexInclusive;
+		if (newSize <= 0) {
+			return EMPTY_BYTE_ARRAY;
+		}
+		final byte[] subarray = new byte[newSize];
+		System.arraycopy(array, startIndexInclusive, subarray, 0, newSize);
+		return subarray;
+	}
+
+	/**
+	 *  获取子数组
+	 *  @param array array
+	 *  @param len len
+	 *  @return 子数组
 	 */
 	public static byte[] subArray(byte[] array, int len) {
 		if (array.length == len) {
@@ -685,15 +675,14 @@ public class ArrayUtils {
 		System.arraycopy(array, 0, data, 0, len);
 		return data;
 	}
-	
+
 	/**
-	 * 泛型的subArray.如果使用非泛型的方法，a小写
-	 * 
-	 * @param <T>
-	 * @param array
-	 * @param startIndexInclusive
-	 * @param endIndexExclusive
-	 * @return 子数组
+	 *  泛型的subArray.如果使用非泛型的方法，a小写
+	 *  @param <T> type of target
+	 *  @param array array
+	 *  @param startIndexInclusive startIndexInclusive
+	 *  @param endIndexExclusive endIndexExclusive
+	 *  @return 子数组
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T> T[] subArray(T[] array, int startIndexInclusive, int endIndexExclusive) {
@@ -717,9 +706,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * @param list
-	 * @param indexes
-	 * @return 取得数组当中的某几号元素，重新组成数组
+	 *  @param list list
+	 *  @param indexes indexes
+	 *  @return 取得数组当中的某几号元素，重新组成数组
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> List<T> subByIndex(List<T> list, int[] indexes) {
 		List<T> newList = new ArrayList<T>();
@@ -730,13 +720,12 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
-	 * 这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
-	 * 
-	 * @param <T>
-	 * @param list
-	 * @param obj
-	 * @return is contains
+	 *  判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
+	 *  这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
+	 *  @param <T> type of target
+	 *  @param list list
+	 *  @param obj obj
+	 *  @return is contains
 	 */
 	public static <T> boolean fastContains(T[] list, T obj) {
 		if (list == null)
@@ -749,13 +738,12 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
-	 * 这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
-	 * 
-	 * @param <T>
-	 * @param list
-	 * @param obj
-	 * @return true if contains
+	 *  判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
+	 *  这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
+	 *  @param <T> type of target
+	 *  @param list list
+	 *  @param obj obj
+	 *  @return true if contains
 	 */
 	public static <T> boolean fastContains(Collection<T> list, T obj) {
 		for (T e : list) {
@@ -766,12 +754,12 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
-	 * 这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
-	 * 
-	 * @param list
-	 * @param keys
-	 * @return true if contains.
+	 *  判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
+	 *  这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
+	 *  @param list list
+	 *  @param keys keys
+	 *  @return true if contains.
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> boolean fastContainsAny(Collection<T> list, T[] keys) {
 		for (T e : list) {
@@ -784,12 +772,12 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
-	 * 这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
-	 * 
-	 * @param list
-	 * @param keys
-	 * @return true if contains.
+	 *  判断列表中是否包含指定的对象,和Collection.contains方法比起来，前者是用obj1.equals(obj2)，
+	 *  这里用==直接判断是否<B>同一对象</B>，速度更快，但是不能比较出两个值完全相同的对象来。
+	 *  @param list list
+	 *  @param keys keys
+	 *  @return true if contains.
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> boolean fastContainsAny(T[] list, T[] keys) {
 		if (list == null)
@@ -804,11 +792,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 计算是否 包含目标子串，忽略大小写
-	 * 
-	 * @param values
-	 * @param str
-	 * @return true if contains.
+	 *  计算是否 包含目标子串，忽略大小写
+	 *  @param values values
+	 *  @param str str
+	 *  @return true if contains.
 	 */
 	public static boolean containsIgnoreCase(String[] values, String str) {
 		for (String v : values) {
@@ -827,9 +814,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * @param obj
-	 * @param len
-	 * @return 转换为指定长度的数组,超过则截断，不足则补null 
+	 *  @param obj obj
+	 *  @param len len
+	 *  @return 转换为指定长度的数组,超过则截断，不足则补null
 	 */
 	public static Object toFixLength(Object obj, int len) {
 		int length = Array.getLength(obj);
@@ -841,11 +828,11 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 进行数组元素过滤
-	 * 
-	 * @param source
-	 * @param filter
-	 * @return 过滤结果
+	 *  进行数组元素过滤
+	 *  @param source source
+	 *  @param filter filter
+	 *  @return 过滤结果
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> List<T> filter(T[] source, Predicate<T> filter) {
 		if (source == null)
@@ -861,11 +848,10 @@ public class ArrayUtils {
 		return result;
 	}
 
-
-	/**
+	/*
 	 * @since JDK 1.6
 	 */
-	public final static byte[] copyOf(byte[] original, int newLength) {
+	public static final byte[] copyOf(byte[] original, int newLength) {
 		byte[] copy = new byte[newLength];
 		System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
 		return copy;
@@ -874,7 +860,7 @@ public class ArrayUtils {
 	/*
 	 * @since JDK 1.6
 	 */
-	public final static char[] copyOf(char[] original, int newLength) {
+	public static final char[] copyOf(char[] original, int newLength) {
 		char[] copy = new char[newLength];
 		System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
 		return copy;
@@ -884,7 +870,7 @@ public class ArrayUtils {
 	 * @since JDK 1.6
 	 */
 	@SuppressWarnings("unchecked")
-	public final static <T> T[] copyOf(T[] original, int newLength) {
+	public static final <T> T[] copyOf(T[] original, int newLength) {
 		return (T[]) copyOf(original, newLength, original.getClass());
 	}
 
@@ -892,7 +878,7 @@ public class ArrayUtils {
 	 * @since JDK 1.6
 	 */
 	@SuppressWarnings("unchecked")
-	public final static <T, U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+	public static final <T, U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
 		T[] copy = ((Object) newType == (Object) Object[].class) ? (T[]) new Object[newLength] : (T[]) Array.newInstance(newType.getComponentType(), newLength);
 		System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
 		return copy;
@@ -917,10 +903,11 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断两个数组，忽略其顺序
-	 * 
-	 * @param a1
-	 * @param a2
+	 *  判断两个数组，忽略其顺序
+	 *  @param a1 a1
+	 *  @param a2 a2
+	 *  @return boolean
+	 *  @param <T> The type of target object.
 	 */
 	public static <T> boolean equalsIgnoreOrder(T[] a1, T[] a2) {
 		if (a1 == null && a2 == null)
@@ -939,12 +926,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断两个数组的元素是否相等。忽略其元素的顺序
-	 * 
-	 * @param array1
-	 * @param array2
-	 * @return true if equals
-	 * 
+	 *  判断两个数组的元素是否相等。忽略其元素的顺序
+	 *  @param array1 array1
+	 *  @param array2 array2
+	 *  @return true if equals
 	 */
 	public static boolean equalsIgnoreOrder(Object array1, Object array2) {
 		Object[] obj1 = toObject(array1);
@@ -955,25 +940,24 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 判断两个数组的元素和顺序是否相等。
-	 * 由于java.util.Arrays中提供的数组元素比较都是在已知数组类型的前提下的，而数组可以归结为9种类型，当不确定数组类型时，可以用此方法。
-	 * 
-	 * @param a1
-	 *            Object，必须是数组
-	 * @param a2
-	 *            Object,必须是数组
-	 * @return true if equals
-	 * @see java.util.Arrays#equals(boolean[], boolean[])
-	 * @see java.util.Arrays#equals(byte[], byte[])
-	 * @see java.util.Arrays#equals(char[], char[])
-	 * @see java.util.Arrays#equals(double[], double[])
-	 * @see java.util.Arrays#equals(float[], float[])
-	 * @see java.util.Arrays#equals(int[], int[])
-	 * @see java.util.Arrays#equals(long[], long[])
-	 * @see java.util.Arrays#equals(short[], short[])
-	 * @see java.util.Arrays#equals(Object[], Object[])
-	 * @throws IllegalArgumentException
-	 *             如果输入对象不是数组，抛出
+	 *  判断两个数组的元素和顺序是否相等。
+	 *  由于java.util.Arrays中提供的数组元素比较都是在已知数组类型的前提下的，而数组可以归结为9种类型，当不确定数组类型时，可以用此方法。
+	 *  @param a1 a1
+	 *             Object，必须是数组
+	 *  @param a2 a2
+	 *             Object,必须是数组
+	 *  @return true if equals
+	 *  @see java.util.Arrays#equals(boolean[], boolean[])
+	 *  @see java.util.Arrays#equals(byte[], byte[])
+	 *  @see java.util.Arrays#equals(char[], char[])
+	 *  @see java.util.Arrays#equals(double[], double[])
+	 *  @see java.util.Arrays#equals(float[], float[])
+	 *  @see java.util.Arrays#equals(int[], int[])
+	 *  @see java.util.Arrays#equals(long[], long[])
+	 *  @see java.util.Arrays#equals(short[], short[])
+	 *  @see java.util.Arrays#equals(Object[], Object[])
+	 *  @throws IllegalArgumentException If encounter IllegalArgumentException
+	 *              如果输入对象不是数组，抛出
 	 */
 	public static boolean equals(Object a1, Object a2) {
 		if (a1 == a2)
@@ -1012,21 +996,23 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 操作未知类型的数组:set 当序号为负数时，-1表示最后一个元素，-2表示倒数第二个，以此类推
-	 * 和set方法的区别在于，此方法如果发现数组大小不够，会自动扩大数组。
-	 * @param obj
-	 * @param index
-	 * @param value
-	 * @return 操作未知类型的数组
+	 *  操作未知类型的数组:set 当序号为负数时，-1表示最后一个元素，-2表示倒数第二个，以此类推
+	 *  和set方法的区别在于，此方法如果发现数组大小不够，会自动扩大数组。
+	 *  @param obj obj
+	 *  @param index index
+	 *  @param value value
+	 *  @return 操作未知类型的数组
 	 */
 	public static Object setValueAndExpandArray(Object obj, int index, Object value) {
 		int length = Array.getLength(obj);
 		Object result = obj;
 		if (index < 0 && index + length >= 0) {
 			index += length;
-		} else if (index < 0) {// 需要扩张
+		} else if (index < 0) {
+			// 需要扩张
 			result = toFixLength(obj, -index);
-		} else if (index >= length) {// 扩张
+		} else if (index >= length) {
+			// 扩张
 			result = toFixLength(obj, index + 1);
 		}
 		set(result, index, value);
@@ -1034,9 +1020,9 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * @param obj
-	 * @param index
-	 * @return 检测索引是否有效 当序号为负数时，-1表示最后一个元素，-2表示倒数第二个，以此类推
+	 *  @param obj obj
+	 *  @param index index
+	 *  @return 检测索引是否有效 当序号为负数时，-1表示最后一个元素，-2表示倒数第二个，以此类推
 	 */
 	public static boolean isIndexValid(Object obj, int index) {
 		int length = Array.getLength(obj);
@@ -1053,7 +1039,7 @@ public class ArrayUtils {
 	 * @param index
 	 *            序号 当序号为负数时，-1表示最后一个元素，-2表示倒数第二个，以此类推
 	 */
-	public final static Object get(Object obj, int index) {
+	public static final Object get(Object obj, int index) {
 		if (index >= 0) {
 			return Array.get(obj, index);
 		} else {
@@ -1067,7 +1053,7 @@ public class ArrayUtils {
 	 * @param: index
 	 *             当序号为负数时，-1表示最后一个元素，-2表示倒数第二个，以此类推
 	 */
-	public final static void set(Object obj, int index, Object value) {
+	public static final void set(Object obj, int index, Object value) {
 		if (index >= 0) {
 			Array.set(obj, index, value);
 		} else {
@@ -1076,11 +1062,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 取交集
-	 * 
-	 * @param ls
-	 * @param ls2
-	 * @return 交集
+	 *  取交集
+	 *  @param ls ls
+	 *  @param ls2 ls2
+	 *  @return 交集
 	 */
 	public static Object[] intersect(Object[] ls, Object[] ls2) {
 		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
@@ -1089,11 +1074,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 取并集
-	 * 
-	 * @param ls
-	 * @param ls2
-	 * @return 并集
+	 *  取并集
+	 *  @param ls ls
+	 *  @param ls2 ls2
+	 *  @return 并集
 	 */
 	public static Object[] union(Object[] ls, Object[] ls2) {
 		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
@@ -1104,11 +1088,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 取差集(即包含在ls，但不包含在ls2中的元素) 可以理解为集合ls减去集合ls2
-	 * 
-	 * @param ls
-	 * @param ls2
-	 * @return 差集
+	 *  取差集(即包含在ls，但不包含在ls2中的元素) 可以理解为集合ls减去集合ls2
+	 *  @param ls ls
+	 *  @param ls2 ls2
+	 *  @return 差集
 	 */
 	public static Object[] minus(Object[] ls, Object[] ls2) {
 		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
@@ -1117,11 +1100,10 @@ public class ArrayUtils {
 	}
 
 	/**
-	 * 取两个集合，各自没有被对方包含的部分的集合。 即从 并集中挖去交集。
-	 * 
-	 * @param ls
-	 * @param ls2
-	 * @return 亦或集
+	 *  取两个集合，各自没有被对方包含的部分的集合。 即从 并集中挖去交集。
+	 *  @param ls ls
+	 *  @param ls2 ls2
+	 *  @return 亦或集
 	 */
 	public static Object[] xor(Object[] ls, Object[] ls2) {
 		// 计算全集
@@ -1138,201 +1120,198 @@ public class ArrayUtils {
 	}
 
 	public static boolean isEmpty(Object[] array) {
-		return array==null || array.length==0;
+		return array == null || array.length == 0;
 	}
-	
-	 /**
-     * The index value when an element is not found in a list or array: {@code -1}.
-     * This value is returned by methods in this class and can also be used in comparisons with values returned by
-     * various method from {@link java.util.List}.
-     */
-    public static final int INDEX_NOT_FOUND = -1;
-	
-	// byte IndexOf
-    //-----------------------------------------------------------------------
-    /**
-     * <p>Finds the index of the given value in the array.
-     *
-     * <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
-     *
-     * @param array  the array to search through for the object, may be {@code null}
-     * @param valueToFind  the value to find
-     * @return the index of the value within the array,
-     *  {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
-     */
-    public static int indexOf(final byte[] array, final byte valueToFind) {
-        return indexOf(array, valueToFind, 0);
-    }
-    
-    /**
-     * <p>Finds the index of the given value in the array starting at the given index.
-     *
-     * <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
-     *
-     * <p>A negative startIndex is treated as zero. A startIndex larger than the array
-     * length will return {@link #INDEX_NOT_FOUND} ({@code -1}).
-     *
-     * @param array  the array to search through for the object, may be {@code null}
-     * @param valueToFind  the value to find
-     * @param startIndex  the index to start searching at
-     * @return the index of the value within the array,
-     *  {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
-     */
-    public static int indexOf(final byte[] array, final byte valueToFind, int startIndex) {
-        if (array == null) {
-            return INDEX_NOT_FOUND;
-        }
-        if (startIndex < 0) {
-            startIndex = 0;
-        }
-        for (int i = startIndex; i < array.length; i++) {
-            if (valueToFind == array[i]) {
-                return i;
-            }
-        }
-        return INDEX_NOT_FOUND;
-    }
-    
-    // short IndexOf
-    //-----------------------------------------------------------------------
-    /**
-     * <p>Finds the index of the given value in the array.
-     *
-     * <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
-     *
-     * @param array  the array to search through for the object, may be {@code null}
-     * @param valueToFind  the value to find
-     * @return the index of the value within the array,
-     *  {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
-     */
-    public static int indexOf(final short[] array, final short valueToFind) {
-        return indexOf(array, valueToFind, 0);
-    }
-    
-    /**
-     * <p>Finds the index of the given value in the array starting at the given index.
-     *
-     * <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
-     *
-     * <p>A negative startIndex is treated as zero. A startIndex larger than the array
-     * length will return {@link #INDEX_NOT_FOUND} ({@code -1}).
-     *
-     * @param array  the array to search through for the object, may be {@code null}
-     * @param valueToFind  the value to find
-     * @param startIndex  the index to start searching at
-     * @return the index of the value within the array,
-     *  {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
-     */
-    public static int indexOf(final short[] array, final short valueToFind, int startIndex) {
-        if (array == null) {
-            return INDEX_NOT_FOUND;
-        }
-        if (startIndex < 0) {
-            startIndex = 0;
-        }
-        for (int i = startIndex; i < array.length; i++) {
-            if (valueToFind == array[i]) {
-                return i;
-            }
-        }
-        return INDEX_NOT_FOUND;
-    }
-    
-    /**
-     * <p>Finds the index of the given object in the array.
-     *
-     * <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
-     *
-     * @param array  the array to search through for the object, may be {@code null}
-     * @param objectToFind  the object to find, may be {@code null}
-     * @return the index of the object within the array,
-     *  {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
-     */
-    public static int indexOf(final Object[] array, final Object objectToFind) {
-        return indexOf(array, objectToFind, 0);
-    }
 
-    /**
-     * <p>Finds the index of the given object in the array starting at the given index.
-     *
-     * <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
-     *
-     * <p>A negative startIndex is treated as zero. A startIndex larger than the array
-     * length will return {@link #INDEX_NOT_FOUND} ({@code -1}).
-     *
-     * @param array  the array to search through for the object, may be {@code null}
-     * @param objectToFind  the object to find, may be {@code null}
-     * @param startIndex  the index to start searching at
-     * @return the index of the object within the array starting at the index,
-     *  {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
-     */
-    public static int indexOf(final Object[] array, final Object objectToFind, int startIndex) {
-        if (array == null) {
-            return INDEX_NOT_FOUND;
-        }
-        if (startIndex < 0) {
-            startIndex = 0;
-        }
-        if (objectToFind == null) {
-            for (int i = startIndex; i < array.length; i++) {
-                if (array[i] == null) {
-                    return i;
-                }
-            }
-        } else {
-            for (int i = startIndex; i < array.length; i++) {
-                if (objectToFind.equals(array[i])) {
-                    return i;
-                }
-            }
-        }
-        return INDEX_NOT_FOUND;
-    }
-    public static boolean isEmpty(boolean[] a) {
-		return a==null || a.length==0;
+	/**
+	 *  The index value when an element is not found in a list or array: {@code -1}.
+	 *  This value is returned by methods in this class and can also be used in comparisons with values returned by
+	 *  various method from {@link java.util.List}.
+	 */
+	public static final int INDEX_NOT_FOUND = -1;
+
+	// byte IndexOf
+	// -----------------------------------------------------------------------
+	/**
+	 *  <p>Finds the index of the given value in the array.
+	 *
+	 *  <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
+	 *
+	 *  @param array  the array to search through for the object, may be {@code null}
+	 *  @param valueToFind  the value to find
+	 *  @return the index of the value within the array,
+	 *   {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
+	 */
+	public static int indexOf(final byte[] array, final byte valueToFind) {
+		return indexOf(array, valueToFind, 0);
+	}
+
+	/**
+	 *  <p>Finds the index of the given value in the array starting at the given index.
+	 *
+	 *  <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
+	 *
+	 *  <p>A negative startIndex is treated as zero. A startIndex larger than the array
+	 *  length will return {@link #INDEX_NOT_FOUND} ({@code -1}).
+	 *
+	 *  @param array  the array to search through for the object, may be {@code null}
+	 *  @param valueToFind  the value to find
+	 *  @param startIndex  the index to start searching at
+	 *  @return the index of the value within the array,
+	 *   {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
+	 */
+	public static int indexOf(final byte[] array, final byte valueToFind, int startIndex) {
+		if (array == null) {
+			return INDEX_NOT_FOUND;
+		}
+		if (startIndex < 0) {
+			startIndex = 0;
+		}
+		for (int i = startIndex; i < array.length; i++) {
+			if (valueToFind == array[i]) {
+				return i;
+			}
+		}
+		return INDEX_NOT_FOUND;
+	}
+
+	// short IndexOf
+	// -----------------------------------------------------------------------
+	/**
+	 *  <p>Finds the index of the given value in the array.
+	 *
+	 *  <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
+	 *
+	 *  @param array  the array to search through for the object, may be {@code null}
+	 *  @param valueToFind  the value to find
+	 *  @return the index of the value within the array,
+	 *   {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
+	 */
+	public static int indexOf(final short[] array, final short valueToFind) {
+		return indexOf(array, valueToFind, 0);
+	}
+
+	/**
+	 *  <p>Finds the index of the given value in the array starting at the given index.
+	 *
+	 *  <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
+	 *
+	 *  <p>A negative startIndex is treated as zero. A startIndex larger than the array
+	 *  length will return {@link #INDEX_NOT_FOUND} ({@code -1}).
+	 *
+	 *  @param array  the array to search through for the object, may be {@code null}
+	 *  @param valueToFind  the value to find
+	 *  @param startIndex  the index to start searching at
+	 *  @return the index of the value within the array,
+	 *   {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
+	 */
+	public static int indexOf(final short[] array, final short valueToFind, int startIndex) {
+		if (array == null) {
+			return INDEX_NOT_FOUND;
+		}
+		if (startIndex < 0) {
+			startIndex = 0;
+		}
+		for (int i = startIndex; i < array.length; i++) {
+			if (valueToFind == array[i]) {
+				return i;
+			}
+		}
+		return INDEX_NOT_FOUND;
+	}
+
+	/**
+	 *  <p>Finds the index of the given object in the array.
+	 *
+	 *  <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
+	 *
+	 *  @param array  the array to search through for the object, may be {@code null}
+	 *  @param objectToFind  the object to find, may be {@code null}
+	 *  @return the index of the object within the array,
+	 *   {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
+	 */
+	public static int indexOf(final Object[] array, final Object objectToFind) {
+		return indexOf(array, objectToFind, 0);
+	}
+
+	/**
+	 *  <p>Finds the index of the given object in the array starting at the given index.
+	 *
+	 *  <p>This method returns {@link #INDEX_NOT_FOUND} ({@code -1}) for a {@code null} input array.
+	 *
+	 *  <p>A negative startIndex is treated as zero. A startIndex larger than the array
+	 *  length will return {@link #INDEX_NOT_FOUND} ({@code -1}).
+	 *
+	 *  @param array  the array to search through for the object, may be {@code null}
+	 *  @param objectToFind  the object to find, may be {@code null}
+	 *  @param startIndex  the index to start searching at
+	 *  @return the index of the object within the array starting at the index,
+	 *   {@link #INDEX_NOT_FOUND} ({@code -1}) if not found or {@code null} array input
+	 */
+	public static int indexOf(final Object[] array, final Object objectToFind, int startIndex) {
+		if (array == null) {
+			return INDEX_NOT_FOUND;
+		}
+		if (startIndex < 0) {
+			startIndex = 0;
+		}
+		if (objectToFind == null) {
+			for (int i = startIndex; i < array.length; i++) {
+				if (array[i] == null) {
+					return i;
+				}
+			}
+		} else {
+			for (int i = startIndex; i < array.length; i++) {
+				if (objectToFind.equals(array[i])) {
+					return i;
+				}
+			}
+		}
+		return INDEX_NOT_FOUND;
+	}
+
+	public static boolean isEmpty(boolean[] a) {
+		return a == null || a.length == 0;
 	}
 
 	public static boolean isEmpty(char[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-    
+
 	public static boolean isEmpty(byte[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-	
+
 	public static boolean isEmpty(short[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-	
-	
+
 	public static boolean isEmpty(int[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-	
+
 	public static boolean isEmpty(long[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-	
+
 	public static boolean isEmpty(float[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-	
+
 	public static boolean isEmpty(double[] a) {
-		return a==null || a.length==0;
+		return a == null || a.length == 0;
 	}
-	
-    public static Stream<Integer> stream(int[] array) {
-        return StreamSupport.stream(Spliterators.spliterator(array,
-                Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
-    }
-    
-    public static Stream<Long> stream(long[] array) {
-        return StreamSupport.stream(Spliterators.spliterator(array,
-                Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
-    }
-    
-    public static Stream<Double> stream(double[] array) {
-        return StreamSupport.stream(Spliterators.spliterator(array,
-                Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
-    }
+
+	public static Stream<Integer> stream(int[] array) {
+		return StreamSupport.stream(Spliterators.spliterator(array, Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
+	}
+
+	public static Stream<Long> stream(long[] array) {
+		return StreamSupport.stream(Spliterators.spliterator(array, Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
+	}
+
+	public static Stream<Double> stream(double[] array) {
+		return StreamSupport.stream(Spliterators.spliterator(array, Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
+	}
 }

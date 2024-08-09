@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.sql.ddl;
 import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.querydsl.sql.RelationalPath;
@@ -13,10 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TruncateTableQuery  extends AbstractDDLClause<TruncateTableQuery>{
-
-	
 	public TruncateTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
-		super(connection, configuration, path);
+		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(path));
 	}
 
 	@Override

@@ -314,7 +314,7 @@ public final class FloatList {
 	/**
 	 * 查找指定的值并删除
 	 * 
-	 * @param element
+	 * @param element element
 	 * @return true if a element removed
 	 */
 	public boolean remove(float element) {
@@ -329,7 +329,7 @@ public final class FloatList {
 	/**
 	 * 删除位于指定序号的元素
 	 * 
-	 * @param index
+	 * @param index index
 	 * @return true if success.
 	 */
 	public boolean removeByIndex(int index) {
@@ -349,10 +349,8 @@ public final class FloatList {
 	 * Then, it iterates over the list until the specified element is found or the
 	 * end of the list is reached.
 	 * 
-	 * @param o
-	 * @return index
-	 * @throws ClassCastException
-	 * @throws NullPointerException
+	 * @param o float
+	 * @return index index
 	 */
 	public int indexOf(float o) {
 		for (int i = 0; i < size; i++) {
@@ -372,10 +370,8 @@ public final class FloatList {
 	 * the list until the specified element is found, or the beginning of the list
 	 * is reached.
 	 * 
-	 * @param o
+	 * @param o float
 	 * @return index
-	 * @throws ClassCastException
-	 * @throws NullPointerException
 	 */
 	public int lastIndexOf(float o) {
 		for (int i = size - 1; i >= 0; i--) {
@@ -419,8 +415,8 @@ public final class FloatList {
 	 * list is equal to its expected value, and throw a
 	 * {@code ConcurrentModificationException} if it is not.
 	 * 
-	 * @param fromIndex
-	 * @param toIndex
+	 * @param fromIndex fromIndex
+	 * @param toIndex toIndex
 	 * @return sublist
 	 * @throws IndexOutOfBoundsException endpoint index value out of range
 	 *                                   {@code (fromIndex < 0 || toIndex > size)}

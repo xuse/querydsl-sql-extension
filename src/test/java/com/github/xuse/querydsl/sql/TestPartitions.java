@@ -14,6 +14,7 @@ import org.junit.Test;
 import com.github.xuse.querydsl.annotation.partition.AutoTimePartitions;
 import com.github.xuse.querydsl.annotation.partition.HashType;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo1;
+import com.github.xuse.querydsl.entity.partition.QPartitionFoo1b;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo3;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo4;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
@@ -86,10 +87,20 @@ public class TestPartitions extends AbstractTestBase{
 				.add("p202401", "'2024-02-01'")
 				.add("p202402", "'2024-03-01'")
 				.build()).execute();
-		metadata.addParition(t1)
+		metadata.addPartition(t1)
 			.add("p202403", "'2024-04-01'").execute();
 		
 		assertEquals(3,metadata.getPartitions(t1.getSchemaAndTable()).size());
+	}
+	
+	@Test
+	public void testPartitionsAddSimple2() {
+		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
+		QPartitionFoo1b t1=QPartitionFoo1b.partitionFoo1b;
+		metadata.dropTable(t1).execute();
+		metadata.createTable(t1).partitions(true).execute();
+		System.out.println(metadata.getPartitions(t1.getSchemaAndTable()));
 	}
 	
 	/**
@@ -108,7 +119,7 @@ public class TestPartitions extends AbstractTestBase{
 		Date futurePartition=new Date(System.currentTimeMillis()+TimeUnit.DAYS.toMillis(20));
 		String pName="p"+DateFormats.DATE_SHORT.format(futurePartition);
 		String pValue="'"+DateFormats.DATE_CS.format(futurePartition)+"'";
-		metadata.addParition(t1)
+		metadata.addPartition(t1)
 			.add("p20200101", "'2021-01-01'")
 			.add(pName, pValue)
 			.execute();
@@ -150,7 +161,7 @@ public class TestPartitions extends AbstractTestBase{
 		
 		assertEquals(4, list.size());
 		
-		metadata.addParition(t1)
+		metadata.addPartition(t1)
 			.add("p5", "'3','4','g'")
 			.execute();
 	

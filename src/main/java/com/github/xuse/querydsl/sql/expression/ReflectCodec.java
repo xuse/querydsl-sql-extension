@@ -7,12 +7,12 @@ import com.github.xuse.querydsl.util.TypeUtils;
 /**
  * 基于反射的对象访问器，万一ASM失效后启用
  * 
- * @author jiyi
+ * @author Joey
  *
  */
 public class ReflectCodec extends BeanCodec {
 	private final Class<?> targetClass;
-	private List<FieldProperty> methods;
+	private final List<FieldProperty> methods;
 
 	public ReflectCodec(Class<?> targetClass, List<FieldProperty> methods) {
 		this.targetClass = targetClass;

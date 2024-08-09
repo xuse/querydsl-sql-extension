@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.sql.partitions;
 import java.lang.annotation.Annotation;
 
 import com.github.xuse.querydsl.annotation.partition.AutoTimePartitions;
+import com.github.xuse.querydsl.annotation.partition.ColumnFormat;
 import com.github.xuse.querydsl.annotation.partition.Period;
 
 import lombok.AllArgsConstructor;
@@ -15,6 +16,7 @@ public class AutoTimePartitionImpl implements com.github.xuse.querydsl.annotatio
 	private int pastPeriods;
 	private int futurePeriods;
 	private boolean maxValue;
+	private ColumnFormat columnFormat;
 	
 	@Override
 	public Class<? extends Annotation> annotationType() {
@@ -39,6 +41,11 @@ public class AutoTimePartitionImpl implements com.github.xuse.querydsl.annotatio
 	@Override
 	public boolean createForMaxValue() {
 		return maxValue;
+	}
+
+	@Override
+	public ColumnFormat columnFormat() {
+		return columnFormat;
 	}
 
 }

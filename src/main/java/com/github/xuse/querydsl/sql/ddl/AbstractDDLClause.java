@@ -3,39 +3,49 @@ package com.github.xuse.querydsl.sql.ddl;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
+import java.util.Objects;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.sql.support.DistributedLock;
+import com.github.xuse.querydsl.util.Entry;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLListeners;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLClause<C> {
 	
 	protected MetadataQuerySupport connection;
 
 	protected ConfigurationEx configuration;
 
-	protected RelationalPath<?> table;
+	protected RelationalPathEx<?> table;
 	
 	protected final SQLListeners listeners;
 	  
     protected SQLListenerContextImpl context;
     
     protected RoutingStrategy routing;
-    
-	public AbstractDDLClause(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
+	
+	protected boolean useDDLLock = false;
+	
+	private static final String DDL_DISTRIBUTED_LOCK_NAME = "lock#table_ddl";
+	
+	public AbstractDDLClause(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPathEx<?> path) {
 		this.connection = connection;
 		this.configuration = configuration;
 		this.table = path;
@@ -50,6 +60,16 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 	 
 	@Override
 	public int execute() {
+		DistributedLock locked=null;
+		if(useDDLLock) {
+    		locked=connection.getLock(DDL_DISTRIBUTED_LOCK_NAME);
+    		if(!locked.tryLock()) {
+    			Entry<String,Date> lockBy=locked.lockedBy();
+				log.warn("{} is lockedBy {}, {} will not execute.", DDL_DISTRIBUTED_LOCK_NAME, lockBy.getKey(),
+						this.getClass().getName());
+        		return 0;	
+    		}
+    	}
 		if(!preExecute(connection)) {
 			return 0;
 		}
@@ -62,30 +82,34 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 				if(StringUtils.isEmpty(s)) {
 					continue;
 				}
-				context.getAllSQLBindings().clear();;
+				context.getAllSQLBindings().clear();
 				context.addSQL(new SQLBindings(s, Collections.emptyList()));
 		        listeners.prePrepare(context);
 				try (PreparedStatement st = c.prepareStatement(s)) {
 					listeners.prepared(context);
 					listeners.preExecute(context);
 					int result = st.executeUpdate();
-					postExecuted(context, System.currentTimeMillis() - start, "DDL", result);
+					postExecuted(context, System.currentTimeMillis() - start, result);
 				} catch (SQLException e) {
 					onException(context, e);
-					throw configuration.get().translate(s, null, e);
+					throw configuration.get().translate(s, Collections.emptyList(), e);
 				}
 			}
 			return finished(sqls);
 		}finally {
+			if(locked!=null) {
+				locked.unlock();
+			}
 			listeners.end(context);
 		}
 	}
+	
 	
     protected int finished(List<String> sqls) {
     	if(sqls.isEmpty()) {
     		return 0;
     	}
-		int count = (int) sqls.stream().filter(e -> e != null).count();
+		int count = (int) sqls.stream().filter(Objects::nonNull).count();
 		return count;
 	}
 
@@ -98,10 +122,10 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
         listeners.exception(context);
     }
     
-	private void postExecuted(SQLListenerContextImpl context, long cost, String action, int count) {
+	private void postExecuted(SQLListenerContextImpl context, long cost, int count) {
 		context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
 		context.setData(ContextKeyConstants.COUNT, count);
-		context.setData(ContextKeyConstants.ACTION, action);
+		context.setData(ContextKeyConstants.ACTION, "DDL");
 		if(this.configuration.getSlowSqlWarnMillis()<=cost) {
 			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
 		}
@@ -112,7 +136,7 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 		listeners.preRender(context);
 		String sql=generateSQL();
 		listeners.rendered(context);
-		return sql==null? Collections.emptyList():Arrays.asList(sql);
+		return sql==null? Collections.emptyList(): Collections.singletonList(sql);
 	}
 	
 
@@ -120,7 +144,7 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
      * Called to create and start a new SQL Listener context
      *
      * @param connection the database connection
-     * @param metadata   the meta data for that context
+     * @param metadata   the metadata for that context
      * @param entity     the entity for that context
      * @return the newly started context
      */
@@ -132,9 +156,15 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 
 	protected abstract String generateSQL();
 	
-	public DDLClause<C> withRouting(RoutingStrategy routing) {
+	@SuppressWarnings("unchecked")
+	public C withRouting(RoutingStrategy routing) {
 		this.routing=routing;
-		return this;
+		return (C)this;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public C useDDLLock() {
+		this.useDDLLock = true;
+		return (C)this;
+	}
 }

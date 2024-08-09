@@ -4,9 +4,11 @@ package com.github.xuse.querydsl.sql;
 
 import java.io.File;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
-import com.github.xuse.querydsl.annotation.init.InitializeData;
+import com.github.xuse.querydsl.annotation.InitializeData;
+import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QSeataStateMachineInst;
 import com.github.xuse.querydsl.init.InitDataExporter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
@@ -17,16 +19,31 @@ public class TestDataInitialize extends AbstractTestBase{
 	 * 导出数据
 	 */
 	@Test
+	@Ignore
 	public void testExport() {
 		new InitDataExporter(factory).writeNullString()
-				.targetDirectory(new File(System.getProperty("user.dir"),"src/test/resources")).export(QSeataStateMachineInst.class);
+				.targetDirectory(new File(System.getProperty("user.dir"),"src/test/resources"))
+				.export(QSeataStateMachineInst.class)
+				.export(QAaa.class);
+	}
+	
+	@Test
+	public void testDataInitDefault() {
+		factory.getMetadataFactory();
+		factory.getMetadataFactory();
+		
+		
+		QAaa t=QAaa.aaa;
+		factory.initializeTable(t)
+			.applyConfig(t.getInitializeData())
+			.updateNulls(true)
+			.execute();
 	}
 	
 	/**
-	 * 导入时，字符串类字段不会被设置为NULL，而是为""。这是现有特性
 	 */
 	@Test
-	public void testDataInit() {
+	public void testDataInitNew() {
 		QSeataStateMachineInst t=QSeataStateMachineInst.seataStateMachineInst;
 		TableRouting routing = TableRouting.suffix("_m1");
 		

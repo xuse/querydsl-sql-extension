@@ -1,5 +1,5 @@
 /*
- * JEF - Copyright 2009-2010 Jiyi (mr.jiyi@gmail.com)
+ * querydsl-sql-extension - Copyright 2017-2024 Joey (mr.jiyi@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.github.xuse.querydsl.util;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -24,18 +26,21 @@ import java.util.Iterator;
  * 用来遍历两个时间之前的每一个整点时间单位。 (如年/月/天/时。。。）
  * <br>
  * 默认不含结束时间所在的时间单位
- * 使用{@link #setIncludeEndDate(boolean)}来指定包含结束日期所在的时间单位。 
- * @author jiyi
- *
+ * 使用{@link #setIncludeEndDate(boolean)}来指定包含结束日期所在的时间单位。
+ * @author Joey
  */
 public final class TimeIterable implements Iterable<Date> {
-	private Date start;	
-	private long last;
-	private int unit;
+
+	private final Date start;
+
+	private final long last;
+
+	private final int unit;
+
 	private boolean includeEndDate;
-	
+
 	/**
-	 * @return true if the iterator will include the last date.
+	 *  @return true if the iterator will include the last date.
 	 */
 	public boolean isIncludeEndDate() {
 		return includeEndDate;
@@ -43,7 +48,8 @@ public final class TimeIterable implements Iterable<Date> {
 
 	/**
 	 * set true if the iterator will include the last date.
-	 * @param includeEndDate
+	 * @param includeEndDate includeEndDate
+	 * @return TimeIterable
 	 */
 	public TimeIterable setIncludeEndDate(boolean includeEndDate) {
 		this.includeEndDate = includeEndDate;
@@ -51,16 +57,18 @@ public final class TimeIterable implements Iterable<Date> {
 	}
 
 	public TimeIterable(Date start, Date end, int unit) {
-		this.start = DateUtils.getTruncated(start,unit);
-		this.last = DateUtils.getTruncated(end,unit).getTime();
+		this.start = DateUtils.getTruncated(start, unit);
+		this.last = DateUtils.getTruncated(end, unit).getTime();
 		this.unit = unit;
 	}
 
-	public Iterator<Date> iterator() {
+	public @NotNull Iterator<Date> iterator() {
 		return new Iterator<Date>() {
-			private Date now=start;
+
+			private Date now = start;
+
 			public boolean hasNext() {
-				return now.getTime() < last || (includeEndDate && now.getTime()==last);
+				return now.getTime() < last || (includeEndDate && now.getTime() == last);
 			}
 
 			public Date next() {
@@ -77,5 +85,4 @@ public final class TimeIterable implements Iterable<Date> {
 			}
 		};
 	}
-
 }

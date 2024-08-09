@@ -2,11 +2,10 @@ package com.github.xuse.querydsl.sql.dialect;
 
 import java.sql.Types;
 
-import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.querydsl.core.types.ConstraintType;
-import com.querydsl.core.types.DDLOps;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
 import com.querydsl.core.types.SQLTemplatesEx;
-import com.querydsl.core.types.DDLOps.Basic;
 import com.querydsl.sql.SQLTemplates;
 
 public class H2SQLTemplatesEx extends DefaultSQLTemplatesEx {
@@ -14,10 +13,6 @@ public class H2SQLTemplatesEx extends DefaultSQLTemplatesEx {
 	public H2SQLTemplatesEx(SQLTemplates templates) {
 		super(templates);
 		typeNames.put(Types.TINYINT, "smallint").type(Types.SMALLINT);
-	}
-
-	public ColumnDef getColumnDataType(int sqlTypes, int size, int scale) {
-		return typeNames.get(sqlTypes, size, scale);
 	}
 
 	@Override

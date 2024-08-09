@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.sql.dbmeta;
 
 /**
  * 数据库中的序列信息
- * @author jiyi
+ * @author Joey
  *
  */
 public class SequenceInfo {

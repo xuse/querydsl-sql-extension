@@ -19,7 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
@@ -33,12 +32,12 @@ import com.querydsl.core.types.QBean;
 import com.querydsl.core.types.Visitor;
 
 /**
- * 
  * 1 query DSL的 {@link QBean} 另一种实现方式。使用ASM生成的动态类来加速对Bean的构造和存取。
  * 2、首次使用的时候需要生成动态类。
- * 
+ *
  * 默认实现需要在构造时反射来判断拼装对象结构，是一个耗时比较大的构造过程，因此Projections.bean/field的结果应该要缓存起来 2
  * 对于Qxxx生成类，内部已经缓存了默认的Projection。
+ * @param <T> The type of target object.
  */
 public class QBeanEx<T> extends FactoryExpressionBase<T> {
 
@@ -68,7 +67,6 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 				} else {
 					throw new IllegalArgumentException("Unsupported expression " + expr);
 				}
-
 			} else {
 				throw new IllegalArgumentException("Unsupported expression " + expr);
 			}
@@ -83,41 +81,40 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	private final Map<String, Expression<?>> bindings;
 
 	/**
-	 * Create a new QBean instance
+	 *  Create a new QBean instance
 	 *
-	 * @param type type of bean
-	 * @param args properties to be populated
+	 *  @param type type of bean
+	 *  @param args properties to be populated
 	 */
 	protected QBeanEx(Class<? extends T> type, Expression<?>... args) {
 		this(type, createBindings(args));
 	}
-	
+
 	/**
 	 * 构造
-	 * @param type
-	 * @param ex
+	 * @param type type
+	 * @param ex ex
 	 */
 	protected QBeanEx(Class<? extends T> type, RelationalPathEx<?> ex) {
 		super(type);
 		Map<String, Expression<?>> bindings = new LinkedHashMap<>();
-		for(Path<?> p:ex.getColumns()) {
-			bindings.put(p.getMetadata().getName(),(Expression<?>)	p);
+		for (Path<?> p : ex.getColumns()) {
+			bindings.put(p.getMetadata().getName(), p);
 		}
-		this.bindings=Collections.unmodifiableMap(bindings);
-		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(), new DefaultBindingProvider(this.bindings));
+		this.bindings = Collections.unmodifiableMap(bindings);
+		this.beanCodec = BeanCodecManager.getInstance().getPopulator(this.getType(), new DefaultBindingProvider(this.bindings));
 	}
 
 	/**
-	 * Create a new QBean instance
+	 *  Create a new QBean instance
 	 *
-	 * @param type        type of bean
-	 * @param fieldAccess true, for field access and false, for property access
-	 * @param bindings    bindings
+	 *  @param type        type of bean
+	 *  @param bindings    bindings
 	 */
 	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		super(type);
 		this.bindings = Collections.unmodifiableMap(bindings);
-		this.beanCodec=BeanCodecManager.getInstance().getPopulator(this.getType(),  new DefaultBindingProvider(this.bindings));
+		this.beanCodec = BeanCodecManager.getInstance().getPopulator(this.getType(), new DefaultBindingProvider(this.bindings));
 	}
 
 	protected void typeMismatch(Class<?> type, Expression<?> expr) {
@@ -130,53 +127,56 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	public T newInstance(Object... a) {
 		return (T) beanCodec.newInstance(a);
 	}
-	 /**
-     * Create an alias for the expression
-     *
-     * @return this as alias
-     */
-    public Expression<T> as(Path<T> alias) {
-        return ExpressionUtils.operation(getType(),Ops.ALIAS, this, alias);
-    }
 
-    /**
-     * Create an alias for the expression
-     *
-     * @return this as alias
-     */
-    public Expression<T> as(String alias) {
-        return as(ExpressionUtils.path(getType(), alias));
-    }
+	/**
+	 * Create an alias for the expression
+	 *
+	 * @return this as alias
+	 * @param alias Path
+	 */
+	public Expression<T> as(Path<T> alias) {
+		return ExpressionUtils.operation(getType(), Ops.ALIAS, this, alias);
+	}
 
-    @Override
-    public <R,C> R accept(Visitor<R,C> v, C context) {
-        return v.visit(this, context);
-    }
+	/**
+	 * Create an alias for the expression
+	 *
+	 * @return this as alias
+	 * @param alias String
+	 */
+	public Expression<T> as(String alias) {
+		return as(ExpressionUtils.path(getType(), alias));
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj instanceof QBean<?>) {
-            QBean<?> c = (QBean<?>) obj;
-            return getArgs().equals(c.getArgs()) && getType().equals(c.getType());
-        } else {
-            return false;
-        }
-    }
+	@Override
+	public <R, C> R accept(Visitor<R, C> v, C context) {
+		return v.visit(this, context);
+	}
 
-    @Override
-    public List<Expression<?>> getArgs() {
-        return new ArrayList<>(bindings.values());
-    }
-    
-    /**
-     * convert the result to another type using the function input.
-     * @param <K>
-     * @param function
-     * @param clz the type K
-     * @return StreamExpressionWrapper
-     */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		} else if (obj instanceof QBean<?>) {
+			QBean<?> c = (QBean<?>) obj;
+			return getArgs().equals(c.getArgs()) && getType().equals(c.getType());
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public List<Expression<?>> getArgs() {
+		return new ArrayList<>(bindings.values());
+	}
+
+	/**
+	 * convert the result to another type using the function input.
+	 * @param <K> type of result output
+	 * @param function function
+	 * @param clz the type K
+	 * @return StreamExpressionWrapper
+	 */
 	public <K> StreamExpressionWrapper<T, K> map(Function<T, K> function, Class<K> clz) {
 		return new StreamExpressionWrapper<>(this, function, clz);
 	}

@@ -1,96 +1,53 @@
 package com.github.xuse.querydsl.types;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import com.querydsl.sql.types.AbstractType;
-
 /**
- * 小时数映射为SMAILLINT(2bytes)数据库类型， Java中的为Date类型，数据库为SMALLINT类型(精度只能到2~4小时)
+ * 低精度时间表示法。使用SMAILLINT(2bytes)数据存储。
+ * <p>
+ * 默认精度为4小时。可以表达UTC:2023-12-31 20:00:00 to UTC:2053-11-26 08:00:00的时间范围。
+ * <p>
+ * 如果收缩精度到3小时，可以表达2024-01-01 05:00:00 to 2046-06-06 02:00:00时间范围。
+ * 一般来说精度不建议放到2小时以下。
  * 
- * @author jiyi
- *
+ * 传入参数在按精度取整时遵循向下取整规则。比如2小时精度时，00:00,02:00是整数，01:00会被认为是00:00。
  */
-public class DateHoursAsShortType extends AbstractType<Date> {
+public class DateHoursAsShortType extends AbstractLowPrecisionTime {
 	/**
-	 * 精度。如果需要5分钟秒精度的存储，传入TimeUnit.HOURS.toMillis(3)
+	 * 自定指定时间精度和基准位置的构造
+	 * @param scale 时间精度
+	 * @param offset 基准时间点
 	 */
-	private long scale;
-
-	private long offset;
-
-	private static final long OFFSET = TimeUnit.DAYS.toMillis(22000);
-
+	public DateHoursAsShortType(long scale, long offset) {
+		super(Types.SMALLINT, scale, offset);
+	}
+	
 	public DateHoursAsShortType(long scale) {
-		super(Types.SMALLINT);
-		this.scale = scale;
-		this.offset = OFFSET / scale;
+		super(Types.SMALLINT, scale, 1704067200000L + (scale * Short.MAX_VALUE));
 	}
 
 	public DateHoursAsShortType() {
-		this(TimeUnit.HOURS.toMillis(2));
+		this(TimeUnit.HOURS.toMillis(4));
+	}
+
+	public int getMaxNum() {
+		return Short.MAX_VALUE;
+	}
+
+	public int getMinNum() {
+		return Short.MIN_VALUE;
 	}
 
 	@Override
-	public Class<Date> getReturnedClass() {
-		return Date.class;
-	}
-
-	@Override
-	public Date getValue(ResultSet rs, int startIndex) throws SQLException {
-		int n = rs.getInt(startIndex);
-		return rs.wasNull() ? null : toDate(n);
-	}
-
-	/**
-	 *
-	 */
-	@Override
-	public void setValue(PreparedStatement st, int startIndex, Date value) throws SQLException {
-		st.setInt(startIndex, toInt(value));
-	}
-
-	private int toInt(Date value) {
-		int n = (int) ((value.getTime()) / scale - offset);
-		return n;
-	}
-
-	private Date toDate(int n) {
-		return new Date((n + offset) * scale);
+	public Date truncateAs(Date d) {
+		int value=toInt(d);
+		if(value>Short.MAX_VALUE || value<Short.MIN_VALUE) {
+			throw new IndexOutOfBoundsException();
+		}
+		return toDate(value);
 	}
 	
-//	private int toInt(Date value) {
-//		int n = (int) ((value.getTime()-OFFSET) / scale);
-//		return n;
-//	}
-//
-//	private Date toDate(int n) {
-//		return new Date((n * scale) +OFFSET);
-//	}
-
-	public Date getMaxValue() {
-		return toDate(Short.MAX_VALUE);
-	}
-
-	public Date getMinValue() {
-		return toDate(Short.MIN_VALUE);
-	}
-
-	public static void main(String[] args) {
-		
-		System.out.println(new Date().getTime()/1000/3600/24);
-		
-		DateHoursAsShortType t = new DateHoursAsShortType();
-		int n = t.toInt(new Date());
-		System.out.println(n);
-		System.out.println(t.toDate(n));
-
-		System.out.println(t.getMaxValue());
-		System.out.println(t.getMinValue());
-	}
-
+	
 }

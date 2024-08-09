@@ -22,7 +22,7 @@ public final class KeyColumn{
 	private String columnName;
 	
 	/**
-	 * 	tableIndexStatistic - this identifies table statistics that arereturned in conjuction with a table's index descriptions 
+	 * 	tableIndexStatistic - this identifies table statistics that are returned in conjunction with a table's index descriptions
 	tableIndexClustered - this is a clustered index 
 	tableIndexHashed - this is a hashed index 
 	tableIndexOther - this is some other style of index 

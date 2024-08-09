@@ -2,11 +2,11 @@ package com.github.xuse.querydsl.sql.ddl;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
@@ -20,7 +20,7 @@ public class DropTableQuery extends AbstractDDLClause<DropTableQuery>{
 	
 
 	public DropTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
-		super(connection, configuration, path);
+		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(path));
 	}
 
 	@Override
@@ -52,11 +52,6 @@ public class DropTableQuery extends AbstractDDLClause<DropTableQuery>{
 		return this;
 	}
 
-	@Override
-	protected boolean preExecute(MetadataQuerySupport metadata) {
-		return true;
-	}
-	
 	@Override
 	protected int finished(List<String> sqls) {
 		SchemaAndTable actual=this.table.getSchemaAndTable();

@@ -12,11 +12,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.zip.CRC32;
 
@@ -34,11 +36,12 @@ public class StringUtils {
 	private static final char NULL_CHAR=(char)0;
 	
 	/**
-	 * @param s
-	 * @param defaultValue
+	 *
+	 * @param s string to convert
+	 * @param defaultValue defaultValue
 	 * @return 文本转换为boolean，如果不能转换则返回默认值
 	 */
-	public static final boolean toBoolean(String s, Boolean defaultValue) {
+	public static boolean toBoolean(String s, Boolean defaultValue) {
 		if ("true".equalsIgnoreCase(s) || "Y".equalsIgnoreCase(s) || "1".equals(s) || "ON".equalsIgnoreCase(s) || "yes".equalsIgnoreCase(s)
 				|| "T".equalsIgnoreCase(s)) {
 			return true;
@@ -54,15 +57,15 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param o
-	 * @param defaultValue
+	 * @param string string to convert
+	 * @param defaultValue default Value
 	 * @return 文本转换到小数float
 	 */
-	public static float toFloat(String o, Float defaultValue) {
-		if (isBlank(o))
+	public static float toFloat(String string, Float defaultValue) {
+		if (isBlank(string))
 			return defaultValue;
 		try {
-			return Float.parseFloat(o);
+			return Float.parseFloat(string);
 		} catch (NumberFormatException e) {
 			if (defaultValue == null)// 默认值为null，且数值非法的情况下抛出异常
 				throw e;
@@ -71,15 +74,15 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param o
-	 * @param defaultValue
+	 * @param string string to convert.
+	 * @param defaultValue default Value
 	 * @return 文本转换到小数double
 	 */
-	public static double toDouble(String o, Double defaultValue) {
-		if (isBlank(o))
+	public static double toDouble(String string, Double defaultValue) {
+		if (isBlank(string))
 			return defaultValue;
 		try {
-			return Double.parseDouble(o);
+			return Double.parseDouble(string);
 		} catch (NumberFormatException e) {
 			if (defaultValue == null)// 默认值为null，且数值非法的情况下抛出异常
 				throw e;
@@ -118,18 +121,18 @@ public class StringUtils {
 
 	/**
 	 * This is a string replacement method.
-	 * @param source
-	 * @param oldStr
-	 * @param newStr
+	 * @param source source
+	 * @param oldStr from text.
+	 * @param newStr to text.
 	 * @return text replaced
 	 * 
 	 */
-	public final static String replaceString(String source, String oldStr, String newStr) {
+	public static String replaceString(String source, String oldStr, String newStr) {
 		StringBuilder sb = new StringBuilder(source.length());
 		int sind = 0;
-		int cind = 0;
+		int cind;
 		while ((cind = source.indexOf(oldStr, sind)) != INDEX_NOT_FOUND) {
-			sb.append(source.substring(sind, cind));
+			sb.append(source, sind, cind);
 			sb.append(newStr);
 			sind = cind + oldStr.length();
 		}
@@ -139,12 +142,13 @@ public class StringUtils {
 
 	/**
 	 * Replace string
-	 * @param source
-	 * @param args
+	 * @param source source
+	 * @param args  args
+	 *
 	 * @return replaced string. 
 	 * 
 	 */
-	public final static String replaceString(String source, Object[] args) {
+	public static String replaceString(String source, Object[] args) {
 		int startIndex = 0;
 		int openIndex = source.indexOf('{', startIndex);
 		if (openIndex == INDEX_NOT_FOUND) {
@@ -157,7 +161,7 @@ public class StringUtils {
 		}
 
 		StringBuilder sb = new StringBuilder();
-		sb.append(source.substring(startIndex, openIndex));
+		sb.append(source, startIndex, openIndex);
 		while (true) {
 			String intStr = source.substring(openIndex + 1, closeIndex);
 			int index = Integer.parseInt(intStr);
@@ -175,12 +179,12 @@ public class StringUtils {
 				sb.append(source.substring(startIndex));
 				break;
 			}
-			sb.append(source.substring(startIndex, openIndex));
+			sb.append(source, startIndex, openIndex);
 		}
 		return sb.toString();
 	}
 
-	public final static String replaceString(String source, Map<String, Object> args) {
+	public static String replaceString(String source, Map<String, Object> args) {
 		int startIndex = 0;
 		int openIndex = source.indexOf('{', startIndex);
 		if (openIndex == -1) {
@@ -193,7 +197,7 @@ public class StringUtils {
 		}
 
 		StringBuilder sb = new StringBuilder();
-		sb.append(source.substring(startIndex, openIndex));
+		sb.append(source, startIndex, openIndex);
 		while (true) {
 			String key = source.substring(openIndex + 1, closeIndex);
 			Object val = args.get(key);
@@ -213,7 +217,7 @@ public class StringUtils {
 				sb.append(source.substring(startIndex));
 				break;
 			}
-			sb.append(source.substring(startIndex, openIndex));
+			sb.append(source, startIndex, openIndex);
 		}
 		return sb.toString();
 	}
@@ -223,12 +227,12 @@ public class StringUtils {
 	 *
 	 * @param source        the HTML code to be processes
 	 * @param bReplaceNl    if true '\n' will be replaced by <br>
-	 * @param bReplaceTag   if true '<' will be replaced by &lt; and '>' will be
-	 *                      replaced by &gt;
+	 * @param bReplaceTag   if true '&lt;' will be replaced by &amp;lt; and '&gt;' will be
+	 *                      replaced by &amp;gt;
 	 * @param bReplaceQuote if true '\"' will be replaced by &quot;
 	 * @return html formatted.
 	 */
-	public final static String formatHtml(String source, boolean bReplaceNl, boolean bReplaceTag,
+	public static String formatHtml(String source, boolean bReplaceNl, boolean bReplaceTag,
 			boolean bReplaceQuote) {
 
 		StringBuilder sb = new StringBuilder();
@@ -283,7 +287,7 @@ public class StringUtils {
 		return sb.toString();
 	}
 
-	public final static String pad(String src, char padChar, boolean rightPad, int totalLength) {
+	public static String pad(String src, char padChar, boolean rightPad, int totalLength) {
 
 		int srcLength = src.length();
 		if (srcLength >= totalLength) {
@@ -297,17 +301,17 @@ public class StringUtils {
 		}
 
 		if (rightPad) {
-			return src + sb.toString();
+			return src + sb;
 		} else {
-			return sb.toString() + src;
+			return sb + src;
 		}
 	}
 
 	/**
-	 * @param bytes
+	 * @param bytes bytes
 	 * @return Get hex string from byte array(lower cases).
 	 */
-	public final static String toHexString(byte[] bytes) {
+	public static String toHexString(byte[] bytes) {
 		if(bytes==null || bytes.length==0) {
 			return EMPTY;
 		}
@@ -315,7 +319,7 @@ public class StringUtils {
 	}
 	
 	/**
-	 * @param bytes
+	 * @param bytes bytes
 	 * @return Get hex string from byte array(upper cases).
 	 */
 	public final static String toHexStringUppercase(byte[] bytes) {
@@ -327,12 +331,12 @@ public class StringUtils {
 
 	/**
 	 * Get byte array from hex string
-	 * @param hexString
+	 * @param hexString hexString
 	 * @return byte array. 
 	 */
 	public final static byte[] toByteArray(String hexString) {
 		int arrLength = hexString.length() >> 1;
-		byte buff[] = new byte[arrLength];
+		byte[] buff = new byte[arrLength];
 		for (int i = 0; i < arrLength; i++) {
 			int index = i << 1;
 			String digit = hexString.substring(index, index + 2);
@@ -412,7 +416,7 @@ public class StringUtils {
 		// index on index that the match was found
 		int textIndex = -1;
 		int replaceIndex = -1;
-		int tempIndex = -1;
+		int tempIndex;
 
 		// index of replace array that will replace the search string found
 		// NOTE: logic duplicated below START
@@ -442,8 +446,7 @@ public class StringUtils {
 
 		int start = 0;
 
-		// get a good guess on the size of the result buffer so it doesn't have to
-		// double if it goes over a bit
+		// get a good guess on the size of the result buffer, so it doesn't have to double if it goes over a bit
 		int increase = 0;
 
 		// count the replacement text elements that are larger than their corresponding
@@ -473,7 +476,7 @@ public class StringUtils {
 
 			textIndex = -1;
 			replaceIndex = -1;
-			tempIndex = -1;
+			//tempIndex = -1;
 			// find the next earliest match
 			// NOTE: logic mostly duplicated above START
 			for (int i = 0; i < searchLength; i++) {
@@ -510,15 +513,15 @@ public class StringUtils {
 
 	/**
 	 * 文本转换到整数int
-	 * @param o
-	 * @param defaultValue
+	 * @param text string to convert
+	 * @param defaultValue defaultValue
 	 * @return int value
 	 */
-	public static int toInt(String o, Integer defaultValue) {
-		if (isBlank(o))
+	public static int toInt(String text, Integer defaultValue) {
+		if (isBlank(text))
 			return defaultValue;// 空白则返回默认值，即便默认值为null也返回null
 		try {
-			return Integer.valueOf(o);
+			return Integer.parseInt(text);
 		} catch (NumberFormatException e) {
 			if (defaultValue == null)// 默认值为null，且数值非法的情况下抛出异常
 				throw e;
@@ -541,7 +544,7 @@ public class StringUtils {
 			return true;
 		}
 		for (int i = 0; i < strLen; i++) {
-			if (Character.isWhitespace(cs.charAt(i)) == false) {
+			if (!Character.isWhitespace(cs.charAt(i))) {
 				return false;
 			}
 		}
@@ -551,8 +554,8 @@ public class StringUtils {
 	/**
 	 * 将两个数值的比值作为百分比显示
 	 * 
-	 * @param a
-	 * @param b
+	 * @param a the numerator.
+	 * @param b the denominator.
 	 * @return 百分比显示
 	 */ 
 	public static String toPercent(long a, long b) {
@@ -569,8 +572,8 @@ public class StringUtils {
 	/**
 	 * 返回子串，如果查找的字串不存在则返回全部 和substringAfter方法不同，substringAfter方法在查找不到时返回空串
 	 * 
-	 * @param source
-	 * @param rev
+	 * @param source source
+	 * @param rev rev
 	 * @return 子串
 	 */
 	public static String substringAfterIfExist(String source, String rev) {
@@ -638,15 +641,15 @@ public class StringUtils {
 	/**
 	 * 文本转换到整数Long
 	 * 
-	 * @param o
-	 * @param defaultValue
+	 * @param text text
+	 * @param defaultValue defaultValue
 	 * @return long value
 	 */
-	public static long toLong(String o, Long defaultValue) {
-		if (isBlank(o))
+	public static long toLong(String text, Long defaultValue) {
+		if (isBlank(text))
 			return defaultValue;// 空白则返回默认值，即便默认值为null也返回null
 		try {
-			return Long.parseLong(o);
+			return Long.parseLong(text);
 		} catch (NumberFormatException e) {
 			if (defaultValue == null)// 默认值为null，且数值非法的情况下抛出异常
 				throw e;
@@ -1491,7 +1494,7 @@ public class StringUtils {
             }
         }
 
-        return substrings.toArray(new String[substrings.size()]);
+        return substrings.toArray(EMPTY_STRING_ARRAY);
     }
 
     // -----------------------------------------------------------------------
@@ -1571,39 +1574,39 @@ public class StringUtils {
      * separators are treated as one separator.
      * @return an array of parsed Strings, {@code null} if null String input
      */
-    private static String[] splitWorker(final String str, final char separatorChar, final boolean preserveAllTokens) {
-        // Performance tuned for 2.0 (JDK1.4)
+	private static String[] splitWorker(final String str, final char separatorChar, final boolean preserveAllTokens) {
+		// Performance tuned for 2.0 (JDK1.4)
 
-        if (str == null) {
-            return null;
-        }
-        final int len = str.length();
-        if (len == 0) {
-            return ArrayUtils.EMPTY_STRING_ARRAY;
-        }
-        final List<String> list = new ArrayList<>();
-        int i = 0, start = 0;
-        boolean match = false;
-        boolean lastMatch = false;
-        while (i < len) {
-            if (str.charAt(i) == separatorChar) {
-                if (match || preserveAllTokens) {
-                    list.add(str.substring(start, i));
-                    match = false;
-                    lastMatch = true;
-                }
-                start = ++i;
-                continue;
-            }
-            lastMatch = false;
-            match = true;
-            i++;
-        }
-        if (match || preserveAllTokens && lastMatch) {
-            list.add(str.substring(start, i));
-        }
-        return list.toArray(new String[list.size()]);
-    }
+		if (str == null) {
+			return null;
+		}
+		final int len = str.length();
+		if (len == 0) {
+			return EMPTY_STRING_ARRAY;
+		}
+		final List<String> list = new ArrayList<String>();
+		int i = 0, start = 0;
+		boolean match = false;
+		boolean lastMatch = false;
+		while (i < len) {
+			if (str.charAt(i) == separatorChar) {
+				if (match || preserveAllTokens) {
+					list.add(str.substring(start, i));
+					match = false;
+					lastMatch = true;
+				}
+				start = ++i;
+				continue;
+			}
+			lastMatch = false;
+			match = true;
+			i++;
+		}
+		if (match || preserveAllTokens && lastMatch) {
+			list.add(str.substring(start, i));
+		}
+		return list.toArray(new String[list.size()]);
+	}
 
     private static String[] splitWorker(final String str, final String separatorChars, final int max, final boolean preserveAllTokens) {
         // Performance tuned for 2.0 (JDK1.4)
@@ -1697,8 +1700,8 @@ public class StringUtils {
 	/**
 	 * 将文件大小格式化成xxG xxM等格式
 	 * 
-	 * @param size
-	 * @return text
+	 * @param size size
+	 * @return text text
 	 */
 	public static String formatSize(long size) {
 		DecimalFormat df = new DecimalFormat("#.##");
@@ -1731,7 +1734,7 @@ public class StringUtils {
      *
      * @param cs  the CharSequence to check, may be null
      * @param searchChars  the chars to search for, may be null
-     * @return the index of any of the chars, -1 if no match or null input
+     * @return the index of the chars, -1 if no match or null input
      * @since 2.0
      * @since 3.0 Changed signature from indexOfAny(String, String) to indexOfAny(CharSequence, String)
      */
@@ -1761,7 +1764,7 @@ public class StringUtils {
      *
      * @param cs  the CharSequence to check, may be null
      * @param searchChars  the chars to search for, may be null
-     * @return the index of any of the chars, -1 if no match or null input
+     * @return the index of the chars, -1 if no match or null input
      * @since 2.0
      * @since 3.0 Changed signature from indexOfAny(String, char[]) to indexOfAny(CharSequence, char...)
      */
@@ -1794,9 +1797,9 @@ public class StringUtils {
 	/**
 	 * 
 	 * 查找字符串的方法
-	 * @param str
-	 * @param searchChars
-	 * @param startPos
+	 * @param str string
+	 * @param searchChars search chars
+	 * @param startPos start position
 	 * @return 出现在第几个字符
 	 */
 	public static int indexOfAny(String str, char[] searchChars, int startPos) {
@@ -1815,8 +1818,8 @@ public class StringUtils {
 	}
 	
 	/**
-	 * @param fname
-	 * @param to
+	 * @param fname file name.
+	 * @param to escape string.
 	 * @return 将文件名中的非法字符替换成合法字符 
 	 */
 	public static String toFilename(String fname, String to) {
@@ -1836,8 +1839,8 @@ public class StringUtils {
 	}
 	
 	/**
-	 * @param source
-	 * @param charset
+	 * @param source source
+	 * @param charset charset
 	 * @return URL解码 
 	 */
 	public static String urlDecode(String source, String charset) {
@@ -1849,7 +1852,7 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param source
+	 * @param source source
 	 * @return URL解码 
 	 */
 	public static String urlDecode(String source) {
@@ -1857,7 +1860,7 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param source
+	 * @param source source
 	 * @return URL编码 
 	 */
 	public static String urlEncode(String source) {
@@ -1869,8 +1872,8 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param source
-	 * @param charset
+	 * @param source source
+	 * @param charset charset
 	 * @return URL编码 
 	 */
 	public static String urlEncode(String source, String charset) {
@@ -1916,59 +1919,59 @@ public class StringUtils {
     }
     
     
-    private static Random random=new Random();
+    private static final Random random=new Random();
 
 	/**
 	 * @return 产生8位的随机数字 
 	 */
-	public static final String randomString() {
+	public static String randomString() {
 		int i=random.nextInt();
 		return String.valueOf(Math.abs(i));
 	}
 	
 	
 	/**
-	 * @param s
+	 * @param string text
 	 * @return 把字符串左边的空格给去掉 
 	 */
-	public static final String ltrim(String s) {
-		if (s == null) {
-			return s;
+	public static final String ltrim(String string) {
+		if (string == null) {
+			return string;
 		}
-		int len = s.length();
+		int len = string.length();
 		int st = 0;
 		int off = 0; /* avoid getfield opcode */
-		char[] val = s.toCharArray(); /* avoid getfield opcode */
+		char[] val = string.toCharArray(); /* avoid getfield opcode */
 		while ((st < len) && (val[off + st] <= ' ')) {
 			st++;
 		}
-		return (st > 0) ? s.substring(st, len) : s;
+		return (st > 0) ? string.substring(st, len) : string;
 	}
 
 	/**
-	 * @param s
-	 * @param trimChars
+	 * @param text text
+	 * @param trimChars characters to remove.
 	 * @return 从左侧删除指定的字符
 	 */
-	public static final String ltrim(String s, char... trimChars) {
-		if (s == null) {
-			return s;
+	public static final String ltrim(String text, char... trimChars) {
+		if (text == null) {
+			return text;
 		}
-		int len = s.length();
+		int len = text.length();
 		int st = 0;
 		int off = 0;
-		while ((st < len) && (ArrayUtils.contains(trimChars, s.charAt(off + st)))) {
+		while ((st < len) && (ArrayUtils.contains(trimChars, text.charAt(off + st)))) {
 			st++;
 		}
-		return (st > 0) ? s.substring(st, len) : s;
+		return (st > 0) ? text.substring(st, len) : text;
 	}
 
 	/**
-	 * @param s
-	 * @param trimChars
+	 * @param s string
+	 * @param trimChars characters to remove.
 	 * @return 从右侧删除指定的字符
 	 */
-	public static final String rtrim(String s, char... trimChars) {
+	public static String rtrim(String s, char... trimChars) {
 		if (s == null) {
 			return s;
 		}
@@ -1982,25 +1985,25 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param s
+	 * @param text text
 	 * @return  把字符串右边的空格给去掉
 	 */
-	public static final String rtrim(String s) {
-		if (s == null) {
-			return s;
+	public static final String rtrim(String text) {
+		if (text == null) {
+			return text;
 		}
-		int len = s.length();
+		int len = text.length();
 		int st = 0;
-		int off = 0; /* avoid getfield opcode */
-		char[] val = s.toCharArray(); /* avoid getfield opcode */
+		int off = 0; /* avoid get field opcode */
+		char[] val = text.toCharArray(); /* avoid getfield opcode */
 		while ((st < len) && (val[off + len - 1] <= ' ')) {
 			len--;
 		}
-		return (len < s.length()) ? s.substring(st, len) : s;
+		return (len < text.length()) ? text.substring(st, len) : text;
 	}
 
 	/**
-	 * @param s
+	 * @param s string
 	 * @param lTrimChars 左侧要trim的字符
 	 * @param rTrimChars 右侧要trim的字符
 	 * @return 左右两边做不同的trim
@@ -2023,13 +2026,13 @@ public class StringUtils {
 	
 	/**
 	 * 计算CRC摘要,8位十六进制数
-	 * @param in
+	 * @param in input stream.
 	 * @return CRC
 	 */
 	public static String getCRC(InputStream in) {
 		CRC32 crc32 = new CRC32();
 		byte[] b = new byte[65536];
-		int len = 0;
+		int len;
 		try {
 			while ((len = in.read(b)) != -1) {
 				crc32.update(b, 0, len);
@@ -2042,7 +2045,7 @@ public class StringUtils {
 
 	/**
 	 * 计算CRC摘要,8位十六进制数
-	 * @param s
+	 * @param s string
 	 * @return CRC
 	 */
 	public static String getCRC(String s) {
@@ -2070,11 +2073,11 @@ public class StringUtils {
 	
 	/**
 	 * 计算MD5摘要
-	 * @param s
-	 * @return MD5
+	 * @param string source text.
+	 * @return MD5 md5 value in base64.
 	 */
-	public final static String getMD5InBase64(String s) {
-		try(ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes())){
+	public final static String getMD5InBase64(String string) {
+		try(ByteArrayInputStream in = new ByteArrayInputStream(string.getBytes())){
 			byte[] md = hash(in, "MD5");
 			return JefBase64.encode(md);
 		} catch (IOException e) {
@@ -2085,7 +2088,7 @@ public class StringUtils {
 
 	/**
 	 * 计算MD5摘要
-	 * @param file
+	 * @param file file
 	 * @return 32位十六进制数的MD5值
 	 */
 	public final static String getMD5(File file) {
@@ -2099,11 +2102,11 @@ public class StringUtils {
 
 	/**
 	 * 计算SHA-1
-	 * @param s
-	 * @return SHA-1
+	 * @param text text
+	 * @return SHA-1 value in binary string.
 	 */
-	public final static String getSHA1(String s) {
-		ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes());
+	public final static String getSHA1(String text) {
+		ByteArrayInputStream in = new ByteArrayInputStream(text.getBytes());
 		byte[] md = hash(in, "SHA-1");
 		return join(md, (char) 0, 0, md.length);
 	}
@@ -2111,11 +2114,11 @@ public class StringUtils {
 	/**
 	 * 计算SHA256
 	 * 
-	 * @param s
+	 * @param string string
 	 * @return SHA256
 	 */
-	public final static String getSHA256(String s) {
-		ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes());
+	public final static String getSHA256(String string) {
+		ByteArrayInputStream in = new ByteArrayInputStream(string.getBytes());
 		byte[] md = hash(in, "SHA-256");
 		return join(md, (char) 0, 0, md.length);
 	}
@@ -2127,67 +2130,71 @@ public class StringUtils {
 		try {
 			MessageDigest mdTemp = MessageDigest.getInstance(algorithm);
 			byte[] b = new byte[4096];
-			int len = 0;
+			int len;
 			while ((len = in.read(b)) != -1) {
 				mdTemp.update(b, 0, len);
 			}
 			return mdTemp.digest();
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
+		} catch (NoSuchAlgorithmException | IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public static final char hexDigitsU[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+	public static final char[] hexDigitsU = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
 	'F' };
-	public static final char hexDigitsL[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
+	public static final char[] hexDigitsL = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
 	'e', 'f' };
 
 	
 	/**
 	 * 将数组或列表拼成文本
 	 * 
-	 * @param b
-	 * @param c
+	 * @param bytes bytes
+	 * @param c character
 	 * @return 拼接文本
 	 */
-	public static String join(byte[] b, char c) {
-		if (b == null)
+	public static String join(byte[] bytes, char c) {
+		if (bytes == null)
 			return "";
-		return join(b, c, 0, b.length);
+		return join(bytes, c, 0, bytes.length);
 	}
 
 	/**
 	 * 将数组或列表拼成文本
 	 * 
-	 * @param b
-	 * @param dchar
-	 * @param offset
-	 * @param len
+	 * @param bytes bytes
+	 * @param dchar dchar
+	 * @param offset offset
+	 * @param len len
 	 * @return 拼接文本
 	 */
-	public static String join(byte[] b, char dchar, int offset, int len) {
-		if (b == null || b.length == 0)
+	public static String join(byte[] bytes, char dchar, int offset, int len) {
+		if (bytes == null || bytes.length == 0)
 			return "";
-		return dchar == NULL_CHAR ? toHex0(b, offset, len, hexDigitsL) : toHex0(b, offset, len, dchar, hexDigitsL);
+		return dchar == NULL_CHAR ? toHex0(bytes, offset, len, hexDigitsL) : toHex0(bytes, offset, len, dchar, hexDigitsL);
+	}
+	
+	public static String joinUpper(byte[] bytes, char dchar, int offset, int len) {
+		if (bytes == null || bytes.length == 0)
+			return "";
+		return dchar == NULL_CHAR ? toHex0(bytes, offset, len, hexDigitsU) : toHex0(bytes, offset, len, dchar, hexDigitsU);
 	}
 	
 	/**
 	 * 将数组或列表拼成文本
 	 * 
-	 * @param os
-	 * @param separator
+	 * @param objects objects
+	 * @param separator separator
 	 * @return 拼接文本
 	 */
-	public static String join(Object[] os, String separator) {
-		if (os == null || os.length == 0)
+	public static String join(Object[] objects, String separator) {
+		if (objects == null || objects.length == 0)
 			return EMPTY;
-		String[] ss = new String[os.length];
+		String[] ss = new String[objects.length];
 		int len = 0;
 		int sepLen = separator.length();
-		for (int i = 0; i < os.length; i++) {
-			Object o = os[i];
+		for (int i = 0; i < objects.length; i++) {
+			Object o = objects[i];
 			ss[i] = o == null ? "" : o.toString();
 			len += ss[i].length();
 			len += sepLen;
@@ -2252,7 +2259,7 @@ public class StringUtils {
 		int j = offset + len;
 		if (j > b.length)
 			j = b.length; // 上限
-		char str[] = new char[j * (3)];
+		char[] str = new char[j * (3)];
 		int k = 0;
 		for (int i = offset; i < j; i++) {
 			byte byte0 = b[i];
@@ -2270,7 +2277,7 @@ public class StringUtils {
 		int j = offset + len;
 		if (j > b.length)
 			j = b.length; // 上限
-		char str[] = new char[j * 2];
+		char[] str = new char[j * 2];
 		int k = 0;
 		for (int i = offset; i < j; i++) {
 			byte byte0 = b[i];
@@ -2284,7 +2291,7 @@ public class StringUtils {
 	 * 合并多个String,在参数为3个和以内时请直接使用String.concat。
 	 * 5个和超过5个String相加后，concat方法性能急剧下降，此时此方法最快
 	 * 
-	 * @param args
+	 * @param args args
 	 * @return 拼接文本
 	 */
 	public final static String concat(String... args) {
@@ -2306,13 +2313,12 @@ public class StringUtils {
 	}
 	
 	/**
-	 * 
-	 * @param s
+	 * @param string string
 	 * @return true if 存在东亚字符 
 	 */
-	public static boolean hasAsian(String s) {
-		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
+	public static boolean hasAsian(String string) {
+		for (int i = 0; i < string.length(); i++) {
+			char c = string.charAt(i);
 			if (c > 255 && c != 65279) {
 				return true;
 			}
@@ -2321,9 +2327,9 @@ public class StringUtils {
 	}
 	
 	/**
-	 * @param arg1
-	 * @param arg2
-	 * @param arg3
+	 * @param arg1 arg1
+	 * @param arg2 arg2
+	 * @param arg3 arg3
 	 * @return 覆盖apache-lang3中父类的方法，从两端取,Apache commons默认是从前取的 
 	 */
 	public static String substringBetween(String arg1, String arg2, String arg3) {
@@ -2379,7 +2385,7 @@ public class StringUtils {
      * should be used with a specific locale (e.g. {@link Locale#ENGLISH}).</p>
      *
      * @param str  the String to upper case, may be null
-     * @return the upper cased String, {@code null} if null String input
+     * @return the upper-cased String, {@code null} if null String input
      */
     public static String upperCase(final String str) {
         if (str == null) {
@@ -2405,19 +2411,181 @@ public class StringUtils {
 	/**
 	 * 文本截断
 	 * 
-	 * @param str
-	 * @param maxLength
+	 * @param string string
+	 * @param maxLength maxLength
 	 * @param append    阶段后要添加的内容
-	 * @return
+	 * @return String truncated.
 	 */
-	public static String truncate(String str, int maxLength, String... append) {
-		if (str.length() <= maxLength)
-			return str;
-		str = str.substring(0, maxLength);
+	public static String truncate(String string, int maxLength, String... append) {
+		if (string.length() <= maxLength)
+			return string;
+		string = string.substring(0, maxLength);
 		if (append.length > 0) {
-			return str.concat(append[0]);
+			return string.concat(append[0]);
 		} else {
-			return str;
+			return string;
 		}
 	}
+	
+	/**
+	 * Tokenize the given String into a String array via a StringTokenizer. Trims
+	 * tokens and omits empty tokens.
+	 * <p>
+	 * The given delimiters string is supposed to consist of any number of delimiter
+	 * characters. Each of those characters can be used to separate tokens. A
+	 * delimiter is always a single character; for multi-character delimiters,
+	 * consider using {@code delimitedListToStringArray}
+	 * 
+	 * @param str        the String to tokenize
+	 * @param delimiters the delimiter characters, assembled as String (each of
+	 *                   those characters is individually considered as delimiter).
+	 * @return an array of the tokens
+	 * @see java.util.StringTokenizer
+	 * @see String#trim()
+	 */
+	public static String[] tokenizeToStringArray(String str, String delimiters) {
+		return tokenizeToStringArray(str, delimiters, true, true);
+	}
+
+	/**
+	 * Tokenize the given String into a String array via a StringTokenizer.
+	 * <p>
+	 * The given delimiters string is supposed to consist of any number of delimiter
+	 * characters. Each of those characters can be used to separate tokens. A
+	 * delimiter is always a single character; for multi-character delimiters,
+	 * consider using {@code delimitedListToStringArray}
+	 * 
+	 * @param str               the String to tokenize
+	 * @param delimiters        the delimiter characters, assembled as String (each
+	 *                          of those characters is individually considered as
+	 *                          delimiter)
+	 * @param trimTokens        trim the tokens via String's {@code trim}
+	 * @param ignoreEmptyTokens omit empty tokens from the result array (only
+	 *                          applies to tokens that are empty after trimming;
+	 *                          StringTokenizer will not consider subsequent
+	 *                          delimiters as token in the first place).
+	 * @return an array of the tokens ({@code null} if the input String was
+	 *         {@code null})
+	 * @see java.util.StringTokenizer
+	 * @see String#trim()
+	 */
+	public static String[] tokenizeToStringArray(String str, String delimiters, boolean trimTokens,
+			boolean ignoreEmptyTokens) {
+
+		if (str == null) {
+			return null;
+		}
+		StringTokenizer st = new StringTokenizer(str, delimiters);
+		List<String> tokens = new ArrayList<String>();
+		while (st.hasMoreTokens()) {
+			String token = st.nextToken();
+			if (trimTokens) {
+				token = token.trim();
+			}
+			if (!ignoreEmptyTokens || token.length() > 0) {
+				tokens.add(token);
+			}
+		}
+		return toStringArray(tokens);
+	}
+
+	/**
+	 * Copy the given Collection into a String array. The Collection must contain
+	 * String elements only.
+	 * <p>
+	 * Copied from the Spring Framework while retaining all license, copyright and
+	 * author information.
+	 * 
+	 * @param collection the Collection to copy
+	 * @return the String array (<code>null</code> if the passed-in Collection was
+	 *         <code>null</code>)
+	 */
+	public static String[] toStringArray(Collection<String> collection) {
+		if (collection == null) {
+			return null;
+		}
+		return collection.toArray(new String[collection.size()]);
+	}
+
+	/**
+	 * Determines whether the sting 'searchIn' contains the string
+	 * 'searchFor', disregarding case and leading whitespace
+	 * 
+	 * @param searchIn  the string to search in
+	 * @param searchFor the string to search for
+	 * 
+	 * @return true if the string starts with 'searchFor' ignoring whitespace
+	 */
+	public static boolean startsWithIgnoreCaseAndWs(String searchIn, String searchFor) {
+		return startsWithIgnoreCaseAndWs(searchIn, searchFor, 0);
+	}
+
+	/**
+	 * Determines whether the sting 'searchIn' contains the string
+	 * 'searchFor', disregarding case and leading whitespace
+	 * 
+	 * @param searchIn  the string to search in
+	 * @param searchFor the string to search for
+	 * @param beginPos  where to start searching
+	 * 
+	 * @return true if the string starts with 'searchFor' ignoring whitespace
+	 */
+	public static boolean startsWithIgnoreCaseAndWs(String searchIn, String searchFor, int beginPos) {
+		if (searchIn == null) {
+			return searchFor == null;
+		}
+
+		int inLength = searchIn.length();
+
+		for (; beginPos < inLength; beginPos++) {
+			if (!Character.isWhitespace(searchIn.charAt(beginPos))) {
+				break;
+			}
+		}
+
+		return startsWithIgnoreCase(searchIn, beginPos, searchFor);
+	}
+	
+
+	/**
+	 * Determines whether the string 'searchIn' contains the string
+	 * 'searchFor', dis-regarding case starting at 'startAt' Shorthand for a
+	 * String.regionMatch(...)
+	 * 
+	 * @param searchIn  the string to search in
+	 * @param startAt   the position to start at
+	 * @param searchFor the string to search for
+	 * 
+	 * @return whether searchIn starts with searchFor, ignoring case
+	 */
+	public static boolean startsWithIgnoreCase(String searchIn, int startAt, String searchFor) {
+		return searchIn.regionMatches(true, startAt, searchFor, 0, searchFor.length());
+	}
+
+	public static String replace(String location, String s1, String s2) {
+		return location==null? location:location.replace(s1, s2);
+	}
+	
+    public static boolean equalsIgnoreCase(final CharSequence str1, final CharSequence str2) {
+        if (str1 == null || str2 == null) {
+            return str1 == str2;
+        } else if (str1 == str2) {
+            return true;
+        } else if (str1.length() != str2.length()) {
+            return false;
+        } else {
+        	int len=str1.length();
+        	for(int i=0;i<len;i++) {
+        		char c1=str1.charAt(i);
+        		char c2=str2.charAt(i);
+        		 if (c1 == c2) {
+                     continue;
+                 }
+        		 if (Character.toUpperCase(c1) != Character.toUpperCase(c2)) {
+                     return false;
+                 }
+        	}
+        	return true;
+        }
+    }
 }

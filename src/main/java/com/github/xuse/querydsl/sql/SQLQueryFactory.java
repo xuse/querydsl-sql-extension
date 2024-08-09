@@ -13,8 +13,11 @@
  */
 package com.github.xuse.querydsl.sql;
 
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import javax.sql.DataSource;
@@ -23,14 +26,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.init.DataInitializer;
 import com.github.xuse.querydsl.init.InitProcessor;
+import com.github.xuse.querydsl.init.TableDataInitializer;
+import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.lambda.PathCache;
+import com.github.xuse.querydsl.repository.AbstractCrudRepository;
+import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
+import com.github.xuse.querydsl.sql.extension.ExtensionQueryFactory;
 import com.github.xuse.querydsl.sql.spring.SpringProvider;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.Tuple;
@@ -43,9 +51,7 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLCloseListener;
 import com.querydsl.sql.SQLServer2012Templates;
 import com.querydsl.sql.SQLTemplates;
-import com.querydsl.sql.UnmanagedConnectionCloseListener;
 import com.querydsl.sql.mssql.SQLServerQueryFactory;
-import com.querydsl.sql.mysql.MySQLQueryFactory;
 import com.querydsl.sql.oracle.OracleQueryFactory;
 import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
 
@@ -53,23 +59,24 @@ import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
  * Factory class for query and DML clause creation
  *
  * @author Joey
- *
  */
-public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
+public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> implements SQLFactoryExtension{
+
 	private final ConfigurationEx configEx;
+	
+	private final Map<Class<?>, ExtensionQueryFactory> extensions = new ConcurrentHashMap<>();
 
 	Logger log = LoggerFactory.getLogger(SQLQueryFactory.class);
 
 	public SQLQueryFactory(SQLTemplates templates, Supplier<Connection> connection) {
 		this(new ConfigurationEx(templates), connection);
-		
 	}
 
 	public SQLQueryFactory(ConfigurationEx configuration, Supplier<Connection> connProvider) {
 		super(configuration, connProvider);
-		this.configEx=configuration;
+		this.configEx = configuration;
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
-		tryInit(configuration);
+		tryInitTask(configuration);
 	}
 
 	public SQLQueryFactory(ConfigurationEx configuration, DataSource dataSource) {
@@ -78,35 +85,34 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 
 	public SQLQueryFactory(ConfigurationEx configuration, DataSource dataSource, boolean release) {
 		super(configuration, new DataSourceProvider(dataSource));
-		this.configEx=configuration;
+		this.configEx = configuration;
 		if (release) {
 			configuration.addListener(SQLCloseListener.DEFAULT);
 		}
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
-		tryInit(configuration);
+		tryInitTask(configuration);
 	}
 
-	private void tryInit(ConfigurationEx configuration) {
-		InitProcessor task=new InitProcessor(this);
+	protected void tryInitTask(ConfigurationEx configuration) {
+		InitProcessor task = new InitProcessor(this, configuration.getScanOptions());
 		task.run();
 	}
-	
 
 	/**
 	 * 根据URL计算使用的SQL模板
-	 * @param url
+	 * @param url url
 	 * @return SQLTemplates
 	 */
 	public static SQLTemplates calcSQLTemplate(String url) {
-		if(url.startsWith("jdbc:mysql:")) {
-			return new MySQLWithJSONTemplates() ;
-		}else if(url.startsWith("jdbc:derby:")) {
+		if (url.startsWith("jdbc:mysql:")) {
+			return new MySQLWithJSONTemplates();
+		} else if (url.startsWith("jdbc:derby:")) {
 			return DerbyTemplates.builder().build();
-		}else if(url.startsWith("jdbc:postgresql:")) {
+		} else if (url.startsWith("jdbc:postgresql:")) {
 			return new PostgreSQLTemplates();
-		}else if(url.startsWith("jdbc:sqlserver")) {
+		} else if (url.startsWith("jdbc:sqlserver")) {
 			return new SQLServer2012Templates();
-		}else if(url.startsWith("jdbc:oracle:")) {
+		} else if (url.startsWith("jdbc:oracle:")) {
 			return new OracleTemplates();
 		}
 		throw Exceptions.illegalArgument(url);
@@ -119,6 +125,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 	}
 
 	static class DataSourceProvider implements Supplier<Connection> {
+
 		private final DataSource ds;
 
 		public DataSourceProvider(DataSource ds) {
@@ -134,7 +141,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 			}
 		}
 	}
-	
+
 	protected ConfigurationEx getConfigurationEx() {
 		return configEx;
 	}
@@ -143,8 +150,8 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		return new com.querydsl.sql.SQLQueryFactory(configuration.get(), connection);
 	}
 
-	public MySQLQueryFactory asMySQL() {
-		return new com.querydsl.sql.mysql.MySQLQueryFactory(configuration.get(), connection);
+	public MySQLQueryFactory2 asMySQL() {
+		return new MySQLQueryFactory2(configuration, connection);
 	}
 
 	public SQLServerQueryFactory asSQLServer() {
@@ -199,66 +206,116 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> {
 		return select(expr).from(expr);
 	}
 
-    @Override
-    public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
-        return new SQLDeleteClauseAlter(connection, configEx, path);
-    }
-    
-    @Override
-    public final SQLInsertClauseAlter insert(RelationalPath<?> path) {
-        return new SQLInsertClauseAlter(connection, configEx, path);
-    }
+	@Override
+	public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
+		return new SQLDeleteClauseAlter(connection, configEx, path);
+	}
 
-    @Override
-    public final SQLMergeClauseAlter merge(RelationalPath<?> path) {
-        return new SQLMergeClauseAlter(connection, configEx, path);
-    }
+	@Override
+	public final SQLInsertClauseAlter insert(RelationalPath<?> path) {
+		return new SQLInsertClauseAlter(connection, configEx, path);
+	}
 
-    @Override
-    public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
-        return new SQLUpdateClauseAlter(connection, configEx, path);
-    }
-    
-    public boolean isInSpringTransaction() {
-    	if(connection instanceof  SpringProvider) {
-    		return ((SpringProvider) connection).isTx();
-    	}
-    	return false;
-    }
+	@Override
+	public final SQLMergeClauseAlter merge(RelationalPath<?> path) {
+		return new SQLMergeClauseAlter(connection, configEx, path);
+	}
+
+	@Override
+	public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
+		return new SQLUpdateClauseAlter(connection, configEx, path);
+	}
+
+	public boolean isInSpringTransaction() {
+		if (connection instanceof SpringProvider) {
+			return ((SpringProvider) connection).isTx();
+		}
+		return false;
+	}
 
 	@Override
 	public SQLMetadataQueryFactory getMetadataFactory() {
-		return new SQLMetadataFactoryImpl(connection,configEx);
+		return new SQLMetadataFactoryImpl(this);
 	}
-	
+
 	/**
-	 * @param level one of the following <code>Connection</code> constants:
-     *        <code>Connection.TRANSACTION_READ_UNCOMMITTED</code>,
-     *        <code>Connection.TRANSACTION_READ_COMMITTED</code>,
-     *        <code>Connection.TRANSACTION_REPEATABLE_READ</code>, or
-     *        <code>Connection.TRANSACTION_SERIALIZABLE</code>.
-     *        (Note that <code>Connection.TRANSACTION_NONE</code> cannot be used
-     *        because it specifies that transactions are not supported.)
-	 * @return CloseableSQLQueryFactory. must call close method for resource release 
+	 *  @param level one of the following <code>Connection</code> constants:
+	 *         <code>Connection.TRANSACTION_READ_UNCOMMITTED</code>,
+	 *         <code>Connection.TRANSACTION_READ_COMMITTED</code>,
+	 *         <code>Connection.TRANSACTION_REPEATABLE_READ</code>, or
+	 *         <code>Connection.TRANSACTION_SERIALIZABLE</code>.
+	 *         (Note that <code>Connection.TRANSACTION_NONE</code> cannot be used
+	 *         because it specifies that transactions are not supported.)
+	 *  @return CloseableSQLQueryFactory. must call close method for resource release
 	 */
 	public CloseableSQLQueryFactory oneConnectionSession(int level) {
-		try{
-			Connection conn=connection.get();
-			if(level>0) {
-				if(isInSpringTransaction()) {
+		try {
+			Connection conn = connection.get();
+			if (level > 0) {
+				if (isInSpringTransaction()) {
 					log.warn("Can not set transaction isolation because current session is Spring managed transaction.");
-				}else {
-					conn.setTransactionIsolation(level);	
+				} else {
+					conn.setTransactionIsolation(level);
 				}
 			}
 			return new CloseableSQLQueryFactory(configEx, conn);
-		}catch(SQLException e) {
+		} catch (SQLException e) {
 			throw configuration.get().translate(e);
 		}
 	}
 
 	@Override
-	public DataInitializer initializeTable(RelationalPath<?> table) {
-		return new DataInitializer(this, table);
+	public TableDataInitializer initializeTable(RelationalPath<?> table) {
+		return new TableDataInitializer(this, table);
 	}
+	
+	/**
+	 * create a {@link CRUDRepository} object. the CRUDRepository provides api in another style to access the database.
+	 * @param <T> the mapping class type of table.
+	 * @param <ID> the primary key type of the table.
+	 * @param path relational path.
+	 * @return CRUDRepository  the CRUDRepository
+	 * @see CRUDRepository
+	 */
+	public <T, ID> CRUDRepository<T, ID> asRepository(RelationalPath<T> path){
+		return new AbstractCrudRepository<T, ID>() {
+			@Override
+			protected SQLQueryFactory getFactory() {
+				return SQLQueryFactory.this;
+			}
+			@Override
+			protected RelationalPath<T> getPath() {
+				return path;
+			}
+		};
+	}
+	
+	public <T, ID> CRUDRepository<T, ID> asRepository(LambdaTable<T> clz){
+		return asRepository(PathCache.get(clz.get()));
+	}
+	
+//	public <T, ID> CRUDRepository<T, ID> asRepository(Class<T> clz){
+//		return asRepository(PathCache.get(clz));
+//	}
+	
+	public <T, ID> CRUDRepository<T, ID> asRepository(RelationalPath<T> path,Class<ID> primaryKeyType){
+		return asRepository(path);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends ExtensionQueryFactory> T asExtension(Class<T> clz) {
+		return (T) extensions.computeIfAbsent(clz, this::generateExtensionInstance);
+	}
+	
+	ExtensionQueryFactory generateExtensionInstance(Class<?> clz) {
+		try {
+			Constructor<?> constructor=clz.getDeclaredConstructor(ConfigurationEx.class,Supplier.class);
+			constructor.setAccessible(true);
+			return (ExtensionQueryFactory) constructor.newInstance(configEx, connection);
+		} catch (Exception e) {
+			throw Exceptions.toRuntime(e);
+		}
+	}
+	
 }

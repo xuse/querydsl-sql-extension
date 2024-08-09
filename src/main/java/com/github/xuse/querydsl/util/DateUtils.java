@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package com.github.xuse.querydsl.util;
 
 import java.sql.Timestamp;
@@ -40,228 +39,210 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <strong>Internal class, do not use directly.</strong>
- * 
+ *
  * Standard date related utility methods.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DateUtils {
+
 	public static final int MILLISECONDS_IN_DAY = 86400000;
+
 	public static final int MILLISECONDS_IN_HOUR = 3600000;
+
 	public static final int MILLISECONDS_IN_MINUTE = 60000;
+
 	public static final int MILLISECONDS_IN_SECOND = 1000;
+
 	public static final int SECONDS_IN_DAY = 86400;
+
 	public static final int SECONDS_IN_HOUR = 3600;
+
 	public static final int SECONDS_IN_MINITE = 60;
-    private static final TimeZone TIME_ZONE_UTC = TimeZone.getTimeZone("UTC");
 
-    private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",
-            "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+	private static final TimeZone TIME_ZONE_UTC = TimeZone.getTimeZone("UTC");
 
-    /*
+	private static final String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+	/*
      * Creates the DateFormat object used to parse/format
      * dates in FTP format.
      */
-    private static final ThreadLocal<DateFormat> FTP_DATE_FORMAT = new ThreadLocal<DateFormat>() {
+	private static final ThreadLocal<DateFormat> FTP_DATE_FORMAT = new ThreadLocal<DateFormat>() {
 
-        @Override
-        protected DateFormat initialValue() {
-            DateFormat df=new SimpleDateFormat("yyyyMMddHHmmss");
-            df.setLenient(false);
-            df.setTimeZone(TimeZone.getTimeZone("GMT"));
-            return df;
-        }
-        
-    };
-    
-    /**
-     * Get unix style date string.
-     * @param millis
-     * @return String in unix format.
-     */
-    public final static String getUnixDate(long millis) {
-        if (millis < 0) {
-            return "------------";
-        }
+		@Override
+		protected DateFormat initialValue() {
+			DateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+			df.setLenient(false);
+			df.setTimeZone(TimeZone.getTimeZone("GMT"));
+			return df;
+		}
+	};
 
-        StringBuilder sb = new StringBuilder(16);
-        Calendar cal = new GregorianCalendar();
-        cal.setTimeInMillis(millis);
+	/**
+	 * Get unix style date string.
+	 * @param millis millis
+	 * @return String in unix format.
+	 */
+	public static final String getUnixDate(long millis) {
+		if (millis < 0) {
+			return "------------";
+		}
+		StringBuilder sb = new StringBuilder(16);
+		Calendar cal = new GregorianCalendar();
+		cal.setTimeInMillis(millis);
+		// month
+		sb.append(MONTHS[cal.get(Calendar.MONTH)]);
+		sb.append(' ');
+		// day
+		int day = cal.get(Calendar.DATE);
+		if (day < 10) {
+			sb.append(' ');
+		}
+		sb.append(day);
+		sb.append(' ');
+		// 183L * 24L * 60L * 60L * 1000L;
+		long sixMonth = 15811200000L;
+		long nowTime = System.currentTimeMillis();
+		if (Math.abs(nowTime - millis) > sixMonth) {
+			// year
+			int year = cal.get(Calendar.YEAR);
+			sb.append(' ');
+			sb.append(year);
+		} else {
+			// hour
+			int hh = cal.get(Calendar.HOUR_OF_DAY);
+			if (hh < 10) {
+				sb.append('0');
+			}
+			sb.append(hh);
+			sb.append(':');
+			// minute
+			int mm = cal.get(Calendar.MINUTE);
+			if (mm < 10) {
+				sb.append('0');
+			}
+			sb.append(mm);
+		}
+		return sb.toString();
+	}
 
-        // month
-        sb.append(MONTHS[cal.get(Calendar.MONTH)]);
-        sb.append(' ');
+	/**
+	 * @param millis millis
+	 * @return  ISO 8601 timestamp.
+	 */
+	public static final String getISO8601Date(long millis) {
+		StringBuilder sb = new StringBuilder(19);
+		Calendar cal = new GregorianCalendar();
+		cal.setTimeInMillis(millis);
+		// year
+		sb.append(cal.get(Calendar.YEAR));
+		// month
+		sb.append('-');
+		int month = cal.get(Calendar.MONTH) + 1;
+		if (month < 10) {
+			sb.append('0');
+		}
+		sb.append(month);
+		// date
+		sb.append('-');
+		int date = cal.get(Calendar.DATE);
+		if (date < 10) {
+			sb.append('0');
+		}
+		sb.append(date);
+		// hour
+		sb.append('T');
+		int hour = cal.get(Calendar.HOUR_OF_DAY);
+		if (hour < 10) {
+			sb.append('0');
+		}
+		sb.append(hour);
+		// minute
+		sb.append(':');
+		int min = cal.get(Calendar.MINUTE);
+		if (min < 10) {
+			sb.append('0');
+		}
+		sb.append(min);
+		// second
+		sb.append(':');
+		int sec = cal.get(Calendar.SECOND);
+		if (sec < 10) {
+			sb.append('0');
+		}
+		sb.append(sec);
+		return sb.toString();
+	}
 
-        // day
-        int day = cal.get(Calendar.DATE);
-        if (day < 10) {
-            sb.append(' ');
-        }
-        sb.append(day);
-        sb.append(' ');
+	/**
+	 * Get FTP date.
+	 * @param millis millis
+	 * @return formatted string in UTC
+	 */
+	public static final String getFtpDate(long millis) {
+		StringBuilder sb = new StringBuilder(20);
+		// MLST should use UTC
+		Calendar cal = new GregorianCalendar(TIME_ZONE_UTC);
+		cal.setTimeInMillis(millis);
+		// year
+		sb.append(cal.get(Calendar.YEAR));
+		// month
+		int month = cal.get(Calendar.MONTH) + 1;
+		if (month < 10) {
+			sb.append('0');
+		}
+		sb.append(month);
+		// date
+		int date = cal.get(Calendar.DATE);
+		if (date < 10) {
+			sb.append('0');
+		}
+		sb.append(date);
+		// hour
+		int hour = cal.get(Calendar.HOUR_OF_DAY);
+		if (hour < 10) {
+			sb.append('0');
+		}
+		sb.append(hour);
+		// minute
+		int min = cal.get(Calendar.MINUTE);
+		if (min < 10) {
+			sb.append('0');
+		}
+		sb.append(min);
+		// second
+		int sec = cal.get(Calendar.SECOND);
+		if (sec < 10) {
+			sb.append('0');
+		}
+		sb.append(sec);
+		// millisecond
+		sb.append('.');
+		int milli = cal.get(Calendar.MILLISECOND);
+		if (milli < 100) {
+			sb.append('0');
+		}
+		if (milli < 10) {
+			sb.append('0');
+		}
+		sb.append(milli);
+		return sb.toString();
+	}
 
-        long sixMonth = 15811200000L; // 183L * 24L * 60L * 60L * 1000L;
-        long nowTime = System.currentTimeMillis();
-        if (Math.abs(nowTime - millis) > sixMonth) {
-
-            // year
-            int year = cal.get(Calendar.YEAR);
-            sb.append(' ');
-            sb.append(year);
-        } else {
-
-            // hour
-            int hh = cal.get(Calendar.HOUR_OF_DAY);
-            if (hh < 10) {
-                sb.append('0');
-            }
-            sb.append(hh);
-            sb.append(':');
-
-            // minute
-            int mm = cal.get(Calendar.MINUTE);
-            if (mm < 10) {
-                sb.append('0');
-            }
-            sb.append(mm);
-        }
-        return sb.toString();
-    }
-
-    /**
-     * @param millis
-     * @return  ISO 8601 timestamp.
-     */
-    public final static String getISO8601Date(long millis) {
-        StringBuilder sb = new StringBuilder(19);
-        Calendar cal = new GregorianCalendar();
-        cal.setTimeInMillis(millis);
-
-        // year
-        sb.append(cal.get(Calendar.YEAR));
-
-        // month
-        sb.append('-');
-        int month = cal.get(Calendar.MONTH) + 1;
-        if (month < 10) {
-            sb.append('0');
-        }
-        sb.append(month);
-
-        // date
-        sb.append('-');
-        int date = cal.get(Calendar.DATE);
-        if (date < 10) {
-            sb.append('0');
-        }
-        sb.append(date);
-
-        // hour
-        sb.append('T');
-        int hour = cal.get(Calendar.HOUR_OF_DAY);
-        if (hour < 10) {
-            sb.append('0');
-        }
-        sb.append(hour);
-
-        // minute
-        sb.append(':');
-        int min = cal.get(Calendar.MINUTE);
-        if (min < 10) {
-            sb.append('0');
-        }
-        sb.append(min);
-
-        // second
-        sb.append(':');
-        int sec = cal.get(Calendar.SECOND);
-        if (sec < 10) {
-            sb.append('0');
-        }
-        sb.append(sec);
-
-        return sb.toString();
-    }
-
-    /**
-     * Get FTP date.
-     * @param millis
-     * @return formatted string in UTC
-     */
-    public final static String getFtpDate(long millis) {
-        StringBuilder sb = new StringBuilder(20);
-        
-        // MLST should use UTC
-        Calendar cal = new GregorianCalendar(TIME_ZONE_UTC);
-        cal.setTimeInMillis(millis);
-        
-
-        // year
-        sb.append(cal.get(Calendar.YEAR));
-
-        // month
-        int month = cal.get(Calendar.MONTH) + 1;
-        if (month < 10) {
-            sb.append('0');
-        }
-        sb.append(month);
-
-        // date
-        int date = cal.get(Calendar.DATE);
-        if (date < 10) {
-            sb.append('0');
-        }
-        sb.append(date);
-
-        // hour
-        int hour = cal.get(Calendar.HOUR_OF_DAY);
-        if (hour < 10) {
-            sb.append('0');
-        }
-        sb.append(hour);
-
-        // minute
-        int min = cal.get(Calendar.MINUTE);
-        if (min < 10) {
-            sb.append('0');
-        }
-        sb.append(min);
-
-        // second
-        int sec = cal.get(Calendar.SECOND);
-        if (sec < 10) {
-            sb.append('0');
-        }
-        sb.append(sec);
-
-        // millisecond
-        sb.append('.');
-        int milli = cal.get(Calendar.MILLISECOND);
-        if (milli < 100) {
-            sb.append('0');
-        }
-        if (milli < 10) {
-            sb.append('0');
-        }
-        sb.append(milli);
-        return sb.toString();
-    }
-    /*
+	/*
      *  Parses a date in the format used by the FTP commands 
      *  involving dates(MFMT, MDTM)
      */
-    public final static Date parseFTPDate(String dateStr) throws ParseException{
-        return FTP_DATE_FORMAT.get().parse(dateStr);
-        
-    }
-    
+	public static final Date parseFTPDate(String dateStr) throws ParseException {
+		return FTP_DATE_FORMAT.get().parse(dateStr);
+	}
 
 	/**
 	 * return true if the date 1 and date 2 is on the same day
-	 * 
-	 * @param d1
-	 * @param d2
-	 * @param zone
+	 * @param d1 d1
+	 * @param d2 d2
+	 * @param zone zone
 	 *            时区，不同地区对“当天”的范围是不一样的
 	 * @return true if is save date in the time zone.
 	 */
@@ -275,10 +256,9 @@ public class DateUtils {
 
 	/**
 	 * 是否同一个月内
-	 * 
-	 * @param d1
+	 * @param d1 d1
 	 *            日期1
-	 * @param d2
+	 * @param d2 d2
 	 *            日期2
 	 * @return true if is same month in current time zone.
 	 */
@@ -288,10 +268,9 @@ public class DateUtils {
 
 	/**
 	 * 是否同一个月内
-	 * 
-	 * @param d1
-	 * @param d2
-	 * @param zone
+	 * @param d1 d1
+	 * @param d2 d2
+	 * @param zone zone
 	 *            时区，不同地区对“当天”的范围是不一样的
 	 * @return true if is same month in the time zone.
 	 */
@@ -300,20 +279,20 @@ public class DateUtils {
 	}
 
 	/**
-	 * 得到年份
-	 * @param d 时间
-	 * @return 年份
+	 *  得到年份
+	 *  @param d 时间
+	 *  @return 年份
 	 */
 	public static int getYear(Date d) {
 		return getYear(d, TimeZone.getDefault());
 	}
-	
+
 	/**
-	 * 得到年份
-	 * 
-	 * @param d 时间
-	 * @param zone 时区
-	 * @return year
+	 *  得到年份
+	 *
+	 *  @param d 时间
+	 *  @param zone 时区
+	 *  @return year
 	 */
 	public static int getYear(Date d, TimeZone zone) {
 		if (d == null)
@@ -322,34 +301,30 @@ public class DateUtils {
 		c.setTime(d);
 		return c.get(Calendar.YEAR);
 	}
-	
 
 	public static int getWeekOfYear(Date date) {
-		return getWeekOfYear(date,TimeZone.getDefault());
+		return getWeekOfYear(date, TimeZone.getDefault());
 	}
-	
+
 	public static int getWeekOfYear(Date date, TimeZone zone) {
 		final Calendar c = new GregorianCalendar(zone);
 		c.setTime(date);
 		return c.get(Calendar.WEEK_OF_YEAR);
 	}
-	
 
 	/**
 	 * 得到月份 (1~12)
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return 月份，范围 [1,12]。
 	 */
 	public static int getMonth(Date d) {
 		return getMonth(d, TimeZone.getDefault());
 	}
-	
+
 	/**
 	 * 得到月份 (1~12)
-	 * 
-	 * @param d
-	 * @param zone
+	 * @param d d
+	 * @param zone zone
 	 * @return 月份，范围 [1,12]。
 	 */
 	public static int getMonth(Date d, TimeZone zone) {
@@ -362,19 +337,17 @@ public class DateUtils {
 
 	/**
 	 * 得到当月时的天数
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return 当月内的日期：天
 	 */
 	public static int getDay(Date d) {
 		return getDay(d, TimeZone.getDefault());
 	}
-	
+
 	/**
 	 * 得到当月时的天数
-	 * 
-	 * @param d
-	 * @param zone
+	 * @param d d
+	 * @param zone zone
 	 * @return 日期
 	 */
 	public static int getDay(Date d, TimeZone zone) {
@@ -386,24 +359,24 @@ public class DateUtils {
 	}
 
 	/**
-	 * 得到该时间是星期几
-	 * @param d 日期
-	 * @return  0: 周日,1~6 周一到周六<br>
-	 *         注意返回值和Calendar定义的sunday等常量不同，而是星期一返回数字1，这是为更符合中国人的习惯。
-	 *         如果传入null，那么返回-1表示无效。
+	 *  得到该时间是星期几
+	 *  @param d 日期
+	 *  @return  0: 周日,1~6 周一到周六<br>
+	 *          注意返回值和Calendar定义的sunday等常量不同，而是星期一返回数字1，这是为更符合中国人的习惯。
+	 *          如果传入null，那么返回-1表示无效。
 	 */
 	public static int getWeekDay(Date d) {
 		return getWeekDay(d, TimeZone.getDefault());
 	}
-	
+
 	/**
-	 * 得到该时间是星期几
-	 * 
-	 * @param d 日期
-	 * @param zone 时区
-	 * @return 0: 周日,1~6 周一到周六<br>
-	 *         注意返回值和Calendar定义的sunday等常量不同，而是星期一返回数字1，这是为更符合中国人的习惯。
-	 *         如果传入null，那么返回-1表示无效。
+	 *  得到该时间是星期几
+	 *
+	 *  @param d 日期
+	 *  @param zone 时区
+	 *  @return 0: 周日,1~6 周一到周六<br>
+	 *          注意返回值和Calendar定义的sunday等常量不同，而是星期一返回数字1，这是为更符合中国人的习惯。
+	 *          如果传入null，那么返回-1表示无效。
 	 */
 	public static int getWeekDay(Date d, TimeZone zone) {
 		if (d == null)
@@ -419,8 +392,8 @@ public class DateUtils {
 	 * <p>
 	 * A Week is Monday to Sunday
 	 * <p>
-	 * @param date
-	 * @param zone
+	 * @param date date
+	 * @param zone zone
 	 * @return The first day of the week. Note: only the date was adjusted. time
 	 *         is kept as original.
 	 */
@@ -434,16 +407,14 @@ public class DateUtils {
 	 * <p>
 	 * A Week is Monday to Sunday
 	 * <p>
-	 * 
-	 * @param date
-	 * @param zone
+	 * @param date date
+	 * @param zone zone
 	 * @return The last day of the week. Note: only the date was adjusted. time
 	 *         is kept as original.
 	 */
 	public static Date weekEnd(Date date, TimeZone zone) {
 		return toWeekDayCS(date, 7, zone);
 	}
-	
 
 	/**
 	 * 返回传入日期所在周的第一天。<br>
@@ -451,9 +422,8 @@ public class DateUtils {
 	 * <p>
 	 * A Week is Sunday to Saturday
 	 * <p>
-	 * 
-	 * @param date
-	 * @param zone
+	 * @param date date
+	 * @param zone zone
 	 * @return The first day of the week. Note: only the date was adjusted. time
 	 *         is kept as original.
 	 */
@@ -466,9 +436,8 @@ public class DateUtils {
 	 * <p>
 	 * A Week is Sunday to Saturday
 	 * <p>
-	 * 
-	 * @param date
-	 * @param zone
+	 * @param date date
+	 * @param zone zone
 	 * @return The last day of the week. Note: only the date was adjusted. time
 	 *         is kept as original.
 	 */
@@ -488,26 +457,22 @@ public class DateUtils {
 		return adjustDate(date, 0, 0, expect - day);
 	}
 
-
 	/**
 	 * 得到小时数：24小时制
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return 24小时制的小时数
 	 */
 	public static int getHour(Date d) {
 		return getHour(d, TimeZone.getDefault());
 	}
-	
+
 	/**
 	 * 得到小时数：24小时制
-	 * 
-	 * @param d
+	 * @param d d
 	 * @param zone  时区
-	 * 
 	 * @return 24小时制的小时数
 	 */
-	public static int getHour(Date d,TimeZone zone) {
+	public static int getHour(Date d, TimeZone zone) {
 		if (d == null)
 			return 0;
 		final Calendar c = new GregorianCalendar(zone);
@@ -516,7 +481,7 @@ public class DateUtils {
 	}
 
 	/**
-	 * @param d
+	 * @param d d
 	 * @return 获得该时间的分钟数
 	 */
 	public static int getMinute(Date d) {
@@ -529,8 +494,7 @@ public class DateUtils {
 
 	/**
 	 * 获得该时间的秒数
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return 秒
 	 */
 	public static int getSecond(Date d) {
@@ -543,21 +507,18 @@ public class DateUtils {
 
 	/**
 	 * 以数组的形式，返回年、月、日三个值
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return int[]{year, month, day}，其中month的范围是1~12。
-	 * 
 	 */
 	public static int[] getYMD(Date d) {
 		return getYMD(d, TimeZone.getDefault());
 	}
+
 	/**
 	 * 以数组的形式，返回年、月、日三个值
-	 * 
-	 * @param d
+	 * @param d d
 	 * @param zone 时区
 	 * @return int[]{year, month, day}，其中month的范围是1~12。
-	 * 
 	 */
 	public static int[] getYMD(Date d, TimeZone zone) {
 		int[] ymd = new int[3];
@@ -573,20 +534,18 @@ public class DateUtils {
 
 	/**
 	 * 以数组的形式，返回时、分、秒 三个值
-	 * 
-	 * @param d
-	 * @return 时、分、秒 
+	 * @param d d
+	 * @return 时、分、秒
 	 */
 	public static int[] getHMS(Date d) {
 		return getHMS(d, TimeZone.getDefault());
 	}
-	
+
 	/**
 	 * 以数组的形式，返回时、分、秒 三个值
-	 * 
-	 * @param d
+	 * @param d d
 	 * @param zone 时区
-	 * @return 时、分、秒 
+	 * @return 时、分、秒
 	 */
 	public static int[] getHMS(Date d, TimeZone zone) {
 		int[] hms = new int[3];
@@ -601,61 +560,57 @@ public class DateUtils {
 	}
 
 	/**
-	 * 在指定日期上减去1毫秒
-	 * @param d date
+	 *  在指定日期上减去1毫秒
+	 *  @param d date
 	 */
 	public static void prevMillis(Date d) {
 		d.setTime(d.getTime() - 1);
 	}
 
 	/**
-	 * @param d 日期
-	 * @param value 加指定毫秒
+	 *  @param d 日期
+	 *  @param value 加指定毫秒
 	 */
 	public static void addMillis(Date d, long value) {
 		d.setTime(d.getTime() + value);
 	}
 
 	/**
-	 * 
-	 * @param d 日期
-	 * @param value 加指定秒
-	 * 
+	 *  @param d 日期
+	 *  @param value 加指定秒
 	 */
 	public static void addSec(Date d, long value) {
 		d.setTime(d.getTime() + TimeUnit.SECONDS.toMillis(value));
 	}
 
 	/**
-	 * @param d 时间
-	 * @param value 加指定分
+	 *  @param d 时间
+	 *  @param value 加指定分
 	 */
 	public static void addMinute(Date d, int value) {
 		d.setTime(d.getTime() + TimeUnit.MINUTES.toMillis(value));
 	}
 
 	/**
-	 * 
-	 * @param d 时间
-	 * @param value 加指定小时
+	 *  @param d 时间
+	 *  @param value 加指定小时
 	 */
 	public static void addHour(Date d, int value) {
 		d.setTime(d.getTime() + TimeUnit.HOURS.toMillis(value));
 	}
 
 	/**
-	 * 
-	 * @param d 时间
-	 * @param value 加指定天
+	 *  @param d 时间
+	 *  @param value 加指定天
 	 */
 	public static void addDay(Date d, int value) {
 		d.setTime(d.getTime() + TimeUnit.DAYS.toMillis(value));
 	}
 
 	/**
-	 * 加指定月
-	 * @param d 时间
-	 * @param value 加指定月
+	 *  加指定月
+	 *  @param d 时间
+	 *  @param value 加指定月
 	 */
 	public static void addMonth(Date d, int value) {
 		Calendar c = Calendar.getInstance();
@@ -666,8 +621,8 @@ public class DateUtils {
 
 	/**
 	 * 加指定年
-	 * @param d
-	 * @param value
+	 * @param d d
+	 * @param value value
 	 */
 	public static void addYear(Date d, int value) {
 		Calendar c = Calendar.getInstance();
@@ -677,16 +632,14 @@ public class DateUtils {
 	}
 
 	/**
-	 * 
 	 * 在原日期上增加指定的 年、月、日数 。这个方法不会修改传入的Date对象，而是一个新的Date对象
-	 * 
-	 * @param date
+	 * @param date date
 	 *            原日期时间
-	 * @param year
+	 * @param year year
 	 *            增加的年（可为负数）
-	 * @param month
+	 * @param month month
 	 *            增加的月（可为负数）
-	 * @param day
+	 * @param day day
 	 *            增加的日（可为负数）
 	 * @return 调整后的日期（新的日期对象）
 	 */
@@ -701,14 +654,13 @@ public class DateUtils {
 
 	/**
 	 * 在原日期上增加指定的 时、分、秒数 。这个方法不会修改传入的Date对象，而是一个新的Date对象
-	 * 
-	 * @param date
+	 * @param date date
 	 *            原日期时间
-	 * @param hour
+	 * @param hour hour
 	 *            增加的时（可为负数）
-	 * @param minute
+	 * @param minute minute
 	 *            增加的分（可为负数）
-	 * @param second
+	 * @param second second
 	 *            增加的秒（可为负数）
 	 * @return 调整后的日期时间（新的日期对象）
 	 */
@@ -723,13 +675,11 @@ public class DateUtils {
 
 	/**
 	 * 在原日期上调整指定的毫秒并返回新对象。这个方法不会修改传入的Date对象，而是一个新的Date对象。
-	 * 
-	 * @param date
+	 * @param date date
 	 *            原日期时间
-	 * @param mills
+	 * @param mills mills
 	 *            毫秒数（可为负数）
 	 * @return 调整后的日期时间（新的日期对象）
-	 * 
 	 */
 	public static Date adjust(Date date, long mills) {
 		return new Date(date.getTime() + mills);
@@ -737,28 +687,25 @@ public class DateUtils {
 
 	/**
 	 * 获取一个日期对象(java.util.Date)
-	 * 
-	 * @param year
+	 * @param year year
 	 *            格式为：2004
-	 * @param month
+	 * @param month month
 	 *            从1开始
-	 * @param date
+	 * @param date date
 	 *            从1开始
 	 * @return 要求的日期
-	 * @deprecated use {@link #get(int, int, int)} instead.
 	 */
-	public static final Date getDate(int year, int month, int date) {
-		return get(year, month, date);
+	public static final Instant getInstant(int year, int month, int date) {
+		return get(year, month, date).toInstant();
 	}
 
 	/**
 	 * 获取一个日期对象(java.util.Date)
-	 * 
-	 * @param year
+	 * @param year year
 	 *            格式为：2004
-	 * @param month
+	 * @param month month
 	 *            从1开始
-	 * @param date
+	 * @param date date
 	 *            从1开始
 	 * @return 要求的日期
 	 */
@@ -771,10 +718,9 @@ public class DateUtils {
 
 	/**
 	 * 获取一个日期对象(java.sql.Date)
-	 * 
-	 * @param year
-	 * @param month
-	 * @param date
+	 * @param year year
+	 * @param month month
+	 * @param date date
 	 * @return Date
 	 */
 	public static final java.sql.Date getSqlDate(int year, int month, int date) {
@@ -786,13 +732,12 @@ public class DateUtils {
 
 	/**
 	 * 获得一个UTC时间
-	 * 
-	 * @param year
-	 * @param month
-	 * @param date
-	 * @param hour
-	 * @param minute
-	 * @param second
+	 * @param year year
+	 * @param month month
+	 * @param date date
+	 * @param hour hour
+	 * @param minute minute
+	 * @param second second
 	 * @return Date
 	 */
 	public static final Date getUTC(int year, int month, int date, int hour, int minute, int second) {
@@ -803,19 +748,18 @@ public class DateUtils {
 	}
 
 	/**
-	 * 获取一个时间对象
-	 * 
-	 * @param year
+	 * 获取一个时间对象，时间对象以当前默认时区为准。
+	 * @param year year
 	 *            格式为：2004
-	 * @param month
+	 * @param month month
 	 *            从1开始
-	 * @param date
+	 * @param date date
 	 *            从1开始
-	 * @param hour
+	 * @param hour hour
 	 *            小时(0-24)
-	 * @param minute
+	 * @param minute minute
 	 *            分(0-59)
-	 * @param second
+	 * @param second second
 	 *            秒(0-59)
 	 * @return Date
 	 */
@@ -828,66 +772,60 @@ public class DateUtils {
 
 	/**
 	 * 获取一个时间对象
-	 * 
-	 * @param year
+	 * @param year year
 	 *            格式为：2004
-	 * @param month
+	 * @param month month
 	 *            从1开始
-	 * @param date
+	 * @param date date
 	 *            从1开始
-	 * @param hour
+	 * @param hour hour
 	 *            小时(0-24)
-	 * @param minute
+	 * @param minute minute
 	 *            分(0-59)
-	 * @param second
+	 * @param second second
 	 *            秒(0-59)
-	 * @return Date
-	 * @deprecated Use {@link #get(int, int, int, int, int, int)} instead.
+	 * @return Instant
 	 */
-	public static final Date getDate(int year, int month, int date, int hour, int minute, int second) {
-		return get(year, month, date, hour, minute, second);
+	public static final Instant getInstant(int year, int month, int date, int hour, int minute, int second) {
+		return get(year, month, date, hour, minute, second).toInstant();
 	}
 
 	/**
 	 * 返回两个时间相差的天数
-	 * 
-	 * @param a
-	 * @param b
+	 * @param a a
+	 * @param b b
 	 * @return TimeZone
 	 */
 	public static final int daySubtract(Date a, Date b) {
 		return daySubtract(a, b, TimeZone.getDefault());
 	}
-	
+
 	/**
 	 * 返回在指定时区下，两个时间之间相差的天数
-	 * @param a
-	 * @param b
-	 * @param zone
+	 * @param a a
+	 * @param b b
+	 * @param zone zone
 	 * @return 相差的天数
 	 */
 	public static final int daySubtract(Date a, Date b, TimeZone zone) {
-		int offset =zone.getRawOffset();
+		int offset = zone.getRawOffset();
 		int date = (int) (((a.getTime() + offset) / MILLISECONDS_IN_DAY - (b.getTime() + offset) / MILLISECONDS_IN_DAY));
 		return date;
 	}
 
 	/**
 	 * 返回两个时间相差多少秒
-	 * 
-	 * @param a
-	 * @param b
+	 * @param a a
+	 * @param b b
 	 * @return 相差的秒数
 	 */
 	public static final long secondSubtract(Date a, Date b) {
 		return ((a.getTime() - b.getTime()) / 1000);
 	}
-	
 
 	/**
 	 * 得到该日期所在月包含的天数
-	 * 
-	 * @param date
+	 * @param date date
 	 * @return 2月返回28或29，1月返回31
 	 */
 	public static final int getDaysInMonth(Date date) {
@@ -896,9 +834,8 @@ public class DateUtils {
 
 	/**
 	 * 得到该日期所在月包含的天数
-	 * 
-	 * @param date
-	 * @param zone
+	 * @param date date
+	 * @param zone zone
 	 * @return 2月返回28或29，1月返回31
 	 */
 	public static final int getDaysInMonth(Date date, TimeZone zone) {
@@ -911,8 +848,8 @@ public class DateUtils {
 
 	/**
 	 * 格式化时间段
-	 * 
-	 * @param second
+	 * @param second second
+	 * @return String
 	 */
 	public static String formatTimePeriod(long second) {
 		return formatTimePeriod(second, null, Locale.getDefault());
@@ -920,13 +857,11 @@ public class DateUtils {
 
 	/**
 	 * 将秒数转换为时长描述
-	 * 
-	 * @param second
-	 * @param maxUnit
+	 * @param second second
+	 * @param maxUnit maxUnit
 	 *            :最大单位 0自动 3天4小时 5分钟
-	 *            
+	 *
 	 * @param  locale 区域，主要是为了生成中文和英文两种描述
-	 * 
 	 * @return 时长市场信息
 	 */
 	public static String formatTimePeriod(long second, TimeUnit maxUnit, Locale locale) {
@@ -989,17 +924,17 @@ public class DateUtils {
 	}
 
 	/**
-	 * 返回“昨天”的同一时间
-	 * 
-	 * @return 昨天
+	 *  返回“昨天”的同一时间
+	 *
+	 *  @return 昨天
 	 */
 	public static Date yesterday() {
 		return futureDay(-1);
 	}
 
 	/**
-	 * @param i 天数，可以传入负数，比如-1表示昨天，-2表示前天
-	 * @return 未来多少天的同一时间
+	 *  @param i 天数，可以传入负数，比如-1表示昨天，-2表示前天
+	 *  @return 未来多少天的同一时间
 	 */
 	public static Date futureDay(int i) {
 		return new Date(System.currentTimeMillis() + (long) MILLISECONDS_IN_DAY * i);
@@ -1007,8 +942,7 @@ public class DateUtils {
 
 	/**
 	 * 将系统格式时间(毫秒)转换为文本格式
-	 * 
-	 * @param millseconds
+	 * @param millseconds millseconds
 	 * @return 日期格式
 	 */
 	public static Optional<String> format(long millseconds) {
@@ -1017,9 +951,8 @@ public class DateUtils {
 
 	/**
 	 * 月份遍历器 指定两个日期，遍历两个日期间的所有月份。（包含开始时间和结束时间所在的月份）
-	 * 
-	 * @param includeStart
-	 * @param includeEnd
+	 * @param includeStart includeStart
+	 * @param includeEnd includeEnd
 	 * @return 月份遍历
 	 */
 	public static Iterable<Date> monthIterator(Date includeStart, Date includeEnd) {
@@ -1028,10 +961,9 @@ public class DateUtils {
 
 	/**
 	 * 日遍历器 指定两个时间，遍历两个日期间的所有天。（包含开始时间和结束时间所在的天）
-	 * 
-	 * @param includeStart
+	 * @param includeStart includeStart
 	 *            the begin date.(include)
-	 * @param includeEnd
+	 * @param includeEnd includeEnd
 	 *            the end date(include)
 	 * @return A iterable object that can iterate the date.
 	 */
@@ -1040,25 +972,25 @@ public class DateUtils {
 	}
 
 	/**
-	 * 返回今天
-	 * 
-	 * @return the begin of today.
+	 *  返回今天
+	 *
+	 *  @return the begin of today.
 	 */
 	public static Date today() {
 		return truncateToDay(new Date());
 	}
-	
+
 	/**
-	 * @return 返回现在
+	 *  @return 返回现在
 	 */
 	public static java.sql.Timestamp sqlNow() {
 		return new java.sql.Timestamp(System.currentTimeMillis());
 	}
 
 	/**
-	 * 返回现在时间
-	 * 
-	 * @return the current date time.
+	 *  返回现在时间
+	 *
+	 *  @return the current date time.
 	 */
 	public static Date now() {
 		return new Date();
@@ -1066,9 +998,8 @@ public class DateUtils {
 
 	/**
 	 * 指定时间是否为一天的开始
-	 * 
-	 * @param date
-	 * @param zone
+	 * @param date date
+	 * @param zone zone
 	 * @return true if the date is the begin of day.
 	 */
 	public static boolean isDayBegin(Date date, TimeZone zone) {
@@ -1078,9 +1009,8 @@ public class DateUtils {
 
 	/**
 	 * Convert to Instance
-	 * 
 	 * @see Instant
-	 * @param date
+	 * @param date date
 	 *            java.util.Date
 	 * @return instant
 	 */
@@ -1090,8 +1020,7 @@ public class DateUtils {
 
 	/**
 	 * Convert LocalDate to jud
-	 * 
-	 * @param date
+	 * @param date date
 	 *            LocalDate
 	 * @return java.util.Date
 	 */
@@ -1101,8 +1030,7 @@ public class DateUtils {
 
 	/**
 	 * Convert LocalTime to jud.
-	 * 
-	 * @param time
+	 * @param time time
 	 *            LocalTime
 	 * @return java.util.Date
 	 */
@@ -1111,20 +1039,20 @@ public class DateUtils {
 	}
 
 	/**
-	 * Converts LocalDateTime to java.util.Date (null safety)
-	 * 
-	 * @param value LocalDateTime
-	 * @return java.util.Date
+	 *  Converts LocalDateTime to java.util.Date (null safety)
+	 *
+	 *  @param value LocalDateTime
+	 *  @return java.util.Date
 	 */
 	public static Date fromLocalDateTime(LocalDateTime value) {
 		return value == null ? null : Date.from(value.atZone(ZoneId.systemDefault()).toInstant());
 	}
 
 	/**
-	 * Converts java.sql.Date to LocalDate (null safety)
-	 * 
-	 * @param date java.sql.Date
-	 * @return LocalDate
+	 *  Converts java.sql.Date to LocalDate (null safety)
+	 *
+	 *  @param date java.sql.Date
+	 *  @return LocalDate
 	 */
 	public static LocalDate toLocalDate(java.sql.Date date) {
 		return date == null ? null : date.toLocalDate();
@@ -1132,8 +1060,7 @@ public class DateUtils {
 
 	/**
 	 * Converts java.util.Date to LocalDate (null safety)
-	 * 
-	 * @param date
+	 * @param date date
 	 *            java.util.Date
 	 * @return LocalDate
 	 */
@@ -1143,8 +1070,7 @@ public class DateUtils {
 
 	/**
 	 * Converts Time to LocalTime (null safety)
-	 * 
-	 * @param time
+	 * @param time time
 	 * @return LocalTime
 	 */
 	public static LocalTime toLocalTime(java.sql.Time time) {
@@ -1153,8 +1079,7 @@ public class DateUtils {
 
 	/**
 	 * Converts Timestamp to LocalTime (null safety)
-	 * 
-	 * @param ts
+	 * @param ts ts
 	 *            Timestamp
 	 * @return LocalTime
 	 */
@@ -1164,7 +1089,7 @@ public class DateUtils {
 
 	/**
 	 * Converts java.util.Date to LocalTime (null safety)
-	 * @param date 
+	 * @param date date
 	 * @return {@link LocalTime}
 	 */
 	public static LocalTime toLocalTime(java.util.Date date) {
@@ -1173,8 +1098,7 @@ public class DateUtils {
 
 	/**
 	 * Convert Timestamp to LocalDateTime (null safety)
-	 * 
-	 * @param ts
+	 * @param ts ts
 	 *            Timestamp
 	 * @return LocalDateTime
 	 */
@@ -1184,8 +1108,7 @@ public class DateUtils {
 
 	/**
 	 * Convert java.util.Date to LocalDateTime (null safety)
-	 * 
-	 * @param date
+	 * @param date date
 	 *            date
 	 * @return LocalDateTime
 	 */
@@ -1195,8 +1118,7 @@ public class DateUtils {
 
 	/**
 	 * Convert java.util.Date to YearMonth (null safety)
-	 * 
-	 * @param date
+	 * @param date date
 	 * @return YearMonth
 	 */
 	public static YearMonth toYearMonth(java.util.Date date) {
@@ -1205,7 +1127,7 @@ public class DateUtils {
 
 	/**
 	 * Convert java.util.Date to MonthDay (null safety)
-	 * @param date
+	 * @param date date
 	 * @return MonthDay
 	 */
 	public static MonthDay toMonthDay(java.util.Date date) {
@@ -1214,8 +1136,7 @@ public class DateUtils {
 
 	/**
 	 * Converts LocalDate to Time (null safety)
-	 * 
-	 * @param date
+	 * @param date date
 	 *            LocalDate
 	 * @return java.sql.Date
 	 */
@@ -1225,8 +1146,7 @@ public class DateUtils {
 
 	/**
 	 * Converts LocalTime to Time (null safety)
-	 * 
-	 * @param time
+	 * @param time time
 	 *            LocalTime
 	 * @return java.sql.Time
 	 */
@@ -1236,8 +1156,7 @@ public class DateUtils {
 
 	/**
 	 * 转换为java.sql.timestamp
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return Timestamp
 	 */
 	public static Timestamp toSqlTimeStamp(Date d) {
@@ -1248,8 +1167,7 @@ public class DateUtils {
 
 	/**
 	 * Converts LocalDateTime to Timestamp (null safety)
-	 * 
-	 * @param time
+	 * @param time time
 	 *            LocalDateTime
 	 * @return Timestamp
 	 */
@@ -1259,8 +1177,7 @@ public class DateUtils {
 
 	/**
 	 * Converts instant to Timestamp (null safety)
-	 * 
-	 * @param instant
+	 * @param instant instant
 	 *            Instant
 	 * @return java.sql.Timestamp
 	 */
@@ -1270,8 +1187,7 @@ public class DateUtils {
 
 	/**
 	 * Converts instant to JUD (null safety)
-	 * 
-	 * @param instant
+	 * @param instant instant
 	 * @return java.util.Date
 	 */
 	public static Date fromInstant(Instant instant) {
@@ -1280,8 +1196,7 @@ public class DateUtils {
 
 	/**
 	 * Converts LocalTime to Timestamp (null safety)
-	 * 
-	 * @param localTime
+	 * @param localTime localTime
 	 *            LocalTime
 	 * @return Timestamp
 	 */
@@ -1291,8 +1206,7 @@ public class DateUtils {
 
 	/**
 	 * 转换为java.sql.Date
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return Date
 	 */
 	public static java.sql.Date toSqlDate(Date d) {
@@ -1303,8 +1217,7 @@ public class DateUtils {
 
 	/**
 	 * 转换为Sql的Time对象（不含日期）
-	 * 
-	 * @param date
+	 * @param date date
 	 * @return Time
 	 */
 	public static java.sql.Time toSqlTime(Date date) {
@@ -1315,8 +1228,7 @@ public class DateUtils {
 
 	/**
 	 * 从java.sql.Date转换到java.util.Date
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return Date
 	 */
 	public static Date fromSqlDate(java.sql.Date d) {
@@ -1327,37 +1239,35 @@ public class DateUtils {
 
 	/**
 	 * 取得截断后的日期/时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param start
-	 * @param unit
+	 * @param start start
+	 * @param unit unit
 	 *            时间单位，使用Calendar中的Field常量。
 	 * @return 截断后的日期/时间
 	 * @see Calendar
 	 */
 	public static Date getTruncated(Date start, int unit) {
-		switch (unit) {
-		case Calendar.SECOND:
-			return truncateToSecond(start);
-		case Calendar.MINUTE:
-			return truncateToMinute(start);
-		case Calendar.HOUR:
-			return truncateToHour(start);
-		case Calendar.DATE:
-		case Calendar.DAY_OF_YEAR:
-			return truncateToDay(start);
-		case Calendar.MONTH:
-			return truncateToMonth(start);
-		case Calendar.YEAR:
-			return truncateToYear(start);
-		default:
-			throw new UnsupportedOperationException("Unsupported unit:" + unit);
+		switch(unit) {
+			case Calendar.SECOND:
+				return truncateToSecond(start);
+			case Calendar.MINUTE:
+				return truncateToMinute(start);
+			case Calendar.HOUR:
+				return truncateToHour(start);
+			case Calendar.DATE:
+			case Calendar.DAY_OF_YEAR:
+				return truncateToDay(start);
+			case Calendar.MONTH:
+				return truncateToMonth(start);
+			case Calendar.YEAR:
+				return truncateToYear(start);
+			default:
+				throw new UnsupportedOperationException("Unsupported unit:" + unit);
 		}
 	}
-	
+
 	/**
 	 * 取得截去年以下单位的时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
 	 * @return 截断后的时间
 	 */
@@ -1367,10 +1277,9 @@ public class DateUtils {
 
 	/**
 	 * 取得截去年以下单位的时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
-	 * @param zone
+	 * @param zone zone
 	 *            时区
 	 * @return 截断后的时间
 	 */
@@ -1378,7 +1287,6 @@ public class DateUtils {
 		long l = d.getTime();
 		long left = (l + zone.getRawOffset()) % MILLISECONDS_IN_DAY;
 		l = l - left;
-
 		Calendar c = Calendar.getInstance(zone);
 		c.setTimeInMillis(l);
 		c.set(Calendar.DAY_OF_MONTH, 1);
@@ -1388,10 +1296,9 @@ public class DateUtils {
 
 	/**
 	 * 取得截去年以下单位的时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
-	 * @param utcOffset
+	 * @param utcOffset utcOffset
 	 *            utcOffset 时区，-12 ~ +14
 	 * @return 截断后的时间
 	 */
@@ -1401,8 +1308,7 @@ public class DateUtils {
 
 	/**
 	 * 取得截去月以下单位的时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
 	 * @return 截断后的时间
 	 */
@@ -1412,10 +1318,9 @@ public class DateUtils {
 
 	/**
 	 * 取得截去月以下单位的时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
-	 * @param zone
+	 * @param zone zone
 	 *            时区
 	 * @return 截断后的时间
 	 */
@@ -1431,10 +1336,9 @@ public class DateUtils {
 
 	/**
 	 * 取得截去天以下单位的时间。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
-	 * @param utcOffset
+	 * @param utcOffset utcOffset
 	 *            utcOffset 时区，-12 ~ +14
 	 * @return 截断后的时间
 	 */
@@ -1444,8 +1348,7 @@ public class DateUtils {
 
 	/**
 	 * 取得截断后日期。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
 	 * @return 截断后的时间
 	 */
@@ -1455,10 +1358,9 @@ public class DateUtils {
 
 	/**
 	 * 取得截断后日期。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
-	 * @param utcOffset
+	 * @param utcOffset utcOffset
 	 *            utcOffset 时区，-12 ~ +14
 	 * @return 截断后的时间
 	 */
@@ -1476,10 +1378,9 @@ public class DateUtils {
 
 	/**
 	 * 取得截断后日期。注意这个方法不会修改传入的日期时间值，而是创建一个新的对象并返回。
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，如果传入null本方法将返回null.
-	 * @param zone
+	 * @param zone zone
 	 *            时区
 	 * @return 截断后的时间
 	 */
@@ -1494,8 +1395,7 @@ public class DateUtils {
 
 	/**
 	 * 取得截去分钟以下单位的时间。得到整点
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，，如果传入null本方法将返回null.
 	 * @return 截去分钟以下单位的时间。
 	 */
@@ -1510,8 +1410,7 @@ public class DateUtils {
 
 	/**
 	 * 取得截去秒以下单位的时间。得到整分钟时间点
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，，如果传入null本方法将返回null.
 	 * @return 截去秒以下单位的时间。
 	 */
@@ -1526,8 +1425,7 @@ public class DateUtils {
 
 	/**
 	 * 取得截去毫秒以下单位的时间。得到整秒时间点
-	 * 
-	 * @param d
+	 * @param d d
 	 *            时间，，如果传入null本方法将返回null.
 	 * @return 截去毫秒以下单位的时间。
 	 */
@@ -1539,11 +1437,10 @@ public class DateUtils {
 		long left = l % MILLISECONDS_IN_SECOND;
 		return new Date(l - left);
 	}
-	
+
 	/**
 	 * 格式化为日期+时间（中式）
-	 * 
-	 * @param d
+	 * @param d d
 	 * @return format后的字符
 	 */
 	public static Optional<String> formatDateTime(Date d) {

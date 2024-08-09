@@ -1,19 +1,11 @@
 package com.github.xuse.querydsl.sql.ddl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
-import com.querydsl.core.types.DDLOps;
 import com.querydsl.core.types.Operator;
-
 import lombok.Data;
+
+import java.util.*;
 
 @Data
 public class CompareResult {
@@ -40,31 +32,31 @@ public class CompareResult {
 
 	public CompareResult ofAddSingleColumn(ColumnMapping c) {
 		CompareResult cr = new CompareResult();
-		cr.setAddColumns(Arrays.asList(c));
+		cr.setAddColumns(Collections.singletonList(c));
 		return cr;
 	}
 
 	public CompareResult ofDropSingleColumn(String c) {
 		CompareResult cr = new CompareResult();
-		cr.setDropColumns(Arrays.asList(c));
+		cr.setDropColumns(Collections.singletonList(c));
 		return cr;
 	}
 
 	public CompareResult ofSingleChangeColumn(ColumnModification c) {
 		CompareResult cr = new CompareResult();
-		cr.setChangeColumns(Arrays.asList(c));
+		cr.setChangeColumns(Collections.singletonList(c));
 		return cr;
 	}
 
 	public CompareResult ofAddSingleConstraint(Constraint c) {
 		CompareResult cr = new CompareResult();
-		cr.setAddConstraints(Arrays.asList(c));
+		cr.setAddConstraints(Collections.singletonList(c));
 		return cr;
 	}
 
 	public CompareResult ofDropSingleConstraint(Constraint c) {
 		CompareResult cr = new CompareResult();
-		cr.setDropConstraints(Arrays.asList(c));
+		cr.setDropConstraints(Collections.singletonList(c));
 		return cr;
 	}
 	

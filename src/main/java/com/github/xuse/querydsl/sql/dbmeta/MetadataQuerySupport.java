@@ -14,25 +14,31 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
+import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.sql.dialect.SizeParser;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.sql.support.DistributedLock;
 import com.github.xuse.querydsl.sql.support.QueryFunction;
-import com.github.xuse.querydsl.sql.support.QueryWrapper;
 import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
@@ -42,24 +48,17 @@ import com.github.xuse.querydsl.util.TypeUtils;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
-import com.querydsl.core.types.ConstraintType;
-import com.querydsl.core.types.DDLOps.Basic;
-import com.querydsl.core.types.DDLOps.PartitionMethod;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.SQLTemplatesEx;
-import com.querydsl.core.types.dsl.DDLExpressions;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Column;
-import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLListeners;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SchemaAndTable;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -73,86 +72,62 @@ public abstract class MetadataQuerySupport {
 
 	private final SQLListeners listeners;
 
-	private DriverInfo driverInfo;
-
-	private volatile transient long dbTimeDelta;
-
-	@Data
-	class DriverInfo {
-		private String driverName;
-		private String driverVersion;
-		private String databaseProductName;
-		private String dataProductVersion;
-		private String schema;
-		private String catalog;
-		private final Map<String, String> settings = new LinkedHashMap<>();
-		public String getNamespace() {
-			SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
-			return policy.toNamespace(catalog, schema);
-		}
+	public DriverInfo getDriverInfo() {
+		return ConfigrationPackageExporter.computeDriverInfo(getConfiguration(), this::generateDriverInfo);
+	}
+	
+	private DriverInfo generateDriverInfo() {
+		DriverInfo result = doMetadataAccess(e -> {
+			DriverInfo info = new DriverInfo();
+			info.driverName = e.getDriverName();
+			info.driverVersion = e.getDriverVersion() + " " + e.getDatabaseMinorVersion();
+			info.databaseProductName = e.getDatabaseProductName();
+			info.dataProductVersion = e.getDatabaseProductVersion() + " " + e.getDatabaseMinorVersion();
+			return info;
+		});
+		doConnectionAccess(c -> {
+			result.catalog = c.getCatalog();
+			result.schema = c.getSchema();
+			return null;
+		});
+		result.setDbTimeDelta(calcDbTimeDelta());
+		result.policy = getConfiguration().getTemplates().getSchemaPolicy();
+		return result;
+	}
+	
+	private long calcDbTimeDelta() {
+		SQLTemplatesEx templates = getConfiguration().getTemplates();
+		String dummyTable = templates.getDummyTable();
+		SQLSerializer s = new SQLSerializer(this.getConfiguration().get());
+		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, Expressions.currentTimestamp(), Expressions.path(Object.class, null, dummyTable)));
+		String sql = s.toString();
+		final SQLBindings qSql = new SQLBindings(sql, Collections.emptyList());
+		long dbTimeDelta = doSQLQuery(e -> {
+			Timestamp ts = e.querySingle(qSql, rs -> rs.getTimestamp(1));
+			return ts.getTime() - System.currentTimeMillis();
+		}, "getTime");
+		return dbTimeDelta;
 	}
 
 	public MetadataQuerySupport() {
 		listeners = new SQLListeners(getConfiguration().get().getListeners());
-		initDriverInfo();
-		calcDbTimeDelta();
 	}
-
-	private void calcDbTimeDelta() {
-		SQLTemplatesEx templates = getConfiguration().getTemplates();
-		String dummyTable = templates.getDummyTable();
-		SQLSerializer s = new SQLSerializer(this.getConfiguration().get());
-		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, Expressions.currentTimestamp(),
-				Expressions.path(Object.class, null, dummyTable)));
-		String sql = s.toString();
-		final SQLBindings qSql = new SQLBindings(sql, Collections.emptyList());
-		this.dbTimeDelta = doSQLQuery(e -> {
-			Timestamp ts = e.querySingle(qSql, rs -> rs.getTimestamp(1));
-			return ts.getTime() - System.currentTimeMillis();
-		}, "getTime");
-		if (Math.abs(dbTimeDelta) > 30000) {
-			// 数据库时间和当前系统时间差距在30秒以上时，警告
-			log.warn(
-					"The time of this server is [{}], but database is [{}]. Please adjust date time via any NTP server.",
-					new Date(), getDatabaseTime());
-		} else {
-			log.info("The timestamp is {}, difference between database and this machine is {}ms.", getDatabaseTime(),
-					this.dbTimeDelta);
-		}
-	}
+	
 
 	/**
-	 * 得到当前数据库的时间，这一运算不是通过到数据库查询而得，而是和数据库每次心跳时都会刷新当前系统时间和数据库时间的差值，从而得到数据库时间。
-	 * 
-	 * @return 当前数据库时间
+	 *  得到当前数据库的时间，这一运算不是通过到数据库查询而得，而是和数据库每次心跳时都会刷新当前系统时间和数据库时间的差值，从而得到数据库时间。
+	 *
+	 *  @return 当前数据库时间
 	 */
 	public Date getDatabaseTime() {
-		return new Date(System.currentTimeMillis() + this.dbTimeDelta);
-	}
-
-	private void initDriverInfo() {
-		DriverInfo result = doMetadataAccess(e -> {
-			DriverInfo info = new DriverInfo();
-			info.setDriverName(e.getDriverName());
-			info.setDriverVersion(e.getDriverVersion() + " " + e.getDatabaseMinorVersion());
-			info.setDatabaseProductName(e.getDatabaseProductName());
-			info.setDataProductVersion(e.getDatabaseProductVersion() + " " + e.getDatabaseMinorVersion());
-			return info;
-		});
-		doConnectionAccess(c -> {
-			result.setCatalog(c.getCatalog());
-			result.setSchema(c.getSchema());
-			return null;
-		});
-		this.driverInfo = result;
-		log.info("driver info:{}", result);
+		return getDriverInfo().getDatabaseTime();
 	}
 
 	/**
-	 * 得到数据库中的表
-	 * 
-	 * @param tablename 要查找的表名，仅第一个参数有效
-	 * @return 表的信息
+	 *  得到数据库中的表
+	 *
+	 *  @param tablename 要查找的表名，仅第一个参数有效
+	 *  @return 表的信息
 	 */
 	public TableInfo getTable(String tablename) {
 		return getTable(parseSchemaAndTable(tablename));
@@ -160,8 +135,7 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 得到数据库中的表
-	 * 
-	 * @param table
+	 * @param table table
 	 * @return 表的信息
 	 */
 	public TableInfo getTable(SchemaAndTable table) {
@@ -171,19 +145,16 @@ public abstract class MetadataQuerySupport {
 		}
 		return tables.get(0);
 	}
-	
 
 	public boolean existsTable(SchemaAndTable table, RoutingStrategy routing) {
-		table=routing.getOverride(table, getConfiguration());
+		table = routing.getOverride(table, getConfiguration());
 		return !getDatabaseObject(ObjectType.TABLE, table, null).isEmpty();
 	}
-	
 
 	/**
 	 * 返回数据库中所有的表(当前schema下)
-	 * 
-	 * @param catalog
-	 * @param schema
+	 * @param catalog catalog
+	 * @param schema schema
 	 * @return 表信息
 	 */
 	public List<TableInfo> getTables(String catalog, String schema) {
@@ -192,12 +163,12 @@ public abstract class MetadataQuerySupport {
 	}
 
 	/**
-	 * @param type  要查询的对象类型 "TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY",
-	 *              "LOCAL TEMPORARY", "ALIAS", "SYNONYM".
-	 * @param table 匹配名称
-	 * @param oper  操作符，可以为null，为null时表示等于条件
-	 * @return 表/视图等数据库对象的信息
-	 * @see Operator
+	 *  @param type  要查询的对象类型 "TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY",
+	 *               "LOCAL TEMPORARY", "ALIAS", "SYNONYM".
+	 *  @param table 匹配名称
+	 *  @param oper  操作符，可以为null，为null时表示等于条件
+	 *  @return 表/视图等数据库对象的信息
+	 *  @see Operator
 	 */
 	public List<TableInfo> getDatabaseObject(ObjectType type, SchemaAndTable table, Ops oper) {
 		SQLTemplatesEx templates = getConfiguration().getTemplates();
@@ -205,18 +176,15 @@ public abstract class MetadataQuerySupport {
 		final String qSchema = processNamespace(table.getSchema());
 		final String qMatchName = processName(table.getTable(), oper);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		List<TableInfo> result = doSQLQuery(
-				q -> templates.fetchTables(q, policy.asCatalog(qSchema), policy.asSchema(qSchema), qMatchName, type),
-				"getTables");
-		log.info("getting {} {}.{}, result is {}", type, qSchema, qMatchName, result);
+		List<TableInfo> result = doSQLQuery(q -> templates.fetchTables(q, policy.asCatalog(qSchema), policy.asSchema(qSchema), qMatchName, type), "getTables");
+		log.debug("getting {} {}.{}, result is {}", type, qSchema, qMatchName, result);
 		return result;
 	}
 
 	/**
 	 * 得到表的Column信息
-	 * 
-	 * @param tableName
-	 * @return List<ColumnDef>
+	 * @param tableName tableName
+	 * @return List&lt;ColumnDef&gt;
 	 */
 	public List<ColumnDef> getColumns(String tableName) {
 		return getColumns(parseSchemaAndTable(tableName));
@@ -224,18 +192,16 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 得到表的Column信息
-	 * 
-	 * @param schemaAndTable
-	 * @return List<ColumnDef>
+	 * @param schemaAndTable schemaAndTable
+	 * @return List&lt;ColumnDef&gt;
 	 */
 	public List<ColumnDef> getColumns(SchemaAndTable schemaAndTable) {
 		schemaAndTable = getConfiguration().getOverride(schemaAndTable);
 		final String namespace = processNamespace(schemaAndTable.getSchema());
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		final String tableName = processName(schemaAndTable.getTable(), Ops.EQ);
-		List<ColumnDef> columns = doMetadataQuery("getColumns[" + tableName + "]",
-				c -> c.getColumns(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, "%"), this::populateColumn);
-		Collections.sort(columns, (a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()));
+		List<ColumnDef> columns = doMetadataQuery("getColumns[" + tableName + "]", c -> c.getColumns(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, "%"), this::populateColumn);
+		columns.sort(Comparator.comparingInt(ColumnDef::getOrdinal));
 		log.debug("Table {} 's columns: {}", schemaAndTable, columns);
 		return columns;
 	}
@@ -249,7 +215,6 @@ public abstract class MetadataQuerySupport {
 		 * 就是将getString("COLUMN_DEF")作为第一个获取的字段， 非常神奇的就好了。叹息啊。。。
 		 */
 		String defaultVal = rs.getString("COLUMN_DEF");
-
 		int jdbcType = rs.getInt("DATA_TYPE");
 		SizeParser sizeParser = getConfiguration().getTemplates().getColumnSizeParser(jdbcType);
 		int columnSize = rs.getInt("COLUMN_SIZE");
@@ -258,53 +223,47 @@ public abstract class MetadataQuerySupport {
 		column.setJdbcType(jdbcType);
 		column.setColumnSize(sizeParser.size(columnSize, digits));
 		column.setDecimalDigit(sizeParser.digits(columnSize, digits));
-		defaultVal = getConfiguration().getTemplates().translateDefault(defaultVal, jdbcType, column.getColumnSize(),
-				column.getDecimalDigit());
-
+		defaultVal = getConfiguration().getTemplates().translateDefault(defaultVal, jdbcType, column.getColumnSize(), column.getDecimalDigit());
 		column.setTableCat(rs.getString("TABLE_CAT"));
 		column.setTableSchema(rs.getString("TABLE_SCHEM"));
 		column.setTableName(rs.getString("TABLE_NAME"));
-
-		
 		column.setOrdinal(rs.getInt("ORDINAL_POSITION"));
 		column.setDataType(rs.getString("TYPE_NAME"));
 		column.setCharOctetLength(rs.getInt("CHAR_OCTET_LENGTH"));
-
 		int nullable = rs.getInt("NULLABLE");
 		boolean nullAble1 = nullable == DatabaseMetaData.columnNullable;
 		boolean nullAble2 = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
 		if (nullAble1 != nullAble2) {
-			logDriverProblem("column null ablity");
+			logDriverProblem("column null ability",rs.getString("IS_NULLABLE"));
 		}
 		column.setNullable(nullAble2);
-
 		column.setAutoIncrement("YES".equalsIgnoreCase(rs.getString("IS_AUTOINCREMENT")));
 		column.setGenerated("YES".equalsIgnoreCase(rs.getString("IS_GENERATEDCOLUMN")));
-		// NUM_PREC_RADIX 10进制或2进制
 		/*
 		 * 计算defaultVal的合适值，null表示没有缺省值，""表示缺省值为空。
 		 */
 		if (defaultVal != null && getConfiguration().has(SpecialFeature.HAS_CRLF_IN_DEFAULT_VALUE_EXPRESSION)) {
-			/// Oracle会在后面加上换行等怪字符。之前直接用了trimToNull，但这是不对的，会将default ' '这样的定义忽略掉。
+			// / Oracle会在后面加上换行等怪字符。之前直接用了trimToNull，但这是不对的，会将default ' '这样的定义忽略掉。
 			defaultVal = StringUtils.rtrim(defaultVal, '\r', '\n');
 			if (defaultVal.length() == 0) {
 				defaultVal = null;
 			}
 		}
 		column.setColumnDef(defaultVal);
-		column.setRemarks(rs.getString("REMARKS"));// 这个操作容易出问题，一定要最后操作
+		// 这个操作容易出问题，一定要最后操作
+		column.setRemarks(rs.getString("REMARKS"));
 		return column;
 	}
 
-	private void logDriverProblem(String string) {
-		log.warn(this.driverInfo.getDriverVersion() + " " + this.driverInfo.getDriverVersion() + ":" + string);
+	private void logDriverProblem(String string, String params) {
+		DriverInfo driverInfo=getDriverInfo();
+		log.warn(driverInfo.getDriverVersion() + " " + driverInfo.getDriverVersion() + ":" + string+"="+params);
 	}
 
 	/**
 	 * 返回当前schema下的所有数据库对象名称
-	 * 
-	 * @param catalog
-	 * @param schema
+	 * @param catalog catalog
+	 * @param schema schema
 	 * @param types   取以下参数{@link ObjectType}。可以省略，省略的情况下取Table
 	 * @return 所有表名
 	 */
@@ -320,30 +279,28 @@ public abstract class MetadataQuerySupport {
 		SchemaAndTable schemaAndTable = new SchemaAndTable(policy.toNamespace(catalog, schema), null);
 		schemaAndTable = getConfiguration().getOverride(schemaAndTable);
 		final String namespace = processNamespace(schemaAndTable.getSchema());
-		List<String> names = this.doMetadataQuery("getObjects",
-				m -> m.getTables(policy.asCatalog(namespace), policy.asSchema(namespace), null, ts),
-				r -> r.getString("TABLE_NAME"));
+		List<String> names = this.doMetadataQuery("getObjects", m -> m.getTables(policy.asCatalog(namespace), policy.asSchema(namespace), null, ts), r -> r.getString("TABLE_NAME"));
 		return names;
 	}
 
 	/**
-	 * a catalog cache for 5 seconds.
+	 *  a catalog cache for 5 seconds.
 	 */
 	private volatile Entry<Set<String>, Long> catalogCache = new Entry<>(null, 0L);
+
 	private final Map<Class<?>, List<FieldOrder>> reflectCache = new HashMap<>(32);
 
 	public Collection<String> getCatalogs() {
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		if (policy == SchemaPolicy.SCHEMA_ONLY) {
-			return Arrays.asList("");
+			return Collections.singletonList("");
 		}
-
 		Entry<Set<String>, Long> catalogCache = this.catalogCache;
 		long currentTime = System.currentTimeMillis();
 		if (catalogCache == null || currentTime - catalogCache.getValue() > 5000) {
-			Set<String> catalog = new HashSet<>(
-					doMetadataQuery("AllCatalogs", m -> m.getCatalogs(), r -> r.getString(1))); // r.getString("TABLE_CAT")
-			this.catalogCache = catalogCache = new Entry<>(catalog, currentTime);
+			Set<String> catalog = new HashSet<>(// r.getString("TABLE_CAT")
+			doMetadataQuery("AllCatalogs", DatabaseMetaData::getCatalogs, r -> r.getString(1)));
+			this.catalogCache = new Entry<>(catalog, currentTime);
 			return catalog;
 		} else {
 			return catalogCache.getKey();
@@ -354,14 +311,14 @@ public abstract class MetadataQuerySupport {
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		QueryFunction<ResultSet, String> schemaExt = r -> r.getString("TABLE_SCHEM");
 		if (policy == SchemaPolicy.CATALOG_ONLY) {
-			return getCatalogs().contains(catalog) ? Arrays.asList("") : Collections.emptyList();
+			return getCatalogs().contains(catalog) ? Collections.singletonList("") : Collections.emptyList();
 		} else if (policy == SchemaPolicy.SCHEMA_ONLY) {
 			if (StringUtils.isNotEmpty(catalog)) {
 				return Collections.emptyList();
 			}
-			return doMetadataQuery("AllSchemas", m -> m.getSchemas(), schemaExt);
+			return doMetadataQuery("AllSchemas", DatabaseMetaData::getSchemas, schemaExt);
 		} else {
-			return doMetadataQuery(catalog + "'s chemas", m -> m.getSchemas(catalog, "%"), schemaExt);
+			return doMetadataQuery(catalog + "'schemas", m -> m.getSchemas(catalog, "%"), schemaExt);
 		}
 	}
 
@@ -373,7 +330,7 @@ public abstract class MetadataQuerySupport {
 		List<SequenceInfo> result = new ArrayList<SequenceInfo>(2);
 		for (TableInfo table : getDatabaseObject(ObjectType.SEQUENCE, new SchemaAndTable(namespace, seqName), Ops.EQ)) {
 			SequenceInfo e = new SequenceInfo();
-			// TODO fill other infos.
+			// TODO fill other infors.
 			e.setName(table.getName());
 			result.add(e);
 		}
@@ -382,8 +339,7 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 得到数据库中（当前schema下）所有视图
-	 * 
-	 * @param namespace
+	 * @param namespace namespace
 	 * @return 视图信息列表。 A collection of view info.
 	 */
 	public List<TableInfo> getViews(String namespace) {
@@ -392,42 +348,28 @@ public abstract class MetadataQuerySupport {
 	}
 
 	/**
-	 * 得到表的主键
-	 * 
-	 * @param table 表名
-	 * @return Map<String,String> key=列名 value=主键名
-	 *         <LI><B>TABLE_CAT</B> String {@code =>} table catalog (may be
-	 *         <code>null</code>)
-	 *         <LI><B>TABLE_SCHEM</B> String {@code =>} table schema (may be
-	 *         <code>null</code>)
-	 *         <LI><B>TABLE_NAME</B> String {@code =>} table name
-	 *         <LI><B>COLUMN_NAME</B> String {@code =>} column name
-	 *         <LI><B>KEY_SEQ</B> short {@code =>} sequence number within primary
-	 *         key( a value of 1 represents the first column of the primary key,).
-	 *         <LI><B>PK_NAME</B> String {@code =>} primary key name (may be
-	 *         <code>null</code>)
+	 * @param table 表名和Schema
+	 * @return 表的主键
 	 */
 	public Constraint getPrimaryKey(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-		SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
-		List<KeyColumn> ts = this.doMetadataQuery("getPrimaryKey", m -> m.getPrimaryKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName),
-				rs -> {
-					KeyColumn k = new KeyColumn();
-					k.setColumnName(rs.getString("COLUMN_NAME"));
-					k.setKeyName(rs.getString("PK_NAME"));
-					k.setSeq(rs.getInt("KEY_SEQ"));
-					k.setTableCat(rs.getString("TABLE_CAT"));
-					k.setTableName(rs.getString("TABLE_NAME"));
-					k.setTableSchema(rs.getString("TABLE_SCHEM"));
-					return k;
-				});
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		List<KeyColumn> ts = this.doMetadataQuery("getPrimaryKey", m -> m.getPrimaryKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName), rs -> {
+			KeyColumn k = new KeyColumn();
+			k.setColumnName(rs.getString("COLUMN_NAME"));
+			k.setKeyName(rs.getString("PK_NAME"));
+			k.setSeq(rs.getInt("KEY_SEQ"));
+			k.setTableCat(rs.getString("TABLE_CAT"));
+			k.setTableName(rs.getString("TABLE_NAME"));
+			k.setTableSchema(rs.getString("TABLE_SCHEM"));
+			return k;
+		});
 		if (ts.isEmpty()) {
 			return null;
 		}
-		Collections.sort(ts, (a, b) -> Integer.compare(a.getSeq(), b.getSeq()));
-
+		ts.sort(Comparator.comparingInt(KeyColumn::getSeq));
 		Constraint c = new Constraint();
 		c.setColumnNames(ts.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
 		KeyColumn k = ts.get(0);
@@ -441,26 +383,28 @@ public abstract class MetadataQuerySupport {
 	}
 
 	/**
-	 * 获得外键（引用其他表的键）
-	 * 
-	 * @param table SchemaAndTable
-	 * @return ForeignKeyItem
+	 *  获得外键（引用其他表的键）
+	 *
+	 *  @param table SchemaAndTable
+	 *  @return ForeignKeyItem
 	 */
 	public List<ForeignKeyItem> getForeignKey(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-		SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
-		List<ForeignKeyItem> result = doMetadataQuery("getForeignKey", m -> m.getImportedKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName),
-				r -> getFromResultSet(r, ForeignKeyItem.class));
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		List<ForeignKeyItem> result = doMetadataQuery("getForeignKey", m -> m.getImportedKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName), r -> getFromResultSet(r, ForeignKeyItem.class));
 		return result;
 	}
 
 	private static final class FieldOrder {
-		private int index;
+
+		private final int index;
+
 		@SuppressWarnings("unused")
-		private String name;
-		private Field field;
+		private final String name;
+
+		private final Field field;
 
 		public FieldOrder(int index, String name, Field field) {
 			this.index = index;
@@ -524,109 +468,92 @@ public abstract class MetadataQuerySupport {
 		table = getConfiguration().getOverride(table);
 		final String schema = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-
 		SQLTemplatesEx template = getConfiguration().getTemplates();
-		List<Constraint> constraints = doSQLQuery(q -> template.getConstraints(schema, tableName, q, detail),
-				"getConstraints");
-		Constraint pk = null;
+		List<Constraint> constraints = doSQLQuery(q -> template.getConstraints(schema, tableName, q, detail), "getConstraints");
+		Constraint pk;
 		if (constraints == null) {
 			if (null != (pk = getPrimaryKey(table))) {
-				constraints = Arrays.asList(pk);
+				constraints = Collections.singletonList(pk);
 			}
 		}
 		return constraints;
 	}
-	
-	public List<PartitionInfo> getPartitions(SchemaAndTable table){
+
+	public List<PartitionInfo> getPartitions(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
 		final String schema = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SQLTemplatesEx template = getConfiguration().getTemplates();
-		List<PartitionInfo> partitions = doSQLQuery(q -> template.getPartitions(schema, tableName, q),
-				"getPartitions");
-		if(partitions==null) {
-			throw new UnsupportedOperationException("Current database do not support PARTITION operation. "+driverInfo.getDatabaseProductName());
+		List<PartitionInfo> partitions = doSQLQuery(q -> template.getPartitions(schema, tableName, q), "getPartitions");
+		if (partitions == null) {
+			throw new UnsupportedOperationException("Current database do not support PARTITION operation. " + getDriverInfo() .getDatabaseProductName());
 		}
-		if(partitions.size()==1 && partitions.get(0).getMethod()==PartitionMethod.NOT_PARTITIONED) {
+		if (partitions.size() == 1 && partitions.get(0).getMethod() == PartitionMethod.NOT_PARTITIONED) {
 			return Collections.emptyList();
 		}
 		return partitions;
 	}
-	
 
 	public static final int INDEX_POLICY_INDEX_ONLY = 0;
-	public static final int INDEX_POILCY_ALL_INDEX = 1;
-	public static final int INDEX_POILCY_MERGE_CONSTRAINTS = 2;
+
+	public static final int INDEX_POLICY_ALL_INDEX = 1;
+
+	public static final int INDEX_POLICY_MERGE_CONSTRAINTS = 2;
 
 	/**
-	 * 得到指定实体的所有索引(基于JDBC驱动实现，实际在不同数据库上可能不准确。)
-	 * 
-	 * @param table  指定实体类型
-	 * @param fetchPolicy {@link #INDEX_POLICY_INDEX_ONLY} 去除传统意义上的constraint （纯Index）
-	 *               {@link #INDEX_POILCY_ALL_INDEX}
-	 *               不去除Constraint。直接返回JDBC的getIndex的结果（单 JDBC）
-	 *               {@link #INDEX_POILCY_MERGE_CONSTRAINTS}
-	 *               连同已知的Constraint一起返回，Constraint的数据以Constraint为准（合并结果）
-	 * 
-	 * @see Constraint
-	 * @return Constraints
+	 *  得到指定实体的所有索引(基于JDBC驱动实现，实际在不同数据库上可能不准确。)
+	 *
+	 *  @param table  指定实体类型
+	 *  @param fetchPolicy {@link #INDEX_POLICY_INDEX_ONLY} 去除传统意义上的constraint （纯Index）
+	 *                {@link #INDEX_POLICY_ALL_INDEX}
+	 *                不去除Constraint。直接返回JDBC的getIndex的结果（单 JDBC）
+	 *                {@link #INDEX_POLICY_MERGE_CONSTRAINTS}
+	 *                连同已知的Constraint一起返回，Constraint的数据以Constraint为准（合并结果）
+	 *
+	 *  @see Constraint
+	 *  @return Constraints
 	 */
 	public List<Constraint> getIndexes(SchemaAndTable table, int fetchPolicy) {
 		table = getConfiguration().getOverride(table);
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-
-		List<Constraint> constraints = fetchPolicy == INDEX_POILCY_ALL_INDEX ? Collections.emptyList()
-				: getConstraints(table, fetchPolicy == INDEX_POILCY_MERGE_CONSTRAINTS);
+		List<Constraint> constraints = fetchPolicy == INDEX_POLICY_ALL_INDEX ? Collections.emptyList() : getConstraints(table, fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS);
 		Set<String> constraintsNames = collectConstraintNames(constraints);
-
 		List<Constraint> result = new ArrayList<Constraint>();
-		if (fetchPolicy == INDEX_POILCY_MERGE_CONSTRAINTS) {
+		if (fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS) {
 			result.addAll(constraints);
 		}
-		SchemaPolicy policy=getConfiguration().getTemplates().getSchemaPolicy();
-		List<KeyColumn> indexColumns = doMetadataQuery("getIndexInfo",
-				m -> m.getIndexInfo(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, false, false),
-				rs -> getFromResultSet(rs, KeyColumn.class));
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		List<KeyColumn> indexColumns = doMetadataQuery("getIndexInfo", m -> m.getIndexInfo(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, false, false), rs -> getFromResultSet(rs, KeyColumn.class));
 		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(indexColumns, e -> e.keyName, e -> e);
-
 		for (Map.Entry<String, List<KeyColumn>> entry : map.entrySet()) {
 			Constraint index = new Constraint();
 			List<KeyColumn> columns = entry.getValue();
-			columns.sort((a, b) -> Integer.compare(a.seq, b.seq));
+			columns.sort(Comparator.comparingInt(a -> a.seq));
 			index.setColumnNames(columns.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
 			KeyColumn kc = entry.getValue().get(0);
 			index.setCatalog(kc.getTableCat());
 			index.setSchema(kc.getTableSchema());
 			index.setTableName(kc.getTableName());
-
 			index.setCheckClause(DDLExpressions.wrapCheckExpression(kc.getFilterCondition()));
 			index.setName(kc.getKeyName());
-
 			// 已经在约束数据中，从索引中去除
 			if (constraintsNames.contains(kc.getKeyName())) {
 				continue;
 			}
-
 			// 从JDBC驱动得到的其实是不准的，真正用系统表查到的才是准的
 			boolean isUnique = !kc.isNonUnique();
-			switch (kc.getType()) {
-			case DatabaseMetaData.tableIndexStatistic:
-				index.setConstraintType(ConstraintType.CHECK);
-				break;
-			case DatabaseMetaData.tableIndexClustered:
-				index.setConstraintType(isUnique ? ConstraintType.UNIQUE : ConstraintType.KEY);
-				break;
-			case DatabaseMetaData.tableIndexHashed:
-				index.setConstraintType(ConstraintType.HASH);
-				break;
-			case DatabaseMetaData.tableIndexOther:
-//				if (Objects.equals(pk == null ? null : pk.getName(), c.getName())) {
-//					c.setConstraintType(ConstraintType.PRIMARY_KEY);
-//				} else {
-				index.setConstraintType(isUnique ? ConstraintType.UNIQUE : ConstraintType.KEY);
-//				}
-				break;
+			switch(kc.getType()) {
+				case DatabaseMetaData.tableIndexStatistic:
+					index.setConstraintType(ConstraintType.CHECK);
+					break;
+				case DatabaseMetaData.tableIndexClustered:
+				case DatabaseMetaData.tableIndexOther:
+					index.setConstraintType(isUnique ? ConstraintType.UNIQUE : ConstraintType.KEY);
+					break;
+				case DatabaseMetaData.tableIndexHashed:
+					index.setConstraintType(ConstraintType.HASH);
+					break;
 			}
 			result.add(index);
 		}
@@ -650,7 +577,8 @@ public abstract class MetadataQuerySupport {
 	private static SchemaAndTable parseSchemaAndTable(String tableName) {
 		String namespace = null;
 		int n = tableName.indexOf('.');
-		if (n > 0) {// 尝试从表名中计算schema
+		if (n > 0) {
+			// 尝试从表名中计算schema
 			namespace = tableName.substring(0, n);
 			tableName = tableName.substring(n + 1);
 		}
@@ -680,8 +608,8 @@ public abstract class MetadataQuerySupport {
 		return StringUtils.trimToNull(schema);
 	}
 
-	private SQLListenerContextImpl startContext(Connection connection, RelationalPath<?> entity) {
-		SQLListenerContextImpl context = new SQLListenerContextImpl(metadata, connection, entity);
+	private SQLListenerContextImpl startContext(Connection connection) {
+		SQLListenerContextImpl context = new SQLListenerContextImpl(metadata, connection, null);
 		listeners.start(context);
 		return context;
 	}
@@ -689,12 +617,12 @@ public abstract class MetadataQuerySupport {
 	private <R> R doMetadataAccess(QueryFunction<DatabaseMetaData, R> func) {
 		Assert.notNull(func);
 		Connection conn = getConnection();
-		SQLListenerContextImpl context = startContext(conn, null);
-//		long time = System.currentTimeMillis();
+		SQLListenerContextImpl context = startContext(conn);
+		// long time = System.currentTimeMillis();
 		try {
-			QueryWrapper q = new QueryWrapper(conn, getConfiguration());
+			ConnectionWrapper q = new ConnectionWrapper(conn, getConfiguration());
 			R r = q.metadataAccess(func);
-//			postExecuted(context, System.currentTimeMillis() - time, "metadata", 0);
+			// postExecuted(context, System.currentTimeMillis() - time, "metadata", 0);
 			return r;
 		} finally {
 			listeners.end(context);
@@ -702,13 +630,13 @@ public abstract class MetadataQuerySupport {
 	}
 
 	/*
-	 * 仅限非Statment的操作
+	 * 仅限非Statement的操作
 	 */
 	private <R> R doConnectionAccess(QueryFunction<Connection, R> func) {
 		Assert.notNull(func);
 		Connection conn = getConnection();
-		SQLListenerContextImpl context = startContext(conn, null);
-//		long time = System.currentTimeMillis();
+		SQLListenerContextImpl context = startContext(conn);
+		// long time = System.currentTimeMillis();
 		try {
 			R r = func.apply(conn);
 			return r;
@@ -719,35 +647,34 @@ public abstract class MetadataQuerySupport {
 		}
 	}
 
-	private <T> List<T> doMetadataQuery(String action, QueryFunction<DatabaseMetaData, ResultSet> func,
-			QueryFunction<ResultSet, T> resultExtracter) {
+	private <T> List<T> doMetadataQuery(String action, QueryFunction<DatabaseMetaData, ResultSet> func, QueryFunction<ResultSet, T> resultExtractor) {
 		Assert.notNull(func);
-		Assert.notNull(resultExtracter);
+		Assert.notNull(resultExtractor);
 		Connection conn = getConnection();
-		SQLListenerContextImpl context = startContext(conn, null);
+		SQLListenerContextImpl context = startContext(conn);
 		long time = System.currentTimeMillis();
 		try {
-			QueryWrapper q = new QueryWrapper(conn, getConfiguration());
-			List<T> list = q.metadataQuery(func, resultExtracter);
-			postExecuted(context, System.currentTimeMillis() - time, action, list.size());
+			ConnectionWrapper q = new ConnectionWrapper(conn, getConfiguration());
+			List<T> list = q.metadataQuery(func, resultExtractor);
+			postExecuted(context, System.currentTimeMillis() - time, "(" + action + ")", list.size());
 			return list;
 		} finally {
 			listeners.end(context);
 		}
 	}
 
-	public <R> R doSQLQuery(java.util.function.Function<QueryWrapper, R> works, String sqlAction) {
+	public <R> R doSQLQuery(java.util.function.Function<ConnectionWrapper, R> works, String sqlAction) {
 		Connection conn = getConnection();
-		SQLListenerContextImpl context = startContext(conn, null);
+		SQLListenerContextImpl context = startContext(conn);
 		long time = System.currentTimeMillis();
 		try {
-			QueryWrapper q = new QueryWrapper(conn, getConfiguration());
+			ConnectionWrapper q = new ConnectionWrapper(conn, getConfiguration());
 			R r = works.apply(q);
-			int size=1;
-			if(r instanceof Collection) {
+			int size = 1;
+			if (r instanceof Collection) {
 				size = ((Collection<?>) r).size();
 			}
-			postExecuted(context, System.currentTimeMillis() - time, sqlAction, size);
+			postExecuted(context, System.currentTimeMillis() - time, "(" + sqlAction + ")", size);
 			return r;
 		} finally {
 			listeners.end(context);
@@ -766,32 +693,30 @@ public abstract class MetadataQuerySupport {
 
 	public SchemaAndTable asInCurrentSchema(SchemaAndTable schemaAndTable) {
 		if (processNamespace(schemaAndTable.getSchema()) == null) {
-			schemaAndTable = new SchemaAndTable(driverInfo.getNamespace(), schemaAndTable.getTable());
+			schemaAndTable = new SchemaAndTable(getDriverInfo().getNamespace(), schemaAndTable.getTable());
 		} else {
 			schemaAndTable = getConfiguration().getOverride(schemaAndTable);
 		}
 		return schemaAndTable;
 	}
 
-	
 	/**
 	 * 指定一个SQL脚本文件运行
-	 * 
 	 * @param url      the script file.
 	 * @param endChars 命令结束字符
-	 * @param charset
+	 * @param charset charset
 	 * @param ignoreErrors 出现错误继续执行
 	 * @param exceptionCollector 执行错误的SQL的异常信息将被写入这个Map
 	 * @return 所有指令返回的行数总和
 	 */
-	public int executeScriptFile(URL url,Charset charset, String endChars, boolean ignoreErrors, Map<String,RuntimeException> exceptionCollector){
+	public int executeScriptFile(URL url, Charset charset, String endChars, boolean ignoreErrors, Map<String, RuntimeException> exceptionCollector) {
 		Assert.notNull(url);
 		char[] ends = endChars.toCharArray();
 		Connection conn = getConnection();
-		SQLListenerContextImpl context = startContext(conn, null);
-		QueryWrapper exe=new QueryWrapper(conn,getConfiguration());
+		SQLListenerContextImpl context = startContext(conn);
+		ConnectionWrapper exe = new ConnectionWrapper(conn, getConfiguration());
 		int statements = 0, count = 0;
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(),charset))){
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), charset))) {
 			long time = System.currentTimeMillis();
 			StringBuilder sb = new StringBuilder();
 			String line;
@@ -802,17 +727,17 @@ public abstract class MetadataQuerySupport {
 				}
 				char end = line.charAt(line.length() - 1);
 				if (ArrayUtils.contains(ends, end)) {
-					sb.append(line.substring(0, line.length() - 1));
+					sb.append(line, 0, line.length() - 1);
 					String sql = sb.toString();
 					sb.setLength(0);
 					try {
 						count += exe.executeQuery(sql, null, null);
 						statements++;
-					}catch(RuntimeException e) {
-						if(exceptionCollector!=null) {
+					} catch (RuntimeException e) {
+						if (exceptionCollector != null) {
 							exceptionCollector.put(sql, e);
 						}
-						if(!ignoreErrors) {
+						if (!ignoreErrors) {
 							throw e;
 						}
 					}
@@ -821,20 +746,20 @@ public abstract class MetadataQuerySupport {
 				}
 			}
 			if (sb.length() > 0) {
-				String sql=sb.toString();
+				String sql = sb.toString();
 				try {
-					count += exe.executeQuery(sql,null,null);
+					count += exe.executeQuery(sql, null, null);
 					statements++;
-				}catch(RuntimeException e) {
-					if(exceptionCollector!=null) {
+				} catch (RuntimeException e) {
+					if (exceptionCollector != null) {
 						exceptionCollector.put(sql, e);
 					}
-					if(!ignoreErrors) {
+					if (!ignoreErrors) {
 						throw e;
 					}
 				}
 			}
-			log.info("{} executed, sql={}, updated={}, time={}ms", url, statements, count,(System.currentTimeMillis() - time));
+			log.info("{} executed, sql={}, updated={}, time={}ms", url, statements, count, (System.currentTimeMillis() - time));
 		} catch (IOException e) {
 			throw Exceptions.toRuntime(e);
 		} finally {
@@ -843,4 +768,5 @@ public abstract class MetadataQuerySupport {
 		return count;
 	}
 
+	public abstract DistributedLock getLock(String lockName);
 }

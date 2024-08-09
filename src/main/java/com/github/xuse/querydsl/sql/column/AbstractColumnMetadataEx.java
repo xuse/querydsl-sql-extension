@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.sql.column;
 
-import org.apache.commons.lang3.ArrayUtils;
-
+import com.github.xuse.querydsl.util.ArrayUtils;
 import com.querydsl.core.types.Expression;
 import com.querydsl.sql.ColumnMetadata;
 

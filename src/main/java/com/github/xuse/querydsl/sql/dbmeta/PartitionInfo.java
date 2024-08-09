@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.sql.dbmeta;
 
 import java.util.Date;
 
-import com.querydsl.core.types.DDLOps.PartitionMethod;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 
 import lombok.Getter;
 import lombok.Setter;

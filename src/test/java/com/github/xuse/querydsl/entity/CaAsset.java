@@ -12,8 +12,8 @@ import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.Key;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.types.JSONObjectType;
-import com.querydsl.core.types.ConstraintType;
 
 import lombok.Data;
 

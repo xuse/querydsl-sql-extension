@@ -13,25 +13,25 @@ import java.util.Set;
 
 /**
  * 用List实现的最简单的Map，目标是占用内存最小，不考虑性能，事实上元素不多的情况下性能不是什么问题。
- * @param <K>
- * @param <V>
+ * @param <K> the type class of key.
+ * @param <V> the type class of value.
  */
 public final class ArrayListMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Serializable {
+
 	private static final long serialVersionUID = -4930667933312037159L;
 
-	//@XmlElement(nillable = false, name = "entry")
+	// @XmlElement(nillable = false, name = "entry")
 	private List<com.github.xuse.querydsl.util.Entry<K, V>> entries;
 
 	public List<com.github.xuse.querydsl.util.Entry<K, V>> getEntries() {
 		return entries;
 	}
-	
 
 	/**
 	 * 包装指定的列表为Map
-	 * @param <K>
-	 * @param <V>
-	 * @param entries
+	 * @param <K> &lt;K&gt;
+	 * @param <V> &lt;V&gt;
+	 * @param entries entries
 	 * @return ArrayListMap
 	 */
 	public static <K, V> ArrayListMap<K, V> wrap(List<com.github.xuse.querydsl.util.Entry<K, V>> entries) {
@@ -40,9 +40,9 @@ public final class ArrayListMap<K, V> extends AbstractMap<K, V> implements Map<K
 
 	/**
 	 * 包装指定的列表为Map
-	 * @param <K>
-	 * @param <V>
-	 * @param entries
+	 * @param <K> &lt;K&gt;
+	 * @param <V> &lt;V&gt;
+	 * @param entries entries
 	 * @return ArrayListMap
 	 */
 	public static <K, V> ArrayListMap<K, V> immutableMap(com.github.xuse.querydsl.util.Entry<K, V>[] entries) {
@@ -75,9 +75,9 @@ public final class ArrayListMap<K, V> extends AbstractMap<K, V> implements Map<K
 
 	/**
 	 * 在Map中添加元素，不检查重复与否
-	 * 
-	 * @param key
-	 * @param value
+	 *
+	 * @param key key
+	 * @param value value
 	 */
 	public void add(K key, V value) {
 		entries.add(new com.github.xuse.querydsl.util.Entry<K, V>(key, value));

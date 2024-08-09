@@ -1,5 +1,5 @@
 /*
- * JEF - Copyright 2009-2010 Jiyi (mr.jiyi@gmail.com)
+ * querydsl-sql-extension - Copyright 2017-2024 Joey (mr.jiyi@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import com.github.xuse.querydsl.util.Assert;
 
 /**
@@ -42,21 +41,24 @@ import com.github.xuse.querydsl.util.Assert;
  * @author Joey
  */
 public class CollectionUtils {
+
 	protected CollectionUtils() {
 	}
 
 	/**
 	 * 集合转换为Map
-	 * 
-	 * @param c
-	 * @param keyExt
-	 * @param valueExt
+	 * @param c collection
+	 * @param keyExt key extractor
+	 * @param valueExt value extractor
 	 * @return array
+	 * @param <E> The type of target object.
+	 * @param <K> The type of target object.
+	 * @param <V> The type of target object.
 	 */
 	public static <E, K, V> Map<K, List<V>> bucket(Collection<E> c, Function<E, K> keyExt, Function<E, V> valueExt) {
 		Map<K, List<V>> buckets = new HashMap<>();
 		if (c != null) {
-			for (Iterator<E> it = c.iterator(); it.hasNext();) {
+			for (Iterator<E> it = c.iterator(); it.hasNext(); ) {
 				E value = it.next();
 				K key = keyExt.apply(value);
 				List<V> bucket = buckets.get(key);
@@ -68,17 +70,17 @@ public class CollectionUtils {
 		}
 		return buckets;
 	}
-	
 
 	/**
 	 * 将数组转换为Map。（Map不保证顺序）
-	 * 
 	 * @param array        数组
 	 * @param keyExtractor 键值提取函数
 	 * @return 在每个元素中提取键值后，形成Map，如果多个对象返回相同的key，那么会互相覆盖。如果不希望互相覆盖，请使用
 	 *         {@linkplain #bucket(Collection, Function, Function)}
+	 * @param <K> The type of target object.
+	 * @param <V> The type of target object.
 	 */
-	public static <K, V> Map<K, V> group(V[] array, Function<V, K> keyExtractor) {
+	public static <K, V> Map<K, V> bucket(V[] array, Function<V, K> keyExtractor) {
 		if (array == null || array.length == 0)
 			return Collections.emptyMap();
 		Map<K, V> result = new HashMap<K, V>(array.length);
@@ -91,33 +93,28 @@ public class CollectionUtils {
 
 	/**
 	 * 将Collection转换为Map。（Map不保证顺序）
-	 * 
 	 * @param collection   集合
 	 * @param keyExtractor 键值提取函数
 	 * @return 在每个元素中提取键值后，形成Map。相同键值的记录将发生叠加（仅保留最后的一个）
+	 * @param <T> The type of target object.
+	 * @param <V> The type of target object.
 	 */
-	public static <T, V> Map<T, V> groupUnique(Collection<V> collection, Function<V, T> keyExtractor) {
+	public static <T, V> Map<T, V> bucket(Collection<V> collection, Function<V, T> keyExtractor) {
 		if (collection == null || collection.isEmpty())
 			return Collections.emptyMap();
 		Map<T, V> result = new HashMap<T, V>(collection.size());
 		for (V value : collection) {
 			T key = keyExtractor.apply(value);
-			V oldValue = result.put(key, value);
-			if (oldValue != null) {
-				if (!oldValue.equals(value)) {
-					throw new IllegalStateException(
-							"Detect two different objects with a same key, and one object will be replaced in the map." + value + " to " + oldValue);
-				}
-			}
+			result.put(key, value);
 		}
 		return result;
 	}
 
 	/**
 	 * nullsafe的集合
-	 * 
-	 * @param value
-	 * @return array
+	 * @param value list
+	 * @return not null list
+	 * @param <E> The type of target object.
 	 */
 	public static <E> List<E> nullSafe(List<E> value) {
 		return value == null ? Collections.emptyList() : value;
@@ -125,9 +122,9 @@ public class CollectionUtils {
 
 	/**
 	 * nullsafe的集合
-	 * 
-	 * @param value
-	 * @return array
+	 * @param value set
+	 * @return not null set
+	 * @param <E> The type of target object.
 	 */
 	public static <E> Set<E> nullSafe(Set<E> value) {
 		return value == null ? Collections.emptySet() : value;
@@ -135,9 +132,10 @@ public class CollectionUtils {
 
 	/**
 	 * nullsafe的集合
-	 * 
-	 * @param value 
-	 * @return array
+	 * @param value  map
+	 * @return not null map
+	 * @param <K> The type of target object.
+	 * @param <V> The type of target object.
 	 */
 	public static <K, V> Map<K, V> nullSafe(Map<K, V> value) {
 		return value == null ? Collections.emptyMap() : value;
@@ -145,8 +143,9 @@ public class CollectionUtils {
 
 	/**
 	 * List to map
-	 * 
-	 * @param list
+	 * @param list list
+	 * @return Map&lt;,Integer&gt;
+	 * @param <V> The type of target object.
 	 */
 	public static <V> Map<V, Integer> getIndexMap(List<V> list) {
 		if (isEmpty(list)) {
@@ -154,7 +153,7 @@ public class CollectionUtils {
 		}
 		Map<V, Integer> indexes = new HashMap<>();
 		int index = 0;
-		for (Iterator<V> it = list.iterator(); it.hasNext();) {
+		for (Iterator<V> it = list.iterator(); it.hasNext(); ) {
 			indexes.put(it.next(), Integer.valueOf(index++));
 		}
 		return indexes;
@@ -162,10 +161,11 @@ public class CollectionUtils {
 
 	/**
 	 * 将一个数组的每个元素进行函数处理后重新组成一个集合
-	 * 
 	 * @param array      数组
 	 * @param extractor  提取函数
 	 * @return 提取后形成的列表
+	 * @param <F> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <F, T> List<T> extract(F[] array, Function<F, T> extractor) {
 		return extract(Arrays.asList(array), extractor, false);
@@ -173,10 +173,11 @@ public class CollectionUtils {
 
 	/**
 	 * 将一个集合对象的每个元素进行函数处理后重新组成一个集合
-	 * 
 	 * @param collection 集合对象
 	 * @param extractor  提取函数
 	 * @return 提取后形成的列表
+	 * @param <F> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <F, T> List<T> extract(Collection<F> collection, Function<F, T> extractor) {
 		return extract(collection, extractor, false);
@@ -184,11 +185,12 @@ public class CollectionUtils {
 
 	/**
 	 * 将一个集合对象的每个元素进行函数处理后重新组成一个集合
-	 * 
 	 * @param collection 集合对象
 	 * @param extractor  提取函数
 	 * @param ignoreNull 如果为true，那么提出后的null值会被忽略
 	 * @return 提取后形成的列表
+	 * @param <F> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <F, T> List<T> extract(Collection<F> collection, Function<F, T> extractor, boolean ignoreNull) {
 		List<T> result = new ArrayList<T>(collection.size());
@@ -206,10 +208,10 @@ public class CollectionUtils {
 
 	/**
 	 * 在集合中查找符合条件的首个元素
-	 * 
 	 * @param collection 集合
 	 * @param filter     过滤器
 	 * @return find result.
+	 * @param <T> The type of target object.
 	 */
 	public static <T> T findFirst(Collection<T> collection, Predicate<T> filter) {
 		if (collection == null || collection.isEmpty())
@@ -224,40 +226,41 @@ public class CollectionUtils {
 
 	/**
 	 * 根据字段名称和字段值查找第一个记录
-	 * 
 	 * @param collection 集合
-	 * @param f
+	 * @param f f
 	 * @param value      查找值
 	 * @return 查找到的元素
+	 * @param <T> The type of target object.
+	 * @param <V> The type of target object.
 	 */
-	public static <T,V> T findFirst(Collection<T> collection, Function<T,V> f, V value) {
+	public static <T, V> T findFirst(Collection<T> collection, Function<T, V> f, V value) {
 		if (collection == null || collection.isEmpty())
 			return null;
-		return findFirst(collection, t-> Objects.equals(f.apply(t), value));
+		return findFirst(collection, t -> Objects.equals(f.apply(t), value));
 	}
 
 	/**
 	 * 根据字段名称和字段值查找所有记录
-	 * 
 	 * @param            <T> 泛型
 	 * @param collection 集合
-	 * @param f
+	 * @param f function
 	 * @param value      值
 	 * @return 过滤后的集合
+	 * @param <V> The type of target object.
 	 */
-	public static <T,V> List<T> find(Collection<T> collection, Function<T,V> f, V value) {
+	public static <T, V> List<T> find(Collection<T> collection, Function<T, V> f, V value) {
 		if (collection == null || collection.isEmpty())
 			return Collections.emptyList();
-		return filter(collection, t-> Objects.equals(f.apply(t), value));
+		return filter(collection, t -> Objects.equals(f.apply(t), value));
 	}
 
 	/**
-	 * 在集合中查找符合条件的元素
-	 * 
-	 * @param            <T> 泛型
-	 * @param collection 集合
-	 * @param filter     过滤器
-	 * @return result
+	 *  在集合中查找符合条件的元素
+	 *
+	 *  @param            <T> 泛型
+	 *  @param collection 集合
+	 *  @param filter     过滤器
+	 *  @return result
 	 */
 	public static <T> List<T> filter(Collection<T> collection, Predicate<T> filter) {
 		List<T> list = new ArrayList<T>();
@@ -273,10 +276,11 @@ public class CollectionUtils {
 
 	/**
 	 * 对Map进行过滤，获得一个新的Map. 如果传入的是有序Map，新Map会保留原来的顺序。
-	 * 
 	 * @param map    要处理的Map
 	 * @param filter 过滤器
 	 * @return 过滤后的新Map
+	 * @param <K> The type of target object.
+	 * @param <V> The type of target object.
 	 */
 	public static <K, V> Map<K, V> filter(Map<K, V> map, Predicate<Map.Entry<K, V>> filter) {
 		if (map == null) {
@@ -289,7 +293,7 @@ public class CollectionUtils {
 			result = new HashMap<K, V>(map.size());
 		}
 		for (Map.Entry<K, V> e : map.entrySet()) {
-			Boolean applied = filter.test(e);
+			boolean applied = filter.test(e);
 			if (applied) {
 				result.put(e.getKey(), e.getValue());
 			}
@@ -298,16 +302,16 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * 从集合中去除不需要的元素（精炼，提炼） 注意，如果传入的Collection类型不支持Iterator.remove()方式移除元素，将抛出异常。(
-	 * 一般是UnsupportedOperationException)
-	 * 
-	 * @param            <T> 泛型
-	 * @param collection 集合
-	 * @param filter
+	 *  从集合中去除不需要的元素（精炼，提炼） 注意，如果传入的Collection类型不支持Iterator.remove()方式移除元素，将抛出异常。(
+	 *  一般是UnsupportedOperationException)
+	 *
+	 *  @param            <T> 泛型
+	 *  @param collection 集合
+	 *  @param filter filter
 	 */
 	public static <T> void refine(Collection<T> collection, Predicate<T> filter) {
 		if (collection != null) {
-			for (Iterator<T> iter = collection.iterator(); iter.hasNext();) {
+			for (Iterator<T> iter = collection.iterator(); iter.hasNext(); ) {
 				T e = iter.next();
 				if (!filter.test(e)) {
 					iter.remove();
@@ -320,14 +324,15 @@ public class CollectionUtils {
 	 * 从集合中去除不需要的元素（精炼，提炼），返回true时元素被保留。反之被删除。<br>
 	 * 注意，如果传入的Map类型不支持Iterator.remove()方式移除元素，将抛出异常。(
 	 * 一般是UnsupportedOperationException)
-	 * 
 	 * @param map    要处理的Map
 	 * @param filter Function，用于指定哪些元素要保留
-	 * @throws UnsupportedOperationException
+	 * @throws UnsupportedOperationException If encounter UnsupportedOperationException
+	 * @param <K> The type of target object.
+	 * @param <V> The type of target object.
 	 */
 	public static <K, V> void refine(Map<K, V> map, Predicate<Map.Entry<K, V>> filter) {
 		if (map != null) {
-			for (Iterator<Map.Entry<K, V>> iter = map.entrySet().iterator(); iter.hasNext();) {
+			for (Iterator<Map.Entry<K, V>> iter = map.entrySet().iterator(); iter.hasNext(); ) {
 				Map.Entry<K, V> e = iter.next();
 				if (!filter.test(e)) {
 					iter.remove();
@@ -338,8 +343,9 @@ public class CollectionUtils {
 
 	/**
 	 * 将传入的对象转换为可遍历的对象。
-	 * @param data
+	 * @param data data
 	 * @return Iterator
+	 * @param <E> The type of target object.
 	 */
 	public static <E> Iterator<E> iterator(Enumeration<E> data) {
 		Assert.notNull(data);
@@ -348,16 +354,16 @@ public class CollectionUtils {
 
 	/**
 	 * 将Enumeration转换为一个新的List
-	 * 
-	 * @param data
+	 * @param data data
 	 * @return 转换后的List
+	 * @param <E> The type of target object.
 	 */
 	public static <E> List<E> toList(Enumeration<E> data) {
 		if (data == null) {
 			return Collections.emptyList();
 		}
 		List<E> result = new ArrayList<E>();
-		for (; data.hasMoreElements();) {
+		for (; data.hasMoreElements(); ) {
 			result.add(data.nextElement());
 		}
 		return result;
@@ -365,16 +371,16 @@ public class CollectionUtils {
 
 	/**
 	 * 将Iterable转换为List
-	 * 
-	 * @param data
+	 * @param data data
 	 * @return 转换后的List
+	 * @param <E> The type of target object.
 	 */
 	public static <E> List<E> toList(Iterable<E> data) {
 		if (data == null) {
 			return Collections.emptyList();
 		}
 		List<E> result = new ArrayList<E>();
-		for (Iterator<E> iter = data.iterator(); iter.hasNext();) {
+		for (Iterator<E> iter = data.iterator(); iter.hasNext(); ) {
 			result.add(iter.next());
 		}
 		return result;
@@ -382,8 +388,7 @@ public class CollectionUtils {
 
 	/**
 	 * 得到数组或集合类型的长度
-	 * 
-	 * @param obj
+	 * @param obj obj
 	 * @return length
 	 * @throws IllegalArgumentException 如果传入参数不是一个数组或者一个集合抛出
 	 */
@@ -398,10 +403,10 @@ public class CollectionUtils {
 
 	/**
 	 * 两个集合对象的合并，并去除重复对象
-	 * 
-	 * @param   <T>
+	 * @param <T> type of collection
 	 * @param a 集合A
 	 * @param b 集合B
+	 * @return Collection
 	 */
 	public static <T> Collection<T> union(Collection<T> a, Collection<T> b) {
 		if (a == null && b == null) {
@@ -418,55 +423,55 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * Return <code>true</code> if the supplied Collection is <code>null</code> or
-	 * empty. Otherwise, return <code>false</code>.
-	 * 
-	 * @param collection the Collection to check
-	 * @return whether the given Collection is empty
+	 *  Return <code>true</code> if the supplied Collection is <code>null</code> or
+	 *  empty. Otherwise, return <code>false</code>.
+	 *
+	 *  @param collection the Collection to check
+	 *  @return whether the given Collection is empty
 	 */
 	public static boolean isEmpty(Collection<?> collection) {
 		return (collection == null || collection.isEmpty());
 	}
 
 	/**
-	 * Return <code>true</code> if the supplied Collection is NOT<code>null</code>
-	 * or empty. Otherwise, return <code>false</code>.
-	 * 
-	 * @param collection the Collection to check
-	 * @return whether the given Collection is empty
+	 *  Return <code>true</code> if the supplied Collection is NOT<code>null</code>
+	 *  or empty. Otherwise, return <code>false</code>.
+	 *
+	 *  @param collection the Collection to check
+	 *  @return whether the given Collection is empty
 	 */
 	public static boolean isNotEmpty(Collection<?> collection) {
 		return !(collection == null || collection.isEmpty());
 	}
 
 	/**
-	 * Return <code>true</code> if the supplied Map is <code>null</code> or empty.
-	 * Otherwise, return <code>false</code>.
-	 * 
-	 * @param map the Map to check
-	 * @return whether the given Map is empty
+	 *  Return <code>true</code> if the supplied Map is <code>null</code> or empty.
+	 *  Otherwise, return <code>false</code>.
+	 *
+	 *  @param map the Map to check
+	 *  @return whether the given Map is empty
 	 */
 	public static boolean isEmpty(Map<?, ?> map) {
 		return (map == null || map.isEmpty());
 	}
 
 	/**
-	 * Return <code>true</code> if the supplied Map is NOT <code>null</code> or
-	 * empty. Otherwise, return <code>false</code>.
-	 * 
-	 * @param map the Map to check
-	 * @return whether the given Map is empty
+	 *  Return <code>true</code> if the supplied Map is NOT <code>null</code> or
+	 *  empty. Otherwise, return <code>false</code>.
+	 *
+	 *  @param map the Map to check
+	 *  @return whether the given Map is empty
 	 */
 	public static boolean isNotEmpty(Map<?, ?> map) {
 		return !(map == null || map.isEmpty());
 	}
 
 	/**
-	 * Check whether the given Iterator contains the given element.
-	 * 
-	 * @param iterable the Iterator to check
-	 * @param element  the element to look for
-	 * @return <code>true</code> if found, <code>false</code> else
+	 *  Check whether the given Iterator contains the given element.
+	 *
+	 *  @param iterable the Iterator to check
+	 *  @param element  the element to look for
+	 *  @return <code>true</code> if found, <code>false</code> else
 	 */
 	public static boolean contains(Iterable<?> iterable, Object element) {
 		if (iterable != null) {
@@ -482,11 +487,11 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * Check whether the given Enumeration contains the given element.
-	 * 
-	 * @param enumeration the Enumeration to check
-	 * @param element     the element to look for
-	 * @return <code>true</code> if found, <code>false</code> else
+	 *  Check whether the given Enumeration contains the given element.
+	 *
+	 *  @param enumeration the Enumeration to check
+	 *  @param element     the element to look for
+	 *  @return <code>true</code> if found, <code>false</code> else
 	 */
 	public static boolean contains(Enumeration<?> enumeration, Object element) {
 		if (enumeration != null) {
@@ -501,14 +506,14 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * Check whether the given Collection contains the given element instance.
-	 * <p>
-	 * Enforces the given instance to be present, rather than returning
-	 * <code>true</code> for an equal element as well.
-	 * 
-	 * @param collection the Collection to check
-	 * @param element    the element to look for
-	 * @return <code>true</code> if found, <code>false</code> else
+	 *  Check whether the given Collection contains the given element instance.
+	 *  <p>
+	 *  Enforces the given instance to be present, rather than returning
+	 *  <code>true</code> for an equal element as well.
+	 *
+	 *  @param collection the Collection to check
+	 *  @param element    the element to look for
+	 *  @return <code>true</code> if found, <code>false</code> else
 	 */
 	public static boolean fastContains(Collection<?> collection, Object element) {
 		if (collection != null) {
@@ -522,12 +527,12 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * Return <code>true</code> if any element in '<code>candidates</code>' is
-	 * contained in '<code>source</code>'; otherwise returns <code>false</code>.
-	 * 
-	 * @param source     the source Collection
-	 * @param candidates the candidates to search for
-	 * @return whether any of the candidates has been found
+	 *  Return <code>true</code> if any element in '<code>candidates</code>' is
+	 *  contained in '<code>source</code>'; otherwise returns <code>false</code>.
+	 *
+	 *  @param source     the source Collection
+	 *  @param candidates the candidates to search for
+	 *  @return whether any of the candidates has been found
 	 */
 	public static boolean containsAny(Collection<?> source, Collection<?> candidates) {
 		if (isEmpty(candidates)) {
@@ -545,12 +550,12 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * Return <code>true</code> if all elements in '<code>candidates</code>' is
-	 * contained in '<code>source</code>'; otherwise returns <code>false</code>.
-	 * 
-	 * @param source     the source Collection
-	 * @param candidates the candidates to search for
-	 * @return whether any of the candidates has been found
+	 *  Return <code>true</code> if all elements in '<code>candidates</code>' is
+	 *  contained in '<code>source</code>'; otherwise returns <code>false</code>.
+	 *
+	 *  @param source     the source Collection
+	 *  @param candidates the candidates to search for
+	 *  @return whether any of the candidates has been found
 	 */
 	public static boolean containsAll(Collection<?> source, Collection<?> candidates) {
 		if (isEmpty(candidates)) {
@@ -568,9 +573,9 @@ public class CollectionUtils {
 	}
 
 	/**
-	 * 
 	 * Create a new identityHashSet.
 	 * @return set
+	 * @param <E> The type of target object.
 	 */
 	public static <E> Set<E> identityHashSet() {
 		return Collections.newSetFromMap(new IdentityHashMap<E, Boolean>());
@@ -578,24 +583,23 @@ public class CollectionUtils {
 
 	/**
 	 * 获得集合的最后一个元素
-	 * 
-	 * @param collection
+	 * @param collection collection
 	 * @return last
+	 * @param <T> The type of target object.
 	 */
 	public static <T> T last(List<T> collection) {
 		if (collection == null || collection.isEmpty()) {
 			return null;
 		}
 		return collection.get(collection.size() - 1);
-
 	}
 
 	/**
 	 * 在List中的指定位置插入元素。如果超出当前长度，则将list扩展到指定长度。
-	 * 
 	 * @param list  List
 	 * @param index 序号
 	 * @param value 值
+	 * @param <T> The type of target object.
 	 */
 	public static <T> void setElement(List<T> list, int index, T value) {
 		Assert.notNull(list);
@@ -613,6 +617,7 @@ public class CollectionUtils {
 
 	/**
 	 * Iterator wrapping an Enumeration.
+	 * @param <E> The type of target object.
 	 */
 	static class EnumerationIterator<E> implements Iterator<E> {
 		private Enumeration<E> enumeration;
@@ -633,9 +638,9 @@ public class CollectionUtils {
 			throw new UnsupportedOperationException("Not supported");
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public static <T> List<T> cast(List<? extends T> source){
+	public static <T> List<T> cast(List<? extends T> source) {
 		return (List<T>) source;
 	}
 }

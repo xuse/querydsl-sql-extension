@@ -3,13 +3,13 @@ package com.github.xuse.querydsl.sql;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.ForeignKeyItem;
@@ -29,21 +29,27 @@ import com.github.xuse.querydsl.sql.ddl.PartitionSizeAdjustQuery;
 import com.github.xuse.querydsl.sql.ddl.RemovePartitioningQuery;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.ddl.TruncateTableQuery;
+import com.github.xuse.querydsl.sql.dialect.Privilege;
+import com.github.xuse.querydsl.sql.dialect.PrivilegeDetector;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.sql.support.DbDistributedLockProvider;
+import com.github.xuse.querydsl.sql.support.DistributedLock;
+import com.github.xuse.querydsl.sql.support.DistributedLockProvider;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SchemaAndTable;
 
-public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
-	protected final Supplier<Connection> connection;
+public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
+
+	protected final SQLQueryFactory connection;
 
 	protected final ConfigurationEx configuration;
-    
-    protected final MetadataQuerySupport metadataQuery;
-	
-    SQLMetadataFactoryImpl(Supplier<Connection> connection,ConfigurationEx configuration){
-    	this.connection=connection;
-    	this.configuration=configuration;
-    	this.metadataQuery=new MetadataQuerySupport(){
+
+	protected final MetadataQuerySupport metadataQuery;
+
+	SQLMetadataFactoryImpl(SQLQueryFactory factory) {
+		this.connection = factory;
+		this.configuration = factory.getConfiguration();
+		this.metadataQuery = new MetadataQuerySupport() {
 			@Override
 			protected ConfigurationEx getConfiguration() {
 				return configuration;
@@ -51,13 +57,29 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 
 			@Override
 			public Connection getConnection() {
-				return connection.get();
+				return connection.getConnection();
 			}
-    	};
-    }
-	
+
+			@Override
+			public DistributedLock getLock(String lockName) {
+				DistributedLockProvider provider = configuration
+						.computeLockProvider(() -> DbDistributedLockProvider.create(factory));
+				if(provider==null) {
+					throw new IllegalStateException("There is no distributed-lock provider available.");
+				}
+				return provider.getLock(lockName, 3);
+			}
+		};
+	}
+
 	@Override
 	public <T> CreateTableQuery createTable(RelationalPath<T> path) {
+		return new CreateTableQuery(metadataQuery, configuration, path);
+	}
+	
+
+	@Override
+	public <T> CreateTableQuery createTable(LambdaTable<T> path) {
 		return new CreateTableQuery(metadataQuery, configuration, path);
 	}
 
@@ -67,8 +89,18 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 	}
 
 	@Override
+	public <T> DropTableQuery dropTable(LambdaTable<T> path) {
+		return new DropTableQuery(metadataQuery, configuration, path);
+	}
+
+	@Override
 	public <T> AlterTableQuery refreshTable(RelationalPath<T> path) {
-		return new AlterTableQuery(metadataQuery, configuration, (RelationalPathEx<?>)path);
+		return new AlterTableQuery(metadataQuery, configuration, path);
+	}
+
+	@Override
+	public <T> AlterTableQuery refreshTable(LambdaTable<T> path) {
+		return new AlterTableQuery(metadataQuery, configuration, path);
 	}
 
 	@Override
@@ -78,7 +110,12 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 
 	@Override
 	public <T> TruncateTableQuery truncate(RelationalPath<T> path) {
-		return new TruncateTableQuery(metadataQuery,configuration,path);
+		return new TruncateTableQuery(metadataQuery, configuration, path);
+	}
+
+	@Override
+	public <T> TruncateTableQuery truncate(LambdaTable<T> path) {
+		return new TruncateTableQuery(metadataQuery, configuration, path);
 	}
 
 	@Override
@@ -87,8 +124,8 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 	}
 
 	@Override
-	public Collection<String> getSchemas(String catalogy) {
-		return metadataQuery.getSchemas(catalogy);
+	public Collection<String> getSchemas(String catalog) {
+		return metadataQuery.getSchemas(catalog);
 	}
 
 	@Override
@@ -97,13 +134,13 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 	}
 
 	@Override
-	public List<String> getNames(String catalog, String schema,ObjectType... types) {
+	public List<String> getNames(String catalog, String schema, ObjectType... types) {
 		return metadataQuery.getNames(catalog, schema, types);
 	}
 
 	@Override
 	public boolean existsTable(SchemaAndTable table, RoutingStrategy routing) {
-		table=metadataQuery.asInCurrentSchema(table);
+		table = metadataQuery.asInCurrentSchema(table);
 		return metadataQuery.existsTable(table, routing == null ? RoutingStrategy.DEFAULT : routing);
 	}
 
@@ -132,7 +169,7 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 	}
 
 	@Override
-	public Collection<Constraint> getIndecies(SchemaAndTable table) {
+	public Collection<Constraint> getIndices(SchemaAndTable table) {
 		table = metadataQuery.asInCurrentSchema(table);
 		return metadataQuery.getIndexes(table, MetadataQuerySupport.INDEX_POLICY_INDEX_ONLY);
 	}
@@ -148,38 +185,62 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory{
 		table = metadataQuery.asInCurrentSchema(table);
 		return metadataQuery.getPartitions(table);
 	}
-	
-	public <T> PartitionSizeAdjustQuery adjustPartitionSize(RelationalPathEx<T> table) {
-		return new PartitionSizeAdjustQuery(metadataQuery, configuration,table);
+
+	@Override
+	public <T> PartitionSizeAdjustQuery adjustPartitionSize(RelationalPath<T> path) {
+		return new PartitionSizeAdjustQuery(metadataQuery, configuration, path);
 	}
 
 	@Override
-	public  <T> AddPartitionQuery addParition(RelationalPathEx<T> table) {
-		return new AddPartitionQuery(metadataQuery, configuration,table);
+	public <T> AddPartitionQuery addPartition(RelationalPath<T> table) {
+		return new AddPartitionQuery(metadataQuery, configuration, table);
 	}
 
 	@Override
-	public  <T> DropPartitionQuery dropPartition(RelationalPathEx<T> table) {
-		return new DropPartitionQuery(metadataQuery, configuration,table);
+	public <T> DropPartitionQuery dropPartition(RelationalPath<T> table) {
+		return new DropPartitionQuery(metadataQuery, configuration, table);
 	}
 
 	@Override
-	public  <T> RemovePartitioningQuery removePartitioning(RelationalPathEx<T> table) {
-		return new RemovePartitioningQuery(metadataQuery,configuration,table);
+	public <T> RemovePartitioningQuery removePartitioning(RelationalPath<T> table) {
+		return new RemovePartitioningQuery(metadataQuery, configuration, table);
 	}
 
 	@Override
-	public <T> CreatePartitioningQuery createPartitioning(RelationalPathEx<T> path) {
+	public <T> CreatePartitioningQuery createPartitioning(RelationalPath<T> path) {
 		return new CreatePartitioningQuery(metadataQuery, configuration, path);
 	}
 
 	/**
 	 * 指定一个SQL脚本文件运行
-	 * 
 	 * @param url the script file.
-	 * @throws SQLException
+	 * @return int
+	 * @param charset Charset
+	 * @param ignoreErrors boolean
+	 * @param exceptionCollector Map&lt;String,RuntimeException&gt;
 	 */
-	public int executeScriptFile(URL url,Charset charset, boolean ignoreErrors, Map<String,RuntimeException> exceptionCollector) {
-		return metadataQuery.executeScriptFile(url, charset == null ? Charset.defaultCharset() : charset, ";/",ignoreErrors,exceptionCollector);
+	public int executeScriptFile(URL url, Charset charset, boolean ignoreErrors, Map<String, RuntimeException> exceptionCollector) {
+		return metadataQuery.executeScriptFile(url, charset == null ? Charset.defaultCharset() : charset, ";/", ignoreErrors, exceptionCollector);
+	}
+
+	@Override
+	public boolean hasPrivilege(Privilege... p) {
+		PrivilegeDetector pd = configuration.getTemplates().getPrivilegeDetector();
+		return pd.check(connection, p);
+	}
+
+	@Override
+	public String getDatabaseProduct() {
+		return metadataQuery.getDriverInfo().getDatabaseProductName();
+	}
+	
+	@Override
+	public String getDatabaseVersion() {
+		return metadataQuery.getDriverInfo().getDataProductVersion();
+	}
+
+	@Override
+	public Date getCurrentDateTime() {
+		return metadataQuery.getDatabaseTime();
 	}
 }

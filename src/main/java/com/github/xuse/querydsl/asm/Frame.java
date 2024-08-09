@@ -100,7 +100,6 @@ package com.github.xuse.querydsl.asm;
  *
  * @author Eric Bruneton
  */
-@SuppressWarnings("javadoc")
 class Frame {
 
   // Constants used in the StackMapTable attribute.

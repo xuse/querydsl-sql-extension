@@ -1,49 +1,24 @@
 package com.github.xuse.querydsl.util.binary;
 
-
 /**
- * 表达short与int的无符号数
- * @author jiyi
- *
+ * 表达short与int的无符号数的工具类
+ * @author Joey
  */
 public class Unsigned {
+
 	public static final int MAX_BYTE_VALUE = 0xFF;
-	
+
 	public static final int MAX_SHORT_VALUE = 0xFFFF;
 
 	public static final long MAX_INT_VALUE = 0xFFFFFFFFL;
 
-	public static void main(String[] args) {
-		{
-
-			int num = Short.MAX_VALUE + 10;
-			short x = toShort(num);
-			System.out.println(num + "=" + of(x));
-		}
-		{
-			long num = Integer.MAX_VALUE + 10L;
-			int x = toInt(num);
-			System.out.println(num + "=" + of(x));
-		}
-		{
-			long num = Integer.MAX_VALUE + 10L;
-			int x = toInt(num);
-			System.out.println(num + "=" + of(x));
-		}
-		{
-			int num=177;
-			System.out.println(of(toByte(num)));
-		}
-		System.out.println((byte)0xff);
-	}
-
 	public static int of(byte i) {
 		return i < 0 ? i + 256 : i;
 	}
-	
+
 	/**
 	 * 还原一个 unsigned short
-	 * @param i
+	 * @param i i
 	 * @return as int
 	 */
 	public static int of(short i) {
@@ -52,7 +27,7 @@ public class Unsigned {
 
 	/**
 	 * 还原一个 unsigned int
-	 * @param i
+	 * @param i i
 	 * @return as long
 	 */
 	public static long of(int i) {
@@ -61,7 +36,7 @@ public class Unsigned {
 
 	/**
 	 * 构造一个unsigned short
-	 * @param i
+	 * @param i i
 	 * @return unsigned short
 	 */
 	public static short toShort(int i) {
@@ -73,7 +48,7 @@ public class Unsigned {
 
 	/**
 	 * 构造一个unsigned int
-	 * @param i
+	 * @param i i
 	 * @return unsigned int
 	 */
 	public static int toInt(long i) {
@@ -82,12 +57,11 @@ public class Unsigned {
 		}
 		return (int) i;
 	}
-	
-	
+
 	public static byte toByte(int i) {
 		if (i >= MAX_BYTE_VALUE) {
 			throw new IllegalArgumentException("Unsigned byte can not exceed: " + i);
 		}
-		return (byte)i;
+		return (byte) i;
 	}
 }

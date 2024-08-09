@@ -1,6 +1,6 @@
 package com.github.xuse.querydsl.annotation.partition;
 
-import com.querydsl.core.types.DDLOps.PartitionMethod;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 
 public enum HashType {
 	HASH(PartitionMethod.HASH),
@@ -9,7 +9,7 @@ public enum HashType {
 	
 	KEY(PartitionMethod.KEY);
 	
-	private HashType(PartitionMethod method) {
+	HashType(PartitionMethod method) {
 		this.method=method;
 	}
 	

@@ -4,8 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.apache.commons.lang3.StringUtils;
-
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.RelationalPath;
 
 public class TableRoutingBuilder {

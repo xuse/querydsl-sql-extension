@@ -13,34 +13,24 @@
  */
 package com.github.xuse.querydsl.sql;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.github.xuse.querydsl.annotation.query.Condition;
-import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.column.ColumnMapping;
-import com.github.xuse.querydsl.sql.expression.BeanCodec;
-import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
-import com.github.xuse.querydsl.sql.expression.FieldCollector;
+import com.github.xuse.querydsl.sql.expression.Projection;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
-import com.github.xuse.querydsl.sql.result.Projection;
-import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.Holder;
 import com.mysema.commons.lang.CloseableIterator;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryException;
 import com.querydsl.core.QueryFlag;
@@ -50,18 +40,12 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
-import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
-import com.querydsl.core.types.dsl.ComparableExpression;
-import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.core.types.dsl.SimpleExpression;
-import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.AbstractSQLQuery;
-import com.querydsl.sql.RoutingStrategy;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLListenerContext;
@@ -77,32 +61,25 @@ import lombok.extern.slf4j.Slf4j;
  * {@code SQLQuery} is a JDBC based implementation of the {@link SQLCommonQuery}
  * interface
  *
- * @param <T>
+ * @param <T> type of result.
  * @author tiwe
  */
 @Slf4j
 public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
+
 	private static final long serialVersionUID = -3451422354253107107L;
 
-	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
-			", count(*) over() ");
-
-	////////////// 覆盖检查字段开始 <p>////////////
-	/*
-	 * 以下是来自父类AbstractSQLQuery的私有字段，这里相当于克隆了一份，因此是不安全的。 确保安全要求——
-	 * 检查所有引用该字段的位置，其位置数量应当和父类AbstractSQLQuery完全一致。
-	 * 相当于完全拦截了父类中字段的使用，使得父类的同名字段作废。使用子类的字段。 这一点也不优雅！ 2018-10-09 v4.2.1版本检查通过
-	 */
-	private SQLListenerContext parentContext;
+	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION, ", count(*) over() ");
 
 	private final ConfigurationEx configEx;
 
 	private Supplier<Connection> connProvider;
 
 	private Connection conn;
-	///////////// 覆盖检查字段结束/////////////
+
+	// /////////// 覆盖检查字段结束/////////////
 	private boolean exceedSizeLog;
-	
+
 	private RoutingStrategy routing;
 
 	public SQLQueryAlter(Connection conn, ConfigurationEx configuration, QueryMetadata metadata) {
@@ -131,7 +108,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	@Override
 	public QueryResults<T> fetchResults() {
-		parentContext = startContext(connection(), queryMixin.getMetadata());
+		SQLListenerContext parentContext = startContext(connection(), queryMixin.getMetadata());
 		QueryModifiers originalModifiers = queryMixin.getMetadata().getModifiers();
 		try {
 			if (configuration.getTemplates().isCountViaAnalytics() && queryMixin.getMetadata().getGroupBy().isEmpty()) {
@@ -140,7 +117,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				try {
 					queryMixin.addFlag(rowCountFlag);
 					results = fetch(holder);
-
 				} finally {
 					queryMixin.removeFlag(rowCountFlag);
 				}
@@ -155,11 +131,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 					total = fetchCount();
 				}
 				return new QueryResults<T>(results, originalModifiers, total);
-
 			} else {
 				// 我怎么感觉这两句话是没什么用处的。
-//				Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
-//				queryMixin.setProjection(expr);
+				// Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
+				// queryMixin.setProjection(expr);
 				long total = fetchCount();
 				if (total > 0) {
 					return new QueryResults<T>(fetch(), originalModifiers, total);
@@ -169,8 +144,15 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			}
 		} finally {
 			endContext(parentContext);
-			parentContext = null;
 		}
+	}
+	
+	public Pair<Integer,List<T>> fetchAndCount(){
+		int count=(int)fetchCount();
+		if(count==0) {
+			return Pair.of(count, Collections.emptyList());
+		}
+		return Pair.of(count, fetch());
 	}
 
 	@Override
@@ -188,7 +170,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	protected SQLSerializer createSerializer() {
 		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, false);
 		serializer.setUseLiterals(useLiterals);
-        serializer.setRouting(routing);
+		serializer.setRouting(routing);
 		return serializer;
 	}
 
@@ -207,16 +189,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
-
 			constants = serializer.getConstants();
 			listeners.prePrepare(context);
-
 			stmt = getPreparedStatement(conn, queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), getMetadata().getParams());
-
 			context.addPreparedStatement(stmt);
 			listeners.prepared(context);
-
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
 			rs = stmt.executeQuery();
@@ -266,7 +244,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
-
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
@@ -275,10 +252,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
-
 			listeners.notifyQuery(queryMixin.getMetadata());
 			constants = serializer.getConstants();
-
 			listeners.prePrepare(context);
 			try (PreparedStatement stmt = getPreparedStatement(conn, queryString)) {
 				setParameters(stmt, constants, serializer.getConstantPaths(), queryMixin.getMetadata().getParams());
@@ -295,13 +270,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 					}
 					postExecuted(context, timeElapsed, "Fetch", result.size());
 					return result;
-				} catch (IllegalAccessException e) {
-					onException(context, e);
-					throw new QueryException(e);
-				} catch (InvocationTargetException e) {
-					onException(context, e);
-					throw new QueryException(e);
-				} catch (InstantiationException e) {
+				} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
 					onException(context, e);
 					throw new QueryException(e);
 				} catch (SQLException e) {
@@ -345,12 +314,15 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	abstract class AbstractProjection<RT> implements Projection<RT> {
+
 		boolean getLastCell;
+
 		Object lastCell;
 
 		@Override
 		public CloseableIterator<RT> iterator(PreparedStatement stmt, ResultSet rs, SQLListenerContext context) {
 			return new SQLResultIterator<RT>(configuration, stmt, rs, listeners, context) {
+
 				@Override
 				public RT produceNext(ResultSet rs) throws Exception {
 					return fetch(rs);
@@ -375,13 +347,16 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		protected abstract RT fetch(ResultSet rs) throws SQLException;
 
 		protected abstract int getArgSize();
-
 	}
 
 	final class FactoryExpressionResult<RT> extends AbstractProjection<RT> {
+
 		private final FactoryExpression<RT> c;
+
 		private final int argSize;
+
 		private final List<Path<?>> argPath;
+
 		private final List<Class<?>> argTypes;
 
 		FactoryExpressionResult(FactoryExpression<RT> c) {
@@ -420,6 +395,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	final class WildcardAllResult<RT> extends AbstractProjection<RT> {
+
 		private final int columnSize;
 
 		public WildcardAllResult(int columnSize) {
@@ -444,7 +420,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	final class SingleValueResult<RT> extends AbstractProjection<RT> {
+
 		private final Expression<RT> expr;
+
 		private final Path<?> path;
 
 		public SingleValueResult(Expression<RT> expr) {
@@ -464,6 +442,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	final class DefaultValueResult<RT> extends AbstractProjection<RT> {
+
 		@SuppressWarnings("unchecked")
 		@Override
 		protected RT fetch(ResultSet rs) throws SQLException {
@@ -480,21 +459,20 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	/**
 	 * 设置本次查询载入的最大行数
-	 * 
-	 * @param maxRows
+	 *
+	 * @param maxRows maxRows
 	 * @return this
 	 */
 	public SQLQueryAlter<T> setMaxRows(int maxRows) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(),
-				options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(), options.getFetchSize()));
 		return this;
 	}
 
 	/**
 	 * 设置本次查询载入的最大行数，并且当达到最大行数时记录截断警告
-	 * 
-	 * @param maxRows
+	 *
+	 * @param maxRows maxRows
 	 * @return this
 	 */
 	public SQLQueryAlter<T> setMaxRowsWithWarn(int maxRows) {
@@ -505,27 +483,25 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	/**
 	 * 设置本次查询每批获取大小
-	 * 
-	 * @param fetchSize
+	 *
+	 * @param fetchSize fetchSize
 	 * @return this
 	 */
-	public SQLQueryAlter<T> setFetchSisze(int fetchSize) {
+	public SQLQueryAlter<T> setFetchSize(int fetchSize) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(),
-				options.getQueryTimeout(), fetchSize));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), options.getQueryTimeout(), fetchSize));
 		return this;
 	}
 
 	/**
 	 * 设置查询超时（秒）
-	 * 
-	 * @param queryTimeout
+	 *
+	 * @param queryTimeout queryTimeout
 	 * @return this
 	 */
 	public SQLQueryAlter<T> setQueryTimeout(int queryTimeout) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout,
-				options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout, options.getFetchSize()));
 		return this;
 	}
 
@@ -564,7 +540,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
-
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
@@ -573,16 +548,13 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
-
 			listeners.notifyQuery(queryMixin.getMetadata());
 			constants = serializer.getConstants();
-
 			listeners.prePrepare(context);
 			final PreparedStatement stmt = getPreparedStatement(conn, queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), metadata.getParams());
 			context.addPreparedStatement(stmt);
 			listeners.prepared(context);
-
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
@@ -601,16 +573,15 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 * Get the results as a JDBC ResultSet
+	 *  Get the results as a JDBC ResultSet
 	 *
-	 * @return results as ResultSet
+	 *  @return results as ResultSet
 	 */
 	public ResultSet getResults() {
 		Connection conn;
 		final SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
-
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
@@ -619,23 +590,19 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			// logQuery(queryString, serializer.getConstants());
 			context.addSQL(sql);
 			listeners.rendered(context);
-
 			listeners.notifyQuery(queryMixin.getMetadata());
-
 			constants = serializer.getConstants();
-
 			listeners.prePrepare(context);
 			final PreparedStatement stmt = getPreparedStatement(conn, queryString);
 			setParameters(stmt, constants, serializer.getConstantPaths(), getMetadata().getParams());
 			context.addPreparedStatement(stmt);
 			listeners.prepared(context);
-
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
 			postExecuted(context, System.currentTimeMillis() - start, "ResultSet", 0);
-
 			return new ResultSetAdapter(rs) {
+
 				@Override
 				public void close() throws SQLException {
 					try {
@@ -705,7 +672,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	@Override
 	public <U> SQLQueryAlter<U> select(Expression<U> expr) {
 		queryMixin.setProjection(expr);
-		@SuppressWarnings("unchecked") // This is the new type
+		// This is the new type
+		@SuppressWarnings("unchecked")
 		SQLQueryAlter<U> newType = (SQLQueryAlter<U>) this;
 		return newType;
 	}
@@ -713,15 +681,16 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	@Override
 	public SQLQueryAlter<Tuple> select(Expression<?>... exprs) {
 		queryMixin.setProjection(exprs);
-		@SuppressWarnings("unchecked") // This is the new type
+		// This is the new type
+		@SuppressWarnings("unchecked")
 		SQLQueryAlter<Tuple> newType = (SQLQueryAlter<Tuple>) this;
 		return newType;
 	}
 
 	/**
 	 * 设置Limit，如果传入值为null或零或负数，则设置无效
-	 * 
-	 * @param limit
+	 *
+	 * @param limit limit
 	 * @return this
 	 */
 	public final SQLQueryAlter<T> limitIf(Integer limit) {
@@ -733,8 +702,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	/**
 	 * 设置Offset，如果传入值为null或负数，则设置无效
-	 * 
-	 * @param offset
+	 *
+	 * @param offset offset
 	 * @return this
 	 */
 	public final SQLQueryAlter<T> offsetIf(Integer offset) {
@@ -744,262 +713,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		return queryMixin.offset(offset);
 	}
 
-	/**
-	 * 支持使用一个参数Bean自动拼装查询条件。
-	 * 
-	 * @param <X>
-	 * @param conditionBean
-	 * @param beanPath
-	 * @return SQLQueryAlter
-	 */
-	public final <X> SQLQueryAlter<T> where(X conditionBean, RelationalPathEx<T> beanPath) {
-		@SuppressWarnings({ "unchecked" })
-		Class<X> clz = (Class<X>) conditionBean.getClass();
-		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
-		if (cb == null) {
-			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
-		}
-		BeanCodec codec=BeanCodecManager.getInstance().getPopulator(clz, new FieldCollector());
-		Field[] fields = codec.getFields();
-		Object[] values = codec.values(conditionBean);
-		
-		Map<String, Path<?>> bindings = new HashMap<>();
-		for(Path<?> p:beanPath.getColumns()) {
-			bindings.put(p.getMetadata().getName(),p);
-		}
-		Number limit = null;
-		Number offset = null;
-		for (int i = 0; i < fields.length; i++) {
-			Field field=fields[i];
-			Object value = values[i];
-			if(field.getName().equals(cb.limitField())) {
-				limit = (Number)value;
-				continue;
-			}
-			if(field.getName().equals(cb.offsetField())) {
-				offset = (Number)value;
-				continue;
-			}
-			Condition condition = field.getAnnotation(Condition.class);
-			if(condition==null) {
-				continue;
-			}
-			String pathName=condition.path();
-			if(StringUtils.isEmpty(pathName)) {
-				pathName=field.getName();
-			}
-			Path<?> path=bindings.get(pathName);
-			if(path==null) {
-				throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
-			}
-			
-			ColumnMapping cm = beanPath.getColumnMetadata(path);
-			if(condition.ignoreUnsavedValue() && isUnsavedValue(cm, value, condition.value())) {
-				continue;
-			}
-			appendCondition(value, path, condition.value());
-		}
-		if (limit != null && limit.intValue()>=0) {
-			limit(limit.intValue());	
-		}
-		if (offset != null && offset.intValue()>=0) {
-			offsetIf(offset.intValue());
-		}
-		return this;
-	}
-
-	private boolean isUnsavedValue(ColumnMapping cm, Object value, Ops operator) {
-		if(operator==Ops.IN || operator==Ops.BETWEEN) {
-			if(value==null) {
-				return true;
-			}
-			if (value instanceof Collection) {
-				for(Object e:(Collection<?>)value) {
-					if(cm.isUnsavedValue(e)) {
-						return true;
-					}
-				}
-				return false;
-			}
-			if (value instanceof Object[]) {
-				for(Object e:(Object[])value) {
-					if(cm.isUnsavedValue(e)) {
-						return true;
-					}
-				}
-			}
-			return false;
-		}else {
-			return cm.isUnsavedValue(value);
-		}
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void appendCondition(Object value, Path<?> path, Ops ops) {
-		if (ops == Ops.IN) {
-			if (!hasElements(value,1)) {
-				return;
-			}
-		} else if(ops == Ops.BETWEEN) {
-			if (!hasElements(value,2)) {
-				return;
-			}
-		} 
-		switch (ops) {
-		case IN: {
-			SimpleExpression exp = (SimpleExpression) path;
-			if (value instanceof Collection<?>) {
-				queryMixin.where(exp.in((Collection<?>) value));
-			} else if (value instanceof Object[]) {
-				queryMixin.where(exp.in((Object[]) value));
-			}
-			break;
-		}
-		case EQ: {
-			SimpleExpression exp = (SimpleExpression) path;
-			if(value==null) {
-				queryMixin.where(exp.isNull());
-			}else {
-				queryMixin.where(exp.eq(value));	
-			}
-			break;
-		}
-		case LT: {
-			if (path instanceof NumberExpression) {
-				NumberExpression exp = (NumberExpression) path;
-				queryMixin.where(exp.lt((Number) value));
-			} else {
-				ComparableExpression exp = (ComparableExpression) path;
-				queryMixin.where(exp.lt((Comparable) value));
-			}
-			break;
-		}
-		case LOE: {
-			if (path instanceof NumberExpression) {
-				NumberExpression exp = (NumberExpression) path;
-				queryMixin.where(exp.loe((Number) value));
-			} else {
-				ComparableExpression exp = (ComparableExpression) path;
-				queryMixin.where(exp.loe((Comparable) value));
-			}
-			break;
-		}
-		case GT: {
-			if (path instanceof NumberExpression) {
-				NumberExpression exp = (NumberExpression) path;
-				queryMixin.where(exp.gt((Number) value));
-			} else {
-				ComparableExpression exp = (ComparableExpression) path;
-				queryMixin.where(exp.gt((Comparable) value));
-			}
-			break;
-		}
-		case GOE: {
-			if (path instanceof NumberExpression) {
-				NumberExpression exp = (NumberExpression) path;
-				queryMixin.where(exp.goe((Number) value));
-			} else {
-				ComparableExpression exp = (ComparableExpression) path;
-				queryMixin.where(exp.goe((Comparable) value));
-			}
-			break;
-		}
-		case BETWEEN: {
-			ComparableExpression exp = (ComparableExpression) path;
-			if (value instanceof Collection<?>) {
-				List<? extends Comparable> list = toList((Collection<Comparable>) value);
-				if (list.size() < 2) {
-					throw new IllegalArgumentException(
-							"Invalid param, the value for between condition must be 2 elements.");
-				}
-				queryMixin.where(exp.between(list.get(0), list.get(1)));
-			} else if (value instanceof Object[]) {
-				Object[] bvalue = (Object[]) value;
-				if (bvalue.length < 2) {
-					throw new IllegalArgumentException(
-							"Invalid param, the value for between condition must be 2 elements.");
-				}
-				queryMixin.where(exp.between((Comparable) bvalue[0], (Comparable) bvalue[1]));
-			}
-			break;
-		}
-		case STARTS_WITH: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.startsWith(String.valueOf(value)));
-			break;
-		}
-		case STARTS_WITH_IC: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.startsWithIgnoreCase(String.valueOf(value)));
-			break;
-		}
-		case ENDS_WITH: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.endsWith(String.valueOf(value)));
-			break;
-		}
-		case ENDS_WITH_IC: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.endsWithIgnoreCase(String.valueOf(value)));
-			break;
-		}
-		case STRING_CONTAINS: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.contains(String.valueOf(value)));
-			break;
-		}
-		case LIKE: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.like(String.valueOf(value)));
-			break;
-		}
-		case LIKE_IC: {
-			StringExpression exp = (StringExpression) path;
-			queryMixin.where(exp.likeIgnoreCase(String.valueOf(value)));
-			break;
-		}
-		case IS_NULL: {
-			SimpleExpression exp = (SimpleExpression) path;
-			queryMixin.where(exp.isNull());
-			break;
-		}
-		case IS_NOT_NULL: {
-			SimpleExpression exp = (SimpleExpression) path;
-			queryMixin.where(exp.isNotNull());
-			break;
-		}
-		default:
-			throw new UnsupportedOperationException("Ops." + ops + " is not supported on field "
-					+ path);
-		}
-	}
-
-	@SuppressWarnings({ "rawtypes" })
-	private boolean hasElements(Object value, int minElement) {
-		if (value == null) {
-			return false;
-		}
-		if (value instanceof Collection) {
-			return ((Collection) value).size()>=minElement;
-		}
-		if (value instanceof Object[]) {
-			return ((Object[]) value).length >=minElement;
-		}
-		return false;
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private List<? extends Comparable> toList(Collection<? extends Comparable> value) {
-		if (value instanceof List) {
-			return (List<Comparable>) value;
-		} else {
-			return new ArrayList<>(value);
-		}
-	}
-	
-	public SQLQueryAlter<T> withRouting(RoutingStrategy routing){
+	public SQLQueryAlter<T> withRouting(RoutingStrategy routing) {
 		this.routing = routing;
 		return this;
 	}
-
 }

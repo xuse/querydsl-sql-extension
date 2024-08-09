@@ -5,9 +5,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.List;
 
-import com.github.xuse.querydsl.util.binary.codec.CodecContext;
-import com.github.xuse.querydsl.util.binary.codec.StringCodec;
-
 /**
  */
 public class BufferedEncoder {

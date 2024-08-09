@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
@@ -35,7 +36,7 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 	private boolean processPartition = true;
 	
 	public CreateTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
-		super(connection, configuration, path);
+		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(path));
 	}
 
 	@Override
@@ -59,7 +60,7 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 				//log.info(sql);
 				sqls.add(sql);	
 			}else {
-				log.warn("[CREATION IGNORED] The constraint {} is not supported on curent database.",c);
+				log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.",c);
 			}
 		}
 		return sqls;
@@ -121,7 +122,7 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 			if(t!=null) {
 				switch(check) {
 				case IGNORE:
-					log.warn("The table {} exists. create query will be ignored.");
+					log.warn("The table {} exists. create query will be ignored.",actualTable);
 					return false;
 				case ABORT:
 					throw Exceptions.illegalState("The table {} has already exist.",actualTable);
@@ -130,11 +131,13 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 						DropTableQuery d=new DropTableQuery(connection, configuration, this.table);
 						d.execute();
 					}else {
-						throw Exceptions.illegalState("The table {} has already exist, and drop table action was disabled.",table.getSchemaAndTable());
+						throw Exceptions.illegalState("The table {} has already exist, and drop table action was disabled.",actualTable);
 					}
 					return true;
 				case MERGE:
-					throw Exceptions.unsupportedOperation("Merge table feature was not implemented now.");
+						AlterTableQuery q=new AlterTableQuery(connection, configuration, this.table);
+						q.execute();
+						return true;
 				case NOT_CHECK:
 				default:
 					throw Exceptions.unsupportedOperation("Unknown check action:{}",check);

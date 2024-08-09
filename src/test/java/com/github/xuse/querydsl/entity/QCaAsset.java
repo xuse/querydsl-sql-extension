@@ -1,6 +1,6 @@
 package com.github.xuse.querydsl.entity;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.Map;
 
 import com.github.xuse.querydsl.enums.Gender;

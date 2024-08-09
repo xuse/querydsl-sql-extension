@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
+import com.github.xuse.querydsl.util.Enums;
+
 public enum Collate {
 	utf8mb4_general_ci("utf8mb4"), 
 	utf8mb4_unicode_ci("utf8mb4"), 
@@ -16,7 +18,7 @@ public enum Collate {
 	}
 
 	public static Collate findValueOf(String collate) {
-		// TODO Auto-generated method stub
-		return null;
+		return Enums.valueOf(Collate.class, collate, null);
+
 	}
 }

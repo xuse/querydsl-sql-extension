@@ -314,7 +314,7 @@ public final class DoubleList {
 	/**
 	 * 查找指定的值并删除
 	 * 
-	 * @param element
+	 * @param element element
 	 * @return true if a element removed
 	 */
 	public boolean remove(double element) {
@@ -329,7 +329,7 @@ public final class DoubleList {
 	/**
 	 * 删除位于指定序号的元素
 	 * 
-	 * @param index
+	 * @param index index
 	 * @return true if success.
 	 */
 	public boolean removeByIndex(int index) {
@@ -347,10 +347,8 @@ public final class DoubleList {
 	 * Then, it iterates over the list until the specified element is found or the
 	 * end of the list is reached.
 	 * 
-	 * @param o
+	 * @param o double
 	 * @return index
-	 * @throws ClassCastException
-	 * @throws NullPointerException
 	 */
 	public int indexOf(double o) {
 		for (int i = 0; i < size; i++) {
@@ -370,10 +368,8 @@ public final class DoubleList {
 	 * the list until the specified element is found, or the beginning of the list
 	 * is reached.
 	 * 
-	 * @param o
+	 * @param o double
 	 * @return index
-	 * @throws ClassCastException
-	 * @throws NullPointerException
 	 */
 	public int lastIndexOf(double o) {
 		for (int i = size - 1; i >= 0; i--) {
@@ -415,8 +411,8 @@ public final class DoubleList {
 	 * list is equal to its expected value, and throw a
 	 * {@code ConcurrentModificationException} if it is not.
 	 * 
-	 * @param fromIndex
-	 * @param toIndex
+	 * @param fromIndex fromIndex
+	 * @param toIndex toIndex
 	 * @return sublist
 	 * @throws IndexOutOfBoundsException endpoint index value out of range
 	 *                                   {@code (fromIndex < 0 || toIndex > size)}

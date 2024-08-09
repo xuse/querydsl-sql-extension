@@ -5,6 +5,7 @@ import static com.querydsl.core.types.PathMetadataFactory.forVariable;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Types;
+import java.time.Instant;
 import java.util.Date;
 
 import javax.annotation.Generated;
@@ -14,7 +15,7 @@ import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
-import com.querydsl.core.types.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.BooleanPath;
@@ -36,7 +37,7 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 
 	public static final QAaa aaa = new QAaa("ta");
 
-	public final DateTimePath<Date> created = createDateTime("created", Date.class);
+	public final DateTimePath<Instant> created = createDateTime("created", Instant.class);
 
 	public final NumberPath<Integer> id = createNumber("id", int.class);
 	
@@ -116,7 +117,7 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 		addMetadata(taskStatus, ColumnMetadata.named("TASK_STATUS").withIndex(5).ofType(Types.TINYINT).notNull()).unsigned().defaultExpression("1").comment("任务状态");
 		addMetadata(version, ColumnMetadata.named("VERSION").withIndex(6).ofType(Types.INTEGER).notNull()).defaultValue(1).comment("版本");
 		addMetadata(genderWithChar, ColumnMetadata.named("GENDER2").withIndex(7).ofType(Types.CHAR).withSize(4)).comment("性别2");
-		addMetadata(dataInt, ColumnMetadata.named("C_INT").withIndex(8).ofType(Types.INTEGER).notNull()).defaultValue(0).comment("整型版本");
+		addMetadata(dataInt, ColumnMetadata.named("C_INT").withIndex(8).ofType(Types.INTEGER).notNull()).defaultValue(0).comment("整型版本");//.withUnsavePredicate(i-> i<0 || i>200);
 		addMetadata(dataFloat, ColumnMetadata.named("C_FLOAT").withIndex(9).ofType(Types.FLOAT).notNull()).defaultValue(1f).comment("浮点");
 		addMetadata(dataDouble, ColumnMetadata.named("C_DOUBLE").withIndex(10).ofType(Types.DOUBLE).notNull()).defaultValue(1d).comment("DOUBLE");
 		addMetadata(dataShort, ColumnMetadata.named("C_SHORT").withIndex(11).ofType(Types.SMALLINT).notNull()).defaultValue((short)1).comment("SMALL");

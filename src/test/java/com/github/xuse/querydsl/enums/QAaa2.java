@@ -11,7 +11,7 @@ import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
-import com.querydsl.core.types.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.DateTimePath;

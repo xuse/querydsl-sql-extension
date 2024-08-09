@@ -1,6 +1,4 @@
 /*
- * JEF - Copyright 2009-2010 Jiyi (mr.jiyi@gmail.com)
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +15,8 @@ package com.github.xuse.querydsl.sql.dbmeta;
 
 import java.sql.Types;
 
-import org.apache.commons.lang3.StringUtils;
+import com.github.xuse.querydsl.util.StringUtils;
 
-import lombok.Getter;
 import lombok.Setter;
 
 
@@ -27,7 +24,6 @@ import lombok.Setter;
  * 描述一个列对象
  *
  */
-@Getter
 @Setter
 public class ColumnDef{
 	
@@ -131,5 +127,65 @@ public class ColumnDef{
 			sb.append(" COMMENT '").append(this.remarks).append('\'');
 		}
 		return sb.toString();
+	}
+
+	public String getTableCat() {
+		return tableCat;
+	}
+
+	public String getTableSchema() {
+		return tableSchema;
+	}
+
+	public String getTableName() {
+		return tableName;
+	}
+
+	public int getOrdinal() {
+		return ordinal;
+	}
+
+	public String getColumnName() {
+		return columnName;
+	}
+
+	public String getRemarks() {
+		return remarks;
+	}
+
+	public String getDataType() {
+		return dataType;
+	}
+
+	public int getJdbcType() {
+		return jdbcType;
+	}
+
+	public int getColumnSize() {
+		return columnSize;
+	}
+
+	public int getDecimalDigit() {
+		return decimalDigit;
+	}
+
+	public boolean isNullable() {
+		return nullable;
+	}
+
+	public String getColumnDef() {
+		return columnDef;
+	}
+
+	public boolean isGenerated() {
+		return generated;
+	}
+
+	public boolean isAutoIncrement() {
+		return autoIncrement;
+	}
+
+	public int getCharOctetLength() {
+		return charOctetLength;
 	}
 }

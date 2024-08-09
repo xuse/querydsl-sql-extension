@@ -13,7 +13,6 @@ public abstract class ChangeLetterCaseNameMapping2 implements NameMapping {
 
     /**
      * Constructor.
-     * @param targetCase The characters of all table and column names will be converted to the specified letter-case.
      * @param locale The locale that is used for the letter-case conversion.
      */
     private ChangeLetterCaseNameMapping2(Locale locale) {
@@ -38,7 +37,7 @@ public abstract class ChangeLetterCaseNameMapping2 implements NameMapping {
 		}
 		
 		@Override
-		final String targetCaseOrNull(String schema) {
+		String targetCaseOrNull(String schema) {
 			return schema==null? null: schema.toUpperCase(locale);
 		}
     }
@@ -49,7 +48,7 @@ public abstract class ChangeLetterCaseNameMapping2 implements NameMapping {
 		}
 		
 		@Override
-		final String targetCaseOrNull(String schema) {
+		String targetCaseOrNull(String schema) {
 			return schema==null? null: schema.toLowerCase(locale);
 		}
     }

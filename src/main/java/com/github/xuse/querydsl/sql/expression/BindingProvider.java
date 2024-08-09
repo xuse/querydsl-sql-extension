@@ -1,9 +1,7 @@
 package com.github.xuse.querydsl.sql.expression;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-
-import com.querydsl.core.types.Expression;
 
 public interface BindingProvider {
 
@@ -19,7 +17,7 @@ public interface BindingProvider {
 	 */
 	int size();
 
-	List<String> names(Map<String, FieldProperty> fieldOrder);
+	List<String> names(Collection<String> fieldOrder);
 
-	Expression<?> get(String property);
+	Class<?> getType(String name,FieldProperty property);
 }

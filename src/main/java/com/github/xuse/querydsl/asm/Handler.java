@@ -37,7 +37,6 @@ package com.github.xuse.querydsl.asm;
  *     4.7.3</a>
  * @author Eric Bruneton
  */
-@SuppressWarnings("javadoc")
 final class Handler {
 
   /**

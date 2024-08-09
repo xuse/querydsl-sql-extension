@@ -93,15 +93,6 @@ public final class AESUtils {
 		return cipher.doFinal(data, offset, length);
 	}
 
-	private static String padding(String s) {
-		char c = 0;
-		for (int i = 0; i < 10; i++) {
-			s += c;
-		}
-		System.out.println(s);
-		return s;
-	}
-
 //	public static void main(String[] args) throws Exception {
 //		String text = "1358818200588182";
 //		printSec(text);

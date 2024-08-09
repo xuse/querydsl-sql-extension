@@ -7,14 +7,15 @@ import java.util.List;
 
 /**
  * 提供和{@link List}接口相同的功能，但是免去了int类型的装箱和拆箱，从而得到性能上的改善。 适用于大规模操作int基本类型数组的情况。
- * 
- * 从实际性能测试来看，平均大约是ArrayList的4倍左右
- * 
- * @author jiyi
  *
+ * 从实际性能测试来看，平均大约是ArrayList的4倍左右
+ *
+ * @author Joey
  */
 public final class IntList {
+
 	private int[] list;
+
 	private int size = 0;
 
 	public IntList(int[] data) {
@@ -32,39 +33,39 @@ public final class IntList {
 	}
 
 	/**
-	 * Returns the number of elements in this collection. If this collection
-	 * contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
-	 * <tt>Integer.MAX_VALUE</tt>.
+	 *  Returns the number of elements in this collection. If this collection
+	 *  contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
+	 *  <tt>Integer.MAX_VALUE</tt>.
 	 *
-	 * @return the number of elements in this collection
+	 *  @return the number of elements in this collection
 	 */
 	public int size() {
 		return size;
 	}
 
 	/**
-	 * Returns <tt>true</tt> if this collection contains no elements.
+	 *  Returns <tt>true</tt> if this collection contains no elements.
 	 *
-	 * @return <tt>true</tt> if this collection contains no elements
+	 *  @return <tt>true</tt> if this collection contains no elements
 	 */
 	public boolean isEmpty() {
 		return size == 0;
 	}
 
 	/**
-	 * Returns <tt>true</tt> if this collection contains all of the elements in the
-	 * specified collection.
+	 *  Returns <tt>true</tt> if this collection contains all of the elements in the
+	 *  specified collection.
 	 *
-	 * @param c collection to be checked for containment in this collection
-	 * @return <tt>true</tt> if this collection contains all of the elements in the
-	 *         specified collection
-	 * @throws ClassCastException   if the types of one or more elements in the
-	 *                              specified collection are incompatible with this
-	 *                              collection (optional)
-	 * @throws NullPointerException if the specified collection contains one or more
-	 *                              null elements and this collection does not
-	 *                              permit null elements (optional), or if the
-	 *                              specified collection is null
+	 *  @param c collection to be checked for containment in this collection
+	 *  @return <tt>true</tt> if this collection contains all of the elements in the
+	 *          specified collection
+	 *  @throws ClassCastException   if the types of one or more elements in the
+	 *                               specified collection are incompatible with this
+	 *                               collection (optional)
+	 *  @throws NullPointerException if the specified collection contains one or more
+	 *                               null elements and this collection does not
+	 *                               permit null elements (optional), or if the
+	 *                               specified collection is null
 	 */
 	public boolean containsAll(IntList c) {
 		for (int i = 0; i < c.size; i++) {
@@ -77,19 +78,19 @@ public final class IntList {
 	}
 
 	/**
-	 * Returns <tt>true</tt> if this list contains all of the elements of the
-	 * specified collection.
+	 *  Returns <tt>true</tt> if this list contains all of the elements of the
+	 *  specified collection.
 	 *
-	 * @param c collection to be checked for containment in this list
-	 * @return <tt>true</tt> if this list contains all of the elements of the
-	 *         specified collection
-	 * @throws ClassCastException   if the types of one or more elements in the
-	 *                              specified collection are incompatible with this
-	 *                              list (optional)
-	 * @throws NullPointerException if the specified collection contains one or more
-	 *                              null elements and this list does not permit null
-	 *                              elements (optional), or if the specified
-	 *                              collection is null
+	 *  @param c collection to be checked for containment in this list
+	 *  @return <tt>true</tt> if this list contains all of the elements of the
+	 *          specified collection
+	 *  @throws ClassCastException   if the types of one or more elements in the
+	 *                               specified collection are incompatible with this
+	 *                               list (optional)
+	 *  @throws NullPointerException if the specified collection contains one or more
+	 *                               null elements and this list does not permit null
+	 *                               elements (optional), or if the specified
+	 *                               collection is null
 	 */
 	public boolean containsAll(int[] c) {
 		for (int i = 0; i < c.length; i++) {
@@ -102,28 +103,28 @@ public final class IntList {
 	}
 
 	/**
-	 * Removes all of the elements from this collection (optional operation). The
-	 * collection will be empty after this method returns.
+	 *  Removes all of the elements from this collection (optional operation). The
+	 *  collection will be empty after this method returns.
 	 *
-	 * @throws UnsupportedOperationException if the <tt>clear</tt> operation is not
-	 *                                       supported by this collection
+	 *  @throws UnsupportedOperationException if the <tt>clear</tt> operation is not
+	 *                                        supported by this collection
 	 */
 	public void clear() {
 		size = 0;
 	}
 
 	/**
-	 * Returns <tt>true</tt> if this list contains the specified element. More
-	 * formally, returns <tt>true</tt> if and only if this list contains at least
-	 * one element <tt>e</tt> such that
-	 * <tt>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</tt>.
+	 *  Returns <tt>true</tt> if this list contains the specified element. More
+	 *  formally, returns <tt>true</tt> if and only if this list contains at least
+	 *  one element <tt>e</tt> such that
+	 *  <tt>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</tt>.
 	 *
-	 * @param o element whose presence in this list is to be tested
-	 * @return <tt>true</tt> if this list contains the specified element
-	 * @throws ClassCastException   if the type of the specified element is
-	 *                              incompatible with this list (optional)
-	 * @throws NullPointerException if the specified element is null and this list
-	 *                              does not permit null elements (optional)
+	 *  @param o element whose presence in this list is to be tested
+	 *  @return <tt>true</tt> if this list contains the specified element
+	 *  @throws ClassCastException   if the type of the specified element is
+	 *                               incompatible with this list (optional)
+	 *  @throws NullPointerException if the specified element is null and this list
+	 *                               does not permit null elements (optional)
 	 */
 	public boolean contains(int o) {
 		for (int i = 0; i < size; i++) {
@@ -135,9 +136,9 @@ public final class IntList {
 	}
 
 	/**
-	 * 将内容转换为数组
-	 * 
-	 * @return array
+	 *  将内容转换为数组
+	 *
+	 *  @return array
 	 */
 	public int[] toArray() {
 		int[] array = new int[size];
@@ -148,10 +149,10 @@ public final class IntList {
 	}
 
 	/**
-	 * 将内容转换为数组，如果数组当前大小和数组容器一致，则直接返回容器。 这时可以省去数组拷贝的开销，相应的带来容器暴露的风险
-	 * 使用者必须清楚对容器中数据的更改可能造成IntList无法正确工作。 这个方法适用于用户取走数据后，IntList已经没有用处的场合。
-	 * 
-	 * @return array
+	 *  将内容转换为数组，如果数组当前大小和数组容器一致，则直接返回容器。 这时可以省去数组拷贝的开销，相应的带来容器暴露的风险
+	 *  使用者必须清楚对容器中数据的更改可能造成IntList无法正确工作。 这个方法适用于用户取走数据后，IntList已经没有用处的场合。
+	 *
+	 *  @return array
 	 */
 	public int[] toArrayUnsafe() {
 		if (size == list.length) {
@@ -164,50 +165,48 @@ public final class IntList {
 	}
 
 	/**
-	 * 直接获取数组容器。配合size可以将数组直接传递给目标使用。 容器一旦被取走使用，建议不要再使用此IntList对象。
-	 * 
-	 * @return array
+	 *  直接获取数组容器。配合size可以将数组直接传递给目标使用。 容器一旦被取走使用，建议不要再使用此IntList对象。
+	 *
+	 *  @return array
 	 */
 	public int[] getArrayUnsafe() {
 		return list;
 	}
 
 	// Modification Operations
-
 	/**
-	 * Appends the specified element to the end of this list (optional operation).
+	 *  Appends the specified element to the end of this list (optional operation).
 	 *
-	 * <p>
-	 * Lists that support this operation may place limitations on what elements may
-	 * be added to this list. In particular, some lists will refuse to add null
-	 * elements, and others will impose restrictions on the type of elements that
-	 * may be added. List classes should clearly specify in their documentation any
-	 * restrictions on what elements may be added.
+	 *  <p>
+	 *  Lists that support this operation may place limitations on what elements may
+	 *  be added to this list. In particular, some lists will refuse to add null
+	 *  elements, and others will impose restrictions on the type of elements that
+	 *  may be added. List classes should clearly specify in their documentation any
+	 *  restrictions on what elements may be added.
 	 *
-	 * @param e element to be appended to this list
-	 * @throws UnsupportedOperationException if the <tt>add</tt> operation is not
-	 *                                       supported by this list
-	 * @throws ClassCastException            if the class of the specified element
-	 *                                       prevents it from being added to this
-	 *                                       list
-	 * @throws NullPointerException          if the specified element is null and
-	 *                                       this list does not permit null elements
-	 * @throws IllegalArgumentException      if some property of this element
-	 *                                       prevents it from being added to this
-	 *                                       list
+	 *  @param e element to be appended to this list
+	 *  @throws UnsupportedOperationException if the <tt>add</tt> operation is not
+	 *                                        supported by this list
+	 *  @throws ClassCastException            if the class of the specified element
+	 *                                        prevents it from being added to this
+	 *                                        list
+	 *  @throws NullPointerException          if the specified element is null and
+	 *                                        this list does not permit null elements
+	 *  @throws IllegalArgumentException      if some property of this element
+	 *                                        prevents it from being added to this
+	 *                                        list
 	 */
 	public void add(int e) {
-		ensureCapacity(size + 1); // Increments modCount!!
+		// Increments modCount!!
+		ensureCapacity(size + 1);
 		list[size++] = e;
 	}
 
 	// Bulk Modification Operations
-
 	public void add(int index, int element) {
 		ensureCapacity(size + 1);
 		if (index > size)
 			throw new ArrayIndexOutOfBoundsException();
-
 		int movelen = size - index;
 		if (movelen > 0) {
 			System.arraycopy(list, index, list, index + 1, movelen);
@@ -217,32 +216,32 @@ public final class IntList {
 	}
 
 	/**
-	 * Inserts all of the elements in the specified collection into this list at the
-	 * specified position (optional operation). Shifts the element currently at that
-	 * position (if any) and any subsequent elements to the right (increases their
-	 * indices). The new elements will appear in this list in the order that they
-	 * are returned by the specified collection's iterator. The behavior of this
-	 * operation is undefined if the specified collection is modified while the
-	 * operation is in progress. (Note that this will occur if the specified
-	 * collection is this list, and it's nonempty.)
+	 *  Inserts all of the elements in the specified collection into this list at the
+	 *  specified position (optional operation). Shifts the element currently at that
+	 *  position (if any) and any subsequent elements to the right (increases their
+	 *  indices). The new elements will appear in this list in the order that they
+	 *  are returned by the specified collection's iterator. The behavior of this
+	 *  operation is undefined if the specified collection is modified while the
+	 *  operation is in progress. (Note that this will occur if the specified
+	 *  collection is this list, and it's nonempty.)
 	 *
-	 * @param index index at which to insert the first element from the specified
-	 *              collection
-	 * @param in    collection containing elements to be added to this list
-	 * @throws UnsupportedOperationException if the <tt>addAll</tt> operation is not
-	 *                                       supported by this list
-	 * @throws ClassCastException            if the class of an element of the
-	 *                                       specified collection prevents it from
-	 *                                       being added to this list
-	 * @throws NullPointerException          if the specified collection contains
-	 *                                       one or more null elements and this list
-	 *                                       does not permit null elements, or if
-	 *                                       the specified collection is null
-	 * @throws IllegalArgumentException      if some property of an element of the
-	 *                                       specified collection prevents it from
-	 *                                       being added to this list
-	 * @throws IndexOutOfBoundsException     if the index is out of range
-	 *                                       (<tt>index &lt; 0 || index &gt; size()</tt>)
+	 *  @param index index at which to insert the first element from the specified
+	 *               collection
+	 *  @param in    collection containing elements to be added to this list
+	 *  @throws UnsupportedOperationException if the <tt>addAll</tt> operation is not
+	 *                                        supported by this list
+	 *  @throws ClassCastException            if the class of an element of the
+	 *                                        specified collection prevents it from
+	 *                                        being added to this list
+	 *  @throws NullPointerException          if the specified collection contains
+	 *                                        one or more null elements and this list
+	 *                                        does not permit null elements, or if
+	 *                                        the specified collection is null
+	 *  @throws IllegalArgumentException      if some property of an element of the
+	 *                                        specified collection prevents it from
+	 *                                        being added to this list
+	 *  @throws IndexOutOfBoundsException     if the index is out of range
+	 *                                        (<tt>index &lt; 0 || index &gt; size()</tt>)
 	 */
 	public void addAll(int index, int[] in) {
 		if (in.length == 0)
@@ -257,29 +256,29 @@ public final class IntList {
 	}
 
 	/**
-	 * 将所有数组元素加入对象
-	 * 
-	 * @param in
+	 *  将所有数组元素加入对象
+	 *
+	 *  @param in input array
 	 */
 	public void addAll(int[] in) {
 		addAll(size, in);
 	}
 
 	/**
-	 * Removes from this list all of its elements that are contained in the
-	 * specified collection (optional operation).
+	 *  Removes from this list all of its elements that are contained in the
+	 *  specified collection (optional operation).
 	 *
-	 * @param c collection containing elements to be removed from this list
-	 * @return <tt>true</tt> if this list changed as a result of the call
-	 * @throws UnsupportedOperationException if the <tt>removeAll</tt> operation is
-	 *                                       not supported by this list
-	 * @throws ClassCastException            if the class of an element of this list
-	 *                                       is incompatible with the specified
-	 *                                       collection (optional)
-	 * @throws NullPointerException          if this list contains a null element
-	 *                                       and the specified collection does not
-	 *                                       permit null elements (optional), or if
-	 *                                       the specified collection is null
+	 *  @param c collection containing elements to be removed from this list
+	 *  @return <tt>true</tt> if this list changed as a result of the call
+	 *  @throws UnsupportedOperationException if the <tt>removeAll</tt> operation is
+	 *                                        not supported by this list
+	 *  @throws ClassCastException            if the class of an element of this list
+	 *                                        is incompatible with the specified
+	 *                                        collection (optional)
+	 *  @throws NullPointerException          if this list contains a null element
+	 *                                        and the specified collection does not
+	 *                                        permit null elements (optional), or if
+	 *                                        the specified collection is null
 	 */
 	public boolean removeAll(IntList c) {
 		boolean b = false;
@@ -290,12 +289,12 @@ public final class IntList {
 	}
 
 	/**
-	 * Returns the element at the specified position in this list.
+	 *  Returns the element at the specified position in this list.
 	 *
-	 * @param index index of the element to return
-	 * @return the element at the specified position in this list
-	 * @throws IndexOutOfBoundsException if the index is out of range
-	 *                                   (<tt>index &lt; 0 || index &gt;= size()</tt>)
+	 *  @param index index of the element to return
+	 *  @return the element at the specified position in this list
+	 *  @throws IndexOutOfBoundsException if the index is out of range
+	 *                                    (<tt>index &lt; 0 || index &gt;= size()</tt>)
 	 */
 	public int get(int index) {
 		if (index < 0 || index >= size)
@@ -304,24 +303,24 @@ public final class IntList {
 	}
 
 	/**
-	 * Replaces the element at the specified position in this list with the
-	 * specified element (optional operation).
+	 *  Replaces the element at the specified position in this list with the
+	 *  specified element (optional operation).
 	 *
-	 * @param index   index of the element to replace
-	 * @param element element to be stored at the specified position
-	 * @return the element previously at the specified position
-	 * @throws UnsupportedOperationException if the <tt>set</tt> operation is not
-	 *                                       supported by this list
-	 * @throws ClassCastException            if the class of the specified element
-	 *                                       prevents it from being added to this
-	 *                                       list
-	 * @throws NullPointerException          if the specified element is null and
-	 *                                       this list does not permit null elements
-	 * @throws IllegalArgumentException      if some property of the specified
-	 *                                       element prevents it from being added to
-	 *                                       this list
-	 * @throws IndexOutOfBoundsException     if the index is out of range
-	 *                                       (<tt>index &lt; 0 || index &gt;= size()</tt>)
+	 *  @param index   index of the element to replace
+	 *  @param element element to be stored at the specified position
+	 *  @return the element previously at the specified position
+	 *  @throws UnsupportedOperationException if the <tt>set</tt> operation is not
+	 *                                        supported by this list
+	 *  @throws ClassCastException            if the class of the specified element
+	 *                                        prevents it from being added to this
+	 *                                        list
+	 *  @throws NullPointerException          if the specified element is null and
+	 *                                        this list does not permit null elements
+	 *  @throws IllegalArgumentException      if some property of the specified
+	 *                                        element prevents it from being added to
+	 *                                        this list
+	 *  @throws IndexOutOfBoundsException     if the index is out of range
+	 *                                        (<tt>index &lt; 0 || index &gt;= size()</tt>)
 	 */
 	public int set(int index, int element) {
 		if (index < 0 || index >= size)
@@ -333,8 +332,8 @@ public final class IntList {
 
 	/**
 	 * 查找指定的值并删除
-	 * 
-	 * @param element
+	 *
+	 * @param element element
 	 * @return true if a element removed
 	 */
 	public boolean remove(int element) {
@@ -347,10 +346,10 @@ public final class IntList {
 	}
 
 	/**
-	 * 删除位于指定序号的元素
-	 * 
-	 * @param index
-	 * @return true if success.
+	 *  删除位于指定序号的元素
+	 *
+	 *  @param index index
+	 *  @return true if success.
 	 */
 	public boolean removeByIndex(int index) {
 		if (index < 0 || index >= size)
@@ -362,17 +361,13 @@ public final class IntList {
 	}
 
 	/**
-	 * 
+	 *  <p>
+	 *  This implementation first gets a list iterator (with {@code listIterator()}).
+	 *  Then, it iterates over the list until the specified element is found or the
+	 *  end of the list is reached.
 	 *
-	 * <p>
-	 * This implementation first gets a list iterator (with {@code listIterator()}).
-	 * Then, it iterates over the list until the specified element is found or the
-	 * end of the list is reached.
-	 * 
-	 * @param o
-	 * @return index
-	 * @throws ClassCastException
-	 * @throws NullPointerException
+	 *  @param o int
+	 *  @return index index
 	 */
 	public int indexOf(int o) {
 		for (int i = 0; i < size; i++) {
@@ -384,18 +379,14 @@ public final class IntList {
 	}
 
 	/**
-	 * 
-	 *
 	 * <p>
 	 * This implementation first gets a list iterator that points to the end of the
 	 * list (with {@code listIterator(size())}). Then, it iterates backwards over
 	 * the list until the specified element is found, or the beginning of the list
 	 * is reached.
-	 * 
-	 * @param o
+	 *
+	 * @param o o
 	 * @return index
-	 * @throws ClassCastException
-	 * @throws NullPointerException
 	 */
 	public int lastIndexOf(int o) {
 		for (int i = size - 1; i >= 0; i--) {
@@ -407,8 +398,6 @@ public final class IntList {
 	}
 
 	/**
-	 * 
-	 *
 	 * <p>
 	 * This implementation returns a list that subclasses {@code AbstractList}. The
 	 * subclass stores, in private fields, the offset of the subList within the
@@ -438,9 +427,9 @@ public final class IntList {
 	 * All methods first check to see if the actual {@code modCount} of the backing
 	 * list is equal to its expected value, and throw a
 	 * {@code ConcurrentModificationException} if it is not.
-	 * 
-	 * @param fromIndex
-	 * @param toIndex
+	 *
+	 * @param fromIndex fromIndex
+	 * @param toIndex toIndex
 	 * @return sublist
 	 * @throws IndexOutOfBoundsException endpoint index value out of range
 	 *                                   {@code (fromIndex < 0 || toIndex > size)}
@@ -458,21 +447,21 @@ public final class IntList {
 	}
 
 	/**
-	 * Retains only the elements in this list that are contained in the specified
-	 * collection (optional operation). In other words, removes from this list all
-	 * the elements that are not contained in the specified collection.
+	 *  Retains only the elements in this list that are contained in the specified
+	 *  collection (optional operation). In other words, removes from this list all
+	 *  the elements that are not contained in the specified collection.
 	 *
-	 * @param c collection containing elements to be retained in this list
-	 * @return <tt>true</tt> if this list changed as a result of the call
-	 * @throws UnsupportedOperationException if the <tt>retainAll</tt> operation is
-	 *                                       not supported by this list
-	 * @throws ClassCastException            if the class of an element of this list
-	 *                                       is incompatible with the specified
-	 *                                       collection (optional)
-	 * @throws NullPointerException          if this list contains a null element
-	 *                                       and the specified collection does not
-	 *                                       permit null elements (optional), or if
-	 *                                       the specified collection is null
+	 *  @param c collection containing elements to be retained in this list
+	 *  @return <tt>true</tt> if this list changed as a result of the call
+	 *  @throws UnsupportedOperationException if the <tt>retainAll</tt> operation is
+	 *                                        not supported by this list
+	 *  @throws ClassCastException            if the class of an element of this list
+	 *                                        is incompatible with the specified
+	 *                                        collection (optional)
+	 *  @throws NullPointerException          if this list contains a null element
+	 *                                        and the specified collection does not
+	 *                                        permit null elements (optional), or if
+	 *                                        the specified collection is null
 	 */
 	public boolean retainAll(IntList c) {
 		IntList result = new IntList(Math.min(size, c.size));
@@ -520,9 +509,9 @@ public final class IntList {
 	}
 
 	/**
-	 * Get the maximum element in list.
-	 * 
-	 * @return {@link Integer#MIN_VALUE} if there's no element in list.
+	 *  Get the maximum element in list.
+	 *
+	 *  @return {@link Integer#MIN_VALUE} if there's no element in list.
 	 */
 	public int getMax() {
 		int max = Integer.MIN_VALUE;
@@ -536,9 +525,9 @@ public final class IntList {
 	}
 
 	/**
-	 * Get the minimum element in list.
-	 * 
-	 * @return {@link Integer#MAX_VALUE} if there's no element in list.
+	 *  Get the minimum element in list.
+	 *
+	 *  @return {@link Integer#MAX_VALUE} if there's no element in list.
 	 */
 	public int getMin() {
 		int min = Integer.MAX_VALUE;
@@ -552,11 +541,10 @@ public final class IntList {
 	}
 
 	/**
-	 * 和ArrayList的性能对比测试
-	 * 
-	 * 结论是由于节省的装箱拆箱的时间，比ArrayList快=3～4倍。
-	 * 
-	 * @param args
+	 *  和ArrayList的性能对比测试
+	 *  结论是由于节省的装箱拆箱的时间，比ArrayList快=3～4倍。
+	 *
+	 *  @param args args
 	 */
 	public static void main(String[] args) {
 		int LOOPS = 10000;
@@ -566,8 +554,6 @@ public final class IntList {
 		// 准备retail的参数
 		IntList retail1 = new IntList(new int[] { 5, 7, 2, 23, 76, 98, 2, 1 });
 		List<Integer> retail2 = Arrays.asList(5, 7, 2, 23, 76, 98, 2, 1);
-
-		long start = System.nanoTime();
 		for (int i = 0; i < LOOPS; i++) {
 			IntList a1 = new IntList(data);
 			a1.indexOf(4);
@@ -577,9 +563,6 @@ public final class IntList {
 			a1.remove(5);
 			a1.retainAll(retail1);
 		}
-		System.out.println(System.nanoTime() - start);
-
-		start = System.nanoTime();
 		for (int i = 0; i < LOOPS; i++) {
 			List<Integer> a2 = new ArrayList<Integer>(data2);
 			a2.indexOf(4);
@@ -589,13 +572,12 @@ public final class IntList {
 			a2.remove((Object) 5);
 			a2.retainAll(retail2);
 		}
-		System.out.println(System.nanoTime() - start);
 	}
 
 	/**
 	 * 将int数组转换为标准JavaList
 	 * @return list of integer
-	 * @param array
+	 * @param array array
 	 */
 	public static List<Integer> convert(int[] array) {
 		List<Integer> list = new ArrayList<>();
@@ -607,10 +589,10 @@ public final class IntList {
 	}
 
 	/**
-	 * 将List<Integer>转换为IntList,并可进一步方便的转换为int[].
-	 * 
-	 * @param array
-	 * @param treatNullAsZero
+	 * 将List&lt;nteger&gt;转换为IntList,并可进一步方便的转换为int[].
+	 *
+	 * @param array array
+	 * @param treatNullAsZero treatNullAsZero
 	 * @return array
 	 */
 	public static IntList convertFrom(Collection<Integer> array, boolean treatNullAsZero) {

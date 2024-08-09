@@ -5,31 +5,32 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-
+import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
-import com.github.xuse.querydsl.sql.json.JsonOps;
-import com.github.xuse.querydsl.sql.support.QueryWrapper;
+import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.CreateStatement;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
+import com.github.xuse.querydsl.sql.expression.JsonOps;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
-import com.querydsl.core.types.ConstraintType;
-import com.querydsl.core.types.DDLOps.AlterTableConstraintOps;
-import com.querydsl.core.types.DDLOps.AlterTableOps;
-import com.querydsl.core.types.DDLOps.AlterTablePartitionOps;
-import com.querydsl.core.types.DDLOps.Basic;
-import com.querydsl.core.types.DDLOps.CreateStatement;
-import com.querydsl.core.types.DDLOps.PartitionDefineOps;
-import com.querydsl.core.types.DDLOps.PartitionMethod;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.MySQLTemplates;
@@ -40,7 +41,7 @@ import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 /**
  * 扩展的MySQL方言，支持了MySQL的JSON操作
  * 
- * @author jiyi
+ * @author Joey
  *
  */
 public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplatesEx {
@@ -70,6 +71,12 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
     }
     
 	
+	@Override
+	public boolean checkPermission(SQLQueryFactory factory, String... action) {
+		// TODO Auto-generated method stub
+		return SQLTemplatesEx.super.checkPermission(factory, action);
+	}
+
 	public MySQLWithJSONTemplates() {
 		this('\\',false,false,false);
 	}
@@ -88,8 +95,8 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
-		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1}");
-		add(AlterTableOps.COMMENT, "COMMMENT = {0}");
+		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1},ALGORITHM=INPLACE, LOCK=NONE");
+		add(AlterTableOps.COMMENT, "COMMENT = {0}");
 		
 		add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
 		add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
@@ -121,21 +128,23 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 
 		typeNames.put(Types.CHAR, 255, "char($l)");
 		typeNames.put(Types.BINARY, 255, "binary($l)");
+		typeNames.put(Types.CHAR, 65535, "text").type(Types.CLOB).noSize();
+		typeNames.put(Types.BINARY, 65535, "blob").type(Types.LONGVARBINARY).noSize();
 
 		typeNames.put(Types.VARCHAR, 16383, "varchar($l)");
 		typeNames.put(Types.VARBINARY, 16383, "varbinary($l)");
 
-		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.CLOB);
-		typeNames.put(Types.VARBINARY, 65535, "blob").type(Types.BLOB);
+		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.CLOB).noSize();
+		typeNames.put(Types.VARBINARY, 65535, "blob").type(Types.BLOB).noSize();
 
-		typeNames.put(Types.LONGVARCHAR, 65535, "text").type(Types.CLOB);
-		typeNames.put(Types.LONGVARBINARY, 65535, "blob").type(Types.BLOB);
+		typeNames.put(Types.LONGVARCHAR, 65535, "text").type(Types.CLOB).noSize();
+		typeNames.put(Types.LONGVARBINARY, 65535, "blob").type(Types.LONGVARBINARY).noSize();
 		
-		typeNames.put(Types.VARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB);
-		typeNames.put(Types.VARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.BLOB);
+		typeNames.put(Types.VARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB).noSize();
+		typeNames.put(Types.VARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.LONGVARBINARY).noSize();
 		
-		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB);
-		typeNames.put(Types.LONGVARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.BLOB);
+		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB).noSize();
+		typeNames.put(Types.LONGVARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.LONGVARBINARY).noSize();
 
 	}
 
@@ -219,7 +228,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	
 	
 	@Override
-	public List<PartitionInfo> getPartitions(String schema, String tableName, QueryWrapper w) {
+	public List<PartitionInfo> getPartitions(String schema, String tableName, ConnectionWrapper w) {
 		if (StringUtils.isEmpty(schema)) {
 			schema = "%";
 		}
@@ -243,7 +252,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 	
 	@Override
-	public List<Constraint> getConstraints(String schema, String tableName, QueryWrapper w, boolean detail) {
+	public List<Constraint> getConstraints(String schema, String tableName, ConnectionWrapper w, boolean detail) {
 		if (StringUtils.isEmpty(schema)) {
 			schema = "%";
 		}
@@ -277,14 +286,14 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 			c.setSeq(rs.getInt("ORDINAL_POSITION"));
 			return c;
 		});
-		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(keyColumns, e -> e.getKeyName(), e -> e);
+		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(keyColumns, KeyColumn::getKeyName, e -> e);
 		for (Constraint c : constraints) {
 			String name = c.getName();
 			List<KeyColumn> columns = map.get(name);
 			if (columns == null) {
 				continue;
 			}
-			columns.sort((a, b) -> Integer.compare(a.seq, b.seq));
+			columns.sort(Comparator.comparingInt(a -> a.seq));
 			c.setColumnNames(columns.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
 		}
 		return constraints;
@@ -323,9 +332,9 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 
 	@Override
-	public List<TableInfo> fetchTables(QueryWrapper e, String catalog, String schema, String qMatchName,
+	public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
 			ObjectType type) {
-		// 测试发现，正常情况下无法获得tableinfo的comment等信息
+		// 测试发现，正常情况下无法获得table info的comment等信息
 		// &useInformationSchema=true
 		if(usingInfoSchema) {
 			return SQLTemplatesEx.super.fetchTables(e, catalog, schema, qMatchName, type);	
@@ -344,7 +353,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 				params.add(type.name());
 			}
 			SQLBindings sb=new SQLBindings(sql, params);
-			System.out.println(params);
 			return e.query(sb, this::fromRsEx);
 		}
 	}
@@ -365,5 +373,10 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		info.setAttribute("UPDATE_TIME", rs.getTimestamp("UPDATE_TIME"));
 		info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
 		return info;
+	}
+
+	@Override
+	public PrivilegeDetector getPrivilegeDetector() {
+		return new MySQLPrivilegeDetector();
 	}
 }

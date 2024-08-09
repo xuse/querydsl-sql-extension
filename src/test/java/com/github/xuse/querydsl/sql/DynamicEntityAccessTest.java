@@ -20,17 +20,17 @@ import com.querydsl.sql.ColumnMetadata;
  * 作为一种特殊场景——表字段不确定情况下的补充手段
  */
 public class DynamicEntityAccessTest extends AbstractTestBase{
-	private final Map<String,DynamicRelationlPath> tableMetadata=new HashMap<>();
+	private final Map<String,DynamicRelationalPath> tableMetadata=new HashMap<>();
 	
 	@Test
 	public void crateTable() {
-		DynamicRelationlPath table=getModel("dyn_entity_apple");
+		DynamicRelationalPath table=getModel("dyn_entity_apple");
 		factory.getMetadataFactory().createTable(table).ifExists().execute();
 	}
 	
 	@Test
 	public void crudTest() {
-		DynamicRelationlPath table=getModel("dyn_entity_apple");
+		DynamicRelationalPath table=getModel("dyn_entity_apple");
 		Tuple o = table.newTuple(null,"张三",2,null);
 		//增
 		factory.insert(table).populate(o).execute();
@@ -67,12 +67,12 @@ public class DynamicEntityAccessTest extends AbstractTestBase{
 		}
 	}
 	
-	private DynamicRelationlPath getModel(String key) {
+	private DynamicRelationalPath getModel(String key) {
 		return tableMetadata.computeIfAbsent(key, this::initModel);
 	}
-
-	private DynamicRelationlPath initModel(String key) {
-		DynamicRelationlPath table = new DynamicRelationlPath("t1", null, key);
+	@SuppressWarnings("unused")
+	private DynamicRelationalPath initModel(String key) {
+		DynamicRelationalPath table = new DynamicRelationalPath("t1", null, key);
 		Path<Long> id=table.addColumn(Long.class, ColumnMetadata.named("id").ofType(Types.BIGINT).notNull())
 			.with(ColumnFeature.AUTO_INCREMENT).unsigned().comment("主键ID")
 			.build();

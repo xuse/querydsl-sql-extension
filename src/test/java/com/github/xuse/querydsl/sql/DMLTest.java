@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.sql;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
@@ -7,38 +8,56 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-import org.junit.Ignore;
+import org.junit.Assume;
 import org.junit.Test;
 
+import com.github.xuse.querydsl.annotation.query.Condition;
+import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.AvsAuthParams;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.CaAsset;
+import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
+import com.github.xuse.querydsl.entity.StateMachine;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
+import com.github.xuse.querydsl.lambda.LambdaColumn;
+import com.github.xuse.querydsl.lambda.LambdaHelpers;
+import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.repository.CRUDRepository;
+import com.github.xuse.querydsl.repository.LambdaQueryWrapper;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
+import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
+import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.querydsl.core.QueryFlag.Position;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Column;
+import com.querydsl.sql.SQLExpressions;
 
 import lombok.Data;
 
-public class DMLTest extends AbstractTestBase{
+@SuppressWarnings("unused")
+public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 	@Test
 	public void testTupleResult() {
 		QAaa t1 = QAaa.aaa;
@@ -49,7 +68,8 @@ public class DMLTest extends AbstractTestBase{
 		System.err.println(maps.get(0).get(0, Integer.class));
 		System.err.println(maps.get(0).get(1, String.class));
 
-		List<VO> vos = factory.select(ProjectionsAlter.bean(VO.class, t1.name, t1.id.count().as("cnt"))).from(t1)
+		List<VO> vos = factory.select(ProjectionsAlter.bean(VO.class, t1.name, t1.id.count().as("cnt")))
+				.from(t1)
 				.groupBy(t1.name).fetch();
 		for (VO vo : vos) {
 			System.err.println(vo);
@@ -85,14 +105,14 @@ public class DMLTest extends AbstractTestBase{
 	}
 
 	@Test
-	public void reCreateTable() throws SQLException {
+	public void reCreateTable() {
 		SQLMetadataQueryFactory metadataFactory=factory.getMetadataFactory();
 		metadataFactory.dropTable(QAaa.aaa).ifExists(true).execute();
 		metadataFactory.dropTable(QAvsUserAuthority.avsUserAuthority).ifExists(true).execute();
 		metadataFactory.dropTable(QCaAsset.caAsset).ifExists(true).execute();
 		
 		metadataFactory.createTable(QAaa.aaa).execute();
-		metadataFactory.createTable(QAvsUserAuthority.avsUserAuthority).execute();;
+		metadataFactory.createTable(QAvsUserAuthority.avsUserAuthority).execute();
 		metadataFactory.createTable(QCaAsset.caAsset).execute();
 	}
 
@@ -143,7 +163,7 @@ public class DMLTest extends AbstractTestBase{
 
 		System.err.println("===========插入t2===========");
 		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
-		int sid = factory.insert(t2).set(t2.authContent, "abcdefg").set(t2.devId, "123").set(t2.userId,"ddefe").set(t2.createTime, new Date())
+		int sid = factory.insert(t2).set(t2.authContent, "abcdefg").set(t2.devId, "123").set(t2.userId,"ddefe").set(t2.createTime, LocalDateTime.now())
 				.set(t2.updateTime, "01/12/2019 12:30:21").set(t2.gender, Gender.MALE).executeWithKey(t2.id);
 		System.err.println(id);
 		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
@@ -157,7 +177,7 @@ public class DMLTest extends AbstractTestBase{
 
 		factory.update(t1).set(t1.name, t1.name.concat("Abc123")).where(t1.id.eq(id)).execute();
 
-		factory.update(t2).set(t2.createTime, DateTimeExpression.currentTimestamp(Timestamp.class))
+		factory.update(t2).set(t2.createTime, DateTimeExpression.currentTimestamp(LocalDateTime.class))
 				.where(t2.userId.eq("1")).execute();
 		// factory.select(Projections.tuple(exprs))
 	}
@@ -203,11 +223,28 @@ public class DMLTest extends AbstractTestBase{
 		System.err.println(results.getResults());
 	}
 
+	
 	@Test
 	public void testUpdateSQL() {
 		QAaa t1 = QAaa.aaa;
-		factory.update(t1).set(t1.created, Expressions.currentTimestamp()).set(t1.name, "李四").where(t1.id.eq(1))
-				.execute();
+		
+		Integer id=factory.select(t1.id.max()).from(t1).fetchFirst();
+		System.err.println(id);
+		long count = factory.update(t1)
+			.set(t1.created, JavaTimes.currentTimestamp())
+			.set(t1.name, "李四")
+			.where(t1.id.eq(id))
+			.execute();
+		assertTrue(count>0);
+		
+		Aaa a=new Aaa();
+		a.setName("Wang Wu");
+		a.setGender(Gender.MALE);
+		a.setVersion(2);
+		
+		Aaa oldRecord = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
+		factory.update(t1).populateWithCompare(a, oldRecord).where(t1.id.eq(id)).execute();
+		
 	}
 
 	@Test
@@ -220,11 +257,11 @@ public class DMLTest extends AbstractTestBase{
 		.populate(generateEntity()).addBatch().execute();
 		
 		long count=factory.update(t1)
-			.set(t1.created, Expressions.currentTimestamp())
+			.set(t1.created, JavaTimes.currentTimestamp())
 			.set(t1.dataBigint, 2774689L)
 			.where(Expressions.TRUE)
 			.execute();
-		assertTrue(count == 2);
+		assertEquals(2, count);
 	}
 
 	@Test
@@ -238,20 +275,20 @@ public class DMLTest extends AbstractTestBase{
 		QAaa t1 = QAaa.aaa;
 		Aaa a = new Aaa();
 		a.setTaskStatus(TaskStatus.RUNNING);
-		a.setCreated(new Date());
+		a.setCreated(new Date().toInstant());
 		a.setName("张三");
 		a.setTrantField("aaaa");
 
 		Aaa b = new Aaa();
 		b.setName("王五");
 		b.setTaskStatus(TaskStatus.RUNNING);
-		b.setCreated(new Date());
+		b.setCreated(new Date().toInstant());
 		b.setTrantField("bbbb");
 
 		Aaa c = new Aaa();
 		c.setName("sadfsfsdfs");
 		c.setTaskStatus(TaskStatus.RUNNING);
-		c.setCreated(new Date());
+		c.setCreated(new Date().toInstant());
 		c.setTrantField("cccc");
 		
 		Aaa d = new Aaa();
@@ -259,14 +296,9 @@ public class DMLTest extends AbstractTestBase{
 		d.setTaskStatus(TaskStatus.RUNNING);
 		d.setTrantField("dsaasdsa");
 		d.setVersion(123);
-
+		System.err.println("==== BATCH START ====");
 		List<Integer> x = factory.insert(t1).populateBatch(Arrays.asList(a, b, c, d)).executeWithKeys(Integer.class);
 		System.err.println(x);
-
-		// 虽然成功执行了，日志看上去像是batch，但实际上是分4个语句执行的，没起到batch效果。
-//		long num=insert.execute();
-//		System.err.println(num);
-
 	}
 
 	@Test
@@ -318,7 +350,7 @@ public class DMLTest extends AbstractTestBase{
 		System.err.println("Count:" + count);
 
 		// 查询数据，并支持流操作 (试验性功能，API还需要改进)
-		List<String> entity = factory.select(ProjectionsAlter.map(t2.getProjection(), String.class, e -> e.getDevId())).from(t2)
+		List<String> entity = factory.select(ProjectionsAlter.map(t2.getProjection(), String.class, AvsUserAuthority::getDevId)).from(t2)
 				.where(t2.id.eq(sid)).fetch();
 		
 		
@@ -347,17 +379,16 @@ public class DMLTest extends AbstractTestBase{
 	@Test
 	public void testFetchAll() {
 		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
-		List<AvsUserAuthority> list = factory.selectFrom(t2).fetch();
+		List<AvsUserAuthority> list = factory.selectFrom(t2).orderBy(t2.authType.asc()).fetch();
 		for (AvsUserAuthority a : list) {
 			System.err.println(a);
 		}
 	}
 
 	@Test
-	@Ignore
 	public void testInsert() {
 		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
-
+		
 		AvsUserAuthority data = new AvsUserAuthority();
 		data.setUserId("user-daslfnskfn23");
 		data.setDevId("C12345678");
@@ -368,11 +399,20 @@ public class DMLTest extends AbstractTestBase{
 		data.getMap().put("attr1", "测试属性");
 		data.getMap().put("attr2", "女");
 		// 插入
-
-		factory.insert(t2).populate(data).set(t2.id, 2).addFlag(Position.START_OVERRIDE, "insert ignore ").execute();
-		int sid = factory.insert(t2).populate(data).executeWithKey(t2.id);
+		int sid;
+		System.err.println(factory.getMetadataFactory().getDatabaseProduct());
+		System.err.println(factory.getMetadataFactory().getDatabaseVersion());
+		
+		if(factory.getMetadataFactory().getDatabaseProduct().startsWith("MySQL")) {
+			sid = factory.asMySQL().insertIgnore(t2).populate(data).executeWithKey(t2.id);	
+		}else {
+			sid = factory.insert(t2).populate(data).executeWithKey(t2.id);
+		}
 		System.err.println(sid);
-
+		
+		CRUDRepository<AvsUserAuthority,Integer> repository=factory.asRepository(t2);
+		AvsUserAuthority obj=repository.load(sid);
+		System.out.println(obj.getCreateTime());
 	}
 
 	@Test
@@ -382,10 +422,19 @@ public class DMLTest extends AbstractTestBase{
 //		a.setId(1);
 		a.setName("张222");
 		a.setGender(Gender.FEMALE);
-		a.setCreated(new Timestamp(System.currentTimeMillis()));
+		a.setCreated(new Timestamp(System.currentTimeMillis()).toInstant());
 		a.setVersion(12);
+		a.setDataInt(222);
 		a.setDataDouble(2.3d);
-		int id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
+		a.setTaskStatus(TaskStatus.FAIL);
+		a.setDataFloat(-1f);
+		a.setDataShort((short)-1);
+		a.setDataBigint(-1);
+		a.setDataDecimal(BigDecimal.ONE);
+		a.setDataDate(new Date());
+		a.setDataTime(new java.sql.Time(System.currentTimeMillis()));
+		a.setDateTimestamp(new Date());
+		int id = factory.insert(t1).writeNulls(true).populate(a).executeWithKey(Integer.class);
 		System.err.println("id=" + id);
 
 		Integer count = factory.merge(t1).keys(t1.id).columns(t1.id, t1.created, t1.gender)
@@ -400,14 +449,18 @@ public class DMLTest extends AbstractTestBase{
 		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
 		AvsAuthParams p = new AvsAuthParams();
 		p.setAuthContent("123");
-		p.setAuthType(0);
+//		p.setAuthType(0);
 		p.setLimit(100);
 		p.setOffset(2);
-		p.setDateGt(new Date());
-		p.setDateLoe(new Date());
-		p.setCreateTime(new Date[] { new Date(0), new Date() });
-		List<AvsUserAuthority> values = factory.selectFrom(t).where(p, t).fetch();
-		System.err.println(values);
+//		p.setDateGt(new Date());
+//		p.setDateLoe(new Date());
+//		p.setCreateTime(new Date[] { new Date(0), new Date() });
+		p.setOrder("authType");
+		p.setOrderAsc(true);
+		p.setFetchTotal(false);
+		Pair<Integer,List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(p);
+		System.err.println(result.getFirst());
+		System.err.println(result.getSecond());
 	}
 	
 	@Test
@@ -441,7 +494,7 @@ public class DMLTest extends AbstractTestBase{
 //		QAaa t1=QAaa.aaa;
 		QCaAsset t2=QCaAsset.caAsset;
 		
-		TableRouting routing=TableRouting.suffix( "2024Q2");
+		TableRouting routing=TableRouting.suffix("2024Q2");
 		boolean reCreateTable=true;
 		if(reCreateTable){
 			SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
@@ -455,5 +508,221 @@ public class DMLTest extends AbstractTestBase{
 			System.out.println(t);
 		}
 	}
+	
+	@Test
+	public void mysqlInsertOnDuplidateKey() {
+		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		QCaAsset t2 = QCaAsset.caAsset;
+		CaAsset a=new CaAsset();
+		a.setCode("a");
+		a.setContent("test123");
+		a.setGender(Gender.MALE);
+		a.setMap(Collections.singletonMap("s", "b"));
+		a.setName("LIU");
+		//使用SQLExpressions.set是官方设计的，使用eq可以起到数值不变的效果，实际没啥必要。
+		//SQLExpressions.set(path)，会变为 values(path)的效果，实际上引用了前文设置的新植，因此无需将数值再重复一遍。避免增加操作变量。
+		factory.asMySQL().insertOnDuplicateKeyUpdate(t2,
+				SQLExpressions.set(t2.name, t2.name),
+				SQLExpressions.set(t2.ext, t2.ext),
+				t2.gender.eq(Gender.FEMALE),
+				t2.content.eq(t2.content)
+		).populate(a).execute();
+	}
 
+	/*
+	 * MyBatis-plus的用法打开了思路，可以使用实体类来表达一个表的元模型，
+	 * 可以使用方法引用来表达一个元模型中的字段。
+	 *  
+	 *  即——
+	 *  用Class来代替Query class。
+	 *  用 Class::getSomeField()来代替中的静态字段模型。
+	 *  这样依赖就可以省掉Query class，实现彻底的POJO Bean + Annotation进行数据表映射了。
+	 *  虽然这种奇技_巧没啥意义，但还是很多人喜欢。
+	 */
+	@Test
+	public void testPureBean() {
+		LambdaTable<Foo> table = () -> Foo.class;
+		LambdaColumn<Foo, String> p = Foo::getName;
+		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
+		metadata.createTable(table).ifExists().execute();
+		List<Foo> list = factory.selectFrom(table).where(p.eq("1")).fetch();
+	}
+	
+	/**
+	 * 在支持了无需QueryClass的情况下，使用Repository界面，可以使用以下几种风格进行查询
+	 * 五套风格，总有一套适合你。
+	 */
+	@Test
+	public void testPureBean2() {
+		/*
+		 * 对于不喜欢SQLQueryFactory风格的用户。可以更换前端操作类。
+		 * 当然更自由的方式是自己定义一个Repository，并通过SpringBean注入
+		 * @Repository
+		 * public class FooRepository extends AbstractCrudRepository<Foo,Long>{
+		 * 
+		 * }
+		 */
+		CRUDRepository<Foo, Integer> repo=factory.asRepository(()->Foo.class);
+
+		//写法一，传统 repository风格，功能较弱，比如无法支持Between条件
+		{
+			Foo foo=new Foo();
+			foo.setName("张三");
+			foo.setCreated(new Date());
+			repo.findByExample(foo);	
+		}
+		
+		//写法二，MyBatis-Plus风格
+		{
+			LambdaQueryWrapper<Foo> wrapper=new LambdaQueryWrapper<>();
+			wrapper
+				.eq(Foo::getName, "张三")
+				.between(Foo::getCreated, DateUtils.get(2023, 12, 1), new Date());
+			
+			Pair<Integer, List<Foo>> results=repo.findAndCount(wrapper);
+		}
+		
+		
+		//写法三，接近queryDSL原生风格，同时支持lambda
+		{
+			repo.query()
+			.eq(Foo::getName, "张三")
+			.between(Foo::getCreated, DateUtils.get(2023, 12, 1), new Date())
+			.findAndCount();	
+		}
+
+		//写法四，QueryDSL风格
+		{
+			LambdaColumn<Foo, String> name = Foo::getName;
+			LambdaColumn<Foo, Date> created = Foo::getCreated;
+			List<Foo> list= repo.find(q->q.where(name.eq("张三").and(created.between(DateUtils.get(2023, 12, 1), new Date()))));	
+		}
+		
+		//写法五，使用一个查询表单类
+		{
+			FooParams params=new FooParams();
+			params.setName("张三");
+			params.setCreated(new Date[] {DateUtils.get(2023, 12, 1), new Date()});
+			repo.findByCondition(params);	
+		}
+		
+	}
+	
+	/*
+	 * 写法五中用到的查询表单类
+	 */
+	@Data
+	@ConditionBean
+	public static class FooParams{
+		@Condition(Ops.STRING_CONTAINS)
+		String name;
+		
+		@Condition(Ops.BETWEEN)
+		Date[] created;
+	}
+	
+	/**
+	 * 打通普通bean,
+	 * 1包扫描时支持普通的relationalPath注册。
+	 * 2如果使用了querydsl原生的方式创建queryClz。那么这里会使用扫描到的entity path，从而不会对类进行反复解析。
+	 */
+	@Test
+	public void testPureBean4() {
+		/*
+		 * 对于不喜欢SQLQueryFactory风格的用户。可以更换前端操作类。
+		 * 当然更自由的方式是自己定义一个Repository，并通过SpringBean注入
+		 * @Repository
+		 * public class FooRepository extends AbstractCrudRepository<Foo,Long>{
+		 * 
+		 * }
+		 */
+		CRUDRepository<Aaa, Long> repo=factory.asRepository(()->Aaa.class);
+
+		//写法一，传统 repository风格，功能较弱，比如无法支持Between条件
+		{
+			Aaa foo=new Aaa();
+			foo.setName("张三");
+			foo.setCreated(new Date().toInstant());
+			repo.findByExample(foo);	
+		}
+		
+		//写法二，MyBatis-Plus风格
+		{
+			LambdaQueryWrapper<Aaa> wrapper=new LambdaQueryWrapper<>();
+			wrapper
+				.eq(Aaa::getName, "张三")
+				.between(Aaa::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+				.orderBy(
+					$(Aaa::getCreated).asc(),
+					$(Aaa::getId).desc()
+				)
+				.limit(10).offset(20);
+			Pair<Integer, List<Aaa>> results=repo.findAndCount(wrapper);
+		}
+		
+		
+		//写法三，接近queryDSL原生风格，同时支持lambda
+		{
+			repo.query()
+			.eq(Aaa::getName, "张三")
+			.between(Aaa::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+			//.groupBy(Aaa::getGender,Aaa::getTaskStatus)
+			.groupBy($(Aaa::getGender),s(Aaa::getName).upper())
+			.findAndCount();	
+		}
+
+		//写法四，QueryDSL风格
+		{
+			LambdaColumn<Aaa, String> name = Aaa::getName;
+			LambdaColumn<Aaa, Instant> created = Aaa::getCreated;
+			List<Aaa> list= repo.find(q->q.where(name.eq("张三").and(created.between(DateUtils.getInstant(2023, 12, 1), Instant.now()))));	
+		}
+		
+		//写法五，使用一个查询表单类
+		{
+			FooParams params=new FooParams();
+			params.setName("张三");
+			params.setCreated(new Date[] {DateUtils.get(2023, 12, 1), new Date()});
+			repo.findByCondition(params);	
+		}
+	}
+	
+	//如果涉及较为复杂的函数和处理，就要一个接口进行辅助了
+	@Test
+	public void testPureBean5() {
+		CRUDRepository<Aaa, Long> repo=factory.asRepository(()->Aaa.class);
+		repo.query()
+		.eq(Aaa::getName, "张三")
+		.between(Aaa::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+		//.groupBy(Aaa::getGender,Aaa::getTaskStatus)
+		.groupBy(column(Aaa::getGender),string(Aaa::getName).upper())
+		.having(column(Aaa::getName).count().goe(15))
+		.findAndCount();	
+	}
+	
+	@Test
+	public void testPureBean3() {
+		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
+		metadata.dropTable(()->StateMachine.class).execute();
+		metadata.createTable(()->StateMachine.class).execute();
+		
+		CRUDRepository<StateMachine, String> repo=factory.asRepository(()->StateMachine.class);
+		StateMachine s=new StateMachine();
+		s.setId(StringUtils.generateGuid());
+		s.setEndParams("123");
+		s.setGmtEnd(new Date());
+		s.setGmtUpdated(new Date());
+		s.setIsRunning(0);
+		s.setMachineId("aa");
+		s.setParentId("bb");
+		repo.insert(s);
+		
+		List<StateMachine> list=repo.query().fetch();
+		System.out.println(list);
+		StateMachine indb=list.get(0);
+		indb.setMachineId("456");
+		repo.update(indb.getId(), indb);
+		
+		repo.delete(indb.getId());
+	}
 }

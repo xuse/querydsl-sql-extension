@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
+import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
@@ -66,14 +67,19 @@ public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContext
 		}
 		int count=repository.delete(7L);
 		System.out.println(count);
+		
+		
+		
+		
 	}
 	
 	@Test
 	public void test1() {
+		factory.getMetadataFactory().truncate(QAaa.aaa).execute();
 		System.out.println("================test1");
 		Aaa a = new Aaa();
 		a.setName("张三");
-		a.setCreated(new Timestamp(System.currentTimeMillis()));
+		a.setCreated(new Timestamp(System.currentTimeMillis()).toInstant());
 		int id=factory.insert(QAaa.aaa).populate(a).executeWithKey(Integer.class);
 		a.setId(id);
 		System.out.println(a.getId());
@@ -104,7 +110,7 @@ public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContext
 		for(Constraint c:cs) {
 			log.info("constraint:{}",c);
 		}
-		Collection<Constraint> is = metadata.getIndecies(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> is = metadata.getIndices(QAaa.aaa.getSchemaAndTable());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
 		}

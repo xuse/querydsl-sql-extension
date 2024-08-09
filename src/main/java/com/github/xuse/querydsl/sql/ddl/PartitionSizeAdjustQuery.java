@@ -3,11 +3,12 @@ package com.github.xuse.querydsl.sql.ddl;
 import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.querydsl.core.types.DDLOps.PartitionMethod;
+import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
@@ -15,21 +16,18 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 仅针对KEY HASH等
- * @author jiyi
+ * @author Joey
  *
  */
 @Slf4j
 public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdjustQuery> {
-	private final RelationalPathEx<?> table;
-
 	private int currentSize = -1;
 
 	private int toSize;
 
 	public PartitionSizeAdjustQuery(MetadataQuerySupport connection, ConfigurationEx configuration,
-			RelationalPathEx<?> table) {
-		super(connection, configuration, table);
-		this.table = table;
+			RelationalPath<?> table) {
+		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(table));
 	}
 
 	private void setToSize(int size) {
@@ -41,7 +39,7 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 	}
 
 	/**
-	 * 指定分区数，该操作会使之前调用的 {@link #toSize(int)} {@link #add(int)} {@link #coalesce(int)}操作失效。
+	 * 指定分区数，该操作会使之前调用的 {@code #toSize(int)} {@link #add(int)} {@link #coalesce(int)}操作失效。
 	 * @param size 调整到size个分区。
 	 * @return this;
 	 */
@@ -52,7 +50,7 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 
 
 	/**
-	 * 指定增加分区，该操作会使之前调用的 {@link #toSize(int)} {@link #add(int)} {@link #coalesce(int)}操作失效。
+	 * 指定增加分区，该操作会使之前调用的 {@link #toSize(int)} {@code #add(int)} {@link #coalesce(int)}操作失效。
 	 * @param size 增加size个分区。
 	 * @return this;
 	 */
@@ -62,7 +60,7 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 	}
 
 	/**
-	 * 指定收缩分区，该操作会使之前调用的 {@link #toSize(int)} {@link #add(int)} {@link #coalesce(int)}操作失效。
+	 * 指定收缩分区，该操作会使之前调用的 {@link #toSize(int)} {@link #add(int)} {@code #coalesce(int)}操作失效。
 	 * @param size 收缩size个分区
 	 * @return this;
 	 */
@@ -75,11 +73,11 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 		if (currentSize > -1) {
 			return currentSize;
 		}
-		SchemaAndTable acutalTable = connection.asInCurrentSchema(table.getSchemaAndTable());
+		SchemaAndTable actualTable = connection.asInCurrentSchema(table.getSchemaAndTable());
 		if (routing != null) {
-			acutalTable = routing.getOverride(acutalTable, configuration);
+			actualTable = routing.getOverride(actualTable, configuration);
 		}
-		List<PartitionInfo> info=connection.getPartitions(acutalTable);
+		List<PartitionInfo> info=connection.getPartitions(actualTable);
 		if(info.isEmpty()) {
 			return currentSize = 0; 
 		}
@@ -96,13 +94,13 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 	protected String generateSQL() {
 		if (toSize <= 0) {
 			log.warn(
-					"Cann't adjust table {}'s partition to 0. pleaseing using REMOVE PARTITIONING to remove all partitions",
+					"Can't adjust table {}'s partition to 0. please using REMOVE PARTITIONING to remove all partitions",
 					table.getSchemaAndTable());
 			return null;
 		}
 		int current = getCurrentSize();
 		if (current == 0) {
-			log.warn("Cann't adjust table {}'s partition to {}. there's no partitions now.", table.getSchemaAndTable(),
+			log.warn("Can't adjust table {}'s partition to {}. there's no partitions now.", table.getSchemaAndTable(),
 					toSize);
 			return null;
 		}

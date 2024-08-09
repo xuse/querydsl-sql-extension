@@ -7,11 +7,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
+import com.github.xuse.querydsl.util.DateFormats;
+import com.github.xuse.querydsl.util.DateFormats.TLDateFormat;
 import com.github.xuse.querydsl.util.Primitives;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
@@ -28,16 +29,15 @@ import com.querydsl.sql.types.Null;
 
 /**
  * 本类包含大量空方法，增加final修饰有利于虚拟机进行即时编译优化。
- * 
+ *
  * 关于SQL语句换行问题，无需在本类中使用.replace('\n', ' ')进行转换，应该在创建SQLTemplate的时候就使用
  * com.querydsl.sql.SQLTemplates.Builder.newLineToSingleSpace()方法来实现。
- * 
- * @author jiyi
  *
+ * @author Joey
  */
 public final class QueryDSLSQLListener implements SQLDetailedListener {
 
-	private Logger log = LoggerFactory.getLogger("SQL");
+	private final Logger log = LoggerFactory.getLogger("SQL");
 
 	@Override
 	public final void notifyQuery(QueryMetadata md) {
@@ -90,54 +90,54 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	@Override
 	public final void prePrepare(SQLListenerContext context) {
 	}
-	
+
 	/**
-	 * 输出格式，全部初始化。根据配置等级输出，当error时输出等级自动+1
+	 *  输出格式，全部初始化。根据配置等级输出，当error时输出等级自动+1
 	 */
 	private final Formatter errorFormatter;
-	
+
 	private final Formatter infoFormatter;
-	
-	
+
 	/**
-	 * 初级格式，仅输出SQL
-	 * @author jiyi
-	 *
+	 *  初级格式，仅输出SQL
+	 *  @author Joey
 	 */
-	static class Formatter{
-		protected final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+	static class Formatter {
+
+		protected final TLDateFormat DATE_FORMAT = DateFormats.DATE_TIME_CS;
+
 		private final int maxBatchOutput;
-		
+
 		public Formatter(int maxBatchOutput) {
 			this.maxBatchOutput = maxBatchOutput;
 		}
-		
+
 		protected String formatSQL(String sql) {
 			return sql.replace('\n', ' ');
 		}
-		
+
 		String format(Collection<SQLBindings> bs) {
 			if (bs.isEmpty()) {
 				return "";
 			}
 			Iterator<SQLBindings> iter = bs.iterator();
-			SQLBindings bingding = iter.next();
-			StringBuilder sb = new StringBuilder(formatSQL(bingding.getSQL()));
+			SQLBindings binding = iter.next();
+			StringBuilder sb = new StringBuilder(formatSQL(binding.getSQL()));
 			List<Path<?>> constantPaths = ALL_NULL_LIST;
-			if (bingding instanceof SQLBindingsAlter) {
-				constantPaths = ((SQLBindingsAlter) bingding).getPaths();
+			if (binding instanceof SQLBindingsAlter) {
+				constantPaths = ((SQLBindingsAlter) binding).getPaths();
 			}
 			int total = bs.size();
 			int row = 0;
 			if (total > 1) {
 				sb.append("\nBatch Params: (").append(++row).append('/').append(total).append(")");
 			}
-			appendParams(sb, bingding.getNullFriendlyBindings(), constantPaths);
+			appendParams(sb, binding.getNullFriendlyBindings(), constantPaths);
 			int maxBatchOutput = this.maxBatchOutput;
 			while (iter.hasNext()) {
-				bingding = iter.next();
+				binding = iter.next();
 				sb.append("\nBatch Params: (").append(++row).append('/').append(total).append(")");
-				appendParams(sb, bingding.getNullFriendlyBindings(), constantPaths);
+				appendParams(sb, binding.getNullFriendlyBindings(), constantPaths);
 				if (row > maxBatchOutput) {
 					sb.append("Parameters after are ignored to reduce the size of log.");
 					break;
@@ -146,9 +146,9 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			return sb.toString();
 		}
 
-		private void appendParams(StringBuilder sb,List<Object> params,List<Path<?>> constantPaths) {
-			int size=params.size();
-			if(size>0) {
+		private void appendParams(StringBuilder sb, List<Object> params, List<Path<?>> constantPaths) {
+			int size = params.size();
+			if (size > 0) {
 				paramsBegin(sb);
 				for (int count = 0; count < size; count++) {
 					if (count > 0) {
@@ -158,10 +158,10 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 					Object value = params.get(count);
 					append0(sb, p, value, count);
 				}
-				paramsEnd(sb);	
+				paramsEnd(sb);
 			}
 		}
-		
+
 		protected void paramsEnd(StringBuilder sb) {
 			sb.append(']');
 		}
@@ -175,56 +175,61 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		}
 
 		protected void append0(StringBuilder sb, Path<?> p, Object value, int count) {
-			if (value == null || value==Null.DEFAULT) {
+			if (value == null || value == Null.DEFAULT) {
 				sb.append("null");
 				return;
 			}
-			appendValue(sb,value);
+			appendValue(sb, value);
 		}
 
 		protected void appendValue(StringBuilder sb, Object value) {
 			Class<?> vClass = value.getClass();
 			if (vClass == byte[].class) {
 				sb.append(((byte[]) value).length).append(" bytes");
-			}else if(value instanceof Date){
-				sb.append(DATE_FORMAT.format((Date)value));
-			}else {
+			} else if (value instanceof Date) {
+				sb.append(DATE_FORMAT.format((Date) value));
+			} else {
 				String valStr = String.valueOf(value);
-				appendString(sb,valStr);
+				appendString(sb, valStr);
 			}
 		}
 
-		protected void appendString(StringBuilder sb,String valStr) {
-			if (valStr.length() > 40) {// 如果日志太长是不行的
-				sb.append("[").append(valStr.substring(0, 38)).append("..]");
+		protected void appendString(StringBuilder sb, String valStr) {
+			if (valStr.length() > 40) {
+				// 如果日志太长是不行的
+				sb.append("[").append(valStr, 0, 38).append("..]");
 				sb.append(" chars=").append(valStr.length());
 			} else {
 				sb.append(valStr);
 			}
 		}
 	}
-	
-			 
-	static class Formatter1 extends Formatter{
+
+	static class Formatter1 extends Formatter {
+
 		protected Formatter1(int n) {
 			super(n);
 		}
+
 		@Override
 		protected void appendString(StringBuilder sb, String valStr) {
 			sb.append(valStr);
 		}
-		
+
 		protected void paramsBegin(StringBuilder sb) {
 			sb.append('\n');
 		}
+
 		protected void paramsEnd(StringBuilder sb) {
 		}
 	}
-	
-	static class Formatter2 extends Formatter1{
+
+	static class Formatter2 extends Formatter1 {
+
 		protected Formatter2(int n) {
 			super(n);
 		}
+
 		@Override
 		protected void newParamSep(StringBuilder sb) {
 			sb.append("\n");
@@ -233,59 +238,59 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		@Override
 		protected void append0(StringBuilder sb, Path<?> p, Object value, int count) {
 			sb.append("  ").append(count + 1);
-			if(p!=null) {
+			if (p != null) {
 				sb.append(") ").append(p);
-			}else {
+			} else {
 				sb.append(") ?");
 			}
 			sb.append('-').append(value.getClass().getSimpleName()).append(": ");
-			if (value == null || value==Null.DEFAULT) {
+			if (value == null || value == Null.DEFAULT) {
 				sb.append("null");
-			}else {
-				appendValue(sb,value);
+			} else {
+				appendValue(sb, value);
 			}
 		}
 	}
-	
-	
+
 	public static final int FORMAT_COMPACT = 0;
+
 	public static final int FORMAT_FULL = 1;
+
 	public static final int FORMAT_DEBUG = 2;
-		
+
 	/**
-	 * 构造
+	 *  构造
 	 */
 	public QueryDSLSQLListener() {
-		this(0,ContextKeyConstants.MAX_BATCH_LOG);
+		this(0, ContextKeyConstants.MAX_BATCH_LOG);
 	}
-	
+
 	/**
 	 * 构造
-	 * @param format
+	 * @param format format
 	 * <ul>
 	 * <li>{@link #FORMAT_COMPACT} Suitable for large-scale production environments.</li>
 	 * <li>{@link #FORMAT_FULL} Long string variable will not be truncated, and there is newline before SQL and binding parameters. </li>
 	 * <li>{@link #FORMAT_DEBUG} for develop environment, especially suitable for console output.</li>
 	 * </ul>
-	 * * <ul>
+	 *  <ul>
 	 * <li>{@link #FORMAT_COMPACT} 适合大型生产环境的紧凑格式。</li>
 	 * <li>{@link #FORMAT_FULL} 长的字符串会完整输出，SQL和参数之间会换行。</li>
 	 * <li>{@link #FORMAT_DEBUG} 最详细的信息输出，会有频繁换行，适合开发环境观察语句和输出。</li>
 	 * </ul>
 	 */
 	public QueryDSLSQLListener(int format) {
-		this(format,ContextKeyConstants.MAX_BATCH_LOG);
+		this(format, ContextKeyConstants.MAX_BATCH_LOG);
 	}
-	
+
 	/**
-	 * 
-	 * @param format
+	 * @param format format
 	 * <ul>
 	 * <li>{@link #FORMAT_COMPACT} Suitable for large-scale production environments.</li>
 	 * <li>{@link #FORMAT_FULL} Long string variable will not be truncated, and there is newline before SQL and binding parameters. </li>
 	 * <li>{@link #FORMAT_DEBUG} for develop environment, especially suitable for console output.</li>
 	 * </ul>
-	 * * <ul>
+	 *  <ul>
 	 * <li>{@link #FORMAT_COMPACT} 适合大型生产环境的紧凑格式。</li>
 	 * <li>{@link #FORMAT_FULL} 长的字符串会完整输出，SQL和参数之间会换行。</li>
 	 * <li>{@link #FORMAT_DEBUG} 最详细的信息输出，会有频繁换行，适合开发环境观察语句和输出。</li>
@@ -294,20 +299,20 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	 */
 	public QueryDSLSQLListener(int format, int maxBatchCount) {
 		switch(format) {
-		case FORMAT_COMPACT:
-			this.infoFormatter=new Formatter(maxBatchCount);
-			this.errorFormatter=new Formatter1(maxBatchCount);
-			break;
-		case FORMAT_FULL:
-			this.infoFormatter=new Formatter1(maxBatchCount);
-			this.errorFormatter=new Formatter2(maxBatchCount);
-			break;
-		default:
-			this.infoFormatter=new Formatter2(maxBatchCount);
-			this.errorFormatter=new Formatter2(maxBatchCount);
+			case FORMAT_COMPACT:
+				this.infoFormatter = new Formatter(maxBatchCount);
+				this.errorFormatter = new Formatter1(maxBatchCount);
+				break;
+			case FORMAT_FULL:
+				this.infoFormatter = new Formatter1(maxBatchCount);
+				this.errorFormatter = new Formatter2(maxBatchCount);
+				break;
+			default:
+				this.infoFormatter = new Formatter2(maxBatchCount);
+				this.errorFormatter = new Formatter2(maxBatchCount);
 		}
 	}
-	
+
 	@Override
 	public final void preExecute(SQLListenerContext context) {
 		if (log.isInfoEnabled()) {
@@ -315,8 +320,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		}
 	}
 
-	
-	private final static List<Path<?>> ALL_NULL_LIST = new AbstractList<Path<?>>() {
+	private static final List<Path<?>> ALL_NULL_LIST = new AbstractList<Path<?>>() {
 		@Override
 		public Path<?> get(int index) {
 			return null;
@@ -330,14 +334,19 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 
 	@Override
 	public final void executed(SQLListenerContext context) {
-		boolean slow=Boolean.TRUE.equals(context.getData(ContextKeyConstants.SLOW_SQL));
-		int maxExceed=Primitives.unbox((Integer)context.getData(ContextKeyConstants.EXCEED),0);
-		
+		boolean slow = Boolean.TRUE.equals(context.getData(ContextKeyConstants.SLOW_SQL));
+		int maxExceed = Primitives.unbox((Integer) context.getData(ContextKeyConstants.EXCEED), 0);
 		if (slow || log.isInfoEnabled()) {
 			String action = (String) context.getData(ContextKeyConstants.ACTION);
 			if (action == null || action.length() == 0) {
 				// 兼容官方版本
 				return;
+			}
+			if (action.charAt(0) == '(') {
+				// Internal actions, only print on debug level.
+				if (!log.isDebugEnabled()) {
+					return;
+				}
 			}
 			Object time = context.getData(ContextKeyConstants.ELAPSED_TIME);
 			String count = String.valueOf(context.getData(ContextKeyConstants.COUNT));
@@ -346,26 +355,24 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 				time = -1L;
 			}
 			sb.append("Records ").append(action).append(':').append(count).append(", elapsed ").append(time).append("ms.");
-			if(maxExceed>0) {
+			if (maxExceed > 0) {
 				sb.append("NOTE: result set was truncated since it exceeds the MaxRows = ").append(maxExceed);
 			}
-			if(slow) {
-				log.error("SlowSQL:[{}].\n{}",errorFormatter.format(context.getAllSQLBindings()),sb);
-			}else {
+			if (slow) {
+				log.error("SlowSQL:[{}].\n{}", errorFormatter.format(context.getAllSQLBindings()), sb);
+			} else {
 				log.info(sb.toString());
 			}
 		}
-		
 	}
 
 	@Override
 	public final void prepared(SQLListenerContext context) {
 	}
 
-
 	@Override
 	public final void exception(SQLListenerContext context) {
-		log.error(errorFormatter.format(context.getAllSQLBindings()),context.getException());
+		log.error(errorFormatter.format(context.getAllSQLBindings()), context.getException());
 	}
 
 	@Override

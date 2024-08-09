@@ -56,6 +56,7 @@ public class DigitBaseTest {
 		System.out.println(System.nanoTime() - time);
 		
 		time = System.nanoTime();
+		@SuppressWarnings("unused")
 		String s;
 		for (int i = 0; i < 100000; i++) {
 			s=Integer.toHexString(i);

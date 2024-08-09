@@ -1,5 +1,5 @@
 /*
- * JEF - Copyright 2009-2010 Jiyi (mr.jiyi@gmail.com)
+ * querydsl-sql-extension - Copyright 2017-2024 Joey (mr.jiyi@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,80 +19,83 @@ import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.Reader;
 
-
-
 public class ByteUtils {
+
 	/**
 	 * 将long转换为byte[8](高位在前)
-	 * @param l
+	 * @param l l
 	 * @return long to binary.
 	 */
-	public static byte[] toBytes(long l){
-		byte[] b=new byte[8];
+	public static byte[] toBytes(long l) {
+		byte[] b = new byte[8];
 		putLong(b, l, 0);
 		return b;
 	}
-	
+
 	/**
 	 * 将int转换为byte[4](高位在前)
-	 * @param i
+	 * @param i i
 	 * @return int to binary.
 	 */
-	public static byte[] toBytes(int i){
-		byte[] b=new byte[4];
+	public static byte[] toBytes(int i) {
+		byte[] b = new byte[4];
 		putInt(b, i, 0);
 		return b;
 	}
-	
+
 	/**
 	 * 将short转换为byte[2]. 高位在前，低位在后
-	 * @param i
+	 * @param i i
 	 * @return short to binary.
 	 */
-	public static byte[] toBytes(short i){
-		byte[] b=new byte[2];
+	public static byte[] toBytes(short i) {
+		byte[] b = new byte[2];
 		putShort(b, i, 0);
 		return b;
 	}
-	
+
 	/**
-	 * 将short放入byte数组，高位在前，低位在后
-	 * @param b byte数组
-	 * @param s 要放入的值
-	 * @param offset 所在序号
+	 *  将short放入byte数组，高位在前，低位在后
+	 *  @param b byte数组
+	 *  @param s 要放入的值
+	 *  @param offset 所在序号
 	 */
-	public static void putShort(byte b[], short s, int offset) {
-		int len=b.length;
-		if(offset<len)b[offset] = (byte) (s >> 8);
-		if(offset+1<len)b[offset + 1] = (byte) (s >> 0);
+	public static void putShort(byte[] b, short s, int offset) {
+		int len = b.length;
+		if (offset < len)
+			b[offset] = (byte) (s >> 8);
+		if (offset + 1 < len)
+			b[offset + 1] = (byte) (s >> 0);
 	}
 
 	/**
-	 * 将short放入byte数组，低位在前，高位在后
-	 * @param b byte数组
-	 * @param s 要放入的值
-	 * @param offset 所在序号
+	 *  将short放入byte数组，低位在前，高位在后
+	 *  @param b byte数组
+	 *  @param s 要放入的值
+	 *  @param offset 所在序号
 	 */
-	public static void putReverseBytesShort(byte b[], short s, int offset) {
-		int len=b.length;
-		if(offset<len)b[offset] = (byte) (s >> 0);
-		if(offset<len)b[offset + 1] = (byte) (s >> 8);
+	public static void putReverseBytesShort(byte[] b, short s, int offset) {
+		int len = b.length;
+		if (offset < len)
+			b[offset] = (byte) (s >> 0);
+		if (offset < len)
+			b[offset + 1] = (byte) (s >> 8);
 	}
 
 	/**
 	 * 从字节组中获得long（正常顺序：高位在前，低位在后）
-	 * @param b
-	 * @param offset
+	 * @param b b
+	 * @param offset offset
 	 * @return short value
 	 */
 	public static short getShort(byte[] b, int offset) {
 		return (short) (((b[offset] << 8) | b[offset + 1] & 0xff));
 	}
-	
+
 	/**
 	 * 从字节数组中获得short,(高位在后，低位在前)
-	 * @param b
-	 * @param offset
+	 * @param b b
+	 * @param offset offset
 	 * @return short value
 	 */
 	public static short getReverseBytesShort(byte[] b, int offset) {
@@ -100,12 +103,11 @@ public class ByteUtils {
 	}
 
 	// ///////////////////////////////////////////////////////
-
 	/**
-	 * 将short放入byte数组，高位在前，低位在后
-	 * @param bb byte数组
-	 * @param x 要放入的值
-	 * @param offset 所在序号
+	 *  将short放入byte数组，高位在前，低位在后
+	 *  @param bb byte数组
+	 *  @param x 要放入的值
+	 *  @param offset 所在序号
 	 */
 	public static void putInt(byte[] bb, int x, int offset) {
 		bb[offset + 0] = (byte) (x >> 24);
@@ -115,11 +117,11 @@ public class ByteUtils {
 	}
 
 	/**
-	 * 将int放入byte数组，低位在前，高位在后
-	 * @param bb byte数组
-	 * @param x 要放入的值
-	 * @param offset 所在序号
-	 */	
+	 *  将int放入byte数组，低位在前，高位在后
+	 *  @param bb byte数组
+	 *  @param x 要放入的值
+	 *  @param offset 所在序号
+	 */
 	public static void putReverseBytesInt(byte[] bb, int x, int offset) {
 		bb[offset + 3] = (byte) (x >> 24);
 		bb[offset + 2] = (byte) (x >> 16);
@@ -129,18 +131,18 @@ public class ByteUtils {
 
 	/**
 	 * 从字节流中读取一个int(占4个 byte,高位在前低位在后)
-	 * @param bb
-	 * @param offset
+	 * @param bb bb
+	 * @param offset offset
 	 * @return int value
 	 */
 	public static int getInt(byte[] bb, int offset) {
 		return (int) ((((bb[offset + 0] & 0xff) << 24) | ((bb[offset + 1] & 0xff) << 16) | ((bb[offset + 2] & 0xff) << 8) | ((bb[offset + 3] & 0xff))));
 	}
-	
+
 	/**
 	 * 从字节流中读取一个int(占4个 byte,低位在前，高位在后)
-	 * @param bb
-	 * @param offset
+	 * @param bb bb
+	 * @param offset offset
 	 * @return int value
 	 */
 	public static int getReverseBytesInt(byte[] bb, int offset) {
@@ -149,11 +151,11 @@ public class ByteUtils {
 
 	// /////////////////////////////////////////////////////////
 	/**
-	 * 将long放入byte数组，高位在前，低位在后
-	 * @param bb byte数组
-	 * @param x 要放入的值
-	 * @param offset 所在序号
-	 */	
+	 *  将long放入byte数组，高位在前，低位在后
+	 *  @param bb byte数组
+	 *  @param x 要放入的值
+	 *  @param offset 所在序号
+	 */
 	public static void putLong(byte[] bb, long x, int offset) {
 		bb[offset + 0] = (byte) (x >> 56);
 		bb[offset + 1] = (byte) (x >> 48);
@@ -164,13 +166,13 @@ public class ByteUtils {
 		bb[offset + 6] = (byte) (x >> 8);
 		bb[offset + 7] = (byte) (x >> 0);
 	}
-	
+
 	/**
-	 * 将long放入byte数组，低位在前，高位在后
-	 * @param bb byte数组
-	 * @param x 要放入的值
-	 * @param offset 所在序号
-	 */	
+	 *  将long放入byte数组，低位在前，高位在后
+	 *  @param bb byte数组
+	 *  @param x 要放入的值
+	 *  @param offset 所在序号
+	 */
 	public static void putReverseBytesLong(byte[] bb, long x, int offset) {
 		bb[offset + 7] = (byte) (x >> 56);
 		bb[offset + 6] = (byte) (x >> 48);
@@ -183,104 +185,100 @@ public class ByteUtils {
 	}
 
 	/**
-	 * 
-	 * @param bb
-	 * @param offset
+	 * @param bb bb
+	 * @param offset offset
 	 * @return long value
 	 */
 	public static long getLong(byte[] bb, int offset) {
-		return ((((long) bb[offset + 0] & 0xff) << 56) | (((long) bb[offset + 1] & 0xff) << 48) | (((long) bb[offset + 2] & 0xff) << 40) | (((long) bb[offset + 3] & 0xff) << 32) | (((long) bb[offset + 4] & 0xff) << 24) | (((long) bb[offset + 5] & 0xff) << 16)
-				| (((long) bb[offset + 6] & 0xff) << 8) | (((long) bb[offset + 7] & 0xff) << 0));
+		return ((((long) bb[offset + 0] & 0xff) << 56) | (((long) bb[offset + 1] & 0xff) << 48) | (((long) bb[offset + 2] & 0xff) << 40) | (((long) bb[offset + 3] & 0xff) << 32) | (((long) bb[offset + 4] & 0xff) << 24) | (((long) bb[offset + 5] & 0xff) << 16) | (((long) bb[offset + 6] & 0xff) << 8) | (((long) bb[offset + 7] & 0xff) << 0));
 	}
-	
+
 	/**
-	 * 
-	 * @param bb
-	 * @param offset
+	 * @param bb bb
+	 * @param offset offset
 	 * @return long value
 	 */
 	public static long getReverseBytesLong(byte[] bb, int offset) {
-		return ((((long) bb[offset + 7] & 0xff) << 56) | (((long) bb[offset + 6] & 0xff) << 48) | (((long) bb[offset + 5] & 0xff) << 40) | (((long) bb[offset + 4] & 0xff) << 32) | (((long) bb[offset + 3] & 0xff) << 24) | (((long) bb[offset + 2] & 0xff) << 16)
-				| (((long) bb[offset + 1] & 0xff) << 8) | (((long) bb[offset + 0] & 0xff) << 0));
+		return ((((long) bb[offset + 7] & 0xff) << 56) | (((long) bb[offset + 6] & 0xff) << 48) | (((long) bb[offset + 5] & 0xff) << 40) | (((long) bb[offset + 4] & 0xff) << 32) | (((long) bb[offset + 3] & 0xff) << 24) | (((long) bb[offset + 2] & 0xff) << 16) | (((long) bb[offset + 1] & 0xff) << 8) | (((long) bb[offset + 0] & 0xff) << 0));
 	}
-	
+
 	/**
 	 * 将byte转换为int
-	 * @param b
+	 * @param b b
 	 * @return int value.
 	 */
-	public static int byteToInt(byte b){
-		return  b>= 0 ? b : 256 + b;  
+	public static int byteToInt(byte b) {
+		return b >= 0 ? b : 256 + b;
 	}
-	
+
 	/**
-	 * @param x
-	 * @param size
+	 * @param x x
+	 * @param size size
 	 * @return 将long转换为指定字节数的数组
-	 * 
 	 */
-	public static byte[] longToBytes(long x,int size){
-		byte[] bb=new byte[size];
-		for(int n=0;n<8;n++){
-			if(size==n)break;
-			bb[n]=(byte)(x>>(8*n));
+	public static byte[] longToBytes(long x, int size) {
+		byte[] bb = new byte[size];
+		for (int n = 0; n < 8; n++) {
+			if (size == n)
+				break;
+			bb[n] = (byte) (x >> (8 * n));
 		}
 		return bb;
 	}
-	
+
 	/**
 	 * 从字节码转换成Long
-	 * @Title: bytesToLong
 	 * @return long value
+	 * @param bs byte[]
 	 */
 	public static long bytesToLong(byte[] bs) {
 		long rst = 0;
 		for (int n = 0; n < bs.length; n++) {
-			rst = rst<<8 | (bs[n]  & 0xff);
+			rst = rst << 8 | (bs[n] & 0xff);
 		}
 		return rst;
 	}
 
 	/**
-	 * @param buf
-	 * @param key
-	 * @return 判断buf中的开头字节是否匹配key中的所有字节 
+	 * @param buf buf
+	 * @param key key
+	 * @return 判断buf中的开头字节是否匹配key中的所有字节
 	 */
 	public static boolean matchStart(byte[] buf, byte[] key) {
-		if(key.length>buf.length){
+		if (key.length > buf.length) {
 			return false;
 		}
-		for(int i=0;i<key.length;i++){
-			if(buf[i]!=key[i]){
+		for (int i = 0; i < key.length; i++) {
+			if (buf[i] != key[i]) {
 				return false;
 			}
 		}
 		return true;
 	}
-	
+
 	/**
 	 * 将输入流中所有非[0-9a-fA-F]以外的字符全部丢弃，然后作为16进制文本，转换为原始的字节数组
-	 * @param input
-	 * @throws IOException
+	 * @param input input
+	 * @throws IOException If encounter IOException
 	 * @return byte[] value
 	 */
 	public static byte[] hexReader2byte(Reader input) throws IOException {
-		CharArrayWriter cw=new CharArrayWriter(512);
+		CharArrayWriter cw = new CharArrayWriter(512);
 		int c;
-		while((c=input.read())>-1){
-			if(c<48 || (c>57 && c<65) || (c>70 && c<97) || c>102){
-				continue;				
+		while ((c = input.read()) > -1) {
+			if (c < 48 || (c > 57 && c < 65) || (c > 70 && c < 97) || c > 102) {
+				continue;
 			}
-			cw.append((char)c);
+			cw.append((char) c);
 		}
 		return hex2byte(cw.toCharArray(), false);
 	}
-	
+
 	/**
 	 * 将二进制文本列表转换为字节数组
-	 * @param hexString
-	 * @param hasSpace
-	 * @throws IOException
+	 * @param hexString hexString
+	 * @param hasSpace hasSpace
+	 * @throws IOException If encounter IOException
 	 * @return byte[] value
 	 */
 	public static byte[] hex2byte(char[] hexString, boolean hasSpace) throws IOException {
@@ -298,14 +296,14 @@ public class ByteUtils {
 		}
 		return result;
 	}
+
 	/**
 	 * byte2hex的逆运算（有实际用处吗？） 实际使用可以用Byte Byte.parseByte("dd", 16);
-	 * 
-	 * @param hexString
-	 * @param hasSpace
+	 * @param hexString hexString
+	 * @param hasSpace hasSpace
 	 * @return 二进制数据
 	 */
-	public static byte[] hex2byte(CharSequence hexString, boolean hasSpace){
+	public static byte[] hex2byte(CharSequence hexString, boolean hasSpace) {
 		int len = hexString.length();
 		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
 		int count = 0;

@@ -20,12 +20,12 @@ public class SpringExceptionTranslator implements com.querydsl.sql.SQLExceptionT
 
     @Override
     public RuntimeException translate(String sql, List<Object> bindings, SQLException e) {
-        return translator.translate(null, sql, e);
+        return translator.translate("", sql, e);
     }
 
     @Override
     public RuntimeException translate(SQLException e) {
-        return translator.translate(null, null, e);
+        return translator.translate("", null, e);
     }
 
 }

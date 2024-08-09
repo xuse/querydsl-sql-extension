@@ -2,32 +2,32 @@ package com.github.xuse.querydsl.util;
 
 /**
  * 进制转换工具
- * 
+ *
  * Use {@link #encode(long)} {@link #encodeInt(int)} to convert a decimal number
  * to a N-module number. Use {@link #decodeInt(String)} {@link #decode(String)}
  * to convert the N-module number back to the decimal number
- * 
- * @author Joey
  *
+ * @author Joey
  */
 public enum Radix {
-	/**
-	 * 二进制
-	 */
-	D2("01".toCharArray(), 64),
 
 	/**
-	 * 三进制
+	 *  二进制
+	 */
+	D2("01".toCharArray(), 64),
+	/**
+	 *  三进制
 	 */
 	D3("012".toCharArray(), 40),
 	/**
-	 * 七进制
+	 *  七进制
 	 */
 	D7("0123456".toCharArray(), 30),
 	/**
-	 * 八进制
+	 *  八进制
 	 */
 	D8("01234567".toCharArray(), 21) {
+
 		@Override
 		protected void encode0(long num, StringBuilder sb) {
 			while (num >= scale) {
@@ -37,24 +37,25 @@ public enum Radix {
 			}
 			sb.append(codeTable[(int) num]);
 		}
-	},
+	}
+	,
 	/**
-	 * 九进制
+	 *  九进制
 	 */
 	D9("012345678".toCharArray(), 20),
 	/**
-	 * 10进制
+	 *  10进制
 	 */
 	D10("0123456789".toCharArray(), 19),
-
 	/**
-	 * 十进制中文
+	 *  十进制中文
 	 */
 	D10C("零一二三四五六七八九".toCharArray(), 19),
 	/**
-	 * 16进制
+	 *  16进制
 	 */
 	D16("0123456789ABCDEF".toCharArray(), 16) {
+
 		@Override
 		protected void encode0(long num, StringBuilder sb) {
 			while (num >= scale) {
@@ -64,21 +65,21 @@ public enum Radix {
 			}
 			sb.append(codeTable[(int) num]);
 		}
-	},
-	
+	}
+	,
 	/**
-	 * 36进制
+	 *  36进制
 	 */
 	D36("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray(), 14),
-	
 	/**
-	 * 62进制
+	 *  62进制
 	 */
 	D62("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray(), 12),
 	/**
-	 * 64进制
+	 *  64进制
 	 */
 	D64("$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".toCharArray(), 11) {
+
 		@Override
 		protected void encode0(long num, StringBuilder sb) {
 			while (num >= scale) {
@@ -88,46 +89,50 @@ public enum Radix {
 			}
 			sb.append(codeTable[(int) num]);
 		}
-	},
-
+	}
+	,
 	/**
-	 * 七十二进制
+	 *  七十二进制
 	 */
 	D72("$0123456789=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{}~".toCharArray(), 11),
+	/**
+	 *  八十四进制
+	 */
+	D84("!#$%&()*+.0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~".toCharArray(), 11);
 
 	/**
-	 * 八十四进制
-	 */
-	D84("!#$%&()*+.0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~".toCharArray(), 11),;
-	/**
-	 * 进制
+	 *  进制
 	 */
 	public final int scale;
+
 	/**
-	 * 码表
+	 *  码表
 	 */
 	final char[] codeTable;
+
 	/**
-	 * 转换乘方表，避免每次执行乘方运算
+	 *  转换乘方表，避免每次执行乘方运算
 	 */
 	private final long[] powTable;
 
 	/**
-	 * 字符码表是否符合编码顺序
+	 *  字符码表是否符合编码顺序
 	 */
 	private int codeAlgorithm = BINARY_SEARCH;
-	
+
 	private static final int FAST_CONVERT = 0;
+
 	private static final int BINARY_SEARCH = 1;
+
 	private static final int INDEXOF = 2;
 
 	/**
 	 * NOTE:乘方计算，不能用Math.pow()会丢失精度。 例如Math.pow(3,39) = {@code 4052555153018976256}
 	 * 正确结果为 {@code 4052555153018976267}
 	 * 这造成3进制和7进制等计算结果总是错误，直到反复核对才发现Math.pow对大整数的计算是不准确的。
-	 * 
-	 * @param base
-	 * @param pow
+	 *
+	 * @param base base
+	 * @param pow pow
 	 * @return 乘方结果
 	 */
 	public static long pow(long base, int pow) {
@@ -140,8 +145,9 @@ public enum Radix {
 
 	/**
 	 * 构造
-	 * 
-	 * @param cs
+	 *
+	 * @param cs cs
+	 * @param powerTableSize int
 	 */
 	Radix(char[] cs, int powerTableSize) {
 		this.scale = cs.length;
@@ -165,35 +171,34 @@ public enum Radix {
 				last = c;
 			}
 		}
-
 	}
 
 	/**
 	 * 按指定进制编码，带填充。（解码时无需去除填充字符）
-	 * @param num
+	 * @param num num
 	 * @param minDigit 最少字符位数，不足时会在字符前方填充该种编码下的‘0’字符
 	 * @return 编码后的数值表达
 	 */
-	public String encodeIntWithPadding(int num,int minDigit) {
+	public String encodeIntWithPadding(int num, int minDigit) {
 		if (num < 0) {
 			return encode(num + 0x0100000000L);
 		} else {
 			StringBuilder sb = new StringBuilder();
-			encode1(num,sb);
-			for(int i=sb.length();i<minDigit;i++) {
+			encode1(num, sb);
+			for (int i = sb.length(); i < minDigit; i++) {
 				sb.append(codeTable[0]);
 			}
 			return sb.reverse().toString();
 		}
 	}
-	
+
 	/**
 	 * 按指定进制编码，带填充。（解码时无需去除填充字符）
-	 * @param num
+	 * @param num num
 	 * @param minDigit 最少字符位数，不足时会在字符前方填充该种编码下的‘0’字符
 	 * @return 编码后的数值
 	 */
-	public String encodeWithPadding(long num,int minDigit) {
+	public String encodeWithPadding(long num, int minDigit) {
 		StringBuilder sb = new StringBuilder();
 		if (num < 0) {
 			encode0(-num, sb);
@@ -201,16 +206,16 @@ public enum Radix {
 		} else {
 			encode0(num, sb);
 		}
-		for(int i=sb.length();i<minDigit;i++) {
+		for (int i = sb.length(); i < minDigit; i++) {
 			sb.append(codeTable[0]);
 		}
 		return sb.reverse().toString();
 	}
-	
+
 	/**
 	 * 对int进行序列化 (支持负数)
-	 * 
-	 * @param num
+	 *
+	 * @param num num
 	 * @return 编码后的数值
 	 */
 	public String encodeInt(int num) {
@@ -218,14 +223,14 @@ public enum Radix {
 			return encode(num + 0x0100000000L);
 		} else {
 			StringBuilder sb = new StringBuilder();
-			encode1(num,sb);
+			encode1(num, sb);
 			return sb.reverse().toString();
 		}
 	}
 
 	/**
 	 * 解码为整数 (支持负数)
-	 * @param val
+	 * @param val val
 	 * @return 解码后数值
 	 */
 	public int decodeInt(String val) {
@@ -234,10 +239,10 @@ public enum Radix {
 	}
 
 	/**
-	 * 编码为指定的进制
-	 * 
-	 * @param num Long 型数字
-	 * @return 编码后进制字符串
+	 *  编码为指定的进制
+	 *
+	 *  @param num Long 型数字
+	 *  @return 编码后进制字符串
 	 */
 	public String encode(long num) {
 		StringBuilder sb = new StringBuilder();
@@ -251,10 +256,10 @@ public enum Radix {
 	}
 
 	/**
-	 * 62进制字符串转为数字
+	 *  62进制字符串转为数字
 	 *
-	 * @param str 编码后的62进制字符串
-	 * @return 解码后的 10 进制字符串
+	 *  @param str 编码后的62进制字符串
+	 *  @return 解码后的 10 进制字符串
 	 */
 	public long decode(String str) {
 		if (str == null || str.isEmpty()) {
@@ -269,24 +274,25 @@ public enum Radix {
 		int len = str.length();
 		long num = 0;
 		switch(codeAlgorithm) {
-		case FAST_CONVERT:
-			for (int i = begin; i < len; i++) {
-				int index = str.charAt(i) - 48;
-				num += index * powTable[len - i - 1];
-			}
-			break;
-		case BINARY_SEARCH:
-			for (int i = begin; i < len; i++) {
-				int index = binarySearch(str.charAt(i));
-				num += index * powTable[len - i - 1];
-			};
-			break;
-		case INDEXOF:
-			for (int i = begin; i < len; i++) {
-				int index = indexOf(str.charAt(i));
-				num += index * powTable[len - i - 1];
-			}
-			break;
+			case FAST_CONVERT:
+				for (int i = begin; i < len; i++) {
+					int index = str.charAt(i) - 48;
+					num += index * powTable[len - i - 1];
+				}
+				break;
+			case BINARY_SEARCH:
+				for (int i = begin; i < len; i++) {
+					int index = binarySearch(str.charAt(i));
+					num += index * powTable[len - i - 1];
+				}
+				;
+				break;
+			case INDEXOF:
+				for (int i = begin; i < len; i++) {
+					int index = indexOf(str.charAt(i));
+					num += index * powTable[len - i - 1];
+				}
+				break;
 		}
 		return num;
 	}
@@ -302,7 +308,7 @@ public enum Radix {
 		}
 		sb.append(codeTable[(int) num]);
 	}
-	
+
 	protected void encode1(int num, StringBuilder sb) {
 		while (num >= scale) {
 			int num1 = num / scale;
@@ -314,9 +320,9 @@ public enum Radix {
 
 	/**
 	 * 对于无序码表，遍历查找
-	 * 
-	 * @param charAt
-	 * @return
+	 *
+	 * @param charAt charAt
+	 * @return int
 	 */
 	private int indexOf(char charAt) {
 		for (int i = 0; i < scale; i++) {
@@ -329,9 +335,9 @@ public enum Radix {
 
 	/**
 	 * 对于有序码表，二分法查找 对于10以内的数字，其实最快的还是char-48。
-	 * 
-	 * @param charAt
-	 * @return
+	 *
+	 * @param charAt charAt
+	 * @return int
 	 */
 	private int binarySearch(char charAt) {
 		int min = 0;
@@ -349,12 +355,4 @@ public enum Radix {
 		}
 		return -1;
 	}
-
-	public static void main(String[] args) {
-		System.out.println(D36.encodeIntWithPadding(38,3));
-		System.out.println(D36.decode("2R"));
-		System.out.println(D84.encodeIntWithPadding(72,3));
-		System.out.println(D84.decode("!!s"));
-	}
-
 }

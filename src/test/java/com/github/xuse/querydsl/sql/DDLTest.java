@@ -1,14 +1,17 @@
 package com.github.xuse.querydsl.sql;
 
+import java.sql.Types;
 import java.util.Collection;
 
 import org.junit.Test;
 
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
+import com.github.xuse.querydsl.entity.QCaAsset;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.querydsl.sql.ColumnMetadata;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,6 +49,15 @@ public class DDLTest extends AbstractTestBase {
 	}
 	
 	@Test
+	public void testDropCreate() {
+		QCaAsset t=QCaAsset.caAsset;
+		SQLMetadataQueryFactory metaFactory = factory.getMetadataFactory();
+		metaFactory.dropTable(t).ifExists(true).execute();
+		metaFactory.createTable(t).execute();
+	}
+	
+	
+	@Test
 	public void testGetIndexConstraint() {
 		SQLMetadataQueryFactory metaFactory = factory.getMetadataFactory();
 		
@@ -58,7 +70,7 @@ public class DDLTest extends AbstractTestBase {
 		for(Constraint c:cs) {
 			log.info("constraint:{}",c);
 		}
-		Collection<Constraint> is = metaFactory.getIndecies(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> is = metaFactory.getIndices(QAaa.aaa.getSchemaAndTable());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
 		}
@@ -86,7 +98,7 @@ public class DDLTest extends AbstractTestBase {
 		for(Constraint c:cs) {
 			log.info("constraint:{}",c);
 		}
-		Collection<Constraint> is = metadata.getIndecies(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> is = metadata.getIndices(QAaa.aaa.getSchemaAndTable());
 		System.out.println(is.size());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
@@ -105,8 +117,18 @@ public class DDLTest extends AbstractTestBase {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 		metadata.refreshTable(QAaa.aaa)
 			.removeConstraintOrIndex("unq_${table}_name_version")
+			.addColumn(
+					ColumnMetadata.named("new_column").ofType(Types.VARCHAR).withSize(64).notNull(), String.class).defaultValue("").build()
 			.dropConstraint(true)
-			.simulate(true)
+			.execute();
+	}
+	
+	@Test
+	public void testCreateIndex() {
+		QCaAsset t=QCaAsset.caAsset;
+		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+		metadata.refreshTable(QAaa.aaa)
+			.createIndex("idx_foo_gender", t.gender)
 			.execute();
 	}
 }
