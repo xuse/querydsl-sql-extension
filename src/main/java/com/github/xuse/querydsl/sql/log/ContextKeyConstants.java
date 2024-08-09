@@ -22,5 +22,9 @@ public interface ContextKeyConstants {
 	 */
 	String SLOW_SQL="SLOW";
 	
+	/**
+	 * 达到请求的maxRows上限
+	 */
+	String EXCEED="EXCEED";
 	
 }

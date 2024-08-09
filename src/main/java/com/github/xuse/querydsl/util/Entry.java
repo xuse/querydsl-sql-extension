@@ -1,5 +1,5 @@
 /*
- * JEF - Copyright 2009-2010 Jiyi (mr.jiyi@gmail.com)
+ * querydsl-sql-extension - Copyright 2017-2024 Joey (mr.jiyi@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,16 @@ import java.util.Objects;
 
 /**
  * 描述由两个值构成的值对
- * 
- * @param <K>
- * @param <V>
+ *
+ * @param <K> type of key.
+ * @param <V> type of value.
  */
 public class Entry<K, V> implements Serializable, java.util.Map.Entry<K, V> {
+
 	private static final long serialVersionUID = 2805658306682403737L;
+
 	private K key;
+
 	private V value;
 
 	public String toString() {
@@ -55,7 +58,7 @@ public class Entry<K, V> implements Serializable, java.util.Map.Entry<K, V> {
 	}
 
 	public Entry() {
-	};
+	}
 
 	public Entry(K k, V v) {
 		this.key = k;

@@ -4,7 +4,7 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 
 /**
  * 写入数据库时给一些字段自动赋值。
- * @author jiyi
+ * @author Joey
  *
  */
 public enum GeneratedType {
@@ -26,7 +26,7 @@ public enum GeneratedType {
 	GUID32,
 	/**
 	 * 基于SnowFlake算法生成唯一标识。
-	 * 该算法需要为系统分配workerID，否则无法正常使用。<p/>
+	 * 该算法需要为系统分配workerID，否则无法正常使用。
 	 * 参见  {@link ConfigurationEx#initSnowflake(int, int)}
 	 * 注意workerId必须确保分布式环境中的每台主机都不同。
 	 */

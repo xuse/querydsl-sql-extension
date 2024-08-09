@@ -24,15 +24,10 @@ import org.slf4j.LoggerFactory;
 
 public class UnmanagedConnection implements Connection {
 	protected final Connection conn;
-	private static Logger LOG = LoggerFactory.getLogger(UnmanagedConnection.class);
+	private static final Logger LOG = LoggerFactory.getLogger(UnmanagedConnection.class);
 
 	protected UnmanagedConnection(Connection conn) {
 		this.conn = conn;
-		try {
-			conn.setAutoCommit(true);
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
 		LOG.debug("UnmanagedConnection created, {}", conn);
 	}
 

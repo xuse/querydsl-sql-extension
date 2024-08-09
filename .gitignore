@@ -1,6 +1,7 @@
 *.class
 target/
 .idea
+.svn
 .settings
 .project
 .classpath

@@ -7,8 +7,12 @@ import static com.github.xuse.querydsl.util.ASMUtils.getType;
 import static com.github.xuse.querydsl.util.ASMUtils.iconst;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +21,18 @@ import com.github.xuse.querydsl.asm.ClassWriter;
 import com.github.xuse.querydsl.asm.MethodVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
 import com.github.xuse.querydsl.util.ASMUtils;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.TypeUtils;
+import com.mysema.commons.lang.Pair;
 
 /**
  * To generate {@link BeanCodec} class with ASM.
  * 
- * @author jiyi
+ * Do not support Android and GraalVM.
+ * 
+ * @author Joey
  *
  */
 public class CodecClassGenerator implements Opcodes {
@@ -35,12 +44,12 @@ public class CodecClassGenerator implements Opcodes {
 
 	private static final String PARENT_CLASS = getType(BeanCodec.class);
 	private static final Logger log = LoggerFactory.getLogger(CodecClassGenerator.class);
-	private boolean debug = false;
+	private final boolean debug = false;
 
-	public Class<?> generate(Class<?> beanType, List<FieldProperty> methods, String clzName) {
+	public Class<?> generate(Class<?> beanType, List<FieldProperty> methods, String clzName, boolean record) {
 		clzName = clzName.replace('.', '_');
 		try {
-			byte[] data = generate0(beanType, methods, clzName);
+			byte[] data = generate0(beanType, methods, clzName,record);
 			if (debug) {
 				File file = new File(System.getProperty("user.dir"), clzName + ".class");
 				IOUtils.saveAsFile(file, data);
@@ -54,12 +63,12 @@ public class CodecClassGenerator implements Opcodes {
 			return null;
 		}
 	}
+	
 
-	private byte[] generate0(Class<?> beanType, List<FieldProperty> methods, String clzName) {
+	private byte[] generate0(Class<?> beanType, List<FieldProperty> methods, String clzName, boolean record) {
 		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-		cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, clzName, null, PARENT_CLASS, new String[] {});
+		cw.visit(V1_8, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, clzName, null, PARENT_CLASS, new String[] {});
 		
-		// Contructor
 		{
 			MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
 			mw.visitVarInsn(ALOAD, 0);
@@ -68,51 +77,14 @@ public class CodecClassGenerator implements Opcodes {
 			mw.visitMaxs(1, 1);
 			mw.visitEnd();
 		}
-		{
-			MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "newInstance", getMethodDesc(Object.class, Object[].class),
-					null, null);
-			mw.visitTypeInsn(NEW, getType(beanType));// S1
-			try {
-				// 运行空构造方法
-				if (beanType.getDeclaredConstructor() != null) {
-					mw.visitInsn(DUP);
-					mw.visitMethodInsn(INVOKESPECIAL, getType(beanType), "<init>", "()V", false);
-				}
-			} catch (SecurityException e) {
-				e.printStackTrace();
-			} catch (NoSuchMethodException e) {
-				e.printStackTrace();
+		if(record){
+			try{
+				generateRecordInstance(beanType,cw,methods);
+			}catch(Exception e) {
+				throw Exceptions.toRuntime(e);
 			}
-			mw.visitVarInsn(ASTORE, 2);// 创建对象并存入 S0
-
-			int index = 0;
-			for (FieldProperty property : methods) {
-				Method setter = property.getSetter();
-				if (setter == null) {
-					// 轮空
-					index++;
-					continue;
-				}
-				mw.visitVarInsn(ALOAD, 2);// S1
-				mw.visitVarInsn(ALOAD, 1);// S2
-				iconst(mw, index++);// S3
-				mw.visitInsn(AALOAD);// S2
-				// 类型转换
-				Class<?> target = setter.getParameterTypes()[0];
-				if (target.isPrimitive()) {
-					Class<?> wrapped = Primitives.toWrapperClass(target);
-					mw.visitTypeInsn(CHECKCAST, getType(wrapped));// 类型转换
-					doUnwrap(mw, target, wrapped); // 拆箱
-				} else {
-					mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换
-				}
-				mw.visitMethodInsn(INVOKEVIRTUAL, getType(beanType), setter.getName(), getDesc(setter), false);
-			}
-
-			mw.visitVarInsn(ALOAD, 2);// 创建对象并存入 S0
-			mw.visitInsn(ARETURN);
-			mw.visitMaxs(3, 3);
-			mw.visitEnd();
+		}else{
+			generateInstance(beanType,cw,methods);
 		}
 		{
 			// 生成values方法
@@ -142,7 +114,7 @@ public class CodecClassGenerator implements Opcodes {
 
 				Class<?> target = getter.getReturnType();
 				if (target.isPrimitive()) {
-					ASMUtils.doWrap(mw, target);
+					ASMUtils.doWrap(mw, target, Primitives.toWrapperClass(target));
 				}
 				mw.visitInsn(AASTORE); // 写入数组,S0
 			}
@@ -155,5 +127,183 @@ public class CodecClassGenerator implements Opcodes {
 		}
 		cw.visitEnd();
 		return cw.toByteArray();
+	}
+
+	private void generateRecordInstance(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) throws NoSuchFieldException, SecurityException {
+		MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "newInstance", getMethodDesc(Object.class, Object[].class),
+				null, null);
+		mw.visitTypeInsn(NEW, getType(beanType));// S1 用于返回的栈底
+		mw.visitInsn(DUP);//S2 用于调用构造器
+		
+		//按构造器顺序重新计算属性位置
+		String[] names = TypeUtils.getRecordFieldNames(beanType);
+		Map<String,Pair<Integer,FieldProperty>> map=new HashMap<>();
+		for(int i=0;i<methods.size();i++) {
+			FieldProperty f=methods.get(i);
+			Pair<Integer,FieldProperty> entry=new Pair<>(i,f);
+			map.put(f.getName(),entry);
+		}
+		
+		List<Pair<Integer,FieldProperty>> exprs=new ArrayList<>();
+		for (String name:names) {
+			Pair<Integer,FieldProperty> entry=map.get(name);
+			if(entry==null) {
+				//本次没有查询该字段，需要生成一个默认值入栈
+				Field field=beanType.getDeclaredField(name);
+				exprs.add(new Pair<>(-1, new FieldProperty(null, null, field)));
+			}else {
+				exprs.add(entry);
+			}
+		}
+		//正式开始
+		StringBuilder sb=new StringBuilder();
+		
+		for(Pair<Integer,FieldProperty> entry:exprs) {
+			int index=entry.getFirst();
+			FieldProperty property=entry.getSecond();
+			Class<?> target=property.getField().getType();
+			//生成构造器签名
+			sb.append(getDesc(target));
+			
+			//准备栈上参数
+			if(index<0) {
+				pushDefaultValueOnStack(mw, entry.getSecond().getField());
+			}else {
+				//目标类型
+				mw.visitVarInsn(ALOAD, 1);//读取V1，即数组
+				iconst(mw, index);
+				mw.visitInsn(AALOAD);// 读出数据
+				
+				// 类型转换
+				if (target.isPrimitive()) {
+					Class<?> wrapped = Primitives.toWrapperClass(target);
+					boolean primitive = tryTypeConvert(mw, wrapped, property.getBindingType());
+					if(!primitive) {
+						doUnwrap(mw, target, wrapped); // 拆箱
+					}
+				} else {
+					boolean primitive=tryTypeConvert(mw,target, property.getBindingType());
+					if(primitive) {
+						ASMUtils.doWrap(mw, Primitives.toPrimitiveClass(target), target);
+					}
+				}
+				//数据丢在栈上，最后调用构造器的时候用
+			}
+		}
+		
+		//栈数据准备完成，调用构造器
+		mw.visitMethodInsn(INVOKESPECIAL, getType(beanType), "<init>", "("+sb+")V", false);
+		
+		//最初构造的对象还在栈底，直接return即可
+		mw.visitInsn(ARETURN);
+		mw.visitMaxs(exprs.size() + 2, 1); //栈长度计算，2（this） + 最大参数个数
+		mw.visitEnd();
+	}
+
+
+	private void pushDefaultValueOnStack(MethodVisitor mw,Field declaredField) {
+		Class<?> type=declaredField.getType();
+		if(type.isPrimitive()) {
+			String s=declaredField.getName();
+			switch(s.length()+s.charAt(0)) {
+				case 112://long
+					mw.visitInsn(Opcodes.LCONST_0);
+					break;
+				case 106://double
+					mw.visitInsn(Opcodes.DCONST_0);
+					break;
+				case 107://float
+					mw.visitInsn(Opcodes.FCONST_0);
+					break;
+				case 108://int
+				case 105://boolean
+				case 103://char
+				case 102://byte
+				default://short
+					mw.visitInsn(Opcodes.ICONST_0);
+			}
+		}else {
+			//在栈上塞一个null
+			mw.visitInsn(Opcodes.ACONST_NULL);
+		}
+	}
+
+
+	private void generateInstance(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) {
+		MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "newInstance", getMethodDesc(Object.class, Object[].class), null,
+				null);
+		mw.visitTypeInsn(NEW, getType(beanType));// S1
+		// 运行空构造方法
+		if (TypeUtils.getDeclaredConstructor(beanType) != null) {
+			mw.visitInsn(DUP);
+			mw.visitMethodInsn(INVOKESPECIAL, getType(beanType), "<init>", "()V", false);
+		}
+		mw.visitVarInsn(ASTORE, 2);// 存入 V2
+		int index = 0;
+		for (FieldProperty property : methods) {
+			Method setter = property.getSetter();
+			if (setter == null) {
+				// 轮空
+				index++;
+				continue;
+			}
+			mw.visitVarInsn(ALOAD, 2);// S1
+			mw.visitVarInsn(ALOAD, 1);// S2, 读取V1，即数组
+			iconst(mw, index++);// S3
+			mw.visitInsn(AALOAD);// S2
+			// 类型转换
+			Class<?> target = setter.getParameterTypes()[0];
+			if (target.isPrimitive()) {
+				Class<?> wrapped = Primitives.toWrapperClass(target);
+				boolean primitive = tryTypeConvert(mw, wrapped, property.getBindingType());
+				if (!primitive) {
+					doUnwrap(mw, target, wrapped); // 拆箱
+				}
+			} else {
+				boolean primitive = tryTypeConvert(mw, target, property.getBindingType());
+				if (primitive) {
+					ASMUtils.doWrap(mw, Primitives.toPrimitiveClass(target), target);
+				}
+			}
+			mw.visitMethodInsn(INVOKEVIRTUAL, getType(beanType), setter.getName(), getDesc(setter), false);
+		}
+
+		mw.visitVarInsn(ALOAD, 2);// 创建对象并存入 S0
+		mw.visitInsn(ARETURN);
+		mw.visitMaxs(3, 3);
+		mw.visitEnd();
+	}
+
+
+	private boolean tryTypeConvert(MethodVisitor mw, Class<?> target, Class<?> bindingType) {
+		if(bindingType == null || target.isAssignableFrom(bindingType)) {
+			mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换	
+			return false;
+		}
+		if(Number.class.isAssignableFrom(bindingType) && Number.class.isAssignableFrom(target)) {
+			//基于Number的方式进行特殊拆箱
+			mw.visitTypeInsn(CHECKCAST, getType(Number.class));
+			switch(target.getName()) {
+			case "java.lang.Integer":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "intValue", "()I", false);
+				return true;
+			case "java.lang.Double":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "doubleValue", "()D", false);
+				return true;
+			case "java.lang.Float":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "floatValue", "()F", false);
+				return true;
+			case "java.lang.Long":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "longValue", "()J", false);
+				return true;
+			case "java.lang.Short":
+				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "shortValue", "()S", false);
+				return true;
+			default:
+				throw Exceptions.illegalState("Can not generate unbox method for type {} -> {}", bindingType,target);
+			}
+		}
+		mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换
+		return false;
 	}
 }

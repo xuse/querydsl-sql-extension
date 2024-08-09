@@ -7,7 +7,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
@@ -15,19 +14,18 @@ import org.slf4j.helpers.MessageFormatter;
 
 /**
  * 异常处理工具
- * 
- * @author jiyi
  *
+ * @author Joey
  */
 public class Exceptions {
 
 	/**
 	 * 重试执行指定的函数（出现异常后继续重试）
-	 * 
 	 * @param invokeCount 重试次数
 	 * @param input       入参
 	 * @param retryInvoke 重试函数
 	 * @return 成功与否
+	 * @param <T> The type of target object.
 	 */
 	public static <T> boolean retryIgnoreException(int invokeCount, T input, Predicate<T> retryInvoke) {
 		for (int i = 0; i < invokeCount; i++) {
@@ -44,10 +42,10 @@ public class Exceptions {
 
 	/**
 	 * 重试执行指定的函数（出现异常后继续重试）
-	 * 
 	 * @param invokeCount 重试次数
 	 * @param retryInvoke 重试函数
 	 * @return 成功与否
+	 * @param <T> The type of target object.
 	 */
 	public static <T> boolean retryIgnoreException(int invokeCount, BooleanSupplier retryInvoke) {
 		for (int i = 0; i < invokeCount; i++) {
@@ -64,11 +62,11 @@ public class Exceptions {
 
 	/**
 	 * 重试执行指定的函数（会被异常所打断并抛出异常）
-	 * 
 	 * @param invokeCount 重试次数
 	 * @param input       入参
 	 * @param retryInvoke 重试函数
 	 * @return 成功与否
+	 * @param <T> The type of target object.
 	 */
 	public static <T> boolean retry(int invokeCount, T input, Predicate<T> retryInvoke) {
 		for (int i = 0; i < invokeCount; i++) {
@@ -81,10 +79,10 @@ public class Exceptions {
 
 	/**
 	 * 重试执行指定的函数（会被异常所打断并抛出异常）
-	 * 
 	 * @param invokeCount 重试次数
 	 * @param retryInvoke 重试函数
 	 * @return 成功与否
+	 * @param <T> The type of target object.
 	 */
 	public static <T> boolean retry(int invokeCount, BooleanSupplier retryInvoke) {
 		for (int i = 0; i < invokeCount; i++) {
@@ -97,11 +95,12 @@ public class Exceptions {
 
 	/**
 	 * 执行指定的函数，当出现异常时返回默认值
-	 * 
 	 * @param function     函数
 	 * @param s            参数
 	 * @param defaultValue 默认值
 	 * @return 函数结果，或默认值
+	 * @param <S> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <S, T> T apply(Function<S, T> function, S s, T defaultValue) {
 		try {
@@ -114,12 +113,14 @@ public class Exceptions {
 
 	/**
 	 * 执行指定的函数，当出现异常时返回默认值
-	 * 
 	 * @param function     函数
 	 * @param p1           参数1
 	 * @param p2           参数2
 	 * @param defaultValue 默认值
 	 * @return 函数结果，或默认值
+	 * @param <P1> The type of target object.
+	 * @param <P2> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <P1, P2, T> T apply(BiFunction<P1, P2, T> function, P1 p1, P2 p2, T defaultValue) {
 		try {
@@ -132,10 +133,10 @@ public class Exceptions {
 
 	/**
 	 * 执行指定的函数，当出现异常时返回默认值
-	 * 
 	 * @param function     函数
 	 * @param defaultValue 默认值
 	 * @return 函数结果，或默认值
+	 * @param <T> The type of target object.
 	 */
 	public static <T> T apply(Supplier<T> function, T defaultValue) {
 		try {
@@ -148,11 +149,12 @@ public class Exceptions {
 
 	/**
 	 * 执行指定的函数，当出现异常或执行结果为null时返回默认值
-	 * 
 	 * @param function     函数
 	 * @param s            参数
 	 * @param defaultValue 默认值
 	 * @return 函数结果，或默认值
+	 * @param <S> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <S, T> T applyNotNull(Function<S, T> function, S s, T defaultValue) {
 		try {
@@ -166,12 +168,14 @@ public class Exceptions {
 
 	/**
 	 * 执行指定的函数，当出现异常或执行结果为null时返回默认值
-	 * 
 	 * @param function     函数
 	 * @param p1           参数1
 	 * @param p2           参数2
 	 * @param defaultValue 默认值
 	 * @return 函数结果，或默认值
+	 * @param <P1> The type of target object.
+	 * @param <P2> The type of target object.
+	 * @param <T> The type of target object.
 	 */
 	public static <P1, P2, T> T applyNotNull(BiFunction<P1, P2, T> function, P1 p1, P2 p2, T defaultValue) {
 		try {
@@ -185,10 +189,10 @@ public class Exceptions {
 
 	/**
 	 * 执行指定的函数，当出现异常或执行结果为null时返回默认值
-	 * 
 	 * @param function     函数
 	 * @param defaultValue 默认值
 	 * @return 函数结果，或默认值
+	 * @param <T> The type of target object.
 	 */
 	public static <T> T applyNotNull(Supplier<T> function, T defaultValue) {
 		try {
@@ -203,6 +207,7 @@ public class Exceptions {
 	protected static final Logger log = LoggerFactory.getLogger(Exceptions.class);
 
 	public static final class WrapException extends RuntimeException {
+
 		private static final long serialVersionUID = -9058355728108119655L;
 
 		WrapException(Throwable t) {
@@ -213,14 +218,12 @@ public class Exceptions {
 		public synchronized Throwable fillInStackTrace() {
 			return this;
 		}
-
 	}
 
 	/**
 	 * 将指定的异常封装为IllegalArgumentException
-	 * 
-	 * @param t
-	 * @return
+	 * @param t t
+	 * @return IllegalArgumentException
 	 */
 	public static IllegalArgumentException asIllegalArgument(Throwable t) {
 		return illegalArgument(t, true);
@@ -228,9 +231,8 @@ public class Exceptions {
 
 	/**
 	 * 将异常转换为RuntimeException
-	 * 
-	 * @param t
-	 * @return
+	 * @param t t
+	 * @return RuntimeException
 	 */
 	public static RuntimeException toRuntime(Throwable t) {
 		if (t instanceof RuntimeException) {
@@ -244,23 +246,21 @@ public class Exceptions {
 
 	/**
 	 * 使用slf4j的机制来生成异常信息
-	 * 
-	 * @param message
-	 * @param objects
-	 * @return
+	 * @param message message
+	 * @param objects objects
+	 * @return {@link IllegalArgumentException}
 	 */
 	public static IllegalArgumentException illegalArgument(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
-		return f.getThrowable() == null ? new IllegalArgumentException(f.getMessage())
-				: new IllegalArgumentException(f.getMessage(), f.getThrowable());
-	};
+		return f.getThrowable() == null ? new IllegalArgumentException(f.getMessage()) : new IllegalArgumentException(f.getMessage(), f.getThrowable());
+	}
 
 	/**
-	 * 转封装为IllegalArgumentException
-	 * 
-	 * @param t                 异常
-	 * @param allowOtherRuntime true则允许抛出其他RuntimeException.
-	 * @return IllegalArgumentException
+	 *  转封装为IllegalArgumentException
+	 *
+	 *  @param t                 异常
+	 *  @param allowOtherRuntime true则允许抛出其他RuntimeException.
+	 *  @return IllegalArgumentException
 	 */
 	public static IllegalArgumentException illegalArgument(Throwable t, boolean allowOtherRuntime) {
 		if (t instanceof IllegalArgumentException) {
@@ -274,21 +274,21 @@ public class Exceptions {
 	}
 
 	/**
-	 * 转封装为IllegalStateException
-	 * 
-	 * @param t 异常
-	 * @return IllegalStateException
+	 *  转封装为IllegalStateException
+	 *
+	 *  @param t 异常
+	 *  @return IllegalStateException
 	 */
 	public static IllegalStateException illegalState(Throwable t) {
 		return illegalState(t, true);
 	}
 
 	/**
-	 * 转封装为IllegalStateException
-	 * 
-	 * @param t                 异常
-	 * @param allowOtherRuntime true则允许抛出其他RuntimeException.
-	 * @return IllegalStateException
+	 *  转封装为IllegalStateException
+	 *
+	 *  @param t                 异常
+	 *  @param allowOtherRuntime true则允许抛出其他RuntimeException.
+	 *  @return IllegalStateException
 	 */
 	public static IllegalStateException illegalState(Throwable t, boolean allowOtherRuntime) {
 		if (t instanceof IllegalStateException) {
@@ -303,22 +303,19 @@ public class Exceptions {
 
 	/**
 	 * 使用slf4j的机制来生成异常信息
-	 * 
-	 * @param message
-	 * @param objects
-	 * @return
+	 * @param message message
+	 * @param objects objects
+	 * @return {@link IllegalStateException}
 	 */
 	public static IllegalStateException illegalState(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
-		return f.getThrowable() == null ? new IllegalStateException(f.getMessage())
-				: new IllegalStateException(f.getMessage(), f.getThrowable());
-	};
+		return f.getThrowable() == null ? new IllegalStateException(f.getMessage()) : new IllegalStateException(f.getMessage(), f.getThrowable());
+	}
 
 	/**
 	 * 使用slf4j的机制来生成异常信息
-	 * 
-	 * @param message
-	 * @param objects
+	 * @param message message
+	 * @param objects objects
 	 * @return NoSuchElementException
 	 */
 	public static NoSuchElementException noSuchElement(String message, Object... objects) {
@@ -328,9 +325,8 @@ public class Exceptions {
 
 	/**
 	 * 使用slf4j的机制来生成异常信息
-	 * 
-	 * @param message
-	 * @param objects
+	 * @param message message
+	 * @param objects objects
 	 * @return IndexOutOfBoundsException
 	 */
 	public static IndexOutOfBoundsException indexOutOfBounds(String message, Object... objects) {
@@ -340,9 +336,8 @@ public class Exceptions {
 
 	/**
 	 * 使用slf4j的机制来生成异常信息
-	 * 
-	 * @param message
-	 * @param objects
+	 * @param message message
+	 * @param objects objects
 	 * @return UnsupportedOperationException
 	 */
 	public static UnsupportedOperationException unsupportedOperation(String message, Object... objects) {
@@ -352,10 +347,9 @@ public class Exceptions {
 
 	/**
 	 * 进行消息格式化
-	 * 
-	 * @param message
-	 * @param objects
-	 * @return
+	 * @param message message
+	 * @param objects objects
+	 * @return formatted String
 	 */
 	public static String format(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);

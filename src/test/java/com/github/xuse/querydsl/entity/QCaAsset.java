@@ -1,6 +1,6 @@
 package com.github.xuse.querydsl.entity;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.Map;
 
 import com.github.xuse.querydsl.enums.Gender;
@@ -15,13 +15,15 @@ import com.querydsl.core.types.dsl.StringPath;
 public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
 	private static final long serialVersionUID = -1972906214968601009L;
 
-	public static final QAaa aaa = new QAaa("asset");
+	public static final QCaAsset caAsset = new QCaAsset("as");
 	
 	public final NumberPath<Integer> id = createNumber("id", int.class);
 
+	public final StringPath code = createString("code");
+	
 	public final StringPath name = createString("name");
 	
-	public final StringPath code = createString("code");
+	public final StringPath content = createString("content");
 
 	public final DateTimePath<Date> created = createDateTime("created", Date.class);
 	
@@ -32,9 +34,10 @@ public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
 	public final SimplePath<Aaa> ext = createSimple("ext", Aaa.class);
 	
 	public final SimplePath<Map<String,String>> map = createSimple("map", Map.class);
+	
 
 	public QCaAsset(String variable) {
-		super(CaAsset.class, PathMetadataFactory.forVariable(variable), "APP", "CA_ASSET");
+		super(CaAsset.class, PathMetadataFactory.forVariable(variable), "null", "CA_ASSET");
 		super.scanClassMetadata();
 	}
 }

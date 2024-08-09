@@ -5,8 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import org.springframework.util.StringUtils;
-
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.types.AbstractType;
 
 /**

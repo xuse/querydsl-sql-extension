@@ -17,7 +17,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,45 +27,43 @@ import com.querydsl.sql.types.AbstractType;
 
 /**
  * {@code EnumByCodeType} maps Enum types to their Integer ordinals on the JDBC level
- *
  * @author tiwe
- *
- * @param <T>
+ * @param <T> type of target
  */
 public class EnumByCodeType<T extends Enum<T> & CodeEnum<T>> extends AbstractType<T> {
-    private final Class<T> type;
-    private final Map<Integer,T> index=new HashMap<>();
-    
-    private static final Logger log=LoggerFactory.getLogger(EnumByCodeType.class);
 
-    public EnumByCodeType(Class<T> type) {
-        this(Types.INTEGER, type);
-    }
+	private final Class<T> type;
 
-    public EnumByCodeType(int jdbcType, Class<T> type) {
-        super(jdbcType);
-        this.type = type;
-        for(T et: Arrays.asList(type.getEnumConstants())) {
-//        	@SuppressWarnings("unchecked")
-//			T t=(T)et;
-        	index.put(et.getCode(), et);
-        }
-    }
+	private final Map<Integer, T> index = new HashMap<>();
 
-    @Override
-    public Class<T> getReturnedClass() {
-        return type;
-    }
+	@SuppressWarnings("unused")
+	private static final Logger log = LoggerFactory.getLogger(EnumByCodeType.class);
 
-    @Override
-    public T getValue(ResultSet rs, int startIndex) throws SQLException {
-        int code = rs.getInt(startIndex);
-        return rs.wasNull() ? null : index.get(code);
-    }
+	public EnumByCodeType(Class<T> type) {
+		this(Types.INTEGER, type);
+	}
 
-    @Override
-    public void setValue(PreparedStatement st, int startIndex, T value) throws SQLException {
-        st.setInt(startIndex, value.getCode());
-        //log.info("set value for ({})={}",startIndex,value.getCode());
-    }
+	public EnumByCodeType(int jdbcType, Class<T> type) {
+		super(jdbcType);
+		this.type = type;
+		for (T et : type.getEnumConstants()) {
+			index.put(et.getCode(), et);
+		}
+	}
+
+	@Override
+	public Class<T> getReturnedClass() {
+		return type;
+	}
+
+	@Override
+	public T getValue(ResultSet rs, int startIndex) throws SQLException {
+		int code = rs.getInt(startIndex);
+		return rs.wasNull() ? null : index.get(code);
+	}
+
+	@Override
+	public void setValue(PreparedStatement st, int startIndex, T value) throws SQLException {
+		st.setInt(startIndex, value.getCode());
+	}
 }

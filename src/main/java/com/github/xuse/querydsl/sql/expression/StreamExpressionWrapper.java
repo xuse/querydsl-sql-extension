@@ -13,7 +13,7 @@ public class StreamExpressionWrapper<T, K> extends ExpressionBase<K> implements 
 	private static final long serialVersionUID = -90942587064687950L;
 
 	private final FactoryExpression<T> expr;
-	private Function<T, K> function;
+	private final Function<T, K> function;
 
 	public StreamExpressionWrapper(FactoryExpression<T> expr, Function<T, K> function, Class<K> clz) {
 		super(clz);
@@ -21,7 +21,7 @@ public class StreamExpressionWrapper<T, K> extends ExpressionBase<K> implements 
 		this.expr = expr;
 		this.function = function;
 	}
-
+	
 	@Override
 	public List<Expression<?>> getArgs() {
 		return expr.getArgs();

@@ -1,7 +1,5 @@
 package com.github.xuse.querydsl.enums;
 
-import org.springframework.expression.spel.ast.OpDec;
-
 import com.github.xuse.querydsl.types.CodeEnum;
 
 public enum Gender implements CodeEnum<Gender>{
@@ -11,5 +9,9 @@ public enum Gender implements CodeEnum<Gender>{
 	@Override
 	public int getCode() {
 		return ordinal();
+	}
+	
+	
+	public static void main(String[] args) {
 	}
 }

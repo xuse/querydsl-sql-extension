@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.springframework.util.Assert;
 
 /**
- * 10进制、62进制互转 edited by zhibo on 2015/05/21.
+ * 10进制、62进制互转
  */
 public class DigitBaseTest {
 	@Test
@@ -56,6 +56,7 @@ public class DigitBaseTest {
 		System.out.println(System.nanoTime() - time);
 		
 		time = System.nanoTime();
+		@SuppressWarnings("unused")
 		String s;
 		for (int i = 0; i < 100000; i++) {
 			s=Integer.toHexString(i);

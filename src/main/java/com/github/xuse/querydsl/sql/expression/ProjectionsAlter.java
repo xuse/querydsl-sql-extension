@@ -4,8 +4,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-import com.github.xuse.querydsl.sql.IRelationPathEx;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
@@ -15,22 +16,24 @@ import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
 
-	private static final Map<CackeKey, QBeanEx<?>> CACHE = new ConcurrentHashMap<>();
+	private static final Map<CacheKey, QBeanEx<?>> CACHE = new ConcurrentHashMap<>();
 
-	final static class CackeKey {
+	private static final class CacheKey {
+
 		private final Class<?> clz;
-		private final IRelationPathEx<?> beanpath;
 
-		public CackeKey(Class<?> type, IRelationPathEx<?> beanPath) {
-			this.clz=type;
-			this.beanpath=beanPath;
+		private final RelationalPathEx<?> entity;
+
+		public CacheKey(Class<?> type, RelationalPathEx<?> beanPath) {
+			this.clz = type;
+			this.entity = beanPath;
 		}
 
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((beanpath == null) ? 0 : beanpath.hashCode());
+			result = prime * result + ((entity == null) ? 0 : entity.hashCode());
 			result = prime * result + ((clz == null) ? 0 : clz.hashCode());
 			return result;
 		}
@@ -43,11 +46,11 @@ public class ProjectionsAlter {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			CackeKey other = (CackeKey) obj;
-			if (beanpath == null) {
-				if (other.beanpath != null)
+			CacheKey other = (CacheKey) obj;
+			if (entity == null) {
+				if (other.entity != null)
 					return false;
-			} else if (!beanpath.equals(other.beanpath)) {
+			} else if (!entity.equals(other.entity)) {
 				return false;
 			}
 			if (clz == null) {
@@ -59,14 +62,14 @@ public class ProjectionsAlter {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> QBeanEx<T> bean(Class<? extends T> type, IRelationPathEx<?> beanPath) {
+	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPathEx<?> beanPath) {
 		if (type == beanPath.getType()) {
 			return (QBeanEx<T>) beanPath.getProjection();
 		}
-		CackeKey key=new CackeKey(type,beanPath);
-		QBeanEx<?> result=CACHE.get(key);
-		if(result==null) {
-			QBeanEx<T> t=new QBeanEx<T>(type, beanPath);
+		CacheKey key = new CacheKey(type, beanPath);
+		QBeanEx<?> result = CACHE.get(key);
+		if (result == null) {
+			QBeanEx<T> t = new QBeanEx<T>(type, beanPath);
 			CACHE.putIfAbsent(key, t);
 			return t;
 		}
@@ -74,61 +77,73 @@ public class ProjectionsAlter {
 	}
 
 	/**
-	 * Create a Bean populating projection for the given type and expressions
+	 *  Create a Bean populating projection for the given type and expressions
 	 *
-	 * <p>
-	 * Example
-	 * </p>
-	 * 
-	 * <pre>
-	 * UserDTO dto = query.select(Projections.bean(UserDTO.class, user.firstName, user.lastName));
-	 * </pre>
+	 *  <p>
+	 *  Example
+	 *  </p>
 	 *
-	 * @param <T>   type of projection
-	 * @param type  type of the projection
-	 * @param exprs arguments for the projection
-	 * @return factory expression
+	 *  <pre>
+	 *  UserDTO dto = query.select(Projections.bean(UserDTO.class, user.firstName, user.lastName));
+	 *  </pre>
+	 *
+	 *  @param <T>   type of projection
+	 *  @param type  type of the projection
+	 *  @param exprs arguments for the projection
+	 *  @return factory expression
 	 */
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, Expression<?>... exprs) {
 		return new QBeanEx<T>(type, exprs);
 	}
-	
-	
+
+	/**
+	 * create a StreamExpression to apply function on result.
+	 * @param fac fac
+	 * @param clz clz
+	 * @param function function
+	 * @return StreamExpressionWrapper
+	 * @param <T> The type of target object.
+	 * @param <K> The type of target object.
+	 */
+	public static <T, K> StreamExpressionWrapper<T, K> map(FactoryExpression<T> fac, Class<K> clz, Function<T, K> function) {
+		return new StreamExpressionWrapper<>(fac, function, clz);
+	}
+
 	public static QBeanBuilder on(Expression<?>... exprs) {
 		return new QBeanBuilder(exprs);
 	}
 
 	/**
-	 * Create a Bean populating projection for the given type and expressions
+	 *  Create a Bean populating projection for the given type and expressions
 	 *
-	 * @param <T>   type of projection
-	 * @param type  type of the projection
-	 * @param exprs arguments for the projection
-	 * @return factory expression
+	 *  @param <T>   type of projection
+	 *  @param type  type of the projection
+	 *  @param exprs arguments for the projection
+	 *  @return factory expression
 	 */
 	public static <T> QBeanEx<T> bean(Path<? extends T> type, Expression<?>... exprs) {
 		return new QBeanEx<T>(type.getType(), exprs);
 	}
 
 	/**
-	 * Create a Bean populating projection for the given type and bindings
+	 *  Create a Bean populating projection for the given type and bindings
 	 *
-	 * @param <T>      type of projection
-	 * @param type     type of the projection
-	 * @param bindings property bindings
-	 * @return factory expression
+	 *  @param <T>      type of projection
+	 *  @param type     type of the projection
+	 *  @param bindings property bindings
+	 *  @return factory expression
 	 */
 	public static <T> QBeanEx<T> bean(Path<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		return new QBeanEx<T>(type.getType(), bindings);
 	}
 
 	/**
-	 * Create a Bean populating projection for the given type and bindings
+	 *  Create a Bean populating projection for the given type and bindings
 	 *
-	 * @param <T>      type of projection
-	 * @param type     type of the projection
-	 * @param bindings property bindings
-	 * @return factory expression
+	 *  @param <T>      type of projection
+	 *  @param type     type of the projection
+	 *  @param bindings property bindings
+	 *  @return factory expression
 	 */
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		return new QBeanEx<T>(type, bindings);
@@ -156,59 +171,58 @@ public class ProjectionsAlter {
 		if (bindings.isEmpty()) {
 			throw new IllegalArgumentException("No bindings could be derived from " + path);
 		}
-		return new QBeanEx<T>((Class<? extends T>) path.getType(), bindings);
+		return new QBeanEx<T>(path.getType(), bindings);
 	}
 
 	private static <T> FactoryExpression<T> createConstructorProjection(RelationalPath<T> path) {
 		Expression<?>[] exprs = path.getColumns().toArray(new Expression[path.getColumns().size()]);
-		return Projections.<T>constructor((Class<? extends T>) path.getType(), exprs);
+		return Projections.constructor(path.getType(), exprs);
 	}
 
 	private ProjectionsAlter() {
 	}
-	
-	 /**
-     * Create a constructor invocation projection for the given type and expressions
-     *
-     * <p>Example</p>
-     * <pre>
-     * UserDTO dto = query.singleResult(
-     *     Projections.constructor(UserDTO.class, user.firstName, user.lastName));
-     * </pre>
-     *
-     * @param <T> type projection
-     * @param type type of the projection
-     * @param exprs arguments for the projection
-     * @return factory expression
-     */
-    public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Expression<?>... exprs) {
-        return Projections.constructor(type, exprs);
-    }
 
-    /**
-     * Create a constructor invocation projection for given type, parameter types and expressions
-     *
-     * @param type type of the projection
-     * @param paramTypes constructor parameter types
-     * @param exprs constructor parameters
-     * @param <T> type of projection
-     * @return factory expression
-     */
-    public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, Expression<?>... exprs) {
-        return Projections.constructor(type, paramTypes, exprs);
-    }
+	/**
+	 * Create a constructor invocation projection for the given type and expressions
+	 *
+	 * <p>Example</p>
+	 * <pre>
+	 * UserDTO dto = query.singleResult(
+	 *     Projections.constructor(UserDTO.class, user.firstName, user.lastName));
+	 * </pre>
+	 *
+	 * @param <T> type projection
+	 * @param type type of the projection
+	 * @param exprs arguments for the projection
+	 * @return factory expression
+	 */
+	public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Expression<?>... exprs) {
+		return Projections.constructor(type, exprs);
+	}
 
-    /**
-     * Create a constructor invocation projection for given type, parameter types and expressions
-     *
-     * @param type type of the projection
-     * @param paramTypes constructor parameter types
-     * @param exprs constructor parameters
-     * @param <T> type of projection
-     * @return factory expression
-     */
-    public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, List<Expression<?>> exprs) {
-        return Projections.constructor(type, paramTypes, exprs);
-    }
+	/**
+	 * Create a constructor invocation projection for given type, parameter types and expressions
+	 *
+	 * @param type type of the projection
+	 * @param paramTypes constructor parameter types
+	 * @param exprs constructor parameters
+	 * @param <T> type of projection
+	 * @return factory expression
+	 */
+	public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, Expression<?>... exprs) {
+		return Projections.constructor(type, paramTypes, exprs);
+	}
 
+	/**
+	 * Create a constructor invocation projection for given type, parameter types and expressions
+	 *
+	 * @param type type of the projection
+	 * @param paramTypes constructor parameter types
+	 * @param exprs constructor parameters
+	 * @param <T> type of projection
+	 * @return factory expression
+	 */
+	public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, List<Expression<?>> exprs) {
+		return Projections.constructor(type, paramTypes, exprs);
+	}
 }

@@ -22,7 +22,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 
 
 /**
- * {@code SpringConnectionProvider} is a Provider implementation which provides a transactionally bound connection
+ * {@code SpringConnectionProvider} is a Provider implementation which provides a transactional bound connection
  *
  * <p>Usage example</p>
  * <pre>
@@ -48,5 +48,10 @@ public class SpringProvider implements Supplier<Connection> {
         }
         return connection;
     }
+
+	public boolean isTx() {
+		Connection connection = DataSourceUtils.getConnection(dataSource);
+		return DataSourceUtils.isConnectionTransactional(connection, dataSource);
+	}
 
 }

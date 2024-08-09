@@ -3,7 +3,6 @@ package com.github.xuse.querydsl.util;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.MethodVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
@@ -11,15 +10,14 @@ import com.github.xuse.querydsl.asm.Opcodes;
 public class ASMUtils {
 
 	public static boolean isAndroid(String vmName) {
-		if (vmName == null) { // default is false
+		if (vmName == null) {
+			// default is false
 			return false;
 		}
-
 		String lowerVMName = vmName.toLowerCase();
-
-		return lowerVMName.contains("dalvik") //
-				|| lowerVMName.contains("lemur") // aliyun-vm name
-		;
+		return // 
+		lowerVMName.contains("dalvik") || // aliyun-vm name
+		lowerVMName.contains("lemur");
 	}
 
 	public static boolean isAndroid() {
@@ -80,14 +78,12 @@ public class ASMUtils {
 		} else if (Double.TYPE.equals(type)) {
 			return "D";
 		}
-
 		throw new IllegalStateException("Type: " + type.getCanonicalName() + " is not a primitive type");
 	}
 
 	public static Type getMethodType(Class<?> clazz, String methodName) {
 		try {
 			Method method = clazz.getMethod(methodName);
-
 			return method.getGenericReturnType();
 		} catch (Exception ex) {
 			return null;
@@ -119,9 +115,9 @@ public class ASMUtils {
 
 	/**
 	 * get the class object of primitive type
-	 * 
-	 * @param mw
-	 * @param rawType
+	 *
+	 * @param mw mw
+	 * @param rawType rawType
 	 */
 	public static void getPrimitiveType(MethodVisitor mw, Class<?> rawType) {
 		Class<?> wrapClz = Primitives.toWrapperClass(rawType);
@@ -130,128 +126,129 @@ public class ASMUtils {
 
 	/**
 	 * 生成拆箱方法
-	 * 
-	 * @param mw
-	 * @param primitive
+	 *
+	 * @param mw mw
+	 * @param primitive primitive
 	 *            原生类型
+	 * @param wrapped 包装类型
 	 */
 	public static void doUnwrap(MethodVisitor mw, Class<?> primitive, Class<?> wrapped) {
 		String name = primitive.getName() + "Value";
-		mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, getType(wrapped), name, getMethodDesc(primitive),false);
+		mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, getType(wrapped), name, getMethodDesc(primitive), false);
 	}
 
 	/**
 	 * 生成装箱方法
-	 * 
-	 * @param mw
-	 * @param type
+	 *
+	 * @param mw mw
+	 * @param primitive primitive
 	 *            原生类型
+	 * @param wrapped wrapped
 	 */
-	public static void doWrap(MethodVisitor mw, Class<?> type) {
-		Class<?> wrapped = Primitives.toWrapperClass(type);
-		mw.visitMethodInsn(Opcodes.INVOKESTATIC, getType(wrapped), "valueOf", getMethodDesc(wrapped, type),false);
+	public static void doWrap(MethodVisitor mw, Class<?> primitive, Class<?> wrapped) {
+		mw.visitMethodInsn(Opcodes.INVOKESTATIC, getType(wrapped), "valueOf", getMethodDesc(wrapped, primitive), false);
 	}
 
 	public static void doWrap(MethodVisitor mw, com.github.xuse.querydsl.asm.Type paramType) {
 		Class<?> w;
-		switch (paramType.getSort()) {
-		case com.github.xuse.querydsl.asm.Type.BOOLEAN:
-			w = Boolean.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.BYTE:
-			w = Byte.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.CHAR:
-			w = Character.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.DOUBLE:
-			w = Double.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.FLOAT:
-			w = Float.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.INT:
-			w = Integer.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.LONG:
-			w = Long.class;
-			break;
-		case com.github.xuse.querydsl.asm.Type.SHORT:
-			w = Short.class;
-			break;
-		default:
-			throw new IllegalArgumentException();
+		switch(paramType.getSort()) {
+			case com.github.xuse.querydsl.asm.Type.BOOLEAN:
+				w = Boolean.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.BYTE:
+				w = Byte.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.CHAR:
+				w = Character.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.DOUBLE:
+				w = Double.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.FLOAT:
+				w = Float.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.INT:
+				w = Integer.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.LONG:
+				w = Long.class;
+				break;
+			case com.github.xuse.querydsl.asm.Type.SHORT:
+				w = Short.class;
+				break;
+			default:
+				throw new IllegalArgumentException();
 		}
-		mw.visitMethodInsn(Opcodes.INVOKESTATIC, getType(w), "valueOf", getMethodDesc(w, Primitives.toPrimitiveClass(w)),false);
+		mw.visitMethodInsn(Opcodes.INVOKESTATIC, getType(w), "valueOf", getMethodDesc(w, Primitives.toPrimitiveClass(w)), false);
 	}
 
 	/**
 	 * 获得加载指令。要注LLOAD和DLOAD都是64位操作
-	 * @param paramType
-	 * @return
+	 * @param paramType paramType
+	 * @return loadIns
 	 */
 	public static int getLoadIns(com.github.xuse.querydsl.asm.Type paramType) {
-		switch (paramType.getSort()) {
-		case com.github.xuse.querydsl.asm.Type.BOOLEAN:
-			return Opcodes.ILOAD;
-		case com.github.xuse.querydsl.asm.Type.BYTE:
-			return Opcodes.ILOAD;
-		case com.github.xuse.querydsl.asm.Type.CHAR:
-			return Opcodes.ILOAD;
-		case com.github.xuse.querydsl.asm.Type.DOUBLE:
-			return Opcodes.DLOAD;
-		case com.github.xuse.querydsl.asm.Type.FLOAT:
-			return Opcodes.FLOAD;
-		case com.github.xuse.querydsl.asm.Type.INT:
-			return Opcodes.ILOAD;
-		case com.github.xuse.querydsl.asm.Type.LONG:
-			return Opcodes.LLOAD;
-		case com.github.xuse.querydsl.asm.Type.SHORT:
-			return Opcodes.ILOAD;
-		default:
-			return Opcodes.ALOAD;
+		switch(paramType.getSort()) {
+			case com.github.xuse.querydsl.asm.Type.BOOLEAN:
+				return Opcodes.ILOAD;
+			case com.github.xuse.querydsl.asm.Type.BYTE:
+				return Opcodes.ILOAD;
+			case com.github.xuse.querydsl.asm.Type.CHAR:
+				return Opcodes.ILOAD;
+			case com.github.xuse.querydsl.asm.Type.DOUBLE:
+				return Opcodes.DLOAD;
+			case com.github.xuse.querydsl.asm.Type.FLOAT:
+				return Opcodes.FLOAD;
+			case com.github.xuse.querydsl.asm.Type.INT:
+				return Opcodes.ILOAD;
+			case com.github.xuse.querydsl.asm.Type.LONG:
+				return Opcodes.LLOAD;
+			case com.github.xuse.querydsl.asm.Type.SHORT:
+				return Opcodes.ILOAD;
+			default:
+				return Opcodes.ALOAD;
 		}
 	}
 
 	/**
 	 * 插入一条常量入栈指令
-	 * @param mw
-	 * @param s
+	 * @param mw mw
+	 * @param s s
 	 */
 	public static void iconst(MethodVisitor mw, int s) {
-		switch (s) {
-		case -1:
-			mw.visitInsn(Opcodes.ICONST_M1);
-			break;
-		case 0:
-			mw.visitInsn(Opcodes.ICONST_0);
-			break;
-		case 1:
-			mw.visitInsn(Opcodes.ICONST_1);
-			break;
-		case 2:
-			mw.visitInsn(Opcodes.ICONST_2);
-			break;
-		case 3:
-			mw.visitInsn(Opcodes.ICONST_3);
-			break;
-		case 4:
-			mw.visitInsn(Opcodes.ICONST_4);
-			break;
-		case 5:
-			mw.visitInsn(Opcodes.ICONST_5);
-			break;
-		default:
-			mw.visitIntInsn(Opcodes.BIPUSH, s);
+		switch(s) {
+			case -1:
+				mw.visitInsn(Opcodes.ICONST_M1);
+				break;
+			case 0:
+				mw.visitInsn(Opcodes.ICONST_0);
+				break;
+			case 1:
+				mw.visitInsn(Opcodes.ICONST_1);
+				break;
+			case 2:
+				mw.visitInsn(Opcodes.ICONST_2);
+				break;
+			case 3:
+				mw.visitInsn(Opcodes.ICONST_3);
+				break;
+			case 4:
+				mw.visitInsn(Opcodes.ICONST_4);
+				break;
+			case 5:
+				mw.visitInsn(Opcodes.ICONST_5);
+				break;
+			default:
+				mw.visitIntInsn(Opcodes.BIPUSH, s);
 		}
 	}
 
 	/**
 	 * 生成方法签名
-	 * 
-	 * @param returnType
-	 * @param params
-	 * @return
+	 *
+	 * @param returnType returnType
+	 * @param params params
+	 * @return 方法签名
 	 */
 	public static String getMethodDesc(Class<?> returnType, Class<?>... params) {
 		StringBuilder sb = new StringBuilder("(");
@@ -265,20 +262,19 @@ public class ASMUtils {
 
 	/**
 	 * 获得Java类名
-	 * @param cr
-	 * @return
+	 * @param cr cr
+	 * @return className
 	 */
 	public static String getJavaClassName(ClassReader cr) {
 		return cr.getClassName().replace('/', '.');
 	}
 
 	/**
-	 * 获得父类名	
-	 * @param cr
-	 * @return
+	 * 获得父类名
+	 * @param cr cr
+	 * @return 父类名
 	 */
 	public static String getSuperClassName(ClassReader cr) {
 		return cr.getSuperName().replace('/', '.');
 	}
-
 }

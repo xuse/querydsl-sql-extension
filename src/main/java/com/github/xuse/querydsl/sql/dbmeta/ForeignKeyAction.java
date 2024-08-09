@@ -29,9 +29,9 @@ public enum ForeignKeyAction {
 	 */
 	SET_DEFAULT("SET DEFAULT"); 
 
-	private String name;
+	private final String name;
 
-	private ForeignKeyAction(String name) {
+	ForeignKeyAction(String name) {
 		this.name = name;
 	}
 
