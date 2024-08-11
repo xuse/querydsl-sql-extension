@@ -58,7 +58,7 @@ public class Foo {
 }
 ```
 
-创建表，你可以自行手动创建。如果确认程序有DDL操作权限，也可以同以下java代码创建数据库表。
+创建表，你可以自行手动创建。如果确认程序有DDL操作权限，也可以用以下java代码创建数据库表。
 
 ```java
 SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
