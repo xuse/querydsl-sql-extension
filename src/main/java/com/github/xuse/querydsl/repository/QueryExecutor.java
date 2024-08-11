@@ -82,6 +82,10 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 	public int update(T t) {
 		return (int) getFactory().update(table).populate(t).where(mixin.getWhere()).execute();
 	}
+	
+	public UpdateHandler<T> update() {
+		return new UpdateHandler<>(getFactory().update(table).where(mixin.getWhere()));
+	}
 
 	public T load() {
 		return createQuery(true).fetchOne();
