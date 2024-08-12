@@ -214,7 +214,7 @@ public interface CRUDRepository<T, ID> {
 	 * <h2>English:</h2>
 	 * create a general query builder.
 	 * 
-	 * @return  查询构建器 / WhereBuilder
+	 * @return  查询构建器 / QueryExecutor
 	 * @see QueryExecutor 
 	 */
 	QueryExecutor<T> query();

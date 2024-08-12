@@ -1,12 +1,12 @@
 # 快速入门
 
-## 1 介绍
+## 1 GenericRepository介绍
 
 很多Java程序员习惯为每个表和映射类创建一个Repository对象，封装一个数据访问层。数据访问层可以限制上层业务获得过于灵活的数据库访问能力，每种数据库访问行为都需要在DAO/Repository对象中编码实现，对于复杂的业务可以增强管理能力并提升复用性。
 
-Repository只是QueryDSL的一个用户API，我称之为Facade。
+Repository只是QueryDSL的一种扩展Facade API（操作门面）。
 
-> QueryDSL具有最强的SQL模型抽象能力，但其使用者定位为能驾驭各种SQL语法的熟练人员，故提供的API极其强大灵活，这反而为一些不需要复杂操作的厂家或开发者所不喜。然而强大引擎的特点是几乎可以模拟业界所有同类框架的API风格。这里只是选择目前一些主流的风格，做了一些Facade的包装，以满足一些相对传统的开发者的喜好。
+> QueryDSL具有最强的SQL模型AST，但其使用者定位为能驾驭各种SQL语法的熟练人员，故提供的API极其强大灵活，这反而为一些不需要复杂操作的厂家或开发者所不喜。然而强大引擎的特点是几乎可以模拟业界所有同类框架的API风格。这里只是选择目前一些主流的风格，做了一些Facade的包装，以满足一些相对传统的开发者的喜好。
 
 GenericRepository中提供了对单表常用的增删该查功能见下表，其他个性化业务逻辑可以在Repository类中自行编码实现。
 
@@ -33,6 +33,8 @@ GenericRepository中提供了对单表常用的增删该查功能见下表，其
 | query             | 创建一个通用的查询构建器。                                   |      |
 | findByCondition   | 使用@ConditionBean注解创建一个查询参数类。该类的字段上可以用@Condition注解查询运算符，<br />配合完成一些典型WEB分页查询。 |      |
 
+> 多表操作和更多复杂的SQL，可以基于QueryDSL的原生API进行操作，即使用SQLQueryFactory系列的API，这是我看到过的业界最好的QueryBuilder。
+
 ## 2 多种API风格
 
 ### 准备工作
@@ -58,7 +60,7 @@ public class Foo {
 }
 ```
 
-创建表，你可以自行手动创建。如果确认程序有DDL操作权限，也可以同以下java代码创建数据库表。
+创建表，你可以自行手动创建。如果确认程序有DDL操作权限，也可以用以下java代码创建数据库表。
 
 ```java
 SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
@@ -512,7 +514,7 @@ private int disabled;
 		periodsBegin = -2,		//最早的分区是两天前
 		periodsEnd = 3,			//最晚的分区是三天后
 		createForMaxValue = true,//创建max value分区，三天后的数据写入到该分区中
-		columnFormat = ColumnFormat.NUMBER_YMD //时间字段不是标准的数控库Timestamp类型，而是年月日构成的一个八位数字。
+		columnFormat = ColumnFormat.NUMBER_YMD //如采用时间类的数据库列时可不配置。如果该列是number或varchar等类型时需要指定格式。此示例表示数据库列是年月日构成的一个八位数字。
 	)
 )
 ```
@@ -598,7 +600,7 @@ private int disabled;
 
 定义ConditionBean如下
 
-```
+```java
 @Data
 @ConditionBean(limitField = "limit",offsetField = "offset")
 public class FooQueryParams {
@@ -622,7 +624,7 @@ public class FooQueryParams {
 
 实际使用
 
-  ````
+  ````java
   	QFoo t = QFoo.foo;
   	FooQueryParams p = new FooQueryParams();
   	......
@@ -660,13 +662,17 @@ configuration.scanPackages("com.xxx.xxx");
 
 上述特性都有多个可控制开关，以防止误操作DROP了表或列，引发损失。
 
-虽然框架会使用Online来修改已有的数据库表， 当仍有相当DDL执行可能锁表，对可用性要求特别高的高负载生产环境，应当关闭启动时执行DDL的特性。
+**禁用DDL**
+
+> 虽然框架会使用Online来修改已有的数据库表， 当仍有相当DDL执行可能锁表，对可用性要求特别高的高负载生产环境，应当关闭启动时执行DDL的特性。
 
 ```java
 configuration.getScanOptions()
     .disableDDL();
 configuration.scanPackages("com.xxx.xxx");
 ```
+
+**禁用数据初始化**
 
 如果担心自动更新数据功能影响生产环境，可以关闭初始化数据写入，甚至禁止所有数据库初始化行为
 
@@ -676,7 +682,7 @@ configuration.getScanOptions().disableDataInitialize();
 configuration.scanPackages("com.xxx.xxx");
 
 //禁止所有自动操作数据库的行为
-configuration.getScanOptions().+();
+configuration.getScanOptions().disableAllDatabaseOperation();
 configuration.scanPackages("com.xxx.xxx");
 ```
 
@@ -686,7 +692,19 @@ configuration.scanPackages("com.xxx.xxx");
 
 该表以业务表的名称作为主键。如果表已经初始化过了， is_disabled 列值就被更新为1，下次启动后就不会反复初始化同一张表了。
 
-记录表的名称是`querydsl_auto_init_data_log`。开启此功能后，系统会尝试自动创建这张表。
+记录表的名称是`querydsl_auto_init_data_log`。开启此功能后，**系统会尝试自动创建这张表**。但如果应用没有DDL权限，可能需要手动创建这张表。建表的SQL语句如下（以MySQL为例）：
+
+```sql
+CREATE TABLE querydsl_auto_init_data_log (
+  table_name VARCHAR (128) NOT NULL COMMENT 'table name.',
+  is_disabled TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '1 - Data init on this table is disabled. 0 - data init enabled.',
+  init_records SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'records saved on the last write process.',
+  last_init_time DATETIME NULL,
+  last_init_user VARCHAR (128) NULL,
+  last_init_result VARCHAR (400) NULL,
+  PRIMARY KEY (table_name)
+) COMMENT 'informations about data initialize by querydsl-sql-extenstion'
+```
 
 ### 分布式锁
 
@@ -697,20 +715,6 @@ configuration.scanPackages("com.xxx.xxx");
 使用一张数据库表作为分布式锁，这是默认的实现。
 
 如果开启了`useDataInitTable(true)`功能，自动会将对应的数据表作为分布式锁。如果检测到DDL权限，**系统会自动创建这张表。**
-
-如果应用没有DDL权限，可能需要手动创建这张表。建表的SQL语句如下（以MySQL为例）：
-
-```sql
-CREATE TABLE querydsl_auto_init_data_log (
-  table_name VARCHAR (128) NOT NULL COMMENT 'table name.',
-  is_disabled TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '1-Data init on this table is disabled. 0 - data init enabled.',
-  init_records SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'records saved on the last write process.',
-  last_init_time DATETIME NULL,
-  last_init_user VARCHAR (128) NULL,
-  last_init_result VARCHAR (400) NULL,
-  PRIMARY KEY (table_name)
-) COMMENT 'informations about data initialize by querydsl-sql-extenstion'
-```
 
 **使用其他中间件实现分布式锁(ZK,Redis等)**
 
@@ -788,12 +792,14 @@ configuration.setExternalDistributedLockProvider(new MyLockProvider());
 **创建分区**
 
 ```java
-SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
-metadata.createTable(t1).reCreate().execute();
+SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+metadata.createTable(table).reCreate().execute();
 
-QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
+//此处引用表的静态模型（QueryDSL代码生成工具生成）。如果没有该类，用LambdaTable<T>）代替
+//示例：LambdaTable<Foo> = ()-> Foo.class;
+QPartitionFoo1 table = QPartitionFoo1.partitionFoo1;
 
-metadata.createPartitioning(t1)
+metadata.createPartitioning(table)
 		.partitionBy(Partitions.byHash(HashType.HASH, "TO_DAYS(created)", 4))
 		.execute();
 ```
@@ -801,7 +807,7 @@ metadata.createPartitioning(t1)
 **查询表的分区信息**
 
 ```java
-List<PartitionInfo> list=metadata.getPartitions(t1.getSchemaAndTable());
+List<PartitionInfo> list=metadata.getPartitions(table.getSchemaAndTable());
 ```
 
 **清除分区设置（不删除数据）**
@@ -813,8 +819,8 @@ metadata.removePartitioning(t1).execute();
 **创建按时间范围进行的分区**
 
 ```java
-metadata.createPartitioning(t1).partitionBy(
-	Partitions.byRangeColumns(t1.created)
+metadata.createPartitioning(table).partitionBy(
+	Partitions.byRangeColumns(table.created)
 		.add("p202401", "'2024-02-01'")
 		.add("p202402", "'2024-03-01'").build())
     .execute();
@@ -828,7 +834,7 @@ metadata.createPartitioning(t1).partitionBy(
 需要将这些老分区的数据重新组织到新分区下，因此系统会自动使用REORGANIZE PARTITION将落在原先第一个分区内的数据移动到新分区
 
 ```java
-metadata.addParition(t1)
+metadata.addParition(table)
 		.add("p20200101", "'2021-01-01'")
 		.execute();
 ```
@@ -836,7 +842,7 @@ metadata.addParition(t1)
 **删除分区（连同分区内的数据）**
 
 ```java
-metadata.dropPartition(t1)
+metadata.dropPartition(table)
     .partition("p20200101").execute();
 ```
 

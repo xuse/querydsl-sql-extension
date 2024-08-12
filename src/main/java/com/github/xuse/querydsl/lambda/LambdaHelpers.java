@@ -49,4 +49,24 @@ public interface LambdaHelpers {
 	default <B> StringLambdaColumn<B> string(StringLambdaColumn<B> path) {
 		return path;
 	}
+	
+	/**
+	 * 提示编译器将一个方法引用包装为Number类型的字段模型。
+	 * @param <B> type of the entity bean.
+	 * @param path 传入
+	 * @return 字段模型
+	 */
+	default <B, T extends Number & Comparable<T>> NumberLambdaColumn<B,T> n(NumberLambdaColumn<B,T> path) {
+		return path;
+	}
+	
+	/**
+	 * 提示编译器将一个方法引用包装为Number类型的字段模型。
+	 * @param <B> type of the entity bean.
+	 * @param path 传入
+	 * @return 字段模型
+	 */
+	default <B, T extends Number & Comparable<T>> NumberLambdaColumn<B,T> num(NumberLambdaColumn<B,T> path) {
+		return path;
+	}
 }

@@ -38,7 +38,7 @@ public abstract class AbstractTestBase {
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
 	}
 
-	private static final DriverManagerDataSource effectiveDs = dsMySQL;
+	private static final DriverManagerDataSource effectiveDs = dsDerby;
 	
 	
 	public static  DriverManagerDataSource getEffectiveDs() {

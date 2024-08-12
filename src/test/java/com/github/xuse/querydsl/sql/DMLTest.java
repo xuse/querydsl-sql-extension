@@ -606,6 +606,15 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 			repo.findByCondition(params);	
 		}
 		
+		//其他 更新
+		{
+			LambdaColumn<Foo, String> c1=s(Foo::getCode);
+			repo.query().eq(Foo::getId, 1)
+			.update()
+			.setMathExpr(Foo::getVolumn,volumn-> volumn.add(100))
+			.execute();
+		}
+		
 	}
 	
 	/*
