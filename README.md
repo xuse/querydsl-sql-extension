@@ -76,7 +76,7 @@ See file [文档](USER_GUIDE.md)
 
   **Example**
 
-  ```
+  ```java
   @TableSpec(name="ca_asset",primaryKeyPath={"id"},collate = "utf8mb4_general_ci",
   keys = {
   		@Key(path= {"code"},type=ConstraintType.UNIQUE),
@@ -107,7 +107,7 @@ See file [文档](USER_GUIDE.md)
   
   **Example**
   
-  ```
+  ```java
   public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
   	public static final QCaAsset caAsset = new QCaAsset("foo");
   	
@@ -139,7 +139,7 @@ See file [文档](USER_GUIDE.md)
 
 * 防止个别慢SQL拖死整个数据库：可以设置全局的SQL请求超时时间，超时自动取消请求，防止请求长时间占用数据库资源。
 
-  ```
+  ```java
   configuration.setDefaultQueryTimeout(5); //设置SQL最大执行时间为5秒
   ```
 

@@ -62,6 +62,9 @@ public class StateMachine {
 
 	@ColumnSpec
     private String tenantId;
+	
+	@ColumnSpec
+    private int balance;
 
     @Override
     public String toString() {
