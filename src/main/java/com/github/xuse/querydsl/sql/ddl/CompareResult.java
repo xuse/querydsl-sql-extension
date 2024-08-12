@@ -26,7 +26,7 @@ public class CompareResult {
 	private Collection<ColumnMapping> addColumns = Collections.emptyList();
 	
 	/**
-	 * 表备注修改
+	 * 表备注等修改
 	 */
 	private Map<Operator,String> otherChange = new HashMap<>();
 
@@ -68,8 +68,12 @@ public class CompareResult {
 		this.addConstraints.addAll(toCreate);
 	}
 
+	public void addOtherChange(Operator operator, String change) {
+		this.otherChange.put(operator, change);
+		
+	}
 	public void setTableCommentChange(String changeTo) {
-		this.otherChange.put(DDLOps.COMMENT, changeTo);
+		this.otherChange.put(DDLOps.COMMENT_ON_COLUMN, changeTo);
 	}
 	
 	public void setTableCollation(String changeTo) {

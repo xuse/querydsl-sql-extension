@@ -113,7 +113,8 @@ public interface SQLTemplatesEx {
 		templates.add(DDLOps.DATA_TYPE, "{0} {1} {2}");
 		templates.add(DDLOps.UNSIGNED, "{0} UNSIGNED");
 		templates.add(DDLOps.DEFAULT, "DEFAULT {0}");
-		templates.add(DDLOps.COMMENT, "{0} COMMENT {1}");
+		templates.add(DDLOps.COMMENT_ON_COLUMN, "{0}");
+		templates.add(DDLOps.COMMENT_ON_TABLE, "{0}");
 		templates.add(DDLOps.CHARSET, "{0} CHARSET = {1}");
 		templates.add(DDLOps.COLLATE, "{0} COLLATE = {1}");
 		templates.add(DDLOps.COLUMN_ALLOW_NULL, "NULL");
@@ -129,11 +130,11 @@ public interface SQLTemplatesEx {
 		templates.add(DropStatement.DROP_TABLE, "DROP TABLE {0}");
 		templates.add(DropStatement.DROP_INDEX, " DROP INDEX {0}");
 		// all constraint create def
-		templates.add(CreateStatement.CREATE_INDEX, "INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_HASH, "INDEX {1} ON {0} USING HASH");
-		templates.add(CreateStatement.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_BITMAP, "BITMAP INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH");
+		templates.add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_BITMAP, "CREATE BITMAP INDEX {1} ON {0} {2}");
 		// All Constraint inline def
 		templates.add(ConstraintType.CHECK, "CONSTRAINT {1} CHECK ({2})");
 		templates.add(ConstraintType.UNIQUE, "UNIQUE KEY {1} {2}");

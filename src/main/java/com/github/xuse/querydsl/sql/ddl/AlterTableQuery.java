@@ -23,7 +23,6 @@ import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
-import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -41,7 +40,6 @@ import com.querydsl.sql.ColumnMetadata;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLSerializer;
-import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
 import lombok.extern.slf4j.Slf4j;
@@ -73,10 +71,15 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			actualTable = routing.getOverride(actualTable, configuration);
 		}
 		List<ColumnDef> columns = metadata.getColumns(actualTable);
+		
+		
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table,routing);
 		if (columns.isEmpty()) {
 			// 无表，变为创建
-			return asCreateTable();
+			builder.serializeTableCreate(false);
+			return builder.getSqls();
 		}
+		
 		CompareResult difference = new CompareResult();
 		compareColumns(difference, columns);
 		compareConstraints(difference, metadata.getIndexes(actualTable, MetadataQuerySupport.INDEX_POLICY_MERGE_CONSTRAINTS));
@@ -85,74 +88,8 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			log.info("TABLE [{}] compare finished, there's no difference between database and java definitions.", table);
 			return Collections.emptyList();
 		}
-		List<String> sqls = new ArrayList<>();
-		CompareResult independentOperations = new CompareResult();
-		if (configuration.has(SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL)) {
-			for (ColumnMapping cp : difference.getAddColumns()) {
-				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-				serializer.setRouting(routing);
-				if (serializer.serializeAlterTable(this.table, difference.ofAddSingleColumn(cp), independentOperations) > 0) {
-					sqls.add(serializer.toString());
-				}
-			}
-			for (String cp : difference.getDropColumns()) {
-				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-				serializer.setRouting(routing);
-				if (serializer.serializeAlterTable(this.table, difference.ofDropSingleColumn(cp), independentOperations) > 0) {
-					sqls.add(serializer.toString());
-				}
-			}
-			for (ColumnModification cp : difference.getChangeColumns()) {
-				if (cp.getChanges().size() == 1) {
-					SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-					serializer.setRouting(routing);
-					if (serializer.serializeAlterTable(this.table, difference.ofSingleChangeColumn(cp), independentOperations) > 0) {
-						sqls.add(serializer.toString());
-					}
-				} else {
-					for (ColumnChange cg : cp.getChanges()) {
-						SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-						serializer.setRouting(routing);
-						ColumnModification param = cp.ofSingleChange(cg);
-						if (serializer.serializeAlterTable(this.table, difference.ofSingleChangeColumn(param), independentOperations) > 0) {
-							sqls.add(serializer.toString());
-						}
-					}
-				}
-			}
-			for (Constraint c : difference.getDropConstraints()) {
-				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-				serializer.setRouting(routing);
-				if (serializer.serializeAlterTable(this.table, difference.ofDropSingleConstraint(c), independentOperations) > 0) {
-					sqls.add(serializer.toString());
-				}
-			}
-			for (Constraint c : difference.getAddConstraints()) {
-				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-				serializer.setRouting(routing);
-				if (serializer.serializeAlterTable(this.table, difference.ofAddSingleConstraint(c), independentOperations) > 0) {
-					sqls.add(serializer.toString());
-				}
-			}
-		} else {
-			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-			serializer.setRouting(routing);
-			if (serializer.serializeAlterTable(this.table, difference, independentOperations) > 0) {
-				sqls.add(serializer.toString());
-			}
-		}
-		// 开始处理Alter table不支持的索引和约束
-		for (Constraint c : independentOperations.getDropConstraints()) {
-			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-			serializer.setRouting(routing);
-			serializer.serialzeConstraintIndepentDrop(this.table, c);
-			sqls.add(serializer.toString());
-		}
-		for (Constraint c : independentOperations.getAddConstraints()) {
-			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-			serializer.serialzeConstraintIndepentCreate(this.table, c);
-			sqls.add(serializer.toString());
-		}
+		builder.serializeAlterTable(difference);
+		List<String> sqls = builder.getSqls();
 		if (simulate) {
 			log.info("Alter table SQL{}:", sqls.size());
 			for (String s : sqls) {
@@ -422,7 +359,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			}
 		}
 		// 对比Comments
-		if (!configuration.getTemplates().notSupports(DDLOps.COMMENT)) {
+		if (configuration.getTemplates().supports(DDLOps.COMMENT_ON_COLUMN)) {
 			if (!Objects.equals(c1.getComment(), c2.getComment())) {
 				Expression<String> exp1 = StringUtils.isEmpty(c1.getComment()) ? null : ConstantImpl.create(c1.getComment());
 				Expression<String> exp2 = StringUtils.isEmpty(c2.getComment()) ? null : ConstantImpl.create(c2.getComment());
@@ -491,7 +428,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	private void compareTableAttributes(CompareResult difference, RelationalPath<?> table, TableInfo tableInfo) {
 		if (table instanceof RelationalPathEx) {
 			RelationalPathEx<?> entity = (RelationalPathEx<?>) table;
-			if (configuration.getTemplates().supports(DDLOps.COMMENT)) {
+			if (configuration.getTemplates().supports(DDLOps.COMMENT_ON_TABLE)) {
 				if (!stringEquals(entity.getComment(), tableInfo.getRemarks(), false)) {
 					difference.setTableCommentChange(entity.getComment());
 				}
@@ -578,27 +515,6 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			}
 		}
 		return null;
-	}
-
-	private List<String> asCreateTable() {
-		List<String> sqls = new ArrayList<>();
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
-		List<Constraint> others = serializer.serializeTableCreate(table, true);
-		{
-			String sql = serializer.toString();
-			// log.info(sql);
-			sqls.add(sql);
-		}
-		for (Constraint c : others) {
-			SQLSerializerAlter serializer2 = new SQLSerializerAlter(configuration, true);
-			serializer.setRouting(routing);
-			serializer2.serialzeConstraintIndepentCreate(table, c);
-			String sql = serializer2.toString();
-			// log.info(sql);
-			sqls.add(sql);
-		}
-		return sqls;
 	}
 
 	@Override

@@ -21,6 +21,7 @@ import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
@@ -95,18 +96,20 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
+		add(DDLOps.COMMENT_ON_COLUMN, "{0} COMMENT {1}");
+		add(DDLOps.COMMENT_ON_TABLE, "{0} COMMENT {1}");
 		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1},ALGORITHM=INPLACE, LOCK=NONE");
-		add(AlterTableOps.COMMENT, "COMMENT = {0}");
+		//add(AlterTableOps.COMMENT_ON_TABLE, "COMMENT = {0}");
 		
 		add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
 		add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
 		
 		add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}, ALGORITHM=INPLACE, LOCK=SHARED");
-		add(CreateStatement.CREATE_INDEX, "INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=SHARED");
-		add(CreateStatement.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_HASH, "INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_FULLTEXT, "CREATE FULLTEXT INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=SHARED");
+		add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
 		add(SpecialFeature.PARTITION_SUPPORT,"");
 		
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法

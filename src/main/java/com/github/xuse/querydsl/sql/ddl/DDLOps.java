@@ -63,8 +63,17 @@ public enum DDLOps implements Operator {
 
 	/**
 	 * {0} COMMENT {1}
+	 * {0} 建表时前面一大串
+	 * {1} 注释内容
 	 */
-	COMMENT,
+	COMMENT_ON_COLUMN,
+
+	/**
+	 * 设置Table的注解
+	 * 
+	 * COMMENT = {0}
+	 */
+	COMMENT_ON_TABLE,
 
 	/**
 	 * Two definitions separated by a space. {0} {1}
@@ -152,13 +161,7 @@ public enum DDLOps implements Operator {
 		 * RENAME KEY {0} TO {1}
 		 */
 		RENAME_KEY,
-
-		/**
-		 * 设置Table的注解
-		 * 
-		 * COMMENT = {0}
-		 */
-		COMMENT,;
+		;
 
 		@Override
 		public Class<?> getType() {

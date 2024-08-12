@@ -401,7 +401,6 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 		// 插入
 		int sid;
 		System.err.println(factory.getMetadataFactory().getDatabaseProduct());
-		System.err.println(factory.getMetadataFactory().getDatabaseVersion());
 		
 		if(factory.getMetadataFactory().getDatabaseProduct().startsWith("MySQL")) {
 			sid = factory.asMySQL().insertIgnore(t2).populate(data).executeWithKey(t2.id);	

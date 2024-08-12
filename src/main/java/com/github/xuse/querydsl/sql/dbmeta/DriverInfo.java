@@ -11,8 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @Slf4j
-public final class DriverInfo {
-
+public final class DriverInfo implements DatabaseInfo{
 	String driverName;
 
 	String driverVersion;
@@ -24,6 +23,8 @@ public final class DriverInfo {
 	String schema;
 
 	String catalog;
+	
+	int defaultTxIsolation;
 
 	final Map<String, String> settings = new LinkedHashMap<>();
 	

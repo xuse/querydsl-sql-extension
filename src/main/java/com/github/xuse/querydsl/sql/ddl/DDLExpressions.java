@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
@@ -129,12 +128,13 @@ public class DDLExpressions {
 		return t;
 	}
 
-	public static Expression<?> comment(Expression<?> t, String comment) {
-		if (StringUtils.isNotEmpty(comment)) {
-			return simple(DDLOps.COMMENT, t, ConstantImpl.create(comment));
-		}
-		return t;
-	}
+//	public static Expression<?> comment(Expression<?> t, String comment, boolean isColumn) {
+//		DDLOps ops = isColumn ? DDLOps.COMMENT_ON_COLUMN : DDLOps.COMMENT_ON_TABLE;
+//		if (StringUtils.isNotEmpty(comment)) {
+//			return simple(ops, t, ConstantImpl.create(comment));
+//		}
+//		return t;
+//	}
 
 	public static Expression<?> simple(Operator op, Expression<?>... expressions) {
 		return Expressions.simpleOperation(Void.class, op, expressions);

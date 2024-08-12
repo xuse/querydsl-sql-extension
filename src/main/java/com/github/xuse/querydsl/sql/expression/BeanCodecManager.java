@@ -84,7 +84,6 @@ public class BeanCodecManager {
 		}
 		synchronized (this) {
 			result = beanCodecs.get(key);
-			// 使用双重检查锁定来提高并发安全性
 			if (result == null) {
 				try {
 					result = generateAccessor(key, bindings);

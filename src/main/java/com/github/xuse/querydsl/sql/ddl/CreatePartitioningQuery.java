@@ -6,7 +6,6 @@ import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLSerializerAlter;
 
 public class CreatePartitioningQuery extends AbstractDDLClause<CreatePartitioningQuery> {
 
@@ -27,13 +26,9 @@ public class CreatePartitioningQuery extends AbstractDDLClause<CreatePartitionin
 
 	@Override
 	protected String generateSQL() {
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
-		serializer.serializeAction(table, "ALTER TABLE ");
-		serializer.serializePartitionBy(partitionBy, table, checkField);
-		//Do not support online execute.
-		//serializer.append(", ALGORITHM=INPLACE, LOCK=NONE");
-		return serializer.toString();
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		builder.serializePartitionBy(partitionBy, checkField);
+		return builder.getSql();
 	}
 
 	public CreatePartitioningQuery partitionBy(PartitionBy partitionBy) {

@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
-import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
@@ -83,6 +83,7 @@ public abstract class MetadataQuerySupport {
 			info.driverVersion = e.getDriverVersion() + " " + e.getDatabaseMinorVersion();
 			info.databaseProductName = e.getDatabaseProductName();
 			info.dataProductVersion = e.getDatabaseProductVersion() + " " + e.getDatabaseMinorVersion();
+			info.defaultTxIsolation = e.getDefaultTransactionIsolation();
 			return info;
 		});
 		doConnectionAccess(c -> {
@@ -98,6 +99,9 @@ public abstract class MetadataQuerySupport {
 	private long calcDbTimeDelta() {
 		SQLTemplatesEx templates = getConfiguration().getTemplates();
 		String dummyTable = templates.getDummyTable();
+		if(dummyTable==null) {
+			dummyTable="";
+		}
 		SQLSerializer s = new SQLSerializer(this.getConfiguration().get());
 		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, Expressions.currentTimestamp(), Expressions.path(Object.class, null, dummyTable)));
 		String sql = s.toString();
@@ -325,6 +329,10 @@ public abstract class MetadataQuerySupport {
 	public Collection<String> getSchemas() {
 		return getSchemas(null);
 	}
+	
+	public List<DataType> getDataTypes(){
+		return doMetadataQuery("getInfoType", meta->meta.getTypeInfo(), rs->getFromResultSet(rs, DataType.class));
+	}
 
 	public List<SequenceInfo> getSequenceInfo(String namespace, String seqName) {
 		List<SequenceInfo> result = new ArrayList<SequenceInfo>(2);
@@ -398,7 +406,6 @@ public abstract class MetadataQuerySupport {
 	}
 
 	private static final class FieldOrder {
-
 		private final int index;
 
 		@SuppressWarnings("unused")
@@ -559,7 +566,7 @@ public abstract class MetadataQuerySupport {
 		}
 		return result;
 	}
-
+	
 	private Set<String> collectConstraintNames(Collection<Constraint> constraints) {
 		if (constraints == null) {
 			return Collections.emptySet();

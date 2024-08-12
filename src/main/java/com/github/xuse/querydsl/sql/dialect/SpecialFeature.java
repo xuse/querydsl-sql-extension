@@ -20,7 +20,12 @@ public enum SpecialFeature implements Operator{
 	/**
 	 * 支持分区表
 	 */
-	PARTITION_SUPPORT
+	PARTITION_SUPPORT,
+	
+	/**
+	 * 独立的COMMENT语句 (postgres)
+	 */
+	INDEPENDENT_COMMENT_STATEMENT,
 	;
 
 	@Override

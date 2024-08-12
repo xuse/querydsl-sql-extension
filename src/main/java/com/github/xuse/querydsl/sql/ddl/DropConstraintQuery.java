@@ -132,10 +132,9 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	}
 
 	private String dropStatement(Constraint c) {
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
-		serializer.serialzeConstraintIndepentDrop(this.table, c);
-		return serializer.toString();
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table, routing);
+		builder.serialzeConstraintIndepentDrop(c);
+		return builder.getSql();
 	}
 
 	private void tryAlterTable(List<String> sqls, List<Constraint> independentOps) {
