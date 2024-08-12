@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.ComparableExpression;
@@ -75,14 +76,19 @@ public class PathCache {
 		String methodName=pair.getSecond();
 		try {
 			Class<?> clz = cl.loadClass(clzName);
+			boolean isRecord = TypeUtils.isRecord(clz);
 			String fieldName;
-			if (methodName.startsWith("get")) {
-				fieldName = methodName.substring(3);
-			} else if (methodName.startsWith("is")) {
-				fieldName = methodName.substring(2);
-			} else {
-				throw Exceptions.illegalArgument(
-						"Method should started with 'get' or 'is', {}.{} is invalid.", clzName, methodName);
+			if(isRecord) {
+				fieldName = methodName;
+			}else {
+				if (methodName.startsWith("get")) {
+					fieldName = methodName.substring(3);
+				} else if (methodName.startsWith("is")) {
+					fieldName = methodName.substring(2);
+				} else {
+					throw Exceptions.illegalArgument(
+							"Method should started with 'get' or 'is', {}.{} is invalid.", clzName, methodName);
+				}	
 			}
 			fieldName = StringUtils.uncapitalize(fieldName);
 			RelationalPathEx path = get(clz);
