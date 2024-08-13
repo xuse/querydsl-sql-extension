@@ -61,8 +61,8 @@ public class Foo {
 	@Comment("Another extension info.")
 	private Gender gender;
 	
-	@ColumnSpec(type=Types.VARCHAR,size=256)
 	@CustomType(JSONObjectType.class)
+	@ColumnSpec(type=Types.VARCHAR,size=256)
 	@Comment("extension info.")
 	private Aaa ext;
 	

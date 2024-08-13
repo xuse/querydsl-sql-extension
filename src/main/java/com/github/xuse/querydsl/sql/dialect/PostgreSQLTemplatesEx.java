@@ -1,32 +1,34 @@
 package com.github.xuse.querydsl.sql.dialect;
 
+import java.sql.Types;
+
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.TemplatesAccessor;
+import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 
 public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx{
 
 	public PostgreSQLTemplatesEx(SQLTemplates template) {
 		super(template);
+		
+		typeNames.put(Types.BIT, "boolean").type(Types.BOOLEAN).noSize();
+		
+		typeNames.put(Types.TINYINT, "smallint").type(Types.SMALLINT).noSize();
+		typeNames.put(Types.DOUBLE, "double precision").noSize();
+		
+		typeNames.put(Types.CLOB, "text").noSize();
+		typeNames.put(Types.BLOB, "bytea").type(Types.VARBINARY).noSize();
+		typeNames.put(Types.BINARY, "bytea").type(Types.VARBINARY).noSize();
+		typeNames.put(Types.VARBINARY, "bytea").noSize();
+		typeNames.put(Types.LONGVARBINARY, "bytea").type(Types.VARBINARY).noSize();
+		
+		typeNames.put(Types.NUMERIC, "numeric($p, $s)");
+		typeNames.put(Types.DECIMAL, "decimal($p, $s)");
 	}
 	
-	
-//	typeNames.put(Types.BLOB, "bytea", Types.VARBINARY);
-//	typeNames.put(Types.CLOB, "text", 0);
-//	typeNames.put(Types.BOOLEAN, "boolean", 0,"bool");
-//	typeNames.put(Types.TINYINT, "int2", 0);
-//	typeNames.put(Types.SMALLINT, "int2", 0);
-//	typeNames.put(Types.INTEGER, "int4", 0);
-//	typeNames.put(Types.BIGINT, "int8", 0);
-//	
-//	typeNames.put(Types.FLOAT, 6, "float4", 0);
-//	typeNames.put(Types.FLOAT, 15,"float8", Types.DOUBLE);
-//	typeNames.put(Types.FLOAT, 38,"numeric($p, $s)", Types.NUMERIC);
-//	typeNames.put(Types.DOUBLE, 15,"float8", 0);
-//	typeNames.put(Types.DOUBLE, 38,"numeric($p, $s)", Types.NUMERIC);
-//	typeNames.put(Types.NUMERIC, "numeric($p, $s)", 0);
-
 	@Override
 	public void init(SQLTemplates templates) {
 		SQLTemplatesEx.initDefaultDDLTemplate(templates);
@@ -39,6 +41,9 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx{
 		add(templates, DDLOps.UNSIGNED, "{0}");
 		add(templates, DDLOps.COMMENT_ON_COLUMN, "COMMENT ON COLUMN {0} IS {1}");
 		add(templates, DDLOps.COMMENT_ON_TABLE, "COMMENT ON TABLE {0} IS {1}");
+		
+		
+		add(templates,ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE{2}");
 		//add(templates, Basic.SELECT_VALUES, "values {0}");
 		//add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
 //		add(templates, SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL, "");
@@ -46,10 +51,23 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx{
 //				AlterTableOps.CHANGE_COLUMN,DDLOps.COLLATE, AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP,
 //				AlterTableConstraintOps.ALTER_TABLE_DROP_KEY
 		
+		
+		add(templates, SpecialFeature.INDEPENDENT_COMMENT_STATEMENT, "");
+		add(templates, SpecialFeature.PARTITION_SUPPORT,"");
+		
 	}
 	
+	@Override
+	public boolean supportCreateInTableDefinition(ConstraintType type) {
+		return !type.isIndex();
+	}
 	
-	
+
+	@Override
+	public LetterCase getDefaultLetterCase() {
+		return LetterCase.LOWER;
+	}
+
 	
 	
 }

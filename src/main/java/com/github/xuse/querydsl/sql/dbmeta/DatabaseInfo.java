@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
+import com.github.xuse.querydsl.sql.dialect.DbType;
+
 public interface DatabaseInfo {
 	String getDriverName();
 
@@ -8,4 +10,6 @@ public interface DatabaseInfo {
 	String getNamespace();
 
 	int getDefaultTxIsolation();
+	
+	DbType getDbType();
 }

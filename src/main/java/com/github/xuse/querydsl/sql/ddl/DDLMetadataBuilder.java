@@ -248,7 +248,7 @@ public class DDLMetadataBuilder {
 	
 	
 	public void serializeAlterTable(CompareResult difference) {
-		if (configuration.has(SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL)) {
+		if (!configuration.has(SpecialFeature.MULTI_COLUMNS_IN_ALTER_TABLE)) {
 			for (ColumnMapping cp : difference.getAddColumns()) {
 				serializeAlterTable0(difference.ofAddSingleColumn(cp));
 			}

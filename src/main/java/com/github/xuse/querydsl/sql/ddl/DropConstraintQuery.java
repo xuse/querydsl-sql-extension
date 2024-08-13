@@ -152,7 +152,7 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 			return;
 		}
 		
-		if (configuration.has(SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL)) {
+		if (!configuration.has(SpecialFeature.MULTI_COLUMNS_IN_ALTER_TABLE)) {
 			for(Expression<?> one:exp) {
 				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
 				serializer.setRouting(routing);

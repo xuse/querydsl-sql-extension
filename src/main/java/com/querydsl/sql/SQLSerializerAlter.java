@@ -220,6 +220,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		if(action!=null) {
 			append(action);	
 			this.visit(path, null);
+			append(" ");
 		}
 		Iterator<Expression<?>> iter=exprs.iterator();
 		if(iter.hasNext()) {

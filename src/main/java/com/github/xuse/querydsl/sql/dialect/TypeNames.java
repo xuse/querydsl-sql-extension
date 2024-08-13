@@ -174,17 +174,6 @@ final class TypeNames {
 		typeNames.put(Types.VARBINARY, "varbinary($l)");
 		typeNames.put(Types.LONGVARCHAR, "varchar($l)").type(Types.VARCHAR);
 		typeNames.put(Types.LONGVARBINARY, "varbinary($l)").type(Types.VARBINARY);
-		// LOBS
-		typeNames.put(Types.CLOB, "mediumtext").noSize();
-		typeNames.put(Types.BLOB, "mediumblob").noSize();
-		typeNames.put(Types.BLOB, 255, "tinyblob").noSize();
-		typeNames.put(Types.CLOB, 255, "tinytext").noSize();
-		typeNames.put(Types.BLOB, 65535, "blob").noSize();
-		typeNames.put(Types.CLOB, 65535, "text").noSize();
-		typeNames.put(Types.BLOB, 1024 * 1024 * 16, "mediumblob").noSize();
-		typeNames.put(Types.CLOB, 1024 * 1024 * 16, "mediumtext").noSize();
-		typeNames.put(Types.BLOB, 1024 * 1024 * 1024, "longblob").noSize();
-		typeNames.put(Types.CLOB, 1024 * 1024 * 1024, "longtext").noSize();
 		return typeNames;
 	}
 }

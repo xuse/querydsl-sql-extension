@@ -20,6 +20,7 @@ public abstract class AbstractTestBase {
 	static String s1 = "r-o-o-t";
 	static String s2 = "ODgtMDctNTktOTg=";
 	static String host="bmJfMy1oel8yMDAxXzczNzc=";
+	//static String host="10.25.3.25";
 	static String testPws="12_34_5";
 	private static DriverManagerDataSource dsDerby = new DriverManagerDataSource();
 	private static DriverManagerDataSource dsMySQL = new DriverManagerDataSource();
@@ -53,7 +54,7 @@ public abstract class AbstractTestBase {
 		
 	}
 
-	private static final DriverManagerDataSource effectiveDs = dsDerby;
+	private static final DriverManagerDataSource effectiveDs = pg14;
 	
 	
 	public static  DriverManagerDataSource getEffectiveDs() {

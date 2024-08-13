@@ -2,20 +2,16 @@ package com.github.xuse.querydsl.init;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+
 import com.github.xuse.querydsl.annotation.InitializeData;
-import com.github.xuse.querydsl.asm.AnnotationVisitor;
 import com.github.xuse.querydsl.asm.ClassReader;
-import com.github.xuse.querydsl.asm.ClassVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
 import com.github.xuse.querydsl.init.csv.Codecs;
 import com.github.xuse.querydsl.init.csv.CsvFileWriter;
@@ -24,10 +20,12 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.util.ASMUtils;
+import com.github.xuse.querydsl.util.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.querydsl.core.types.Path;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -203,25 +201,6 @@ public class InitDataExporter {
 			}
 			log.info("Starting export data:{}", modelClass.getName());
 			export(modelClass);
-		}
-	}
-
-	static class ClassAnnotationExtracter extends ClassVisitor {
-
-		private Set<String> annotations = new HashSet<String>();
-
-		public ClassAnnotationExtracter() {
-			super(Opcodes.ASM7);
-		}
-
-		@Override
-		public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-			annotations.add(desc);
-			return null;
-		}
-
-		public boolean hasAnnotation(Class<? extends Annotation> clzName) {
-			return annotations.contains(ASMUtils.getDesc(clzName));
 		}
 	}
 

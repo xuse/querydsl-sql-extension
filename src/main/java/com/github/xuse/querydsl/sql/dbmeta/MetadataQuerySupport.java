@@ -84,6 +84,7 @@ public abstract class MetadataQuerySupport {
 			info.databaseProductName = e.getDatabaseProductName();
 			info.dataProductVersion = e.getDatabaseProductVersion() + " " + e.getDatabaseMinorVersion();
 			info.defaultTxIsolation = e.getDefaultTransactionIsolation();
+			info.setUrl(e.getURL());
 			return info;
 		});
 		doConnectionAccess(c -> {
@@ -459,7 +460,7 @@ public abstract class MetadataQuerySupport {
 		try {
 			T t = TypeUtils.newInstance(clz);
 			for (FieldOrder field : list) {
-				Object o = rs.getObject(field.index);
+				Object o = getConfiguration().get().get(rs, null, field.index, field.field.getType());
 				if (field.field.getType().isPrimitive() && o == null) {
 				} else {
 					field.field.set(t, o);

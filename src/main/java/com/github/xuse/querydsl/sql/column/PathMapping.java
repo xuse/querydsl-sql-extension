@@ -109,7 +109,6 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 			try {
 				customType = SQLTypeUtils.createInstance(clz, anno.parameters(), path.getType());
 				setCustomType(customType);
-				log.info("Column [{}.{}] is registered to:{}", path, column.getName(), customType);
 			} catch (Exception e) {
 				log.error("customType on {} error", path, e);
 			}

@@ -1,9 +1,15 @@
 package com.github.xuse.querydsl.util;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.github.xuse.querydsl.asm.AnnotationVisitor;
 import com.github.xuse.querydsl.asm.ClassReader;
+import com.github.xuse.querydsl.asm.ClassVisitor;
 import com.github.xuse.querydsl.asm.MethodVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
 
@@ -276,5 +282,25 @@ public class ASMUtils {
 	 */
 	public static String getSuperClassName(ClassReader cr) {
 		return cr.getSuperName().replace('/', '.');
+	}
+	
+
+	public static class ClassAnnotationExtracter extends ClassVisitor {
+
+		private Set<String> annotations = new HashSet<String>();
+
+		public ClassAnnotationExtracter() {
+			super(Opcodes.ASM7);
+		}
+
+		@Override
+		public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+			annotations.add(desc);
+			return null;
+		}
+
+		public boolean hasAnnotation(Class<? extends Annotation> clzName) {
+			return annotations.contains(ASMUtils.getDesc(clzName));
+		}
 	}
 }

@@ -4,7 +4,10 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
+import com.github.xuse.querydsl.util.Enums;
+import com.github.xuse.querydsl.util.StringUtils;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +34,10 @@ public final class DriverInfo implements DatabaseInfo{
 	SchemaPolicy policy;
 
 	long dbTimeDelta;
+	
+	String url;
+	
+	DbType dbType;
 
 	public String getNamespace() {
 		return policy.toNamespace(catalog, schema);
@@ -51,5 +58,26 @@ public final class DriverInfo implements DatabaseInfo{
 			log.info("The timestamp is {}, difference between database and this machine is {}ms.", getDatabaseTime(),
 					dbTimeDelta);
 		}
+	}
+	
+	public void setUrl(String url) {
+		this.url=url;
+		this.dbType=parseDbType(url);
+	}
+
+	private DbType parseDbType(String url) {
+		if(url.startsWith("jdbc:")) {
+			String s=url.substring(5);
+			s=StringUtils.substringBefore(s, ":");
+			DbType dbType=Enums.valueOf(DbType.class, s, null);
+			if(dbType==null) {
+				dbType = DbType.ofAlias(s);
+			}
+			if(dbType!=null) {
+				return dbType;
+			}
+		}
+		log.warn("Can not determine dbtype for {}",url);
+		return DbType.other;
 	}
 }

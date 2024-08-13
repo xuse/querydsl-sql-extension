@@ -13,9 +13,9 @@ public enum SpecialFeature implements Operator{
 	HAS_CRLF_IN_DEFAULT_VALUE_EXPRESSION,
 	
 	/**
-	 * 在执行ALTER TABLE语句的时候一次只能操作一个列 (Derby)
+	 * 在执行ALTER TABLE语句的时候一次可以操作多个列 (MySQL And Oracle)
 	 */
-	ONE_COLUMN_IN_SINGLE_DDL,
+	MULTI_COLUMNS_IN_ALTER_TABLE,
 	
 	/**
 	 * 支持分区表

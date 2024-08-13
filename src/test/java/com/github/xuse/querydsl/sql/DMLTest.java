@@ -38,7 +38,7 @@ import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.repository.LambdaQueryWrapper;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
+import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
@@ -510,7 +510,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 	
 	@Test
 	public void mysqlInsertOnDuplidateKey() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for MYSQL",factory.getMetadataFactory().getDatabaseInfo().getDbType()==DbType.mysql);
 		QCaAsset t2 = QCaAsset.caAsset;
 		CaAsset a=new CaAsset();
 		a.setCode("a");
@@ -732,5 +732,31 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 		repo.update(indb.getId(), indb);
 		
 		repo.delete(indb.getId());
+	}
+	
+	@Test
+	public void testPureBeanBatch() {
+		Foo foo=new Foo();
+		foo.setCode("Test1");
+		foo.setName("test1");
+		CRUDRepository<Foo, Integer> repo=factory.asRepository(()->Foo.class);
+		
+		Foo foo2=new Foo();
+		foo2.setCode("Test2");
+		foo2.setName("test2");
+		
+		factory.getMetadataFactory().truncate(()->Foo.class).execute();
+		
+		int count=repo.insertBatch(Arrays.asList(foo,foo2));
+		System.err.println(count);
+		
+		for(Foo f:repo.query().fetch()) {
+			System.out.println(f);
+		}
+		
+		
+		
+		
+		
 	}
 }

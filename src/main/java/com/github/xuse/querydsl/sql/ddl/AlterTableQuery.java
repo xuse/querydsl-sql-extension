@@ -383,7 +383,8 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			ops = Basic.TIME_EQ;
 		}
 		Expression<Boolean> compareExpression = Expressions.simpleOperation(Boolean.class, ops, c1Default, c2Default);
-		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, compareExpression, Expressions.path(Object.class, null, dummyTable)));
+		Expression<?> dualPath=StringUtils.isEmpty(dummyTable)?DDLExpressions.empty(): Expressions.path(Object.class, dummyTable);
+		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, compareExpression, dualPath));
 		String sql = s.toString();
 		final SQLBindings qSql = new SQLBindings(sql, s.getConstants());
 		try {

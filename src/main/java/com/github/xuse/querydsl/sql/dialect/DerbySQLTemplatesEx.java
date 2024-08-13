@@ -64,7 +64,6 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 
 		add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
 		
-		add(templates, SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL, "");
 		addUnsupports(DDLOps.COMMENT_ON_COLUMN, DDLOps.COMMENT_ON_TABLE, DDLOps.UNSIGNED, AlterTableOps.CHANGE_COLUMN,
 				DDLOps.COLLATE, AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP,
 				AlterTableConstraintOps.ALTER_TABLE_DROP_KEY);

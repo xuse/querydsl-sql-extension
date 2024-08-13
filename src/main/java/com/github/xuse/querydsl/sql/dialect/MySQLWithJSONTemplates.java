@@ -111,7 +111,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
 		add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
 		add(SpecialFeature.PARTITION_SUPPORT,"");
-		
+		add(SpecialFeature.MULTI_COLUMNS_IN_ALTER_TABLE, "");
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
 		if(!supportsCheckConstraint) {
 			unsupports.add(ConstraintType.CHECK);
@@ -148,7 +148,17 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		
 		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB).noSize();
 		typeNames.put(Types.LONGVARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.LONGVARBINARY).noSize();
-
+		// LOBS
+		typeNames.put(Types.CLOB, "mediumtext").noSize();
+		typeNames.put(Types.BLOB, "mediumblob").noSize();
+		typeNames.put(Types.BLOB, 255, "tinyblob").noSize();
+		typeNames.put(Types.CLOB, 255, "tinytext").noSize();
+		typeNames.put(Types.BLOB, 65535, "blob").noSize();
+		typeNames.put(Types.CLOB, 65535, "text").noSize();
+		typeNames.put(Types.BLOB, 1024 * 1024 * 16, "mediumblob").noSize();
+		typeNames.put(Types.CLOB, 1024 * 1024 * 16, "mediumtext").noSize();
+		typeNames.put(Types.BLOB, 1024 * 1024 * 1024, "longblob").noSize();
+		typeNames.put(Types.CLOB, 1024 * 1024 * 1024, "longtext").noSize();
 	}
 
 	private void initPartitionOps() {
