@@ -26,8 +26,12 @@ public enum SpecialFeature implements Operator{
 	 * 独立的COMMENT语句 (postgres)
 	 */
 	INDEPENDENT_COMMENT_STATEMENT,
+	
+	INDEPENDENT_PARTITION_CREATION,
+	
+	NO_PRIMARY_KEY_ON_PARTITION_TABLE
 	;
-
+	
 	@Override
 	public Class<?> getType() {
 		return null;

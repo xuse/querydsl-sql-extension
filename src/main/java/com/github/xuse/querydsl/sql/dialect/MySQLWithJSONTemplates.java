@@ -4,20 +4,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.Constraint;
-import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;
+import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
-import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
@@ -31,7 +26,6 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.expression.JsonOps;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.MySQLTemplates;
@@ -171,12 +165,11 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(PartitionMethod.RANGE_COLUMNS,"RANGE COLUMNS({0}) {1}");
 		add(PartitionMethod.LIST,"LIST ({0}) {1}");
 		add(PartitionMethod.LIST_COLUMNS,"LIST COLUMNS({0}) {1}");
-		add(PartitionDefineOps.PARTITION_IN_LIST," PARTITION {0} VALUES IN ({1})");
-		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({1})");
+		add(PartitionDefineOps.PARTITION_IN_LIST," PARTITION {0} VALUES IN ({2})");
+		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({2})");
 		
-		add(AlterTablePartitionOps.ADD_PARTITION," ADD PARTITION ({0})");
-		add(AlterTablePartitionOps.REORGANIZE_PARTITION," REORGANIZE PARTITION {0} INTO {1}");
-		
+		add(AlterTablePartitionOps.ADD_PARTITION,"ALTER TABLE {1} ADD PARTITION ({0})");
+		add(AlterTablePartitionOps.REORGANIZE_PARTITION,"ALTER TABLE {2} REORGANIZE PARTITION {0} INTO {1}");
 	}
 
 	private void initJsonFunctions() {
@@ -238,78 +231,10 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		// add(template, DDLOps.ALTER_COLUMN,"CHANGE {0} {0} {1}");
 	}
 
-	
-	
+
 	@Override
-	public List<PartitionInfo> getPartitions(String schema, String tableName, ConnectionWrapper w) {
-		if (StringUtils.isEmpty(schema)) {
-			schema = "%";
-		}
-		SQLBindings sql = new SQLBindings(
-				"SELECT * FROM information_schema.partitions WHERE table_name=? AND TABLE_SCHEMA LIKE ? ORDER BY PARTITION_ORDINAL_POSITION ASC",
-				Arrays.asList(tableName, schema));
-		List<PartitionInfo> partitions = w.query(sql, rs -> {
-			PartitionInfo c = new PartitionInfo();
-			c.setTableCat(rs.getString("TABLE_CATALOG"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setName(rs.getString("PARTITION_NAME"));
-			c.setMethod(PartitionMethod.parse(rs.getString("PARTITION_METHOD")));
-			c.setCreateTime(rs.getTimestamp("CREATE_TIME"));
-			c.setPartitionExpression(rs.getString("PARTITION_EXPRESSION"));
-			c.setPartitionOrdinal(rs.getInt("PARTITION_ORDINAL_POSITION"));
-			c.setPartitionDescription(rs.getString("PARTITION_DESCRIPTION"));
-			return c;
-		});
-		return partitions;
-	}
-	
-	@Override
-	public List<Constraint> getConstraints(String schema, String tableName, ConnectionWrapper w, boolean detail) {
-		if (StringUtils.isEmpty(schema)) {
-			schema = "%";
-		}
-		// 只会得到UNIQUE，普通的KEY不会在这个表返回（纯索引）
-		SQLBindings sql = new SQLBindings(
-				"SELECT * FROM information_schema.table_constraints WHERE  table_name=? AND constraint_schema LIKE ?",
-				Arrays.asList(tableName, schema));
-		List<Constraint> constraints = w.query(sql, rs -> {
-			Constraint c = new Constraint();
-			c.setName(rs.getString("CONSTRAINT_NAME"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			ConstraintType type = ConstraintType.valueOf(rs.getString("CONSTRAINT_TYPE").replace(' ', '_'));
-			c.setConstraintType(type);
-			return c;
-		});
-		if (!detail) {
-			return constraints;
-		}
-		// 尝试获取字段填入
-		sql = new SQLBindings(
-				"SELECT * FROM information_schema.key_column_usage WHERE  table_name=? AND constraint_schema LIKE ?",
-				Arrays.asList(tableName, schema));
-		List<KeyColumn> keyColumns = w.query(sql, rs -> {
-			KeyColumn c = new KeyColumn();
-			c.setKeyName(rs.getString("CONSTRAINT_NAME"));
-			c.setTableCat(rs.getString("TABLE_CATALOG"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setColumnName(rs.getString("COLUMN_NAME"));
-			c.setSeq(rs.getInt("ORDINAL_POSITION"));
-			return c;
-		});
-		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(keyColumns, KeyColumn::getKeyName, e -> e);
-		for (Constraint c : constraints) {
-			String name = c.getName();
-			List<KeyColumn> columns = map.get(name);
-			if (columns == null) {
-				continue;
-			}
-			columns.sort(Comparator.comparingInt(a -> a.seq));
-			c.setColumnNames(columns.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
-		}
-		return constraints;
+	public SchemaReader getSchemaAccessor() {
+		return InfomationSchemaReader.DEFAULT;
 	}
 
 	@Override

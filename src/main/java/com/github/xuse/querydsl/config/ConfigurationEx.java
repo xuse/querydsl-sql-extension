@@ -33,6 +33,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.SnowflakeIdWorker;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.Configuration;
@@ -482,6 +483,10 @@ public class ConfigurationEx {
 	}
 
 	public boolean has(SpecialFeature feature) {
+		return getTemplates().supports(feature);
+	}
+	
+	public boolean supports(Operator feature) {
 		return getTemplates().supports(feature);
 	}
 

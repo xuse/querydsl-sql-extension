@@ -232,15 +232,6 @@ public class SQLSerializerAlter extends SQLSerializer {
 		}
 	}
 
-//	public void serializePath(Path<?> entity, String... action) {
-//		for (String s : action) {
-//			if (s != null) {
-//				append(s);
-//			}
-//		}
-//		this.visit(entity, null);
-//	}
-
 
 	public RoutingStrategy getRouting() {
 		return routing;

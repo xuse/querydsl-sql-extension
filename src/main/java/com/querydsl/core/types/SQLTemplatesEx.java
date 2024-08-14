@@ -6,13 +6,13 @@ import java.util.List;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
-import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
+import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
-import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
@@ -65,26 +65,9 @@ public interface SQLTemplatesEx {
 	default void init(SQLTemplates templates) {
 		initDefaultDDLTemplate(templates);
 	}
-
-	/**
-	 * @param schema schema
-	 * @param table table
-	 * @param conn conn
-	 * @param detail detail
-	 * @return null means do not support to fetch. empty means there is no Constraints.
-	 */
-	default List<Constraint> getConstraints(String schema, String table, ConnectionWrapper conn, boolean detail) {
-		return null;
-	}
-
-	/**
-	 * @param schema schema
-	 * @param table table
-	 * @param conn conn
-	 * @return null means do not support partitions.
-	 */
-	default List<PartitionInfo> getPartitions(String schema, String table, ConnectionWrapper conn) {
-		return null;
+	
+	default SchemaReader getSchemaAccessor() {
+		return InfomationSchemaReader.DEFAULT;
 	}
 
 	default LetterCase getDefaultLetterCase() {
@@ -122,13 +105,13 @@ public interface SQLTemplatesEx {
 		templates.add(DDLOps.DEF_LIST, "{0} {1}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CHECK, "DROP CHECK {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_FOREIGNKEY, "DROP FOREIGN KEY {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP UNIQUE {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP CONSTRAINT {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY, "DROP PRIMARY KEY");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT, "DROP CONSTRAINT {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP, "DROP INDEX {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP INDEX {0}");
 		templates.add(DropStatement.DROP_TABLE, "DROP TABLE {0}");
-		templates.add(DropStatement.DROP_INDEX, " DROP INDEX {0}");
+		templates.add(DropStatement.DROP_INDEX, "DROP INDEX {0}");
 		// all constraint create def
 		templates.add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}");
 		templates.add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}");
@@ -147,7 +130,7 @@ public interface SQLTemplatesEx {
 		templates.add(AlterColumnOps.SET_INCREMENT_BY, "SET INCREMENT BY {0}");
 		templates.add(AlterColumnOps.SET_DEFAULT, "SET DEFAULT {0}");
 		templates.add(AlterColumnOps.DROP_DEFAULT, "DROP DEFAULT");
-		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0}");
+		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0} {1}");
 		templates.add(AlterColumnOps.SET_GENERATED, "SET GENERATED {0}");
 		templates.add(AlterColumnOps.SET_NOTNULL, "SET NOT NULL");
 		templates.add(AlterColumnOps.SET_NULL, "SET NULL");

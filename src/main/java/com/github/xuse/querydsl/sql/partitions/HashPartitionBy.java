@@ -1,12 +1,14 @@
 package com.github.xuse.querydsl.sql.partitions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.github.xuse.querydsl.annotation.partition.HashType;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -97,5 +99,15 @@ public class HashPartitionBy implements PartitionBy{
 
 	public HashType type() {
 		return type;
+	}
+
+	@Override
+	public PartitionMethod getMethod() {
+		return type.getMethod();
+	}
+
+	@Override
+	public List<Expression<?>> partitions(ConfigurationEx configurationEx) {
+		return Collections.emptyList();
 	}
 }

@@ -77,23 +77,21 @@ public abstract class MetadataQuerySupport {
 	}
 	
 	private DriverInfo generateDriverInfo() {
-		DriverInfo result = doMetadataAccess(e -> {
-			DriverInfo info = new DriverInfo();
-			info.driverName = e.getDriverName();
-			info.driverVersion = e.getDriverVersion() + " " + e.getDatabaseMinorVersion();
-			info.databaseProductName = e.getDatabaseProductName();
-			info.dataProductVersion = e.getDatabaseProductVersion() + " " + e.getDatabaseMinorVersion();
-			info.defaultTxIsolation = e.getDefaultTransactionIsolation();
-			info.setUrl(e.getURL());
-			return info;
+		DriverInfo result = doConnectionAccess(c -> {
+			DriverInfo r = new DriverInfo();
+			DatabaseMetaData e=c.getMetaData();
+			r.catalog = c.getCatalog();
+			r.schema = c.getSchema();
+			r.driverName = e.getDriverName();
+			r.driverVersion = e.getDriverVersion() + " " + e.getDatabaseMinorVersion();
+			r.databaseProductName = e.getDatabaseProductName();
+			r.dataProductVersion = e.getDatabaseProductVersion() + " " + e.getDatabaseMinorVersion();
+			r.defaultTxIsolation = e.getDefaultTransactionIsolation();
+			r.setUrl(e.getURL());
+			return r;
 		});
-		doConnectionAccess(c -> {
-			result.catalog = c.getCatalog();
-			result.schema = c.getSchema();
-			return null;
-		});
-		result.setDbTimeDelta(calcDbTimeDelta());
 		result.policy = getConfiguration().getTemplates().getSchemaPolicy();
+		result.setDbTimeDelta(calcDbTimeDelta());
 		return result;
 	}
 	
@@ -236,6 +234,7 @@ public abstract class MetadataQuerySupport {
 		column.setDataType(rs.getString("TYPE_NAME"));
 		column.setCharOctetLength(rs.getInt("CHAR_OCTET_LENGTH"));
 		int nullable = rs.getInt("NULLABLE");
+		
 		boolean nullAble1 = nullable == DatabaseMetaData.columnNullable;
 		boolean nullAble2 = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
 		if (nullAble1 != nullAble2) {
@@ -365,30 +364,8 @@ public abstract class MetadataQuerySupport {
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		List<KeyColumn> ts = this.doMetadataQuery("getPrimaryKey", m -> m.getPrimaryKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName), rs -> {
-			KeyColumn k = new KeyColumn();
-			k.setColumnName(rs.getString("COLUMN_NAME"));
-			k.setKeyName(rs.getString("PK_NAME"));
-			k.setSeq(rs.getInt("KEY_SEQ"));
-			k.setTableCat(rs.getString("TABLE_CAT"));
-			k.setTableName(rs.getString("TABLE_NAME"));
-			k.setTableSchema(rs.getString("TABLE_SCHEM"));
-			return k;
-		});
-		if (ts.isEmpty()) {
-			return null;
-		}
-		ts.sort(Comparator.comparingInt(KeyColumn::getSeq));
-		Constraint c = new Constraint();
-		c.setColumnNames(ts.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
-		KeyColumn k = ts.get(0);
-		c.setCatalog(k.getTableCat());
-		c.setSchema(k.getTableSchema());
-		c.setTableName(k.getTableName());
-		c.setConstraintType(ConstraintType.PRIMARY_KEY);
-		c.setEnabled(true);
-		c.setName(k.getKeyName());
-		return c;
+		SchemaReader schemas=getConfiguration().getTemplates().getSchemaAccessor();
+		return this.doSQLQuery(e->schemas.getPrimaryKey(policy.asCatalog(namespace), policy.asSchema(namespace), tableName,e),"getPrimryKey");
 	}
 
 	/**
@@ -474,25 +451,20 @@ public abstract class MetadataQuerySupport {
 
 	public List<Constraint> getConstraints(SchemaAndTable table, boolean detail) {
 		table = getConfiguration().getOverride(table);
-		final String schema = processNamespace(table.getSchema());
+		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-		SQLTemplatesEx template = getConfiguration().getTemplates();
-		List<Constraint> constraints = doSQLQuery(q -> template.getConstraints(schema, tableName, q, detail), "getConstraints");
-		Constraint pk;
-		if (constraints == null) {
-			if (null != (pk = getPrimaryKey(table))) {
-				constraints = Collections.singletonList(pk);
-			}
-		}
-		return constraints;
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
+		return doSQLQuery(q -> template.getConstraints(policy.asCatalog(namespace),policy.asSchema(namespace), tableName, q, detail), "getConstraints");
 	}
 
 	public List<PartitionInfo> getPartitions(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
-		final String schema = processNamespace(table.getSchema());
+		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-		SQLTemplatesEx template = getConfiguration().getTemplates();
-		List<PartitionInfo> partitions = doSQLQuery(q -> template.getPartitions(schema, tableName, q), "getPartitions");
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
+		List<PartitionInfo> partitions = doSQLQuery(q -> template.getPartitions(policy.asCatalog(namespace),policy.asSchema(namespace), tableName, q), "getPartitions");
 		if (partitions == null) {
 			throw new UnsupportedOperationException("Current database do not support PARTITION operation. " + getDriverInfo() .getDatabaseProductName());
 		}
@@ -620,21 +592,6 @@ public abstract class MetadataQuerySupport {
 		SQLListenerContextImpl context = new SQLListenerContextImpl(metadata, connection, null);
 		listeners.start(context);
 		return context;
-	}
-
-	private <R> R doMetadataAccess(QueryFunction<DatabaseMetaData, R> func) {
-		Assert.notNull(func);
-		Connection conn = getConnection();
-		SQLListenerContextImpl context = startContext(conn);
-		// long time = System.currentTimeMillis();
-		try {
-			ConnectionWrapper q = new ConnectionWrapper(conn, getConfiguration());
-			R r = q.metadataAccess(func);
-			// postExecuted(context, System.currentTimeMillis() - time, "metadata", 0);
-			return r;
-		} finally {
-			listeners.end(context);
-		}
 	}
 
 	/*

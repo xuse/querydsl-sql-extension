@@ -9,4 +9,9 @@ public @interface Partition {
 	String name();
 	
 	String value();
+
+	/**
+	 * @return 在Postgresql上， Range需要指定from 
+	 */
+	String from() default "";
 }

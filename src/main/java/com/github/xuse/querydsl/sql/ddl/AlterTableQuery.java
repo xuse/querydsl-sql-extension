@@ -21,6 +21,7 @@ import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
@@ -323,9 +324,10 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		List<ColumnChange> result = new ArrayList<ColumnChange>();
 		// 忽略字段顺序和列名称，仅对比其他8个属性
 		if (dataTypeChanged(c1, c2) || c1.isAutoIncreament() != c2.isAutoIncreament()) {
-			Expression<?> from = DDLExpressions.dataType(db.getDataType(), c2.isNullable(), c2.isUnsigned(), null);
-			Expression<?> to = DDLExpressions.dataType(java.getDataType(), c1.isNullable(), c1.isUnsigned(), null);
-			log.info("change {} ->{}", from, to);
+			Expression<?> from = DDLExpressions.dataType(DDLOps.DATA_TYPE, db.getDataType(), c2.isNullable(), c2.isUnsigned(), null);
+			Expression<?> to = DDLExpressions.dataType(AlterColumnOps.SET_DATATYPE,java.getDataType(), c1.isNullable(), c1.isUnsigned(), null);
+			
+			log.info("CHANGE: {},null:{},unsign:{} -> {},null:{},unsign:{}", db.getDataType(), c2.isNullable(),c2.isUnsigned(), java.getDataType(), c1.isNullable(), c1.isUnsigned());
 			result.add(ColumnChange.dataType(from, to));
 		}
 		// NULL修改

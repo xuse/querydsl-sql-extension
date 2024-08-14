@@ -20,6 +20,7 @@ import com.github.xuse.querydsl.entity.partition.QPartitionFoo4;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.partitions.Partitions;
 import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
@@ -30,7 +31,8 @@ import com.querydsl.sql.SchemaAndTable;
 public class TestPartitions extends AbstractTestBase{
 	@Test
 	public void testAdjustPartitionsCount() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionMethod.HASH));
 		
 		QPartitionFoo4 t4 = QPartitionFoo4.partitionFoo4;
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
@@ -63,7 +65,7 @@ public class TestPartitions extends AbstractTestBase{
 	@Test
 	@Ignore
 	public void createTables() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 //		metadata.createTable(QPartitionFoo1.partitionFoo1).reCreate().execute();
 //		metadata.createTable(QPartitionFoo2.partitionFoo2).reCreate().execute();
@@ -77,7 +79,7 @@ public class TestPartitions extends AbstractTestBase{
 
 	@Test
 	public void testPartitionsAddSimple() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1=QPartitionFoo1.partitionFoo1;
 		metadata.dropTable(t1).execute();
@@ -95,7 +97,7 @@ public class TestPartitions extends AbstractTestBase{
 	
 	@Test
 	public void testPartitionsAddSimple2() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1b t1=QPartitionFoo1b.partitionFoo1b;
 		metadata.dropTable(t1).execute();
@@ -110,7 +112,7 @@ public class TestPartitions extends AbstractTestBase{
 	 */
 	@Test
 	public void testPartitionsReorganiztion() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1=QPartitionFoo1.partitionFoo1;
 		metadata.dropTable(t1).execute();
@@ -145,7 +147,7 @@ public class TestPartitions extends AbstractTestBase{
 	
 	@Test
 	public void terPartitionsReorganiztionList() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo3 t1 = QPartitionFoo3.partitionFoo3;
 		metadata.dropTable(t1).execute();
@@ -182,7 +184,7 @@ public class TestPartitions extends AbstractTestBase{
 	 */
 	@Test
 	public void testRemoveAndRebuild() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		
@@ -214,7 +216,7 @@ public class TestPartitions extends AbstractTestBase{
 	 */
 	@Test
 	public void testAlterTableAddPrimaryKeyColumn() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
 		
@@ -241,9 +243,9 @@ public class TestPartitions extends AbstractTestBase{
 	
 	@Test
 	public void testFetchPartitions() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
-		List<PartitionInfo> partitions=metadata.getPartitions(new SchemaAndTable("alarm_request", "alarm_ext_attribute_detect_result_backup"));
+		List<PartitionInfo> partitions=metadata.getPartitions(new SchemaAndTable(null, "s3"));
 		for(PartitionInfo p:partitions) {
 			System.out.println(p);
 		}

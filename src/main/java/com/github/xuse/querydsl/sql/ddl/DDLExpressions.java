@@ -57,7 +57,10 @@ public class DDLExpressions {
 		return wrap(Expressions.list(paths.toArray(new Expression[size])));
 	}
 
-	public static Expression<?> nullAblity(boolean isNullable) {
+	public static Expression<?> nullAblity(Boolean isNullable) {
+		if(isNullable==null) {
+			return EMPTY;
+		}
 		return isNullable ? simple(DDLOps.COLUMN_ALLOW_NULL) : NOT_NULL;
 	}
 
@@ -73,14 +76,14 @@ public class DDLExpressions {
 		return simple(DDLOps.COLUMN_SPEC, column, dataType, columnConstraints);
 	}
 
-	public static Expression<?> dataType(String dataType, boolean isNullable, boolean unsigned, Expression<?> defaultValue) {
+	public static Expression<?> dataType(Operator op,String dataType, Boolean isNullable, boolean unsigned, Expression<?> defaultValue) {
 		Expression<?> datatype = Expressions.template(Object.class, dataType);
 		if (unsigned) {
 			datatype = withUnsigned(datatype);
 		}
 		Expression<?> nullablity = nullAblity(isNullable);
 		Expression<?> defaultExp = defaultValue == null ? EMPTY : simple(DDLOps.DEFAULT, defaultValue);
-		return simple(DDLOps.DATA_TYPE, datatype, nullablity, defaultExp);
+		return simple(op, datatype, nullablity, defaultExp);
 	}
 
 	public static Expression<?> defList(List<Expression<?>> exprs) {
@@ -141,6 +144,9 @@ public class DDLExpressions {
 	}
 
 	public static Expression<?> text(String str) {
+		if(str==null || str.isEmpty()) {
+			return EMPTY;
+		}
 		return Expressions.template(Object.class, str);
 	}
 

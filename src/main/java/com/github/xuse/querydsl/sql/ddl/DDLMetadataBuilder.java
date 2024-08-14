@@ -19,6 +19,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.DropStatement;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
@@ -69,6 +70,9 @@ public class DDLMetadataBuilder {
 	public void serializeTableCreate(boolean processPartition) {
 		final RelationalPathEx<?> tableEx = (table instanceof RelationalPathEx) ? (RelationalPathEx<?>) table : null;
 		SQLTemplatesEx template = configuration.getTemplates();
+		//计算要不要创建分区
+		processPartition = processPartition && isProcessPartition(tableEx);
+		
 		// The main Statement
 		DDLMetadata meta = new DDLMetadata(true, true);
 		result.add(meta);
@@ -76,6 +80,13 @@ public class DDLMetadataBuilder {
 		List<Expression<?>> tableDefExpressions = new ArrayList<>();
 		// Add columns
 		PrimaryKey<?> keys = table.getPrimaryKey();
+		
+		//For postgresql. remove primary key for partition table. 
+		if(processPartition && configuration.has(SpecialFeature.NO_PRIMARY_KEY_ON_PARTITION_TABLE)) {
+			log.warn("Curentdatabase do not support primary key on partition table, the primary key will not set to this table in database. {}",table.getSchemaAndTable());
+			keys = null;
+		}
+		
 		for (Path<?> p : table.getColumns()) {
 			ColumnMetadata c = table.getMetadata(p);
 			ColumnMetadataEx cx = tableEx == null ? new ColumnMetadataExImpl(c) : tableEx.getColumnMetadata(p);
@@ -117,47 +128,73 @@ public class DDLMetadataBuilder {
 		meta.addExpression(tableCreateExpression);
 		// 处理建表时的Partition定义
 		if (processPartition && tableEx != null && tableEx.getPartitionBy() != null) {
-			if (configuration.getTemplates().supports(PartitionDefineOps.PARTITION_BY)) {
+			PartitionBy partition=tableEx.getPartitionBy();
+			PartitionMethod method = partition.getMethod();
+			if (template.supports(PartitionDefineOps.PARTITION_BY) && template.supports(method)) {
 				meta.addExpression(getPartitionByExpression(tableEx.getPartitionBy(), true));
+			}else {
+				log.warn("Current database do not support create a [PARTITION BY {}] table.", method);
 			}
 		}
 	}
 
-	private void addIndependConstraintMeta(Constraint c) {
-		DDLMetadata meta = new DDLMetadata(false, true);
-		ConstraintType type = c.getConstraintType();
-		if (type == null) {
-			type = ConstraintType.KEY;
+	private boolean isProcessPartition(RelationalPathEx<?> tableEx) {
+		SQLTemplatesEx template = configuration.getTemplates();
+		if (tableEx != null && tableEx.getPartitionBy() != null) {
+			PartitionMethod method = tableEx.getPartitionBy().getMethod();
+			return template.supports(PartitionDefineOps.PARTITION_BY) && template.supports(method); 
 		}
-		Operator ops = type.getIndependentCreateOps();
-		Expression<?> defExp;
-		if (type.isColumnList()) {
-			defExp = DDLExpressions.wrapList(c.getPaths());
-		} else {
-			defExp = c.getCheckClause();
-		}
-		meta.addExpression(new ConstraintOperation(generateConstraintName(c.getName(), table, true),
-				(ops == null ? type : ops), table, defExp));
+		return false;
+	}
 
+	private void addIndependConstraintMeta(Constraint c) {
 		if (configuration.getTemplates().supports(c.getConstraintType().getIndependentCreateOps())) {
+			DDLMetadata meta = new DDLMetadata(false, true);
 			result.add(meta);
+			ConstraintType type = c.getConstraintType();
+			if (type == null) {
+				type = ConstraintType.KEY;
+			}
+			Operator ops = type.getIndependentCreateOps();
+			Expression<?> defExp;
+			if (type.isColumnList()) {
+				defExp = DDLExpressions.wrapList(c.getPaths());
+			} else {
+				defExp = c.getCheckClause();
+			}
+			meta.addExpression(new ConstraintOperation(generateConstraintName(c.getName(), table, true),
+					(ops == null ? type : ops), table, defExp));
 		} else {
 			log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.", c);
 		}
 	}
 
 	public void serializePartitionBy(PartitionBy partitionBy, boolean check) {
-		DDLMetadata meta = new DDLMetadata(true, true);
-		meta.setAction("ALTER TABLE ");
-		meta.addExpression(getPartitionByExpression(partitionBy,check));
+		SQLTemplatesEx template = configuration.getTemplates();
+		PartitionMethod method = partitionBy.getMethod();
+		if (template.supports(PartitionDefineOps.PARTITION_BY) && template.supports(method)) {
+			DDLMetadata meta = new DDLMetadata(true, true);
+			meta.setAction("ALTER TABLE ");
+			result.add(meta);
+			meta.addExpression(getPartitionByExpression(partitionBy,check));	
+		}
 	}
 
 	private Expression<?> getPartitionByExpression(PartitionBy partitionBy, boolean check) {
 		if (check) {
 			checkPartitionFields(partitionBy);
 		}
-		return partitionBy.generateExpression(configuration);
+		Expression<?> result=partitionBy.generateExpression(configuration);
+		if(configuration.has(SpecialFeature.INDEPENDENT_PARTITION_CREATION)) {
+			for(Expression<?> expr:partitionBy.partitions(configuration)) {
+				DDLMetadata meta = new DDLMetadata(true, true);
+				meta.addExpression(expr);
+				this.result.add(meta);
+			}
+		}
+		return result;
 	}
+
 
 	private void checkPartitionFields(PartitionBy pb) {
 		if (table.getPrimaryKey() == null) {
@@ -238,7 +275,7 @@ public class DDLMetadataBuilder {
 		ColumnDef exp = template.getColumnDataType(cx.getJdbcType(), cx.getSize(), cx.getDigits());
 		boolean unsigned = cx != null && cx.isUnsigned() && SQLTypeUtils.isNumeric(cx.getJdbcType());
 		Expression<?> defaultValue = cx.getDefaultExpression();
-		Expression<?> dataType = DDLExpressions.dataType(exp.getDataType(), cx.isNullable() && !isPk, unsigned,
+		Expression<?> dataType = DDLExpressions.dataType(DDLOps.DATA_TYPE, exp.getDataType(), cx.isNullable() && !isPk, unsigned,
 				defaultValue);
 		return dataType;
 	}
@@ -307,7 +344,13 @@ public class DDLMetadataBuilder {
 						} else {
 							op = DDLOps.COMMENT_ON_COLUMN;
 						}
+					}else if(cg.getType()==AlterColumnOps.SET_DATATYPE) {
+						//SET_DATATYPE表达式比较特殊，已经带有SET_DATATYPE操作了。
+						Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_COLUMN, change.getPath(),cg.getTo());
+						tableDefExpressions.add(alterClause);
+						continue;
 					}
+					//构造列修改表达式
 					Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_COLUMN, change.getPath(),
 							DDLExpressions.simple(op, cg.getTo()));
 					tableDefExpressions.add(alterClause);

@@ -194,6 +194,7 @@ public enum DDLOps implements Operator {
 	public enum AlterTablePartitionOps implements Operator{
 		/**
 		 * 增加一个分区
+		 * ALTER TABLE {1}
 		 * ADD PARTITION {0:partition def}
 		 */
 		ADD_PARTITION,
@@ -223,6 +224,7 @@ public enum DDLOps implements Operator {
 		EXCHANGE_PARTITION,
 		
 		/**
+		 * ALTER TABLE {2}
 		 * REORGANIZE PARTITION {0} INTO {1}
 		 */
 		REORGANIZE_PARTITION,
@@ -269,6 +271,12 @@ public enum DDLOps implements Operator {
 	}
 	public enum AlterColumnOps implements Operator{
 		/**
+		 * 改变定义，不再通过datetype操作包装
+		 * {0} (data type[unsign])
+		 * {1} NULL / NOT NULL
+		 * {2} DEFAULT VALUE
+		 * 
+		 * 
 		 * Derby: 
 		 * SET DATA TYPE {0:data type}
 		 * 
@@ -454,15 +462,27 @@ public enum DDLOps implements Operator {
 		PARTITION_BY,
 		
 		/**
-		 * PARTITION {0:name} VALUES IN ({1:lists})
+		 * on MySQL
+		 * PARTITION {0:name} VALUES IN ({2:list})
+		 * 
+		 *
+		 * on PG:
+		 * CREATE TABLE {0:name} PARTITION OF {1:table} FOR VALUES IN ({2:list})
 		 */
 		PARTITION_IN_LIST,
 		
 		/**
-		 * PARTITION {0:name} VALUE LESS THAN ({1:value})
+		 * on MySQL
+		 * PARTITION {0:name} VALUE LESS THAN ({2:value}) 
+		 * {1.table}
 		 */
-		PARTITION_LESS_THAN
+		PARTITION_LESS_THAN,
 		
+		/**
+		 * on PG
+		 * CREATE TABLE {0:name} PARTITION OF {1:table} FOR VALUES FROM {2:from} TO {3:to})
+		 */
+		PARTITION_FROM_TO
 		;
 		@Override
 		public Class<?> getType() {
