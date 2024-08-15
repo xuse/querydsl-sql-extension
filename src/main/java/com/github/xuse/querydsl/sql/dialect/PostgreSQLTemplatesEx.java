@@ -7,8 +7,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
@@ -112,7 +114,7 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 		add(templates, SpecialFeature.INDEPENDENT_COMMENT_STATEMENT, "");
 		//add(templates, SpecialFeature.PARTITION_SUPPORT, "");
 		add(templates, SpecialFeature.INDEPENDENT_PARTITION_CREATION, "");
-		add(templates, SpecialFeature.NO_PRIMARY_KEY_ON_PARTITION_TABLE, "");
+		add(templates, SpecialFeature.NO_KEYS_ON_PARTITION_TABLE, "");
 		
 		initPartitionOps(templates);
 		
@@ -126,22 +128,19 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 		//官方文档上说有Hash Partition但没有示例，在PG14上测试不通过，视为不支持
 //		add(templates,PartitionMethod.KEY,"HASH({0}) PARTITIONS {1}");
 //		add(templates,PartitionMethod.HASH,"HASH({0}) PARTITIONS {1}");
+		//创建语句不是通过修改表实现的
+		add(templates,AlterTablePartitionOps.ADD_PARTITION,"{0}");
+		add(templates,PartitionDefineOps.PARTITION_IN_LIST,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES IN ({2})");
+		add(templates,PartitionDefineOps.PARTITION_FROM_TO,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES FROM ({2}) TO ({3})");
+		add(templates, AlterTablePartitionOps.DROP_PARTITION,"DETACH PARTITION {1}_{0} CONCURRENTLY");
 		
-		//不支持
-		//add(templates,PartitionMethod.LINEAR_HASH," LINEAR HASH({0}) PARTITIONS {1}");
-		//不支持
-//		add(templates,AlterTablePartitionOps.REORGANIZE_PARTITION," REORGANIZE PARTITION {0} INTO {1}");
+		//不支持去除和添加分区，每张表初始时就已经确认是否为分区表
 		
+		//分区定义
 		add(templates,PartitionMethod.RANGE,"RANGE ({0})");
 		add(templates,PartitionMethod.RANGE_COLUMNS,"RANGE ({0})");
 		add(templates,PartitionMethod.LIST,"LIST ({0})");
 		add(templates,PartitionMethod.LIST_COLUMNS,"LIST ({0})");
-		
-		//创建语句不是通过修改表实现的
-		add(templates,AlterTablePartitionOps.ADD_PARTITION,"{0}");
-		add(templates,PartitionDefineOps.PARTITION_IN_LIST,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES IN ({2})");
-		add(templates,PartitionDefineOps.PARTITION_FROM_TO,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES FROM {2} TO {3}");
-		
 	}
 
 	@Override
@@ -175,7 +174,8 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 					+ "    pg_get_expr(my.relpartbound, parent.oid) as bound,\r\n"
 					+ "    case pdef.partstrat when 'h' then 'HASH' when 'l' then 'LIST' when 'r' then 'RANGE' else null end as partition_method,\r\n"
 					+ "    pdef.partnatts as column_count,\r\n"
-					+ "    pdef.partexprs\r\n"
+					+ "    pdef.partexprs,\r\n"
+					+ "    pg_catalog.pg_get_partkeydef(parent.oid) as partition_key"
 					+ "    from pg_catalog.pg_inherits ih\r\n"
 					+ "    left join pg_class as parent on parent.oid=ih.inhparent \r\n"
 					+ "    left join pg_class as my on my.oid=ih.inhrelid \r\n"
@@ -200,13 +200,65 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 			String method=rs.getString(7);
 			if (StringUtils.isNotEmpty(method)) {
 				info.setMethod(PartitionMethod.valueOf(method));
+				String partitionBy=rs.getString("partition_key");
+				partitionBy=partitionBy.substring(method.length()).trim();
+				partitionBy=StringUtils.removeBucket(partitionBy);
+				info.setPartitionExpression(partitionBy);
 			}
-			//分区字段拿不到
-//			info.setPartitionExpression(rs.getString(6));
-//			info.setCreateTime(null);
-//			info.setPartitionOrdinal();
 			return info;
 		}
+		
+		private TableInfo convertTable(ResultSet rs) throws SQLException {
+			TableInfo table=new TableInfo();
+			table.setCatalog(rs.getString("table_cat"));
+			table.setSchema(rs.getString("table_schema"));
+			table.setName(rs.getString("relname"));
+			table.setRemarks(rs.getString("description"));
+			String kind=rs.getString("relkind");
+			String type = null;
+			if(kind.length()>0) {
+				switch(kind.charAt(0)) {
+				case 'r':
+					type="BASE TABLE";
+					break;
+				case 'p':
+					type="PARTITION TABLE";
+					break;
+				default:
+					type=kind;
+				}
+			}
+			table.setType(type);
+//			info.setAttribute("ENGINE", rs.getString("ENGINE"));
+//			info.setAttribute("VERSION", rs.getInt("VERSION"));
+//			info.setAttribute("ROW_FORMAT", rs.getString("ROW_FORMAT"));
+//			info.setAttribute("AUTO_INCREMENT", rs.getLong("AUTO_INCREMENT"));
+//			info.setAttribute("CREATE_TIME", rs.getTimestamp("CREATE_TIME"));
+//			info.setAttribute("UPDATE_TIME", rs.getTimestamp("UPDATE_TIME"));
+//			info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
+			table.setAttribute("PARTITION_KEY", rs.getString("partition_key"));
+			return table;
+		}
+
+		@Override
+		public List<TableInfo> fetchTables(ConnectionWrapper conn, String catalog, String schema, String qMatchName,
+				ObjectType type) {
+			if(schema==null) {
+				schema="%";
+			}
+			String sql="SELECT current_database() as table_cat,ns.nspname as table_schema,c.*,d.description,pg_catalog.pg_get_expr(c.relpartbound, c.oid) as partition_expr,  pg_catalog.pg_get_partkeydef(c.oid) as partition_key \r\n"
+					+ "FROM pg_catalog.pg_class c\r\n"
+					+ "inner join pg_catalog.pg_namespace ns on ns.oid=c.relnamespace \r\n"
+					+ "LEFT OUTER JOIN pg_catalog.pg_description d ON d.objoid=c.oid AND d.objsubid=0 AND d.classoid='pg_class'::regclass\r\n"
+					+ "WHERE c.relkind not in ('i','I','c','S') and relispartition =false\r\n"
+					+ "and c.relname like ? and ns.nspname like ?"; //过滤掉分区，在PG中分区也是一张独立的表。
+			SQLBindings bind = new SQLBindings(sql, Arrays.asList(qMatchName,mergeSchema(catalog, schema)));
+			List<TableInfo> partitions = conn.query(bind, this::convertTable);
+			return partitions;
+		}
+		
+		
+		
 	}
 
 }

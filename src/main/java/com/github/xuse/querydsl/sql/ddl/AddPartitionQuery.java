@@ -25,6 +25,7 @@ import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLSerializerAlter;
@@ -293,5 +294,10 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	@Override
 	protected String generateSQL() {
 		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	protected List<Operator> checkSupports() {
+		return Collections.singletonList(AlterTablePartitionOps.ADD_PARTITION);
 	}
 }

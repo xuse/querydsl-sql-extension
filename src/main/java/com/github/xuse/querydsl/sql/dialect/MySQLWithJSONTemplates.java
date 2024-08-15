@@ -10,9 +10,9 @@ import java.util.Set;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
+import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
@@ -41,10 +41,49 @@ import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
  */
 public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplatesEx {
 	private final TypeNames typeNames = TypeNames.generateDefault();
-
-	private final boolean usingInfoSchema;
 	
 	protected final Set<Operator> unsupports=new HashSet<>();
+	
+	private SchemaReader schemaReader=new InfomationSchemaReader(0) {
+		@Override
+		public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
+				ObjectType type) {
+			// &useInformationSchema=true获得的数据不一样，比现有驱动的要好。但是测试发现，正常情况下无法获得table info的comment等信息，所以直接访问MySQL系统表更好
+			List<Object> params = new ArrayList<>();
+			params.add(qMatchName);
+			String sql = "SELECT TABLE_CATALOG AS TABLE_CAT,TABLE_SCHEMA AS TABLE_SCHEM,TABLE_NAME,CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN CASE WHEN TABLE_SCHEMA = 'mysql' OR TABLE_SCHEMA = 'performance_schema' THEN 'SYSTEM TABLE' ELSE 'TABLE' END WHEN TABLE_TYPE = 'TEMPORARY' THEN 'LOCAL_TEMPORARY' ELSE TABLE_TYPE END AS TABLE_TYPE, TABLE_COMMENT AS REMARKS,"
+					+ "ENGINE, VERSION, ROW_FORMAT, AUTO_INCREMENT, CREATE_TIME, UPDATE_TIME, TABLE_COLLATION "
+					+ "FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE ?";
+			if (StringUtils.isNotEmpty(catalog) && !"%".equals(catalog)) {
+				sql += " AND TABLE_SCHEMA LIKE ?";
+				params.add(catalog);
+			}
+			if (type != null) {
+				sql += " HAVING TABLE_TYPE = ?";
+				params.add(type.name());
+			}
+			SQLBindings sb = new SQLBindings(sql, params);
+			return e.query(sb, this::fromRsEx);
+		}
+
+		private TableInfo fromRsEx(ResultSet rs) throws SQLException {
+			TableInfo info = new TableInfo();
+			info.setCatalog(rs.getString("TABLE_CAT"));
+			info.setSchema(rs.getString("TABLE_SCHEM"));
+			info.setName(rs.getString("TABLE_NAME"));
+			info.setType(rs.getString("TABLE_TYPE"));
+			info.setRemarks(rs.getString("REMARKS"));
+			info.setAttribute("ENGINE", rs.getString("ENGINE"));
+			info.setAttribute("VERSION", rs.getInt("VERSION"));
+			info.setAttribute("ROW_FORMAT", rs.getString("ROW_FORMAT"));
+			info.setAttribute("AUTO_INCREMENT", rs.getLong("AUTO_INCREMENT"));
+			info.setAttribute("CREATE_TIME", rs.getTimestamp("CREATE_TIME"));
+			info.setAttribute("UPDATE_TIME", rs.getTimestamp("UPDATE_TIME"));
+			info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
+			return info;
+		}
+	};
+	
 	
     public static MySQLTemplateBuilderEx builder() {
         return new MySQLTemplateBuilderEx();
@@ -61,7 +100,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
     	
         @Override
         protected SQLTemplates build(char escape, boolean quote) {
-            return new MySQLWithJSONTemplates(escape, quote,false,supportsCheck);
+			return new MySQLWithJSONTemplates(escape, quote, supportsCheck);
         }
     }
     
@@ -73,14 +112,12 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 
 	public MySQLWithJSONTemplates() {
-		this('\\',false,false,false);
+		this('\\', false, false);
 	}
 	
-	public MySQLWithJSONTemplates(char escape, boolean quote,boolean usingInfoSchema,boolean supportsCheckConstraint) {
+	public MySQLWithJSONTemplates(char escape, boolean quote,boolean supportsCheckConstraint) {
 		super(escape, quote);
 		super.setPrintSchema(false);
-		this.usingInfoSchema = usingInfoSchema;
-		
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
 		initJsonFunctions();
 		initPartitionOps();
@@ -104,8 +141,8 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
 		add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
 		add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(SpecialFeature.PARTITION_SUPPORT,"");
 		add(SpecialFeature.MULTI_COLUMNS_IN_ALTER_TABLE, "");
+		add(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY,"");
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
 		if(!supportsCheckConstraint) {
 			unsupports.add(ConstraintType.CHECK);
@@ -158,6 +195,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	private void initPartitionOps() {
 		add(PartitionDefineOps.PARTITION_BY,"PARTITION BY {0}");
 		
+		
 		add(PartitionMethod.KEY,"KEY({0}) PARTITIONS {1}");
 		add(PartitionMethod.HASH,"HASH({0}) PARTITIONS {1}");
 		add(PartitionMethod.LINEAR_HASH," LINEAR HASH({0}) PARTITIONS {1}");
@@ -169,7 +207,15 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({2})");
 		
 		add(AlterTablePartitionOps.ADD_PARTITION,"ALTER TABLE {1} ADD PARTITION ({0})");
+		add(AlterTablePartitionOps.DROP_PARTITION,"ALTER TABLE {1} DROP PARTITION ({0})");
 		add(AlterTablePartitionOps.REORGANIZE_PARTITION,"ALTER TABLE {2} REORGANIZE PARTITION {0} INTO {1}");
+		
+		add(AlterTablePartitionOps.REMOVE_PARTITIONING,"ALTER TABLE {0} REMOVE PARTITIONING");
+		add(AlterTablePartitionOps.ADD_PARTITIONING,"PARTITION BY {0}");
+		
+		add(AlterTablePartitionOps.COALESCE_PARTITION,"ALTER TABLE {0} COALESCE PARTITION {1}");
+		add(AlterTablePartitionOps.ADD_PARTITION_COUNT,"ALTER TABLE {0} ADD PARTITION PARTITIONS {1}");
+		
 	}
 
 	private void initJsonFunctions() {
@@ -234,7 +280,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 
 	@Override
 	public SchemaReader getSchemaAccessor() {
-		return InfomationSchemaReader.DEFAULT;
+		return schemaReader;
 	}
 
 	@Override
@@ -267,50 +313,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		default:
 			return SizeParser.DEFAULT;
 		}
-	}
-
-	@Override
-	public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
-			ObjectType type) {
-		// 测试发现，正常情况下无法获得table info的comment等信息
-		// &useInformationSchema=true
-		if(usingInfoSchema) {
-			return SQLTemplatesEx.super.fetchTables(e, catalog, schema, qMatchName, type);	
-		}else {
-			List<Object> params=new ArrayList<>();
-			params.add(qMatchName);
-			String sql="SELECT TABLE_CATALOG AS TABLE_CAT,TABLE_SCHEMA AS TABLE_SCHEM,TABLE_NAME,CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN CASE WHEN TABLE_SCHEMA = 'mysql' OR TABLE_SCHEMA = 'performance_schema' THEN 'SYSTEM TABLE' ELSE 'TABLE' END WHEN TABLE_TYPE = 'TEMPORARY' THEN 'LOCAL_TEMPORARY' ELSE TABLE_TYPE END AS TABLE_TYPE, TABLE_COMMENT AS REMARKS,"
-					+"ENGINE, VERSION, ROW_FORMAT, AUTO_INCREMENT, CREATE_TIME, UPDATE_TIME, TABLE_COLLATION "
-					+ "FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE ?";
-			if(StringUtils.isNotEmpty(catalog)&& !"%".equals(catalog)) {
-				sql+=" AND TABLE_SCHEMA LIKE ?";
-				params.add(catalog);
-			}
-			if(type!=null) {
-				sql+=" HAVING TABLE_TYPE = ?";
-				params.add(type.name());
-			}
-			SQLBindings sb=new SQLBindings(sql, params);
-			return e.query(sb, this::fromRsEx);
-		}
-	}
-	
-
-	private TableInfo fromRsEx(ResultSet rs) throws SQLException {
-		TableInfo info = new TableInfo();
-		info.setCatalog(rs.getString("TABLE_CAT"));
-		info.setSchema(rs.getString("TABLE_SCHEM"));
-		info.setName(rs.getString("TABLE_NAME"));
-		info.setType(rs.getString("TABLE_TYPE"));
-		info.setRemarks(rs.getString("REMARKS"));
-		info.setAttribute("ENGINE", rs.getString("ENGINE"));
-		info.setAttribute("VERSION", rs.getInt("VERSION"));
-		info.setAttribute("ROW_FORMAT", rs.getString("ROW_FORMAT"));
-		info.setAttribute("AUTO_INCREMENT", rs.getLong("AUTO_INCREMENT"));
-		info.setAttribute("CREATE_TIME", rs.getTimestamp("CREATE_TIME"));
-		info.setAttribute("UPDATE_TIME", rs.getTimestamp("UPDATE_TIME"));
-		info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
-		return info;
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.github.xuse.querydsl.annotation.partition.Partition;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
@@ -17,12 +18,16 @@ import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.DropStatement;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
+import com.github.xuse.querydsl.sql.partitions.PartitionAssigned;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.sql.routing.TableRouting;
+import com.github.xuse.querydsl.sql.routing.WrapdRoutingStrategy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -67,11 +72,22 @@ public class DDLMetadataBuilder {
 		result.add(meta);
 	}
 
+	public void serilizeSimple(Operator ops, Expression<?>... exprs) {
+		DDLMetadata meta = new DDLMetadata(true, true);
+		meta.addExpression(DDLExpressions.simple(ops, exprs));
+		result.add(meta);
+	}
+	
 	public void serializeTableCreate(boolean processPartition) {
 		final RelationalPathEx<?> tableEx = (table instanceof RelationalPathEx) ? (RelationalPathEx<?>) table : null;
 		SQLTemplatesEx template = configuration.getTemplates();
 		//计算要不要创建分区
-		processPartition = processPartition && isProcessPartition(tableEx);
+		processPartition = processPartition && isPartitionedTable(tableEx);
+		boolean ignoreKeysOnPartitionedTable = processPartition && configuration.has(SpecialFeature.NO_KEYS_ON_PARTITION_TABLE);
+		//For postgresql. remove index / constraints from the partitioned table. 
+		if(ignoreKeysOnPartitionedTable) {
+			log.warn("Curentdatabase do not support primary key on partition table, All keys and constraints will not set to table in database. {}",table.getSchemaAndTable());
+		}
 		
 		// The main Statement
 		DDLMetadata meta = new DDLMetadata(true, true);
@@ -80,13 +96,6 @@ public class DDLMetadataBuilder {
 		List<Expression<?>> tableDefExpressions = new ArrayList<>();
 		// Add columns
 		PrimaryKey<?> keys = table.getPrimaryKey();
-		
-		//For postgresql. remove primary key for partition table. 
-		if(processPartition && configuration.has(SpecialFeature.NO_PRIMARY_KEY_ON_PARTITION_TABLE)) {
-			log.warn("Curentdatabase do not support primary key on partition table, the primary key will not set to this table in database. {}",table.getSchemaAndTable());
-			keys = null;
-		}
-		
 		for (Path<?> p : table.getColumns()) {
 			ColumnMetadata c = table.getMetadata(p);
 			ColumnMetadataEx cx = tableEx == null ? new ColumnMetadataExImpl(c) : tableEx.getColumnMetadata(p);
@@ -96,22 +105,28 @@ public class DDLMetadataBuilder {
 		// Add Primary key.
 		{
 			if (keys != null && !keys.getLocalColumns().isEmpty()) {
-				Expression<?> columns = DDLExpressions.wrap(ExpressionUtils.list(Tuple.class, keys.getLocalColumns()));
-				tableDefExpressions.add(DDLExpressions.constraintDefinition(ConstraintType.PRIMARY_KEY, table,
-						new SchemaAndTable(null, ""), columns));
-			}
-		}
-		// Add Constraint or index
-		if (tableEx != null && CollectionUtils.isNotEmpty(tableEx.getConstraints())) {
-			for (Constraint constraint : tableEx.getConstraints()) {
-				if (template.supportCreateInTableDefinition(constraint.getConstraintType())) {
-					tableDefExpressions.add(generateConstraintDefinition(constraint, table));
-				} else {
-					addIndependConstraintMeta(constraint);
+				if(!ignoreKeysOnPartitionedTable) {
+					Expression<?> columns = DDLExpressions.wrap(ExpressionUtils.list(Tuple.class, keys.getLocalColumns()));
+					tableDefExpressions.add(DDLExpressions.constraintDefinition(ConstraintType.PRIMARY_KEY, table,
+							new SchemaAndTable(null, ""), columns));	
 				}
 			}
 		}
+		// Add Constraint or index
+		if(!ignoreKeysOnPartitionedTable) {
+			if (tableEx != null && CollectionUtils.isNotEmpty(tableEx.getConstraints())) {
+				for (Constraint constraint : tableEx.getConstraints()) {
+					if (template.supportCreateInTableDefinition(constraint.getConstraintType())) {
+						tableDefExpressions.add(generateConstraintDefinition(constraint, table));
+					} else {
+						addIndependConstraintMeta(constraint);
+					}
+				}
+			}	
+		}
 		Expression<?> tableCreateExpression = DDLExpressions.tableDefinitionList(tableDefExpressions, true);
+		
+		//Add collate engine and etc..
 		if (tableEx != null) {
 			tableCreateExpression = DDLExpressions.charsetAndCollate(tableCreateExpression, tableEx.getCollate());
 			if (StringUtils.isNotEmpty(tableEx.getComment())) {
@@ -127,18 +142,19 @@ public class DDLMetadataBuilder {
 		}
 		meta.addExpression(tableCreateExpression);
 		// 处理建表时的Partition定义
-		if (processPartition && tableEx != null && tableEx.getPartitionBy() != null) {
+		if (processPartition) {
 			PartitionBy partition=tableEx.getPartitionBy();
 			PartitionMethod method = partition.getMethod();
 			if (template.supports(PartitionDefineOps.PARTITION_BY) && template.supports(method)) {
-				meta.addExpression(getPartitionByExpression(tableEx.getPartitionBy(), true));
+				meta.addExpression(getPartitionByExpression(tableEx, tableEx.getPartitionBy(), 
+						configuration.has(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY) ,ignoreKeysOnPartitionedTable));
 			}else {
 				log.warn("Current database do not support create a [PARTITION BY {}] table.", method);
 			}
 		}
 	}
 
-	private boolean isProcessPartition(RelationalPathEx<?> tableEx) {
+	private boolean isPartitionedTable(RelationalPathEx<?> tableEx) {
 		SQLTemplatesEx template = configuration.getTemplates();
 		if (tableEx != null && tableEx.getPartitionBy() != null) {
 			PartitionMethod method = tableEx.getPartitionBy().getMethod();
@@ -147,7 +163,7 @@ public class DDLMetadataBuilder {
 		return false;
 	}
 
-	private void addIndependConstraintMeta(Constraint c) {
+	private DDLMetadata addIndependConstraintMeta(Constraint c) {
 		if (configuration.getTemplates().supports(c.getConstraintType().getIndependentCreateOps())) {
 			DDLMetadata meta = new DDLMetadata(false, true);
 			result.add(meta);
@@ -164,39 +180,69 @@ public class DDLMetadataBuilder {
 			}
 			meta.addExpression(new ConstraintOperation(generateConstraintName(c.getName(), table, true),
 					(ops == null ? type : ops), table, defExp));
+			return meta;
 		} else {
 			log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.", c);
+			return null;
 		}
 	}
 
 	public void serializePartitionBy(PartitionBy partitionBy, boolean check) {
 		SQLTemplatesEx template = configuration.getTemplates();
 		PartitionMethod method = partitionBy.getMethod();
-		if (template.supports(PartitionDefineOps.PARTITION_BY) && template.supports(method)) {
+		if (template.supports(AlterTablePartitionOps.ADD_PARTITIONING) && template.supports(method)) {
+			check = check && configuration.has(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY);
+			boolean singleConstraints = configuration.has(SpecialFeature.NO_KEYS_ON_PARTITION_TABLE);
 			DDLMetadata meta = new DDLMetadata(true, true);
 			meta.setAction("ALTER TABLE ");
 			result.add(meta);
-			meta.addExpression(getPartitionByExpression(partitionBy,check));	
+			meta.addExpression(getPartitionByExpression((RelationalPathEx<?>)table, partitionBy,check,singleConstraints));	
 		}
 	}
-
-	private Expression<?> getPartitionByExpression(PartitionBy partitionBy, boolean check) {
+	
+	
+	private Expression<?> getPartitionByExpression(RelationalPathEx<?> table, PartitionBy partitionBy, boolean check, boolean singleConstraints) {
 		if (check) {
-			checkPartitionFields(partitionBy);
+			checkPartitionFieldsInPrimaryKey(partitionBy);
 		}
-		Expression<?> result=partitionBy.generateExpression(configuration);
+		Expression<?> result= DDLExpressions.simple(PartitionDefineOps.PARTITION_BY, partitionBy.define(configuration));
 		if(configuration.has(SpecialFeature.INDEPENDENT_PARTITION_CREATION)) {
-			for(Expression<?> expr:partitionBy.partitions(configuration)) {
+			for(Partition p:partitionBy.partitions()) {
 				DDLMetadata meta = new DDLMetadata(true, true);
-				meta.addExpression(expr);
+				PartitionAssigned st = (PartitionAssigned) partitionBy;
+				meta.addExpression(st.defineOnePartition(p, configuration));
 				this.result.add(meta);
+				//Create index and constraints for this table/partition.
+				if(singleConstraints) {
+					addConstraintForPartition(p,table);
+				}
 			}
 		}
 		return result;
 	}
 
+	private void addConstraintForPartition(Partition p, RelationalPathEx<?> table) {
+		TableRouting routing=TableRouting.suffix("_"+ p.name());
+		PrimaryKey<?> keys=table.getPrimaryKey(); 
+//		{
+//			if (keys != null && !keys.getLocalColumns().isEmpty()) {
+//				Expression<?> columns = DDLExpressions.wrap(ExpressionUtils.list(Tuple.class, keys.getLocalColumns()));
+//				tableDefExpressions.add(DDLExpressions.constraintDefinition(ConstraintType.PRIMARY_KEY, table,new SchemaAndTable(null, ""), columns));	
+//			}
+//		}
+		// Add Constraint or index
+		if (CollectionUtils.isNotEmpty(table.getConstraints())) {
+			for (Constraint constraint : table.getConstraints()) {
+				DDLMetadata meta=addIndependConstraintMeta(constraint);
+				if(meta==null) {
+					continue;
+				}
+				meta.setSubrouting(routing);
+			}
+		}
+	}
 
-	private void checkPartitionFields(PartitionBy pb) {
+	private void checkPartitionFieldsInPrimaryKey(PartitionBy pb) {
 		if (table.getPrimaryKey() == null) {
 			throw new IllegalArgumentException("Partition table must have a primary key.");
 		}
@@ -428,6 +474,8 @@ public class DDLMetadataBuilder {
 		private String action;
 
 		private final List<Expression<?>> expressions = new ArrayList<>();
+		
+		private TableRouting subrouting;
 
 		public void clear() {
 			action = null;
@@ -448,6 +496,10 @@ public class DDLMetadataBuilder {
 			return this;
 		}
 
+		public void setSubrouting(TableRouting subrouting) {
+			this.subrouting = subrouting;
+		}
+
 		public void addExpression(Expression<?> expression) {
 			if (expression != null) {
 				this.expressions.add(expression);
@@ -460,7 +512,7 @@ public class DDLMetadataBuilder {
 			}
 			SQLSerializerAlter serializer = new SQLSerializerAlter(DDLMetadataBuilder.this.configuration, true,
 					useLiterals, skipParent);
-			serializer.setRouting(routing);
+			serializer.setRouting(WrapdRoutingStrategy.wrap(routing,subrouting));
 			serializer.serializeAction(action, DDLMetadataBuilder.this.table, expressions);
 			return serializer.toString();
 		}

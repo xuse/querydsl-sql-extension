@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.sql.partitions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,23 +27,22 @@ public class ListPartitionBy extends PartitionAssigned{
 
 	private final Partition[] partitions;
 
-
 	public Expression<?> define(ConfigurationEx configurationEx) {
 		Expression<?> expr = super.getExpr();
 		PartitionMethod op = getMethod();
-		List<Expression<?>>  partitions = partitions(configurationEx);
-		return DDLExpressions.simple(op, expr, DDLExpressions.wrapList(partitions));
-	}
-
-	public List<Expression<?>> partitions(ConfigurationEx configurationEx) {
-		if(partitions==null) {
-			return Collections.emptyList();
-		}
-		List<Expression<?>> partitions=new ArrayList<>(this.partitions.length);
+		List<Partition>  partitionDefs = partitions();
+		List<Expression<?>> partitions=new ArrayList<>(partitionDefs.size());
 		for(Partition p:this.partitions) {
 			partitions.add(defineOnePartition(p,configurationEx));
 		}
-		return partitions;
+		return DDLExpressions.simple(op, expr, DDLExpressions.wrapList(partitions));
+	}
+
+	public List<Partition> partitions() {
+		if(partitions==null) {
+			return Collections.emptyList();
+		}
+		return Arrays.asList(partitions);
 	}
 
 	@Override

@@ -2599,4 +2599,17 @@ public class StringUtils {
         	return true;
         }
     }
+    
+
+	public static String removeBucket(String check) {
+		if(isEmpty(check)) {
+			return check;
+		}
+		char f=check.charAt(0);
+		char l=check.charAt(check.length()-1);
+		if(f=='(' && l==')') {
+			return check.substring(1,check.length()-1);
+		}
+		return check;
+	}
 }

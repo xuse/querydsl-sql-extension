@@ -1,12 +1,17 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
+import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.Enums;
+import com.github.xuse.querydsl.util.JDKEnvironment;
 import com.github.xuse.querydsl.util.StringUtils;
 
 import lombok.Getter;
@@ -79,5 +84,18 @@ public final class DriverInfo implements DatabaseInfo{
 		}
 		log.warn("Can not determine dbtype for {}",url);
 		return DbType.other;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb=new StringBuilder("Database ");
+		sb.append(dbType).append(" Connected.");
+		sb.append(databaseProductName).append(' ').append(dataProductVersion);
+		sb.append(" @").append(url).append('\n').append("JDBC Driver:").append(driverName).append(' ').append(driverVersion);
+		sb.append(" in ").append(catalog).append('/').append(schema).append(" Isolation=").append(defaultTxIsolation);
+		sb.append(" CurrentTime=[").append(DateFormats.TIME_STAMP_CS.format(getDatabaseTime()));
+		sb.append("] jvm=").append(JDKEnvironment.JVM_VERSION).append(" Charset=").append(Charset.defaultCharset()).append(" Locale=").append(Locale.getDefault());
+		sb.append(" Timezone=").append(TimeZone.getDefault().toZoneId());
+		return sb.toString();
 	}
 }

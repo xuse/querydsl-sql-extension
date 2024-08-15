@@ -74,6 +74,10 @@ public class ConnectionWrapper {
 				}
 			}
 		} catch (SQLException e) {
+			log.error(sql);
+			if(!nullFriendlyBindings.isEmpty()) {
+				log.error("{}",nullFriendlyBindings);
+			}
 			throw configuration.get().translate(e);
 		}
 		return result;

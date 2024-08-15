@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.github.xuse.querydsl.annotation.partition.HashType;
+import com.github.xuse.querydsl.annotation.partition.Partition;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
@@ -107,7 +108,7 @@ public class HashPartitionBy implements PartitionBy{
 	}
 
 	@Override
-	public List<Expression<?>> partitions(ConfigurationEx configurationEx) {
+	public List<Partition> partitions() {
 		return Collections.emptyList();
 	}
 }

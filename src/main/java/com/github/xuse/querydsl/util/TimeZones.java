@@ -152,16 +152,4 @@ public class TimeZones {
 		}
 		return tz;
 	}
-	
-	
-	public static void main(String[] args) {
-		System.out.println(Asia_Shanghai);
-		int i=0;
-		for(double n=-12;n<=14;n+=0.25) {
-			TimeZone tz=getByUTCOffset(n);
-			System.out.println("==="+n+"===");
-			System.out.println(tz+" "+tz.getDisplayName());
-			System.out.println(++i);
-		}
-	}
 }

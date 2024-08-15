@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.sql.Types;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -12,8 +13,10 @@ import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dialect.DbType;
+import com.mysql.cj.xdevapi.Table;
 import com.querydsl.sql.ColumnMetadata;
 
 import lombok.extern.slf4j.Slf4j;
@@ -136,6 +139,17 @@ public class DDLTest extends AbstractTestBase {
 		metadata.refreshTable(QAaa.aaa)
 			.createIndex("idx_foo_gender", t.gender)
 			.execute();
+	}
+	
+	@Test
+	public void testFetchInfo() {
+		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+		
+		List<TableInfo> infos=metadata.getTables("test","public");
+		System.err.println(infos.size());
+		for(TableInfo t:infos) {
+			System.err.println(t);
+		}
 	}
 	
 	@Test

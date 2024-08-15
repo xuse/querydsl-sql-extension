@@ -26,10 +26,10 @@ import lombok.Data;
 @RangePartition(
 	columns="created",
 	value={
-		@Partition(name = "p202405",value="'2024-06-01'"),
-		@Partition(name = "p202406",value="'2024-07-01'"),
-		@Partition(name = "p202407",value="'2024-08-01'"),
-		@Partition(name = "pmax",value="MAXVALUE"),
+		@Partition(name = "p202405",value="'2024-06-01'", from="'2024-01-01'"),
+		@Partition(name = "p202406",value="'2024-07-01'", from="'2024-06-01'"),
+		@Partition(name = "p202407",value="'2024-08-01'", from="'2024-07-01'"),
+		@Partition(name = "pmax",value="MAXVALUE", from ="'2024-08-01'"),
 	}
 )
 public class PartitionFoo2 {

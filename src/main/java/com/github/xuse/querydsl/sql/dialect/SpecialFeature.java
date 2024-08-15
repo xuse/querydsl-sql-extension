@@ -18,18 +18,18 @@ public enum SpecialFeature implements Operator{
 	MULTI_COLUMNS_IN_ALTER_TABLE,
 	
 	/**
-	 * 支持分区表
-	 */
-	PARTITION_SUPPORT,
-	
-	/**
 	 * 独立的COMMENT语句 (postgres)
 	 */
 	INDEPENDENT_COMMENT_STATEMENT,
 	
 	INDEPENDENT_PARTITION_CREATION,
 	
-	NO_PRIMARY_KEY_ON_PARTITION_TABLE
+	PARTITION_KEY_MUST_IN_PRIMARY,
+	
+	/**
+	 * PG 分区功能实现。
+	 */
+	NO_KEYS_ON_PARTITION_TABLE
 	;
 	
 	@Override

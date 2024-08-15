@@ -9,7 +9,10 @@ import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.JdbcSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
@@ -134,6 +137,12 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 					return c;
 				});
 				return result;
+			}
+
+			@Override
+			public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
+					ObjectType type) {
+				return JdbcSchemaReader.INSTANCE.fetchTables(e, catalog, schema, qMatchName, type);
 			}
 		};
 	}

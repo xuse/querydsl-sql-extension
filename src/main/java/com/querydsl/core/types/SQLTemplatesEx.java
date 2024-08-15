@@ -1,16 +1,9 @@
 package com.querydsl.core.types;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
-import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
-import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
-import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
+import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
@@ -208,22 +201,5 @@ public interface SQLTemplatesEx {
 	 */
 	default String translateDefault(String columnDef, int type, int size, int digits) {
 		return SQLTypeUtils.serializeLiteral(columnDef, type);
-	}
-
-	default List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName, ObjectType type) {
-		return e.metadataQuery(m -> m.getTables(catalog, schema, qMatchName, type == null ? null : new String[] { type.name() }), SQLTemplatesEx::fromRs);
-	}
-
-	static TableInfo fromRs(ResultSet rs) throws SQLException {
-		TableInfo info = new TableInfo();
-		info.setCatalog(rs.getString("TABLE_CAT"));
-		info.setSchema(rs.getString("TABLE_SCHEM"));
-		info.setName(rs.getString("TABLE_NAME"));
-		info.setType(rs.getString("TABLE_TYPE"));
-		info.setRemarks(rs.getString("REMARKS"));
-		info.setTypeCat(rs.getString("TYPE_CAT"));
-		info.setTypeName(rs.getString("TYPE_NAME"));
-		info.setSchema(rs.getString("TYPE_SCHEM"));
-		return info;
 	}
 }

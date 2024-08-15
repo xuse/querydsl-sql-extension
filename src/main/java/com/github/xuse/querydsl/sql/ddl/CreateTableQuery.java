@@ -41,29 +41,6 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
 		builder.serializeTableCreate(processPartition);
 		return builder.getSqls();
-//		//开始建
-//		{
-//			SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
-//			serializer.setRouting(routing);
-//			others = serializer.serializeTableCreate(table, processPartition);
-//			String sql=serializer.toString();
-//			sqls.add(sql);	
-//		}
-//		for(Constraint c:others.getConstraints()) {
-//			if(configuration.getTemplates().supports(c.getConstraintType().getIndependentCreateOps())) {
-//				SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
-//				serializer.serialzeConstraintIndepentCreate(table,c);
-//				serializer.setRouting(routing);
-//				String sql=serializer.toString();
-//				//log.info(sql);
-//				sqls.add(sql);	
-//			}else {
-//				log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.",c);
-//			}
-//		}
-//		for(Expression<?> comm:others.getComments()) {
-//			//TODO
-//		}
 	}
 
 	@Override

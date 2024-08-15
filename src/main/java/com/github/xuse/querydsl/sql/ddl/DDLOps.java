@@ -192,6 +192,18 @@ public enum DDLOps implements Operator {
 	}
 	
 	public enum AlterTablePartitionOps implements Operator{
+		
+		/**
+		 * 去除表的分区设置，不影响数据
+		 * REMOVE PARTITIONING
+		 * {0} table name
+		 */
+		REMOVE_PARTITIONING,
+		/**
+		 * 在一个非分区表上设置为分区
+		 */
+		ADD_PARTITIONING,
+		
 		/**
 		 * 增加一个分区
 		 * ALTER TABLE {1}
@@ -214,12 +226,7 @@ public enum DDLOps implements Operator {
 		 * ADD PARTITION PARTITIONS {0:count}
 		 */
 		ADD_PARTITION_COUNT,
-		
-		/**
-		 * 去除表的分区设置，不影响数据
-		 * REMOVE PARTITIONING
-		 */
-		REMOVE_PARTITIONING,
+
 		TRUNCATE_PARTITION,
 		EXCHANGE_PARTITION,
 		

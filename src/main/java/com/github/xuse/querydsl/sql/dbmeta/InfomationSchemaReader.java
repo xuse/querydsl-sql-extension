@@ -87,9 +87,9 @@ public class InfomationSchemaReader implements SchemaReader {
 					if(filterNotNull && check.endsWith("IS NOT NULL")) {
 						return null;
 					}
-					check=removeBucket(check);
+					check=StringUtils.removeBucket(check);
 					if(has(REMOVE_BUCKET_FOR_CHECK)) {
-						check=removeBucket(check);	
+						check=StringUtils.removeBucket(check);	
 					}
 					c.setCheckClause(DDLExpressions.wrapCheckExpression(check));	
 				}
@@ -132,18 +132,6 @@ public class InfomationSchemaReader implements SchemaReader {
 		}
 		return schema;
 	}
-
-	private String removeBucket(String check) {
-		if(StringUtils.isEmpty(check)) {
-			return check;
-		}
-		char f=check.charAt(0);
-		char l=check.charAt(check.length()-1);
-		if(f=='(' && l==')') {
-			return check.substring(1,check.length()-1);
-		}
-		return check;
-	}
 	
 	protected boolean has(int check) {
 		return (this.features & check) == check; 
@@ -181,6 +169,12 @@ public class InfomationSchemaReader implements SchemaReader {
 			return c;
 		});
 		return partitions;
+	}
+
+	@Override
+	public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
+			ObjectType type) {
+		return JdbcSchemaReader.INSTANCE.fetchTables(e, catalog, schema, qMatchName, type);
 	}
 
 }

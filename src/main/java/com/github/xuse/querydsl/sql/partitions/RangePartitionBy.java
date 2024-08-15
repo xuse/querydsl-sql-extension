@@ -60,12 +60,15 @@ public class RangePartitionBy extends PartitionAssigned {
 
 	public Expression<?> define(ConfigurationEx config) {
 		PartitionMethod op = getMethod();
-		List<Expression<?>> partitions=partitions(config);
+		List<Partition> partitionDefs=partitions();
+		List<Expression<?>> partitions=new ArrayList<>(partitionDefs.size());
+		for(Partition p: partitionDefs) {
+			partitions.add(defineOnePartition(p, config));
+		}
 		return DDLExpressions.simple(op, getExpr(), DDLExpressions.wrapList(partitions));
 	}
 
-	public List<Expression<?>> partitions(ConfigurationEx config) {
-		List<Expression<?>> partitions=new ArrayList<>(this.partitions.length);
+	public List<Partition> partitions() {
 		 List<Partition> partitionDefs;
 		if (autoPartition != null && autoPartition.length > 0) {
 			//配置了自动计算分区的，就不再使用手工配置了
@@ -77,62 +80,63 @@ public class RangePartitionBy extends PartitionAssigned {
 			}
 			partitionDefs=Arrays.asList(this.partitions);
 		}
-		for(Partition p: partitionDefs) {
-			partitions.add(defineOnePartition(p, config));
-		}
-		return partitions;
+		return partitionDefs;
 	}
 
 	public static List<Partition>  generateAutoPartitions(AutoTimePartitions auto) {
-		List<Partition> partitions=new ArrayList<>();{
-		Date date=new Date();
+		List<Partition> partitions=new ArrayList<>();
+		Date current=new Date();
 		ColumnFormat format=auto.columnFormat();
+		Date cutOffPoint = null;
 		switch(auto.unit()) {
 		case DAY:
-			for(Date d:DateUtils.dayIterator(DateUtils.adjustDate(date, 0, 0, auto.periodsBegin()), DateUtils.adjustDate(date, 0,0,auto.periodsEnd()))) {
+			for(Date d:DateUtils.dayIterator(DateUtils.adjustDate(current, 0, 0, auto.periodsBegin()), DateUtils.adjustDate(current, 0,0,auto.periodsEnd()))) {
 				String name="p"+DateFormats.DATE_SHORT.format(d);
 				Date begin=d;
-				Date cutOffPoint = DateUtils.adjustDate(d, 0, 0, 1);
+				cutOffPoint = DateUtils.adjustDate(d, 0, 0, 1);
 				partitions.add(new PartitionDef(name, format.generateExpression(begin), format.generateExpression(cutOffPoint)));
 			}
 			break;
 		case MONTH:
-			for(Date d:DateUtils.monthIterator(DateUtils.adjustDate(date, 0, auto.periodsBegin(), 0), DateUtils.adjustDate(date, 0,auto.periodsEnd(),0))) {
+			for(Date d:DateUtils.monthIterator(DateUtils.adjustDate(current, 0, auto.periodsBegin(), 0), DateUtils.adjustDate(current, 0,auto.periodsEnd(),0))) {
 				String name="p"+DateFormats.YEAR_MONTH.format(d);
 				Date begin = d;
-				Date cutOffPoint = DateUtils.adjustDate(d, 0, 1, 0);
+				cutOffPoint = DateUtils.adjustDate(d, 0, 1, 0);
 				partitions.add(new PartitionDef(name, format.generateExpression(begin), format.generateExpression(cutOffPoint)));
 			}
 			break;
 		case WEEK:
-			int weekDay=DateUtils.getWeekDay(date);
-			date=DateUtils.adjustDate(date, 0,0,-weekDay);
-			date=DateUtils.truncateToDay(date);//得到本周的开始时间。
+			int weekDay=DateUtils.getWeekDay(current);
+			current=DateUtils.adjustDate(current, 0,0,-weekDay);
+			current=DateUtils.truncateToDay(current);//得到本周的开始时间。
 			for (int i = auto.periodsBegin(); i <= auto.periodsEnd(); i++) {
-				Date d=DateUtils.adjustDate(date, 0,0,i*7);
+				Date d=DateUtils.adjustDate(current, 0,0,i*7);
 				int year=DateUtils.getYear(d);
 				int weekNum=DateUtils.getWeekOfYear(d);
 				String name = "p" + year + "w" + weekNum;
 				Date begin = d; 
-				Date cutOffPoint = DateUtils.adjust(d, TimeUnit.DAYS.toMillis(7));
+				cutOffPoint = DateUtils.adjust(d, TimeUnit.DAYS.toMillis(7));
 				partitions.add(new PartitionDef(name, format.generateExpression(begin), format.generateExpression(cutOffPoint)));
 			}
 			break;
 		case YEAR:
-			int year=DateUtils.getYear(date);
+			int year=DateUtils.getYear(current);
 			int max = year + auto.periodsEnd();
 			for (int i = year + auto.periodsBegin(); i <= max; i++) {
 				String name = "p" + i;
 				Date begin = DateUtils.get(i, 1, 1);
-				Date cutOffPoint = DateUtils.get(i + 1, 1, 1);
+				cutOffPoint = DateUtils.get(i + 1, 1, 1);
 				partitions.add(new PartitionDef(name, format.generateExpression(begin), format.generateExpression(cutOffPoint)));
 			}
 			break;
 		}
 		if(auto.createForMaxValue()) {
-			partitions.add(new PartitionDef("pmax","","MAXVALUE"));
+			if(cutOffPoint==null) {
+				cutOffPoint = DateUtils.get(1900, 1, 1);
+			}
+			partitions.add(new PartitionDef("pmax", format.generateExpression(cutOffPoint), "MAXVALUE"));
 		}
-		return partitions;}
+		return partitions;
 	}
 
 	@Override

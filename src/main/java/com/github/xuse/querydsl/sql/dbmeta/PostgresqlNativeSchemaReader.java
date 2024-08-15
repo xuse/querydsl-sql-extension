@@ -89,4 +89,10 @@ public class PostgresqlNativeSchemaReader implements SchemaReader {
 		}
 		return check;
 	}
+
+	@Override
+	public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
+			ObjectType type) {
+		return JdbcSchemaReader.INSTANCE.fetchTables(e, catalog, schema, qMatchName, type);
+	}
 }

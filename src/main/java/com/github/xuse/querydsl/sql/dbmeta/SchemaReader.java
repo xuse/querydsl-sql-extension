@@ -19,6 +19,9 @@ public interface SchemaReader {
 	 */
 	List<Constraint> getConstraints(String catalog, String schema, String table, ConnectionWrapper conn, boolean detail);
 
+	List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
+			ObjectType type);
+	
 	/**
 	 * @param schema schema
 	 * @param catalog catalog
@@ -57,4 +60,6 @@ public interface SchemaReader {
 		c.setName(k.getKeyName());
 		return c;
 	};
+	
+	
 }

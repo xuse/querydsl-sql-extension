@@ -3,9 +3,8 @@ package com.github.xuse.querydsl.sql.partitions;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.xuse.querydsl.annotation.partition.Partition;
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
-import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.querydsl.core.types.Constant;
 import com.querydsl.core.types.Expression;
@@ -18,16 +17,11 @@ import com.querydsl.core.types.TemplateExpression;
 import com.querydsl.core.types.Visitor;
 
 public interface PartitionBy {
-
-	default Expression<?> generateExpression(ConfigurationEx configurationEx){
-		return DDLExpressions.simple(PartitionDefineOps.PARTITION_BY, define(configurationEx));
-	}
-
 	PartitionMethod getMethod();
 	
 	Expression<?> define(ConfigurationEx configurationEx);
 	
-	List<Expression<?>> partitions(ConfigurationEx configurationEx);
+	List<Partition> partitions();
 	
 	Expression<?> getExpr();
 

@@ -92,6 +92,9 @@ public abstract class MetadataQuerySupport {
 		});
 		result.policy = getConfiguration().getTemplates().getSchemaPolicy();
 		result.setDbTimeDelta(calcDbTimeDelta());
+		if(log.isInfoEnabled()){
+			log.info(result.toString());
+		}
 		return result;
 	}
 	
@@ -179,7 +182,8 @@ public abstract class MetadataQuerySupport {
 		final String qSchema = processNamespace(table.getSchema());
 		final String qMatchName = processName(table.getTable(), oper);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		List<TableInfo> result = doSQLQuery(q -> templates.fetchTables(q, policy.asCatalog(qSchema), policy.asSchema(qSchema), qMatchName, type), "getTables");
+		List<TableInfo> result = doSQLQuery(q -> 
+			templates.getSchemaAccessor().fetchTables(q, policy.asCatalog(qSchema), policy.asSchema(qSchema), qMatchName, type), "getTables");
 		log.debug("getting {} {}.{}, result is {}", type, qSchema, qMatchName, result);
 		return result;
 	}
