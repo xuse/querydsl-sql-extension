@@ -251,15 +251,6 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持该类对�
 
 > 其他数据库可以自行编写SQLTemplates进行扩展 。
 
-**数据库支持(DDL)**
-
-* MySQL 5.6 and above
-* Apache Derby 10.14 and above
-* PostgreSQL 10.3 and above
-
-支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
-> 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
-
 ### 业务层分表支持
 
 > 本框架不提供分库分表功能
@@ -354,9 +345,20 @@ metadata.dropPartition(t1)
 
 ### DDL Support
 
-> 实验性功能，个人精力有限目前仅完成了MySQL 和 Derby的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+> 实验性功能，个人精力有限目前仅完成了部分数据库的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+
+**数据库支持(DDL)**
+
+* MySQL 5.6 and above
+* Apache Derby 10.14 and above
+* PostgreSQL 10.3 and above
 
 相关说明参见文档 quick_start.md
+
+支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
+
+> 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
+
 
 ### MySQL Online DDL
 

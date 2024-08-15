@@ -15,7 +15,7 @@ import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.sql.SQLBindings;
 
 /**
- * MySQL和PG等逐步遵循infomation_schema的规范视图，提供表结构数据查询。此类为该种实现
+ * MySQL和PG等逐步遵循infomation_schema，提供表结构数据查询。此类为该种实现
  *
  * 常用SQL语句包括 -- 寻找合适的系统视图 select * from information_schema."tables" where
  * table_schema ='information_schema' and table_name like '%column%'
