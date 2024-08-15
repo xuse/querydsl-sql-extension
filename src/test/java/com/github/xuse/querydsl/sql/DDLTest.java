@@ -8,15 +8,16 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
+import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dialect.DbType;
-import com.mysql.cj.xdevapi.Table;
 import com.querydsl.sql.ColumnMetadata;
 
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +87,10 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void testTableRefresh() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		metadata.refreshTable(QAaa.aaa)
+		RelationalPathExImpl<Aaa> table=QAaa.aaa.clone();
+		PathMapping pathex = (PathMapping) table.getColumnMetadata(table.getColumn("version"));
+		pathex.setComment("新的版本列注解");
+		metadata.refreshTable(table)
 			.dropColumns(true)
 			.dropConstraint(true)
 			.dropIndexes(true)

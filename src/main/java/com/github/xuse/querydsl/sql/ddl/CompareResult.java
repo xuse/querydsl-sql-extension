@@ -30,6 +30,13 @@ public class CompareResult {
 	 */
 	private Map<Operator,String> otherChange = new HashMap<>();
 
+
+	public CompareResult ofOthers() {
+		CompareResult cr = new CompareResult();
+		cr.setOtherChange(otherChange);
+		return cr;
+	}
+	
 	public CompareResult ofAddSingleColumn(ColumnMapping c) {
 		CompareResult cr = new CompareResult();
 		cr.setAddColumns(Collections.singletonList(c));
@@ -73,7 +80,7 @@ public class CompareResult {
 		
 	}
 	public void setTableCommentChange(String changeTo) {
-		this.otherChange.put(DDLOps.COMMENT_ON_COLUMN, changeTo);
+		this.otherChange.put(DDLOps.COMMENT_ON_TABLE, changeTo);
 	}
 	
 	public void setTableCollation(String changeTo) {

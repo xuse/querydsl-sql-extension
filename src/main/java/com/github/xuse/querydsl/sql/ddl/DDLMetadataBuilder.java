@@ -354,6 +354,7 @@ public class DDLMetadataBuilder {
 			for (Constraint c : difference.getAddConstraints()) {
 				serializeAlterTable0(difference.ofAddSingleConstraint(c));
 			}
+			serializeAlterTable0(difference.ofOthers());
 		}else {
 			serializeAlterTable0(difference);
 		}
