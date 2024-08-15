@@ -213,7 +213,7 @@ QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成
 
 #### record对象作为数据表映射
 
-java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类对象作为数据表映射。代替传统的POJO实体Bean。详见quick start文档。
+java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持该类对象作为数据表映射。代替传统的POJO实体Bean。详见文档quick start.md。
 
 > 要使用Record特性，您必须使用JDK 16以上版本。
 > 本框架对Record对象的访问作了特殊处理，不依赖JDK 16以上版本，当前框架编译后依然可以在java 8上使用。
@@ -255,6 +255,7 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类�
 
 * MySQL 5.6 and above
 * Apache Derby 10.14 and above
+* PostgreSQL 10.3 and above
 
 支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
 > 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
@@ -291,9 +292,29 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类�
 
 ## 实验性功能
 
-> 试验性功能是根据特定使用场景或建议增加的一些新特性，用于体验和建议收集。
+> 实验性功能是根据特定使用场景或建议增加的一些新特性，用于体验和建议收集。
 
-### Partition管理（目前仅支持MySQL的方言）
+### Partition管理（已支持MySQL、PostgreSQL）
+
+> 示例为在MySQL上的功能。
+>
+> PostgreSQL分区机制与MySQL差异很大，目前仅支持创建分区表，添加/删除分区。在PostgreSQL上由于数据库机制差异造成的特性差异，暂无支持计划。
+
+分区特性支持表
+
+| 功能                 | MySQL | PostgreSQL | Oracle   | Etc.. |
+| -------------------- | ----- | ---------- | -------- | ----- |
+| 创建分区表           | Yes   | Yes        | Planning |       |
+| 查询已有表分区信息   | Yes   | Yes        | Planning |       |
+| 将已有表设置为分区表 | Yes   | X          | Planning |       |
+| 分区表清除分区设置   | Yes   | X          | Planning |       |
+| 创建HASH分区         | Yes   | X          | Planning |       |
+| 创建RANGE分区        | Yes   | Yes        | Planning |       |
+| 创建LIST分区         | Yes   | Yes        | Planning |       |
+| DROP分区             | Yes   | Yes        | Planning |       |
+| 重新组织分区         | Yes   | X          | Planning |       |
+| 调整HASH分区个数     | Yes   | X          | Planning |       |
+
 
 代码示例
 
@@ -313,15 +334,15 @@ List<PartitionInfo> list=metadata.getPartitions(t1.getSchemaAndTable());
 //清除分区设置（不删除数据）
 metadata.removePartitioning(t1).execute();
 
-//创建按时间范围进行的分区
+//创建按时间范围进行的分区。如果是MySQL上，开始日期可不指定。
 metadata.createPartitioning(t1).partitionBy(
 	Partitions.byRangeColumns(t1.created)
-		.add("p202401", "'2024-02-01'")
-		.add("p202402", "'2024-03-01'").build())
+		.add("p202401", "'1970-12-01'","'2024-02-01'")
+		.add("p202402", "'2024-02-01'","'2024-03-01'").build())
     .execute();
 
 //在按上述分区中再追加一个分区，
-//该操作会自动使用REORGANIZE PARTITION将落在原先第一个分区内的数据移动到新分区
+//该操作会自动使用REORGANIZE PARTITION将落在原先第一个分区内符合条件的数据移动到新分区
 metadata.addParition(t1)
 		.add("p20200101", "'2021-01-01'")
 		.execute();
@@ -433,6 +454,16 @@ List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")
 ```
 v{querydsl 版本号} - r(extension version)
 ```
+
+### v5.0.0-r110(开发中)
+
+* PostgreSQL DDL支持。基于PostgreSQL 10.3测试。常规DDL操作已经支持完成。
+* PostgreSQL表分区功能支持，但PostgreSQL分区机制与MySQL差异很大，目前仅支持创建分区表，添加/删除分区。
+  不支持Hash分区，
+  不支持为已有的表添加/删除分区配置（机制上无法支持，Postgresql分区表在创建时就已明确是是否分区，之后无法修改）
+  不支持重组织分区
+  上述由数据库机制差异造成的特性差异，暂无支持计划。
+* Postgresql的支持比预想更为复杂，为此重构了Schema获取和DDL部分生成的机制。 主要功能开发完毕，测试中，计划9月初发布。
 
 ### v5.0.0-r104
 

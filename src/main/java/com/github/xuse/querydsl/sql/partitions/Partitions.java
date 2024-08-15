@@ -163,6 +163,13 @@ public class Partitions {
 			return this;
 		}
 		
+		/**
+		 *  添加一个分区定义
+		 *  @param name 名称
+		 *  @param from 分区范围（开始），在MySQL上这个边界会被忽略。
+		 *  @param to 分区范围（结束）
+		 *  @return PartitionBuilder
+		 */
 		public PartitionBuilder add(String name, String from, String to) {
 			partitions.put(name,new Pair<>(from,to));
 			return this;
