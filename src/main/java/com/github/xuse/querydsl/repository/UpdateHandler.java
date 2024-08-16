@@ -8,6 +8,7 @@ import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.Expressions;
 
 public class UpdateHandler<B> {
 	
@@ -150,6 +151,10 @@ public class UpdateHandler<B> {
 		
 		public UpdateHandler<B> add(int number){
 			return update.set(path, path.add(number));
+		}
+		
+		public <N extends Number & Comparable<?>> UpdateHandler<B> increment(){
+			return update.set(path, path.add(Expressions.ONE));
 		}
 
 		public <N extends Number & Comparable<?>> UpdateHandler<B> add(Expression<N> number){

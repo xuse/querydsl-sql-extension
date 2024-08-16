@@ -32,5 +32,4 @@ public class SelectHandler<T> {
 	public Pair<Integer,List<T>> fetchAndCount(){
 		return select.fetchAndCount();
 	}
-	
 }

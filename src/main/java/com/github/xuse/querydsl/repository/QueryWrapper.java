@@ -27,27 +27,28 @@ import com.querydsl.sql.RelationalPath;
  * @author Joey
  *
  * @param <T> Entity
+ * @param <R> the result type for select
  * @param <Chain> the query object to support a chained operation.
  */
-public abstract class QueryWrapper<T,Chain extends QueryWrapper<T,Chain>> {
+public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 	RelationalPath<T> table;
 
 	final DefaultQueryMetadata mixin;
 	
-	private final Chain typedThis;
+	private transient final Chain typedThis;
 
 	@SuppressWarnings("unchecked")
-	public QueryWrapper(RelationalPath<T> table,DefaultQueryMetadata mixin) {
+	public QueryWrapper(RelationalPath<T> table, DefaultQueryMetadata mixin) {
 		this.table = table;
 		this.mixin = mixin;
-		typedThis = (Chain)this;
+		typedThis = (Chain) this;
 	}
-	
-	@SuppressWarnings("unchecked")
-	QueryWrapper(DefaultQueryMetadata mixin) {
-		typedThis = (Chain)this;
-		this.mixin=mixin;
-	}
+
+//	@SuppressWarnings("unchecked")
+//	QueryWrapper(DefaultQueryMetadata mixin) {
+//		this.mixin = mixin;
+//		typedThis = (Chain) this;
+//	}
 
 	public Chain where(Predicate... predicates) {
 		for (Predicate p : predicates) {
@@ -314,9 +315,4 @@ public abstract class QueryWrapper<T,Chain extends QueryWrapper<T,Chain>> {
 		}
 		return typedThis;
 	}
-	
-	public SelectItemsBuilder<T,Chain> select() {
-		return new SelectItemsBuilder<>(typedThis);
-	}
-	
 }

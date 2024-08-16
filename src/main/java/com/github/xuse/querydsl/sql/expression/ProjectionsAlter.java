@@ -105,7 +105,7 @@ public class ProjectionsAlter {
 	 * @param <T> The type of target object.
 	 * @param <K> The type of target object.
 	 */
-	public static <T, K> StreamExpressionWrapper<T, K> map(FactoryExpression<T> fac, Class<K> clz, Function<T, K> function) {
+	public static <T, K> StreamExpressionWrapper<T, K> function(FactoryExpression<T> fac, Class<K> clz, Function<T, K> function) {
 		return new StreamExpressionWrapper<>(fac, function, clz);
 	}
 
