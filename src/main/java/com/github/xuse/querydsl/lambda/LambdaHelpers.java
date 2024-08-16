@@ -69,4 +69,47 @@ public interface LambdaHelpers {
 	default <B, T extends Number & Comparable<T>> NumberLambdaColumn<B,T> num(NumberLambdaColumn<B,T> path) {
 		return path;
 	}
+	
+	/**
+	 * 提示编译器将一个方法引用包装为Date类型的字段模型。
+	 * @param <B> type of the entity bean.
+	 * @param path 传入
+	 * @return 字段模型
+	 */
+	default <B, T extends Comparable<T>> DateLambdaColumn<B,T> date(DateLambdaColumn<B,T> path) {
+		return path;
+	}
+	
+	/**
+	 * 提示编译器将一个方法引用包装为Time类型的字段模型。
+	 * @param <B> type of the entity bean.
+	 * @param path 传入
+	 * @return 字段模型
+	 */
+	default <B, T extends Comparable<T>> TimeLambdaColumn<B,T> time(TimeLambdaColumn<B,T> path) {
+		return path;
+	}
+	
+	/**
+	 * 提示编译器将一个方法引用包装为DateTime类型的字段模型。
+	 * @param <B> type of the entity bean.
+	 * @param path 传入
+	 * @return 字段模型
+	 */
+	default <B, T extends Comparable<T>> DateTimeLambdaColumn<B,T> datetime(DateTimeLambdaColumn<B,T> path) {
+		return path;
+	}
+	
+	/**
+	 * 提示编译器将一个方法引用包装为DateTime类型的字段模型。这是{@link #datetime(DateTimeLambdaColumn)}的别名。
+	 * @param <B> type of the entity bean.
+	 * @param path 传入
+	 * @return 字段模型
+	 */
+	default <B, T extends Comparable<T>> DateTimeLambdaColumn<B,T> dt(DateTimeLambdaColumn<B,T> path) {
+		return path;
+	}
+	
+	
+	
 }

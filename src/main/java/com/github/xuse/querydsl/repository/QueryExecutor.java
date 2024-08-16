@@ -2,7 +2,6 @@ package com.github.xuse.querydsl.repository;
 
 import java.util.List;
 
-import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
@@ -11,7 +10,6 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryFlag;
 import com.querydsl.core.QueryModifiers;
-import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.sql.RelationalPath;
@@ -21,10 +19,10 @@ import com.querydsl.sql.RelationalPath;
  * QueryWrapper是不带数据库Session的查询操作对象，这个是带Session的操作对象。
  * @param <T> the entity type
  */
-public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
+public class QueryExecutor<T,R> extends QueryWrapper<T,R, QueryExecutor<T,R>> {
 	private final AbstractCrudRepository<T, ?> repository;
 
-	QueryExecutor(QueryWrapper<T, ?> q, AbstractCrudRepository<T, ?> repository) {
+	QueryExecutor(QueryWrapper<T,R,?> q, AbstractCrudRepository<T, ?> repository) {
 		super(q.table, q.mixin);
 		Assert.notNull(repository);
 		if(q.table==null) {
@@ -33,8 +31,9 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 		this.repository = repository;
 	}
 
-	QueryExecutor(RelationalPath<T> table, AbstractCrudRepository<T, ?> repository) {
+	QueryExecutor(RelationalPath<T> table, Expression<R> selectItems, AbstractCrudRepository<T, ?> repository) {
 		super(table, new DefaultQueryMetadata());
+		this.mixin.setProjection(selectItems);
 		this.repository = repository;
 	}
 
@@ -44,8 +43,15 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 
 	private static final OrderSpecifier<?>[] EMPTY_OrderSpecifier = new OrderSpecifier[0];
 
-	private SQLQueryAlter<T> createQuery(boolean all) {
-		SQLQueryAlter<T> query = getFactory().selectFrom(table).where(mixin.getWhere());
+	@SuppressWarnings("unchecked")
+	private SQLQueryAlter<R> createQuery(boolean all) {
+		SQLQueryAlter<R> query;
+		if(mixin.getProjection()!=null) {
+			 query = (SQLQueryAlter<R>) getFactory().select(mixin.getProjection()).from(table);	
+		}else {
+			 query = (SQLQueryAlter<R>) getFactory().selectFrom(table);	
+		}
+		query.where(mixin.getWhere());
 		for (QueryFlag flag : mixin.getFlags()) {
 			query.addFlag(flag);
 		}
@@ -66,11 +72,11 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 		return query;
 	}
 	
-	public Pair<Integer, List<T>> findAndCount(){
+	public Pair<Integer, List<R>> findAndCount(){
 		return createQuery(true).fetchAndCount();
 	}
 
-	public List<T> fetch() {
+	public List<R> fetch() {
 		return createQuery(true).fetch();
 	}
 
@@ -78,7 +84,7 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 		return (int) createQuery(false).fetchCount();
 	}
 
-	public T fetchFirst() {
+	public R fetchFirst() {
 		return createQuery(true).fetchFirst();
 	}
 
@@ -86,19 +92,11 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 		return (int) getFactory().update(table).populate(t).where(mixin.getWhere()).execute();
 	}
 
-	public <C extends Comparable<C>> SelectHandler<C> select(LambdaColumn<T,C> expr) {
-		return new SelectHandler<>(getFactory().select(expr).where(mixin.getWhere()));
-	}
-	
-	public SelectHandler<Tuple> select(Expression<?>... expr) {
-		return new SelectHandler<>(getFactory().select(expr).where(mixin.getWhere()));
-	}
-	
 	public UpdateHandler<T> update() {
 		return new UpdateHandler<>(getFactory().update(table).where(mixin.getWhere()));
 	}
 
-	public T load() {
+	public R load() {
 		return createQuery(true).fetchOne();
 	}
 
@@ -107,7 +105,7 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 	}
 
 	@Override
-	protected QueryExecutor<T> subchain() {
-		return new QueryExecutor<>(table, repository);
+	protected QueryExecutor<T, R> subchain() {
+		return new QueryExecutor<>(table, null, repository);
 	}
 }

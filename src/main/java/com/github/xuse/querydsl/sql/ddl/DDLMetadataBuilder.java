@@ -223,7 +223,7 @@ public class DDLMetadataBuilder {
 
 	private void addConstraintForPartition(Partition p, RelationalPathEx<?> table) {
 		TableRouting routing=TableRouting.suffix("_"+ p.name());
-		PrimaryKey<?> keys=table.getPrimaryKey(); 
+//		PrimaryKey<?> keys=table.getPrimaryKey(); 
 //		{
 //			if (keys != null && !keys.getLocalColumns().isEmpty()) {
 //				Expression<?> columns = DDLExpressions.wrap(ExpressionUtils.list(Tuple.class, keys.getLocalColumns()));
@@ -363,7 +363,6 @@ public class DDLMetadataBuilder {
 	private void serializeAlterTable0(CompareResult compareResults) {
 		DDLMetadata meta = new DDLMetadata(true, true);
 		meta.setAction("ALTER TABLE ");
-		//meta.addExpression(CHANGE_LINE);
 		result.add(meta);
 		List<Expression<?>> tableDefExpressions = new ArrayList<>();
 		// drop columns
@@ -411,6 +410,11 @@ public class DDLMetadataBuilder {
 		}
 
 		// drop constraints
+		boolean ignoreKeysOnPartitionedTable = false;
+		if(table instanceof RelationalPathEx) {
+			ignoreKeysOnPartitionedTable = ((RelationalPathEx<?>) table).getPartitionBy()!=null && configuration.has(SpecialFeature.NO_KEYS_ON_PARTITION_TABLE); 
+		}
+		
 		for (Constraint constraint : compareResults.getDropConstraints()) {
 			ConstraintType type = constraint.getConstraintType();
 			AlterTableConstraintOps ops = type.getDropOpsInAlterTable();
@@ -424,15 +428,17 @@ public class DDLMetadataBuilder {
 			}
 		}
 		// add constraints
-		for (Constraint constraint : compareResults.getAddConstraints()) {
-			ConstraintType type = constraint.getConstraintType();
-			if (!configuration.getTemplates().supportCreateInTableDefinition(type)) {
-				addIndependConstraintMeta(constraint);
-			} else {
-				Expression<?> expr = generateConstraintDefinition(constraint, table);
-				Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_TABLE_ADD, expr);
-				tableDefExpressions.add(alterClause);
-			}
+		if(!ignoreKeysOnPartitionedTable) {
+			for (Constraint constraint : compareResults.getAddConstraints()) {
+				ConstraintType type = constraint.getConstraintType();
+				if (!configuration.getTemplates().supportCreateInTableDefinition(type)) {
+					addIndependConstraintMeta(constraint);
+				} else {
+					Expression<?> expr = generateConstraintDefinition(constraint, table);
+					Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_TABLE_ADD, expr);
+					tableDefExpressions.add(alterClause);
+				}
+			}	
 		}
 
 		for (Map.Entry<Operator, String> e : compareResults.getOtherChange().entrySet()) {

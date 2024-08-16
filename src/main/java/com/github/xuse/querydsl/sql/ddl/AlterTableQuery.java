@@ -38,6 +38,7 @@ import com.querydsl.core.types.Template;
 import com.querydsl.core.types.TemplateFactory;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.ColumnMetadata;
+import com.querydsl.sql.PrimaryKey;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLSerializer;
@@ -254,6 +255,9 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		Map<String, ColumnMapping> defined = getColumnMapLower(this.table);
 		List<String> toBeDropped = new ArrayList<String>();
 		List<ColumnModification> changed = new ArrayList<ColumnModification>();
+		PrimaryKey<?> keys= this.table.getPrimaryKey();
+		
+		
 		// 比较差异
 		for (ColumnDef c : columns) {
 			String columnKey = c.getColumnName().toLowerCase();
@@ -265,15 +269,20 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 				}
 				continue;
 			}
-			// 创建Java侧的列定义。
-			// 为什么不直接用PathMapping对象，因为该定义在数据库方言下，部分字段的类型和长度可能被转化为其他数据库类型。
+			// 创建Java侧的列定义(为什么不直接用PathMapping中的ColumnMetadata？因为该定义在数据库方言下，部分字段的类型和长度可能被转化为其他类型。)
 			Path<?> path = definedColumn.getPath();
 			ColumnDef javaColumn = getTemplates().getColumnDataType(definedColumn.getJdbcType(), definedColumn.getSize(), definedColumn.getDigits());
-			ColumnMetadataExImpl javaSide = new ColumnMetadataExImpl(definedColumn.getColumn().ofType(javaColumn.getJdbcType()).withSize(javaColumn.getColumnSize()).withDigits(javaColumn.getDecimalDigit()));
+			ColumnMetadata columnMetadata = definedColumn.getColumn().ofType(javaColumn.getJdbcType()).withSize(javaColumn.getColumnSize()).withDigits(javaColumn.getDecimalDigit());
+			boolean isPk = keys == null ? false : keys.getLocalColumns().contains(path);
+			if(isPk) {
+				columnMetadata = columnMetadata.notNull();
+			}
+			ColumnMetadataExImpl javaSide = new ColumnMetadataExImpl(columnMetadata);
 			javaSide.setComment(definedColumn.getComment());
 			javaSide.setDefaultExpression(definedColumn.getDefaultExpression());
 			javaSide.setFeatures(definedColumn.getFeatures());
 			javaSide.setUnsigned(definedColumn.isUnsigned());
+			
 			// 创建Database侧的列定义
 			ColumnMetadataExImpl dbSide = toColumnMetadata(c);
 			// 比较差异

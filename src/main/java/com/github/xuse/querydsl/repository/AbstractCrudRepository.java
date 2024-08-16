@@ -198,8 +198,9 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int) update.execute();
 	}
 
-	public QueryExecutor<T> query() {
-		return new QueryExecutor<>(getPath(), this);
+	public QueryExecutor<T,T> query() {
+		RelationalPath<T> path=getPath();
+		return new QueryExecutor<>(path,path, this);
 	}
 
 	/**
@@ -350,19 +351,19 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public List<T> find(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public <R> List<R> find(QueryWrapper<T, R, ?> wrapper) {
+		QueryExecutor<T,R> executor=new QueryExecutor<>(wrapper, this);
 		return executor.fetch();
 	}
 
 	@Override
-	public Pair<Integer, List<T>> findAndCount(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public  <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T,R, ?> wrapper) {
+		QueryExecutor<T,R> executor=new QueryExecutor<>(wrapper, this);
 		return executor.findAndCount();
 	}
 	
 	@Override
-	public Pair<Integer, List<T>> findAndCount(QueryWrapper<T, ?> wrapper, int limit, int offset) {
+	public <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset) {
 		if(limit>0) {
 			wrapper.limit(limit);
 		}
@@ -373,20 +374,20 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public int delete(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public int delete(QueryWrapper<T,?, ?> wrapper) {
+		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.delete();
 	}
 
 	@Override
-	public int update(T t, QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public int update(T t, QueryWrapper<T,T, ?> wrapper) {
+		QueryExecutor<T,T> executor=new QueryExecutor<>(wrapper, this);
 		return executor.update(t);
 	}
 
 	@Override
-	public int count(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public int count(QueryWrapper<T,?, ?> wrapper) {
+		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.count();
 	}
 

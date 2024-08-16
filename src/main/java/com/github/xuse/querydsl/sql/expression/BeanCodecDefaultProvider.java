@@ -55,7 +55,7 @@ public class BeanCodecDefaultProvider implements BeanCodecProvider {
 
 
 	protected static void propertyNotFound(String property) {
-			// do nothing
+		// do nothing
 	}
 
 	/**
@@ -107,7 +107,7 @@ public class BeanCodecDefaultProvider implements BeanCodecProvider {
 					count++;
 				} else {
 					propertyNotFound(property);
-					continue;
+					prop = new FieldProperty(null, null, null);
 				}
 				prop.setBindingType(bindings.getType(property,prop));
 				properties.add(prop);

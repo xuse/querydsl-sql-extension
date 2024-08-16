@@ -75,6 +75,7 @@ public class SQLTypeUtils {
 			return Types.DATE;
 		case "java.util.Date":
 		case "java.sql.Timestamp":
+		case "java.time.Instant":
 			return Types.TIMESTAMP;
 		case "java.sql.Time":
 			return Types.TIME;

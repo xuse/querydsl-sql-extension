@@ -68,13 +68,13 @@ public interface CRUDRepository<T, ID> {
 	List<T> find(Consumer<SQLQueryAlter<T>> consumer);
 
 	
-	List<T> find(QueryWrapper<T,?> wrapper);
+	<R> List<R> find(QueryWrapper<T,R,?> wrapper);
 	
 	
-	Pair<Integer,List<T>> findAndCount(QueryWrapper<T,?> wrapper);
+	<R> Pair<Integer,List<R>> findAndCount(QueryWrapper<T,R,?> wrapper);
 	
 	
-	Pair<Integer,List<T>> findAndCount(QueryWrapper<T,?> wrapper, int limit, int offset);
+	<R> Pair<Integer,List<R>> findAndCount(QueryWrapper<T,R,?> wrapper, int limit, int offset);
 	
 	
 	/**
@@ -112,7 +112,7 @@ public interface CRUDRepository<T, ID> {
 	 * @param wrapper 条件封装
 	 * @return 删除记录数 / count of records deleted.
 	 */
-	int delete(QueryWrapper<T,?> wrapper);
+	int delete(QueryWrapper<T,?,?> wrapper);
 
 	/**
 	 * <h2>Chinese:</h2>
@@ -152,7 +152,7 @@ public interface CRUDRepository<T, ID> {
 	 * @param key 更新的条件封装
 	 * @return 更新记录数 / records affected. 
 	 */
-	int update(T t,QueryWrapper<T,?> key);
+	int update(T t,QueryWrapper<T,T,?> key);
 
 	/**
 	 * <h2>Chinese:</h2>
@@ -195,7 +195,7 @@ public interface CRUDRepository<T, ID> {
 	 * @param wrapper 查询条件封装
 	 * @return 查询记录数 / count of records.
 	 */
-	int count(QueryWrapper<T,?> wrapper);
+	int count(QueryWrapper<T,?,?> wrapper);
 
 	/**
 	 * <h2>Chinese:</h2>
@@ -217,7 +217,7 @@ public interface CRUDRepository<T, ID> {
 	 * @return  查询构建器 / QueryExecutor
 	 * @see QueryExecutor 
 	 */
-	QueryExecutor<T> query();
+	QueryExecutor<T,T> query();
 	
 	/**
 	 * 传入一个带有@ConditionBean注解的类，使用该对象作为查询条件

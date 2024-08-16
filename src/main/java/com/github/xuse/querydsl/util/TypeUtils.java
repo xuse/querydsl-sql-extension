@@ -55,14 +55,14 @@ public class TypeUtils {
 		PathCreators.put(Double.TYPE, PrimitiveNumberCreator);
 
 		PathCreators.put(java.sql.Date.class, DateCreator);
-		PathCreators.put(LocalDate.class, DateCreator);
+		PathCreators.put(LocalDate.class, (a, b) -> Expressions.datePath(a.asSubclass(LocalDate.class), b));
 
 		PathCreators.put(java.sql.Time.class, TimeCreator);
-		PathCreators.put(LocalTime.class, TimeCreator);
+		PathCreators.put(LocalTime.class, (a, b) ->Expressions.timePath(a.asSubclass(LocalTime.class), b));
 
-		PathCreators.put(Instant.class, DateTimeCreator);
+		PathCreators.put(Instant.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(Instant.class), b));
 		PathCreators.put(java.util.Date.class, DateTimeCreator);
-		PathCreators.put(LocalDateTime.class, DateTimeCreator);
+		PathCreators.put(LocalDateTime.class,  (a, b) ->Expressions.dateTimePath(a.asSubclass(LocalDateTime.class), b));
 
 		PathCreators.put(Boolean.class, BooleanCreator);
 		PathCreators.put(Boolean.TYPE, BooleanCreator);

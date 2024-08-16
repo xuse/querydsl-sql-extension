@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager.CacheKey;
+import com.querydsl.core.types.Expression;
 
 public interface BeanCodecProvider {
 
@@ -17,5 +18,11 @@ public interface BeanCodecProvider {
 		}
 		bc.setFields(fields);
 		return bc;
+	}
+	
+
+	default void typeMismatch(Class<?> type, Expression<?> expr) {
+		final String msg = expr.getType().getName() + " is not compatible with " + type.getName();
+		throw new IllegalArgumentException(msg);
 	}
 }

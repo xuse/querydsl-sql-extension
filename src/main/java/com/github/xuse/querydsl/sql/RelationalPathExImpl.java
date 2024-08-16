@@ -157,7 +157,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 	}
 
 	public static <T> RelationalPathExImpl<T> valueOf(Class<T> beanType) {
-		PathMetadata pm=PathMetadataFactory.forVariable(beanType.getSimpleName());
+		PathMetadata pm=PathMetadataFactory.forVariable(beanType.getSimpleName().toLowerCase());
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
 		t.scanClassMetadata(()->{
 			List<Path<?>> paths = new ArrayList<>();

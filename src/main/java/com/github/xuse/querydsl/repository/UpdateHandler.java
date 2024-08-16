@@ -4,10 +4,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.github.xuse.querydsl.lambda.LambdaColumn;
+import com.github.xuse.querydsl.lambda.LambdaColumnBase;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.Expressions;
 
 public class UpdateHandler<B> {
 	
@@ -18,6 +20,11 @@ public class UpdateHandler<B> {
 	}
 	
 	public <C extends Comparable<C>> UpdateHandler<B> set(LambdaColumn<B, C> path, C value) {
+		update.set(path, value);
+		return this;
+	}
+	
+	protected <C extends Comparable<C>> UpdateHandler<B> set0(LambdaColumnBase<B, C> path, C value) {
 		update.set(path, value);
 		return this;
 	}
@@ -150,6 +157,10 @@ public class UpdateHandler<B> {
 		
 		public UpdateHandler<B> add(int number){
 			return update.set(path, path.add(number));
+		}
+		
+		public <N extends Number & Comparable<?>> UpdateHandler<B> increment(){
+			return update.set(path, path.add(Expressions.ONE));
 		}
 
 		public <N extends Number & Comparable<?>> UpdateHandler<B> add(Expression<N> number){

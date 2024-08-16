@@ -24,7 +24,7 @@ import com.querydsl.core.types.dsl.SimpleExpression;
  * @param <T> the type of path.
  */
 @SuppressWarnings("unchecked")
-public interface ComparablePath<T extends Comparable<T>> extends Expression<T> {
+public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
 	ComparableExpression<T> mixin();
 	
     /**
