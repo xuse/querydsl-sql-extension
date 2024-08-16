@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.repository;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.github.xuse.querydsl.lambda.LambdaColumn;
@@ -42,6 +43,32 @@ public class UpdateHandler<B> {
 		update.set(path, expr.apply(path));
 		return this;
 	}
+	
+	
+	public <C extends Number & Comparable<C>> UpdateSet<B,C> setNumber(NumberLambdaColumn<B, C> path) {
+		return new UpdateSet<B,C>(path,this);
+	}
+	
+	public static class UpdateSet<B,C extends Number & Comparable<C>>{
+		private final NumberLambdaColumn<B, C> path;
+		private final UpdateHandler<B> update;
+		
+		UpdateSet(NumberLambdaColumn<B, C> path, UpdateHandler<B> update){
+			this.path = path;
+			this.update = update;
+		}
+		
+		public <D extends Number & Comparable<D>> UpdateHandler<B> to(NumberLambdaColumn<B, D> d,Function<NumberLambdaColumn<B, D>,Expression<C>> expr){
+			update.set(path, expr.apply(d));
+			return update;
+		}
+		
+		public <D extends Number & Comparable<D>> UpdateHandler<B> to(NumberLambdaColumn<B, D> d,BiFunction<NumberLambdaColumn<B,C>,NumberLambdaColumn<B, D>,Expression<C>> expr){
+			update.set(path, expr.apply(path,d));
+			return update;
+		}
+	}
+	
 	
 	/**
 	 * 将字段值更新为原值进行字符串运算后的数值

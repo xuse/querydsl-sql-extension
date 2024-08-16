@@ -610,7 +610,15 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 			LambdaColumn<Foo, String> c1=s(Foo::getCode);
 			repo.query().eq(Foo::getId, 1)
 			.update()
-			.setMathExpr(Foo::getVolumn,volumn-> volumn.add(100))
+			
+			//相当于  set volumn = volumn + 100
+			//.setMathExpr(Foo::getVolumn,volumn-> volumn.add(100))
+			
+			//相当于  set volumn = id * 100
+			//.setNumber(Foo::getVolumn).to(Foo::getId, id-> id.multiply(100))
+			
+			//相当于  set volumn = volumn * id
+			.setNumber(Foo::getVolumn).to(Foo::getId, (volumn,id)-> volumn.multiply(id))
 			.execute();
 		}
 		
