@@ -28,45 +28,22 @@ public class UpdateHandler<B> {
 	}
 	
 	/**
-	 * 将字段值更新为原值进行算术运算后的数值
-	 * <p>Example:
-	 * {@code .setMathExpr(Foo::getVolumn,volumn-> volumn.add(100))}
-	 * <p>is equal to SQL
-	 * {@code SET volumn = volumn + 100}
-	 * 
-	 * @param <C> Type of the number
-	 * @param path the column
-	 * @param expr 表达式Lambda
-	 * @return this
+	 * 针对Number类型的字段，提供更丰富的算术运算API
+	 * @param <C>
+	 * @param path
+	 * @return UpdateSetNumber
 	 */
-	public <C extends Number & Comparable<C>> UpdateHandler<B> setMathExpr(NumberLambdaColumn<B, C> path,Function<NumberLambdaColumn<B, C>,Expression<C>> expr) {
-		update.set(path, expr.apply(path));
-		return this;
+	public <C extends Number & Comparable<C>> UpdateSetNumber<B,C> set(NumberLambdaColumn<B, C> path) {
+		return new UpdateSetNumber<B,C>(path,this);
 	}
-	
-	
-	public <C extends Number & Comparable<C>> UpdateSet<B,C> setNumber(NumberLambdaColumn<B, C> path) {
-		return new UpdateSet<B,C>(path,this);
-	}
-	
-	public static class UpdateSet<B,C extends Number & Comparable<C>>{
-		private final NumberLambdaColumn<B, C> path;
-		private final UpdateHandler<B> update;
-		
-		UpdateSet(NumberLambdaColumn<B, C> path, UpdateHandler<B> update){
-			this.path = path;
-			this.update = update;
-		}
-		
-		public <D extends Number & Comparable<D>> UpdateHandler<B> to(NumberLambdaColumn<B, D> d,Function<NumberLambdaColumn<B, D>,Expression<C>> expr){
-			update.set(path, expr.apply(d));
-			return update;
-		}
-		
-		public <D extends Number & Comparable<D>> UpdateHandler<B> to(NumberLambdaColumn<B, D> d,BiFunction<NumberLambdaColumn<B,C>,NumberLambdaColumn<B, D>,Expression<C>> expr){
-			update.set(path, expr.apply(path,d));
-			return update;
-		}
+
+	/**
+	 * 针对String类型的字段，提供更丰富的算术运算API
+	 * @param path 字段
+	 * @return UpdateSetString
+	 */
+	public UpdateSetString<B> set(StringLambdaColumn<B> path){
+		return new UpdateSetString<B>(path,this);
 	}
 	
 	
@@ -77,7 +54,6 @@ public class UpdateHandler<B> {
 	 * <p>is equal to SQL
 	 * <p>{@code SET code = code + 'Suffix'}     ({@code SET code = code || 'Suffix'} as in Oracle)
 	 * 
-	 * @param <C> Type of the number
 	 * @param path the column
 	 * @param expr 表达式Lambda
 	 * @return this
@@ -112,5 +88,81 @@ public class UpdateHandler<B> {
 		return this;
 	}
 	
+	
+	/**
+	 * 提供针对String类字段的一些函数运算
+	 * @param <B> bean type.
+	 */
+	public static class UpdateSetString<B>{
+		private final StringLambdaColumn<B> path;
+		private final UpdateHandler<B> update;
+		UpdateSetString(StringLambdaColumn<B> path, UpdateHandler<B> update){
+			this.path = path;
+			this.update = update;
+		}
+		
+		public UpdateHandler<B> to(Function<StringLambdaColumn<B>,Expression<String>> expr){
+			return update.set(path, expr.apply(path));
+		}
+		
+		public UpdateHandler<B> to(StringLambdaColumn<B> another, Function<StringLambdaColumn<B>,Expression<String>> expr){
+			return update.set(path, expr.apply(another));
+		}
+		
+		public UpdateHandler<B> to(StringLambdaColumn<B> another, BiFunction<StringLambdaColumn<B>,StringLambdaColumn<B>,Expression<String>> expr){
+			return update.set(path, expr.apply(path,another));
+		}
+		
+		public UpdateHandler<B> concat(String s){
+			return update.set(path, path.concat(s));
+		}
+		
+		public UpdateHandler<B> concat(Expression<String> expr){
+			return update.set(path, path.concat(expr));
+		}
+	}
+	
+	/**
+	 * 提供针对Number类字段的一些函数运算
+	 * @param <B> bean type.
+	 * @param <C> type of number.
+	 */
+	public static class UpdateSetNumber<B,C extends Number & Comparable<C>>{
+		private final NumberLambdaColumn<B, C> path;
+		private final UpdateHandler<B> update;
+		
+		UpdateSetNumber(NumberLambdaColumn<B, C> path, UpdateHandler<B> update){
+			this.path = path;
+			this.update = update;
+		}
+		
+		public UpdateHandler<B> to(Function<NumberLambdaColumn<B, C>,Expression<C>> expr){
+			return update.set(path, expr.apply(path));
+		}
+		
+		public <D extends Number & Comparable<D>> UpdateHandler<B> to(NumberLambdaColumn<B, D> another,Function<NumberLambdaColumn<B, D>,Expression<C>> expr){
+			return update.set(path, expr.apply(another));
+		}
+		
+		public <D extends Number & Comparable<D>> UpdateHandler<B> to(NumberLambdaColumn<B, D> another,BiFunction<NumberLambdaColumn<B,C>,NumberLambdaColumn<B, D>,Expression<C>> expr){
+			return update.set(path, expr.apply(path,another));
+		}
+		
+		public UpdateHandler<B> add(int number){
+			return update.set(path, path.add(number));
+		}
 
+		public <N extends Number & Comparable<?>> UpdateHandler<B> add(Expression<N> number){
+			return update.set(path, path.add(number));
+		}
+		
+		public UpdateHandler<B> subtract(int number){
+			return update.set(path, path.subtract(number));
+		}
+		
+		public <N extends Number & Comparable<?>> UpdateHandler<B> subtract(Expression<N> number){
+			return update.set(path, path.subtract(number));
+		}
+	}
+	
 }

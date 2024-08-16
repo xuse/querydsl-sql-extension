@@ -605,21 +605,27 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers{
 			repo.findByCondition(params);	
 		}
 		
-		//其他 更新
+		//其他复杂表达式的更新
 		{
-			LambdaColumn<Foo, String> c1=s(Foo::getCode);
 			repo.query().eq(Foo::getId, 1)
 			.update()
 			
 			//相当于  set volumn = volumn + 100
-			//.setMathExpr(Foo::getVolumn,volumn-> volumn.add(100))
+			//.set(Foo::getVolumn).add(100)
 			
 			//相当于  set volumn = id * 100
-			//.setNumber(Foo::getVolumn).to(Foo::getId, id-> id.multiply(100))
+			//.set(Foo::getVolumn).to(Foo::getId, id-> id.multiply(100))
 			
 			//相当于  set volumn = volumn * id
-			.setNumber(Foo::getVolumn).to(Foo::getId, (volumn,id)-> volumn.multiply(id))
+			.set(Foo::getVolumn).to(Foo::getId, (volumn,id)-> volumn.multiply(id))
+			.set(Foo::getCode).concat("_suffix")
 			.execute();
+		}
+		//其他Select表达式
+		{
+			
+			List<String> list = repo.query().eq(Foo::getId, 1).groupBy(Foo::getId).orderByDesc(Foo::getId)
+					.select(Foo::getCode).distinct().fetch();;
 		}
 		
 	}

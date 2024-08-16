@@ -314,4 +314,9 @@ public abstract class QueryWrapper<T,Chain extends QueryWrapper<T,Chain>> {
 		}
 		return typedThis;
 	}
+	
+	public SelectItemsBuilder<T,Chain> select() {
+		return new SelectItemsBuilder<>(typedThis);
+	}
+	
 }

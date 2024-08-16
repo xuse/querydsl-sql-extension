@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.repository;
 
 import java.util.List;
 
+import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
@@ -10,6 +11,8 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryFlag;
 import com.querydsl.core.QueryModifiers;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.sql.RelationalPath;
 
@@ -81,6 +84,14 @@ public class QueryExecutor<T> extends QueryWrapper<T, QueryExecutor<T>> {
 
 	public int update(T t) {
 		return (int) getFactory().update(table).populate(t).where(mixin.getWhere()).execute();
+	}
+
+	public <C extends Comparable<C>> SelectHandler<C> select(LambdaColumn<T,C> expr) {
+		return new SelectHandler<>(getFactory().select(expr).where(mixin.getWhere()));
+	}
+	
+	public SelectHandler<Tuple> select(Expression<?>... expr) {
+		return new SelectHandler<>(getFactory().select(expr).where(mixin.getWhere()));
 	}
 	
 	public UpdateHandler<T> update() {
