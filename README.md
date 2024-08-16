@@ -6,7 +6,9 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
 本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
 
-## User Guide
+
+
+**Getting started**
 
 ```xml
 <dependency>
@@ -16,7 +18,23 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 </dependency>
 ```
 
-See file [文档](USER_GUIDE.md)
+See file [User  Guide](USER_GUIDE.md)
+
+
+
+## 什么是QueryDSL
+
+[QueryDSL](https://github.com/querydsl/querydsl) 是一个历史悠久的SQL查询构建器。
+
+在Hibernate和JPA大行其道的年代里，开发者很快发现ORM无法表达一些稍微复杂的查询，更不要说带有多个组合查询了。Hibernate的方案是引入HQL，JPA的方案是引入QueryBuilder和NativeQuery，然而这些方案都不完美，逐渐被淘汰。大约在2015左右，我在编写GeeQuery以支持Spring-data的时候，发现Spring-Data引入了一套的新的QueryBuilder，即是QueryDSL。
+
+QueryDSL是针对SQL的词法树抽象进行建模的，这就使得它的查询模型非常丰富，几乎能涵盖查询语言（如SQL）的所有功能。QueryDSL用相同的方法为Lucene、JPA、ES、JDO、Mongo等都进行了查询模型的建模，使得开发者可以在强语法和类型检查的情况下访问持久层。
+
+如果开发者直接使用JSON、SQL、HQL、JPQL等查询语言，只能基于字符串拼接完成。而字符串拼接对于一个长期维护的业务项目是非常危险且繁琐的。开发者无法知道改对了没有，也无法确认要修改的代码位置是否都得到了修改。
+
+QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。 (这种风格大概在十多年前就有了，近几年才被国内的一些MyBatis Facade作者学习和借鉴)
+
+在这个基础上，我将自己使用querydsl中用到的一些功能包装了一下，就有个这个框架。前面已经说过querydsl的查询构建界面(Facade)非常好，所以我针对对象构造与反射等场合作了重写，以期将性能推到极致，就此使用了好多年，功能上逐步接近我对数据库访问的理想。直到前期，我感觉功能上已经超过了我的前一个框架，于是进行了上传和分享。
 
 ## 特性
 
@@ -52,24 +70,23 @@ See file [文档](USER_GUIDE.md)
   	private Date updated;
   ```
 
-  
 
-* 提供增强的日志输出。通过com.github.xuse.querydsl.sql.log.QueryDSLSQLListener可以提供三种格式的日志输出格式，包括以下功能：
+* 提供增强的日志输出。通过com.github.xuse.querydsl.sql.log.QueryDSLSQLListener可以提供三种格式的日志输出格式
+**Example:**
 
+  ```java
+// FORMAT_COMPACT  适合大型生产环境的紧凑格式
+// FORMAT_FULL 长的字符串会完整输出，SQL和参数之间会换行。 
+// FORMAT_DEBUG 详细的信息输出，有换行便于阅读，适合开发环境观察语句和逻辑。
+  configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
+  configuration.setSlowSqlWarnMillis(200);
+  ```
   * 输出每个SQL和参数，以及执行时间和记录数。如果日志级别到WARN，这部分逻辑可被跳过，以最大限度提升性能。
   * 慢SQL以Error级别输出（慢SQL阈值可设置）
   * Batch模式下，省略N组之后的参数。
   * 生产环境建议使用紧凑格式输出。语句和参数在一行中显示有利于使用grep等命令查询和分析。
-
-  **Example:**
-
-  ```java
-  configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
-  configuration.setSlowSqlWarnMillis(200);
-  ```
   
 * 包扫描：前文中已经介绍了几种基于Annotation的功能增强，包扫描可以在应用启动时，分析所有数据库元模型定义，提前校验这些Annotation的正确性，并将其中的一些配置注册到全局上下文。@CustomType要生效需要提前进行包扫描。
-  备注：早期版本使用 configuration.registerExType()方法注册实体，比较麻烦，新版本可以使用包扫描替代。
 
 
 * 基于Annotation定义的元模型：QueryDSL原生的元模型（Metamodel）主要使用API进行定义。扩展提供了一套基于注解的元模型定义方式，效果覆盖原有的元模型和扩展功能。
@@ -197,6 +214,8 @@ See file [文档](USER_GUIDE.md)
 
 QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成query class。本框架在该基础上作了一些增强，允许用户不创建QueryClass类，通过纯POJO加上若干注解来替代query class模型。并使用lambda表达式来表示表或列的模型。
 
+该功能主要为降低使用门槛，参见文档USER_GUIDE.md。
+
 #### 多种风格的低代码API
 
 有朋友和我反馈说QueryDSL的操作风格就像用java API在编写SQL语句，虽然功能很强大，但是对于SQL初学者他们还是更习惯于类似JPA、Hibernate、Mybatis Mapper等工具提供的一个支持简单对象操作的Repository。
@@ -211,7 +230,7 @@ QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成
 
 * 支持Truncate/Create/Drop/Alter table/ Partition等常用DDL的Java语法操作。
 
-#### record对象作为数据表映射
+#### Record对象作为数据表映射
 
 java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持该类对象作为数据表映射。代替传统的POJO实体Bean。详见文档quick start.md。
 
@@ -529,14 +548,15 @@ v{querydsl 版本号} - r(extension version)
 
 * 元模型(meta mode)：在QuerDSL中，对每个实体会有一个"Q"开头的class，在querydsl文档中，称为 `query classes`. 其实这个类和JPA中的元模型差不多，都是用于描述数据结构，并且提供查询API引用的类。（在OpenJPA中，会生成下划线结尾的类，用途是差不多的）。所以本文某些场合也会使用元模型一词，和QueryDSL文档中的 query class是一个东西。
 
-### 写这个框架
+### 一点感想
 
-可以说是无心偶得，佛系维护。
+这个框架可以说是无心偶得，今后也会佛系维护。
 
-* 开始 (2017)
-近日使用QueryDSL-sql作为轻量级数据库操作框架，有着手写SQL的畅快，又有静态语法检查的安心，还有语法自动完成的高效。
-但是日志功能稍有不满，SQLDetailedListener中不能监听到所有的SQL参数、执行时间、影响记录数等信息。
-所以本着最小修改的原则，用这个项目对QueryDSL的监听行为进行扩展，从而可以得到更详细的日志信息。
+* 开始 (2017)。近日使用QueryDSL-sql作为轻量级数据库操作框架，有着手写SQL的畅快，又有静态语法检查的安心，还有语法自动完成的高效。
+  QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。
+
+  我在编写GeeQuery的几年中，阅读了几乎所有Java数据库访问框架的代码，当我意识到其他QueryDSL的代码要比用其他任何Facade的代码都要简练自由时，我抛弃了其他已知的框架，包括我自己写了近十年的GeeQuery。在2017我将自己使用queryDSL的一些代码放在一个库里，只有几个类。
+  本着最小修改的原则，用这个项目对QueryDSL的监听行为进行扩展，从而可以得到更详细的日志信息。
 
 * 性能演进（2018）
 对性能进行了优化。除了代码细节修改外，还增加了基于ASM自动生成动态类来完成字段拼装对象，无反射调用。
@@ -546,4 +566,5 @@ v{querydsl 版本号} - r(extension version)
   之后就是自己用得非常爽快，期间仅对一些常用的功能进行了小改，使得代码更简洁。如自动时间戳、自动生成GUID等。
 
 * 再后来(2024)
-在使用过程中，阅读源码中发现原作者一开始是想要支持DDL语法的，后来不知道为什么没有再支持了。可能确实使用场景不太多，总归有点小缺憾，由于我早年在别的框架上写过相关的功能，于是花了不少时间在目前的框架上支持了DDL语法。
+  在使用过程中，阅读源码中发现原作者一开始是想要支持DDL语法的，后来不知道为什么没有再支持了。可能确实使用场景不太多，总归有点小缺憾，由于我早年在别的框架上写过相关的功能，于是花了不少时间在目前的框架上支持了DDL语法。
+  另外还有些朋友喜欢无代码自动生成，无Query class的纯POJO用法，为此也作了一些适配来降低使用门槛。
