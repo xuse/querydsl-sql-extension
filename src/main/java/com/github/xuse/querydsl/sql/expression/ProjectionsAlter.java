@@ -13,7 +13,6 @@ import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.QList;
-import com.querydsl.sql.QBeans;
 import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
@@ -65,9 +64,9 @@ public class ProjectionsAlter {
 		return new StreamExpressionWrapper<>(fac, function, clz);
 	}
 
-	public static QBeanBuilder on(Expression<?>... exprs) {
-		return new QBeanBuilder(exprs);
-	}
+//	public static QBeanBuilder on(Expression<?>... exprs) {
+//		return new QBeanBuilder(exprs);
+//	}
 
 	/**
 	 *  Create a Bean populating projection for the given type and expressions
@@ -206,8 +205,12 @@ public class ProjectionsAlter {
     	return Projections.list(exprs);
     }
     
-    public static QBeans beans(RelationalPath<?>... tables){
-    	return new QBeans(tables);
+    public static QBeans1 beans(RelationalPath<?>... tables){
+    	return new QBeans1(tables);
+    }
+    
+    public static QBeans2.Builder beansBuilder(){
+    	return QBeans2.builder();
     }
     
     public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){

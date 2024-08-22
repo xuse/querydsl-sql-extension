@@ -582,6 +582,9 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		}
 	}
 	
+	/**
+	 * 1. use UpdateHandler to set column value via an expression.  
+	 */
 	@Test
 	public void testUpdateWithExpressions() {
 		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
@@ -599,36 +602,54 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 				.execute();
 	}
 
+	/**
+	 * 
+	 */
 	@Test
 	public void testSelectItems() {
+		boolean prepareData=false;
 		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
-		Foo foo=new Foo();
-		foo.setCode("123");
-		foo.setContent("contnbt");
-		foo.setCreated(Instant.now());
-		foo.setUpdated(new Date());
-		foo.setMap(Collections.singletonMap("K", "V"));
-		foo.setVolume(100);
-		//repo.insert(foo);
+		if(prepareData){
+			Foo foo=new Foo();
+			foo.setCode("123");
+			foo.setContent("contnbt");
+			foo.setCreated(Instant.now());
+			foo.setUpdated(new Date());
+			foo.setMap(Collections.singletonMap("K", "V"));
+			foo.setVolume(100);
+			repo.insert(foo);	
+		}
+		
+		//a query with the group by.
 		LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
 		wrapper
 		.like(Foo::getName, "%")
 		.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
 		.groupBy(Foo::getName);
 		
-		List<Integer> results = repo.find(wrapper.selectOne(Foo::getId, id->id.max()));
+		//1. select one column from the table.
+		List<Integer> results = repo.find(wrapper.selectSingleColumn(Foo::getId, id->id.max()));
+		
+		//2. select multiple columns.
 		List<Object[]> list = repo.find(
 				wrapper.select(q -> q
-						.select(Foo::getCreated).to(e->e.max()).as(null)
-						.select(Foo::getId).to(ID -> ID.count()).as("aa")
-						.select(Foo::getName).as("ss")
-						//.select(Expressions.operation(null, null, null))
+						.column(Foo::getCreated).to(e->e.max()).as("maxCreated")
+						.column(Foo::getId).to(ID -> ID.count()).as("IdCount")
+						.column(Foo::getName).and()
+						.column(Foo::getUpdated).and()
 					.toArray()));
 		
+		//3 select columns
 		
-		}
+		
+	}
 
 	
+	/**
+	 * 1. Select the table data to another bean.
+	 * 2. Use LambdaHelpers to hint a lambda to a column model.
+	 * 
+	 */
 	@Test
 	public void testSelectAs() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
@@ -638,7 +659,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			System.out.println(aaas);
 		}
 		{
-			List<Aaa> aaas=factory.select(Selects.bean(Aaa.class, $(Foo::getName), $(Foo::getId),$(Foo::getVolume), $(Foo::getCreated))).from(foo).fetch();
+			List<Aaa> aaas=factory.select(Selects.bean(Aaa.class, $(Foo::getName), $(Foo::getId),$(Foo::getVolume).as("version"),$(Foo::getCreated))).from(foo).fetch();
 			System.out.println(aaas);
 		}
 	}
