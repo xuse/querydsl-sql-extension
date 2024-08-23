@@ -36,8 +36,8 @@ public class UpdateHandler<B> {
 	
 	/**
 	 * 针对Number类型的字段，提供更丰富的算术运算API
-	 * @param <C>
-	 * @param path
+	 * @param <C> type of column
+	 * @param path column
 	 * @return UpdateSetNumber
 	 */
 	public <C extends Number & Comparable<C>> UpdateSetNumber<B,C> set(NumberLambdaColumn<B, C> path) {
@@ -159,7 +159,7 @@ public class UpdateHandler<B> {
 			return update.set(path, path.add(number));
 		}
 		
-		public <N extends Number & Comparable<?>> UpdateHandler<B> increment(){
+		public UpdateHandler<B> increment(){
 			return update.set(path, path.add(Expressions.ONE));
 		}
 

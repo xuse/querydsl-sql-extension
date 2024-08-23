@@ -16,16 +16,18 @@ import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.lambda.TimeLambdaColumn;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
+import com.github.xuse.querydsl.sql.expression.AliasMapBeans;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
-import com.github.xuse.querydsl.sql.expression.QBeans1;
-import com.github.xuse.querydsl.sql.expression.QBeans2;
-import com.github.xuse.querydsl.sql.expression.QStringMap;
+import com.github.xuse.querydsl.sql.expression.QAliasBeansContinuous;
+import com.github.xuse.querydsl.sql.expression.QAliasBeansDiscontinuous;
+import com.github.xuse.querydsl.sql.expression.QStringObjMap;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.ComparableExpression;
@@ -35,9 +37,40 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.core.types.dsl.TimeExpression;
-import com.querydsl.sql.Beans;
 import com.querydsl.sql.RelationalPath;
 
+
+/**
+ * 为了自定义查询语句返回值的形式提供的工具。包含两类方法——
+ * <ol>
+ * <li>指定查询列/表达式</li>
+ * <li>指定返回类格式</li>
+ * </ol>
+ * <h4>指定查询列/表达式</h4>
+ * <ul>
+ * <li>{@link #column(LambdaColumn)} 选择一个列，可以使用它构建函数表达式</li>
+ * <li>{@link #column(NumberLambdaColumn)}  选择一个数值列，可以使用它构建函数表达式</li>
+ * <li>{@link #column(StringLambdaColumn)}  选择一个字符串列，可以使用它构建函数表达式</li>
+ * <li>{@link #date(DateLambdaColumn)}  选择一个Date列，可以使用它构建函数表达式</li>
+ * <li>{@link #datetime(DateTimeLambdaColumn)}  选择一个Datetime列，可以使用它构建函数表达式</li>
+ * <li>{@link #time(TimeLambdaColumn)}  选择一个Time列，可以使用它构建函数表达式</li>
+ * </ul>
+ * 
+ * <h4>指定返回格式</h4>
+ * <ul>
+ * <li>{@link #toArray()} 表的每行记录以Object[]数组返回</li>
+ * <li>{@link #toArray(Class)} 表的每行记录以指定类型的T[]数组返回</li>
+ * <li>{@link #toBean(Class)} 表的每行记录按字段名匹配到新的Class作为返回对象</li>
+ * <li>{@link #toList()} 表的每行记录以List格式返回</li> 
+ * <li>{@link #toMap()} 表的每行记录以Map<String,?>格式返回</li>
+ * <li>{@link #toExprMap()} 表的每行记录以Map<列表达式,?>格式返回</li>
+ * <li>{@link #toPair()} 当仅选取两个列时，每行记录以Pair<?,?>格式返回</li>
+ * <li>{@link #toPair(Class, Class)} 当仅选取两个列时，每行记录以Pair<K,V>格式返回</li>
+ * <li>{@link #toTuple()} 每行记录以Tuple格式返回，该格式和ExprMap()基本一样</li>
+ * </ul>
+ * @author Joey
+ * @param <B> The bean type
+ */
 public class SelectBuilder<B> {
 	private final List<Expression<?>> exprs = new ArrayList<>();
 
@@ -68,24 +101,24 @@ public class SelectBuilder<B> {
 		return new SelectStringExpr(column);
 	}
 	
-	public <C extends Number & Comparable<C>> SelectNumbergExpr<C> column(NumberLambdaColumn<B,C> column) {
-		return new SelectNumbergExpr<>(column);
+	public <C extends Number & Comparable<C>> SelectNumberExpr<C> column(NumberLambdaColumn<B,C> column) {
+		return new SelectNumberExpr<>(column);
 	}
 	
-	public <C extends Number & Comparable<C>> SelectNumbergExpr<C> num(NumberLambdaColumn<B,C> column) {
-		return new SelectNumbergExpr<>(column);
+	public <C extends Number & Comparable<C>> SelectNumberExpr<C> num(NumberLambdaColumn<B,C> column) {
+		return new SelectNumberExpr<>(column);
 	}
 	
-	public <C extends Comparable<C>> SelectComparableExpr<C> date(DateLambdaColumn<B,C> column) {
-		return new SelectComparableExpr<>(column);
+	public <C extends Comparable<C>> SelectDateExpr<C> date(DateLambdaColumn<B,C> column) {
+		return new SelectDateExpr<>(column);
 	}
 	
-	public <C extends Comparable<C>> SelectComparableExpr<C> time(TimeLambdaColumn<B,C> column) {
-		return new SelectComparableExpr<>(column);
+	public <C extends Comparable<C>> SelectTimeExpr<C> time(TimeLambdaColumn<B,C> column) {
+		return new SelectTimeExpr<>(column);
 	}
 
-	public <C extends Comparable<C>> SelectComparableExpr<C> datetime(DateTimeLambdaColumn<B,C> column) {
-		return new SelectComparableExpr<>(column);
+	public <C extends Comparable<C>> SelectDateTimeExpr<C> datetime(DateTimeLambdaColumn<B,C> column) {
+		return new SelectDateTimeExpr<>(column);
 	}
 	
 	private SelectBuilder<B> endExpr(Expression<?> expr) {
@@ -104,7 +137,7 @@ public class SelectBuilder<B> {
 	@SuppressWarnings("unchecked")
 	public <T> Expression<T[]> toArray(Class<T> clz) {
 		Class<T[]> clz2= (Class<T[]>) Array.newInstance(clz, 0).getClass();
-		return Projections.array(clz2,(Expression<T>[])exprs.toArray(DDLExpressions.ZERO_LENGTH_EXPRESION));
+		return Projections.array(clz2, exprs.toArray(DDLExpressions.ZERO_LENGTH_EXPRESION));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -121,12 +154,12 @@ public class SelectBuilder<B> {
 	}
 	
 	public Expression<Map<String,?>> toMap(){
-		return new QStringMap(exprs);
+		return new QStringObjMap(exprs);
 	}
 	
-	public Expression<Beans> toBeans() {
+	public FactoryExpression<AliasMapBeans> toBeans() {
 		if(exprs.isEmpty()) {
-			return new QBeans1();
+			return new QAliasBeansContinuous();
 		}
 		List<RelationalPath<?>> tables = new ArrayList<>();
 		Map<RelationalPath<?>,List<Path<?>>> paths=new HashMap<>();
@@ -143,7 +176,7 @@ public class SelectBuilder<B> {
 			}
 		}
 		if(paths.isEmpty()) {
-			return new QBeans1(tables);
+			return new QAliasBeansContinuous(tables);
 		}
 		for(RelationalPath<?> table:tables) {
 			for(Path<?> p:table.getColumns()) {
@@ -151,7 +184,7 @@ public class SelectBuilder<B> {
 				list.add(p);
 			}
 		}
-		QBeans2.Builder builder=QBeans2.builder();
+		QAliasBeansDiscontinuous.Builder builder=QAliasBeansDiscontinuous.builder();
 		for(Map.Entry<RelationalPath<?>,List<Path<?>>> entry:paths.entrySet()) {
 			builder.addBean(entry.getKey(), entry.getValue());	
 		}
@@ -210,11 +243,11 @@ public class SelectBuilder<B> {
 			return endExpr(this.expr);
 		}
 	}
-	public class SelectNumbergExpr<C extends Number & Comparable<C>> {
+	public class SelectNumberExpr<C extends Number & Comparable<C>> {
 		protected NumberExpression<C> expr;
 		
 		@SuppressWarnings("unchecked")
-		SelectNumbergExpr(NumberLambdaColumn<B,C> column){
+		SelectNumberExpr(NumberLambdaColumn<B,C> column){
 			this.expr=(NumberExpression<C>)PathCache.getPath(column);
 		}
 		public CustomExpr to(Function<NumberExpression<C>,SimpleExpression<?>> function) {

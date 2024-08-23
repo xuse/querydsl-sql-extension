@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
@@ -148,16 +147,5 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	@Override
 	public List<Expression<?>> getArgs() {
 		return new ArrayList<>(bindings.values());
-	}
-
-	/**
-	 * convert the result to another type using the function input.
-	 * @param <K> type of result output
-	 * @param function function
-	 * @param clz the type K
-	 * @return StreamExpressionWrapper
-	 */
-	public <K> StreamExpressionWrapper<T, K> map(Function<T, K> function, Class<K> clz) {
-		return new StreamExpressionWrapper<>(this, function, clz);
 	}
 }

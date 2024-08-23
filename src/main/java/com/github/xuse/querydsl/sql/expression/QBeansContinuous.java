@@ -36,7 +36,7 @@ import com.querydsl.sql.RelationalPath;
  * @author Origin author luis(QueryDSL), revised by Joey.
  * 
  */
-public class QBeans1 extends FactoryExpressionBase<Beans> {
+public class QBeansContinuous extends FactoryExpressionBase<Beans> {
 
     private static final long serialVersionUID = -4411839816134215923L;
 
@@ -44,11 +44,11 @@ public class QBeans1 extends FactoryExpressionBase<Beans> {
 
     private final List<Expression<?>> expressions;
 
-    public QBeans1(RelationalPath<?>... beanPaths) {
+    public QBeansContinuous(RelationalPath<?>... beanPaths) {
     	this(Arrays.asList(beanPaths));
     }
     
-    public QBeans1(List<RelationalPath<?>> beanPaths) {
+    public QBeansContinuous(List<RelationalPath<?>> beanPaths) {
         super(Beans.class);
         try {
             final List<Expression<?>> listBuilder = new ArrayList<>();

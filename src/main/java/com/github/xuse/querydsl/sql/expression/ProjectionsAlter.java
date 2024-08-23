@@ -3,16 +3,17 @@ package com.github.xuse.querydsl.sql.expression;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.ArrayConstructorExpression;
 import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
+import com.querydsl.core.types.FactoryExpressionBase;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.QList;
+import com.querydsl.sql.Beans;
 import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
@@ -50,23 +51,6 @@ public class ProjectionsAlter {
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, Expression<?>... exprs) {
 		return new QBeanEx<T>(type, exprs);
 	}
-
-	/**
-	 * create a StreamExpression to apply function on result.
-	 * @param fac fac
-	 * @param clz clz
-	 * @param function function
-	 * @return StreamExpressionWrapper
-	 * @param <T> The type of target object.
-	 * @param <K> The type of target object.
-	 */
-	public static <T, K> StreamExpressionWrapper<T, K> function(FactoryExpression<T> fac, Class<K> clz, Function<T, K> function) {
-		return new StreamExpressionWrapper<>(fac, function, clz);
-	}
-
-//	public static QBeanBuilder on(Expression<?>... exprs) {
-//		return new QBeanBuilder(exprs);
-//	}
 
 	/**
 	 *  Create a Bean populating projection for the given type and expressions
@@ -189,7 +173,8 @@ public class ProjectionsAlter {
      * @param exprs arguments for the projection
      * @return factory expression
      */
-    public static <T> ArrayConstructorExpression<T> array(Class<T[]> type, @SuppressWarnings("unchecked") Expression<T>... exprs) {
+    @SafeVarargs
+	public static <T> ArrayConstructorExpression<T> array(Class<T[]> type, Expression<T>... exprs) {
         return new ArrayConstructorExpression<T>(type, exprs);
     }
     
@@ -197,21 +182,26 @@ public class ProjectionsAlter {
         return new ArrayConstructorExpression<>(exprs);
     }
     
-    public static QStringMap stringMap(Expression<?>... exprs){
-    	return new QStringMap(exprs);
+    public static QStringObjMap stringMap(Expression<?>... exprs){
+    	return new QStringObjMap(exprs);
     }
 
     public static QList list(Expression<?>... exprs){
     	return Projections.list(exprs);
     }
     
-    public static QBeans1 beans(RelationalPath<?>... tables){
-    	return new QBeans1(tables);
+    public static FactoryExpressionBase<Beans> beans(RelationalPath<?>... tables){
+    	return new QBeansContinuous(tables);
     }
     
-    public static QBeans2.Builder beansBuilder(){
-    	return QBeans2.builder();
+    public static QBeansDiscontinuous.Builder beansBuilder(){
+    	return QBeansDiscontinuous.builder();
     }
+    
+    public static QAliasBeansDiscontinuous.Builder aliasBeansBuilder(RelationalPath<?>... tables){
+    	return QAliasBeansDiscontinuous.builder();
+    }
+    
     
     public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){
     	return new QPair<>(expr1,expr2);

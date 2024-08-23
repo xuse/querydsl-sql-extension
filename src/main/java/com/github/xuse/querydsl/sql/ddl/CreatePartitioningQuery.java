@@ -7,7 +7,6 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
-import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.querydsl.core.types.Operator;
 import com.querydsl.sql.RelationalPath;

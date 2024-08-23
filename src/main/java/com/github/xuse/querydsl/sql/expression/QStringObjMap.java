@@ -16,19 +16,19 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Visitor;
 import com.querydsl.core.util.CollectionUtils;
 
-public class QStringMap extends FactoryExpressionBase<Map<String, ?>> {
+public class QStringObjMap extends FactoryExpressionBase<Map<String, ?>> {
 
 	private final List<Expression<?>> args;
 	private final List<String> argNames;
 	
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    protected QStringMap(Expression<?>... args) {
+    protected QStringObjMap(Expression<?>... args) {
         super((Class) Map.class);
 		this.argNames = toNames(this.args = CollectionUtils.unmodifiableList(Arrays.asList(args)));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public QStringMap(List<Expression<?>> args) {
+    public QStringObjMap(List<Expression<?>> args) {
         super((Class) Map.class);
         this.args = CollectionUtils.unmodifiableList(args);
         this.argNames=toNames(args);

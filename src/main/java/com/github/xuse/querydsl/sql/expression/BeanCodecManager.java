@@ -18,7 +18,7 @@ public class BeanCodecManager {
 
 	private static final BeanCodecManager INSTANCE = new BeanCodecManager();
 	
-	private final Set<Class<?>> normalClassess=new HashSet<>();
+	private final Set<Class<?>> normalClazzes =new HashSet<>();
 
 	private final Map<CacheKey, BeanCodec> beanCodecs = new ConcurrentHashMap<CacheKey, BeanCodec>();
 
@@ -103,14 +103,14 @@ public class BeanCodecManager {
 
 	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings){
 		BeanCodecProvider provider;
-		if (normalClassess.contains(key.targetClass)) {
+		if (normalClazzes.contains(key.targetClass)) {
 			provider = BeanCodecDefaultProvider.INSTANCE;
 		} else {
 			boolean isRecord = TypeUtils.isRecord(key.targetClass);
 			if (isRecord) {
 				provider = BeanCodecRecordProvider.INSTANCE;
 			} else {
-				normalClassess.add(key.targetClass);
+				normalClazzes.add(key.targetClass);
 				provider = BeanCodecDefaultProvider.INSTANCE;
 			}
 		}

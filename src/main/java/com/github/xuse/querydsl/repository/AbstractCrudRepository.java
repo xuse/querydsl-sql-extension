@@ -29,6 +29,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Assert;
 import com.mysema.commons.lang.Pair;
+import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.Path;
@@ -200,7 +201,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 
 	public QueryExecutor<T,T> query() {
 		RelationalPath<T> path=getPath();
-		return new QueryExecutor<>(path,path, this);
+		return new QueryExecutor<>(path,new DefaultQueryMetadata(),this);
 	}
 
 	/**

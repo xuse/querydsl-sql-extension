@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -50,6 +51,7 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Ops;
+import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Column;
@@ -166,12 +168,9 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		System.err.println(id);
 		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
 		System.err.println("Count:" + count);
-		List<String> entity = factory.select(ProjectionsAlter.function(t2.getProjection(), String.class, AvsUserAuthority::getDevId))
-				.from(t2).where(t2.id.eq(sid)).fetch();
-
+	
 		factory.selectFrom(t2).where(t2.id.eq(sid)).fetchOne();
 		factory.selectFrom(t2).where(t2.id.eq(sid)).fetchFirst();
-		System.err.println(entity);
 
 		factory.update(t1).set(t1.name, t1.name.concat("Abc123")).where(t1.id.eq(id)).execute();
 
@@ -182,22 +181,22 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void test2() {
-
+		boolean prepareData=false;
 		QAaa t1 = QAaa.aaa;
-//		Aaa a = new Aaa();
-//		a.setName("张三");
-//		a.setGender(Gender.FEMALE);
-//		a.setTaskStatus(TaskStatus.INIT);
-//		Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
-//		
-//		System.err.println("===========查询t1===========");
-//		for(Aaa aaa:factory.selectFrom(t1).fetch()) {
-//			System.err.println(aaa);	
-//		}
-
-		// 测试更新功能(7个字段)
-		// [Aaa [created=2023-02-27 14:48:19.0, id=1, name=张三, gender=FEMALE,
-		// taskStatus=INIT, version=0]]
+		
+		if(prepareData) {
+			Aaa a = new Aaa();
+			a.setName("张三");
+			a.setGender(Gender.FEMALE);
+			a.setTaskStatus(TaskStatus.INIT);
+			Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
+			
+			System.err.println("===========查询t1===========");
+			for(Aaa aaa:factory.selectFrom(t1).fetch()) {
+				System.err.println(aaa);	
+			}
+			//assertEquals("[Aaa [created=2023-02-27 14:48:19.0, id=1, name=张三, gender=FEMALE,taskStatus=INIT, version=0]]",aaa.toString())
+		}
 		Aaa old = factory.selectFrom(t1).where(t1.id.eq(1)).fetchOne();
 
 		Aaa b = new Aaa();
@@ -338,13 +337,6 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		// 查询数量
 		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
 		System.err.println("Count:" + count);
-
-		// 查询数据，并支持流操作 (试验性功能，API还需要改进)
-		List<String> entity = factory
-				.select(ProjectionsAlter.function(t2.getProjection(), String.class, AvsUserAuthority::getDevId)).from(t2)
-				.where(t2.id.eq(sid)).fetch();
-
-		System.err.println(entity);
 
 		// 查询数据，获取一条
 		{
@@ -606,44 +598,76 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	 * 
 	 */
 	@Test
-	public void testSelectItems() {
+	public void testSelectItems1() {
 		boolean prepareData=false;
 		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
 		if(prepareData){
 			Foo foo=new Foo();
 			foo.setCode("123");
 			foo.setContent("contnbt");
+			foo.setName("ASSET1");
 			foo.setCreated(Instant.now());
 			foo.setUpdated(new Date());
 			foo.setMap(Collections.singletonMap("K", "V"));
 			foo.setVolume(100);
 			repo.insert(foo);	
 		}
-		
-		//a query with the group by.
-		LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
-		wrapper
-		.like(Foo::getName, "%")
-		.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
-		.groupBy(Foo::getName);
-		
-		//1. select one column from the table.
-		List<Integer> results = repo.find(wrapper.selectSingleColumn(Foo::getId, id->id.max()));
-		
-		//2. select multiple columns.
-		List<Object[]> list = repo.find(
-				wrapper.select(q -> q
-						.column(Foo::getCreated).to(e->e.max()).as("maxCreated")
-						.column(Foo::getId).to(ID -> ID.count()).as("IdCount")
-						.column(Foo::getName).and()
-						.column(Foo::getUpdated).and()
-					.toArray()));
-		
-		//3 select columns
-		
-		
+		{
+			//1. select one column from the table.
+			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
+			List<Integer> results = repo.find(
+				wrapper.selectSingleColumn(Foo::getId, id->id.max())
+				.like(Foo::getName, "%")
+				.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+				.groupBy(Foo::getName)
+			);
+			System.out.println(results);
+		}
+		{
+			//2. select multiple columns to Object[]
+			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
+			List<Object[]> list = repo.find(
+					wrapper.select(q -> q
+							.column(Foo::getCreated).to(e->e.max()).as("maxCreated")
+							.column(Foo::getId).to(ID -> ID.count()).as("IdCount")
+							.column(Foo::getUpdated).to(ComparableExpression::max).as("maxUpdated")
+							.column(Foo::getName).and()
+						.toArray())
+					.groupBy(Foo::getName)
+			);
+			for(Object[] obj:list) {
+				System.out.println(Arrays.toString(obj));
+			}
+		}
+		{
+			//3. select multiple columns to Map
+			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
+			List<Map<String,?>> list = repo.find(
+					wrapper.select(result -> result
+							.column(Foo::getCreated).to(e->e.max()).as("maxCreated")
+							.column(Foo::getId).to(ID -> ID.count()).as("IdCount")
+							.column(Foo::getUpdated).to(ComparableExpression::max).as("maxUpdated")
+							.column(Foo::getName).and()
+						.toMap())
+					.groupBy(Foo::getName)
+			);
+			for(Map<String,?> obj:list) {
+				System.out.println(obj);
+			}
+		}
 	}
-
+	
+	@Test
+	public void testSelectItems2() {
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
+		
+		List<Pair<Integer,String>> list = repo.query().eq(Foo::getName, "张三")
+			.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+			.groupBy(Foo::getName)
+			.having($(Foo::getId).count().goe(100))
+			.selectPair(num(Foo::getId).max(), string(Foo::getName))
+		.fetch();
+	}
 	
 	/**
 	 * 1. Select the table data to another bean.

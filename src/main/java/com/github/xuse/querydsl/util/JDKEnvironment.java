@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 
 import sun.misc.Unsafe;
 
+@SuppressWarnings("restriction")
 public class JDKEnvironment {
 	public static final Unsafe UNSAFE;
 

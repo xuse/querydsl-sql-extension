@@ -4,12 +4,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.github.xuse.querydsl.lambda.LambdaColumn;
-import com.github.xuse.querydsl.sql.expression.QBeans2;
+import com.github.xuse.querydsl.sql.expression.AliasMapBeans;
+import com.github.xuse.querydsl.sql.expression.QAliasBeansDiscontinuous;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.Expression;
-import com.querydsl.sql.Beans;
 import com.querydsl.sql.RelationalPath;
 
 public class LambdaQueryWrapper<T> extends LambdaQuery<T, T> {
@@ -60,11 +60,11 @@ public class LambdaQueryWrapper<T> extends LambdaQuery<T, T> {
 		return ch;
 	}
 	
-	public <R> LambdaQuery<T,Beans> selectBeans(Consumer<QBeans2.Builder> consumer) {
-		QBeans2.Builder builder=QBeans2.builder();
+	public LambdaQuery<T,AliasMapBeans> selectBeans(Consumer<QAliasBeansDiscontinuous.Builder> consumer) {
+		QAliasBeansDiscontinuous.Builder builder = QAliasBeansDiscontinuous.builder();
 		consumer.accept(builder);
 		mixin.setProjection(builder.build());
-		LambdaQuery<T,Beans> ch=new LambdaQuery<>(table,mixin);
+		LambdaQuery<T, AliasMapBeans> ch = new LambdaQuery<>(table, mixin);
 		return ch;
 	}
 }
