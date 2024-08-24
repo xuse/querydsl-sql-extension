@@ -112,10 +112,12 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		metadataFactory.dropTable(QAaa.aaa).ifExists(true).execute();
 		metadataFactory.dropTable(QAvsUserAuthority.avsUserAuthority).ifExists(true).execute();
 		metadataFactory.dropTable(QCaAsset.caAsset).ifExists(true).execute();
+		metadataFactory.dropTable(()->Foo.class).ifExists(true).execute();
 
 		metadataFactory.createTable(QAaa.aaa).execute();
 		metadataFactory.createTable(QAvsUserAuthority.avsUserAuthority).execute();
 		metadataFactory.createTable(QCaAsset.caAsset).execute();
+		metadataFactory.createTable(()->Foo.class).execute();
 	}
 
 	@Test

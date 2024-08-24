@@ -207,7 +207,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({2})");
 		
 		add(AlterTablePartitionOps.ADD_PARTITION,"ALTER TABLE {1} ADD PARTITION ({0})");
-		add(AlterTablePartitionOps.DROP_PARTITION,"ALTER TABLE {1} DROP PARTITION ({0})");
+		add(AlterTablePartitionOps.DROP_PARTITION,"ALTER TABLE {1} DROP PARTITION {0}");
 		add(AlterTablePartitionOps.REORGANIZE_PARTITION,"ALTER TABLE {2} REORGANIZE PARTITION {0} INTO {1}");
 		
 		add(AlterTablePartitionOps.REMOVE_PARTITIONING,"ALTER TABLE {0} REMOVE PARTITIONING");
