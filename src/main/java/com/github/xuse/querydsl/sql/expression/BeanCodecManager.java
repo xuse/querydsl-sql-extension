@@ -6,16 +6,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.xuse.querydsl.util.Radix;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Assert;
 
 public class BeanCodecManager {
-	private static final Logger log = LoggerFactory.getLogger(BeanCodecManager.class);
-
 	private static final BeanCodecManager INSTANCE = new BeanCodecManager();
 	
 	private final Set<Class<?>> normalClazzes =new HashSet<>();

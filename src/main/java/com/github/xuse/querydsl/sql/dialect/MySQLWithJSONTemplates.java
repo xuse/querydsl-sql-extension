@@ -292,6 +292,11 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	public SchemaPolicy getSchemaPolicy() {
 		return SchemaPolicy.CATALOG_ONLY;
 	}
+	
+	@Override
+	public boolean usingBatchToBulkInDefault() {
+		return true;
+	}
 
 	@Override
 	public boolean notSupports(Operator op) {

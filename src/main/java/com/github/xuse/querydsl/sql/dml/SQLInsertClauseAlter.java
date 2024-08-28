@@ -56,7 +56,6 @@ import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLSerializerAlter;
-import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.AbstractSQLInsertClause;
 import com.querydsl.sql.dml.Mapper;
 import com.querydsl.sql.dml.SQLInsertBatch;
@@ -84,36 +83,31 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	@SuppressWarnings("rawtypes")
 	private transient Mapper batchMapper;
 
-	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity) {
-		this(connection, new ConfigurationEx(templates), entity);
-	}
-
-	public SQLInsertClauseAlter(Connection connection, SQLTemplates templates, RelationalPath<?> entity,
-			SQLQuery<?> subQuery) {
-		this(connection, new ConfigurationEx(templates), entity, subQuery);
-	}
-
 	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity,
 			SQLQuery<?> subQuery) {
 		super(connection, configuration.get(), entity, subQuery);
 		this.configuration = configuration;
+		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
 	}
 
 	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configuration = configuration;
+		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
 	}
 
 	public SQLInsertClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration,
 			RelationalPath<?> entity, SQLQuery<?> subQuery) {
 		super(connection, configuration.get(), entity, subQuery);
 		this.configuration = configuration;
+		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
 	}
 
 	public SQLInsertClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration,
 			RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configuration = configuration;
+		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
 	}
 
 	/**
@@ -342,7 +336,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 */
 	public SQLInsertClauseAlter populateBatch(Collection<?> beans) {
 		populateBatch0(beans,
-				Mappers.get(Mappers.SCENARIO_INSERT_NULL_WITH_DEFAULT | Mappers.NULLS_BIND | Mappers.TYPE_BEAN));
+				Mappers.get(Mappers.SCENARIO_INSERT | Mappers.NULLS_BIND | Mappers.TYPE_BEAN));
 		return this;
 	}
 
