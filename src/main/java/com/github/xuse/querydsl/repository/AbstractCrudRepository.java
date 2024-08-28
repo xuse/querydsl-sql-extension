@@ -244,7 +244,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if (cb == null) {
 			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
 		}
-		BeanCodec codec = BeanCodecManager.getInstance().getPopulator(clz, new FieldCollector());
+		BeanCodec codec = BeanCodecManager.getInstance().getCodec(clz, new FieldCollector());
 		Field[] fields = codec.getFields();
 		Object[] values = codec.values(conditionBean);
 		Map<String, Path<?>> bindings = new HashMap<>();

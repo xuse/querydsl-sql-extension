@@ -23,6 +23,8 @@ public abstract class BeanCodec {
 	public abstract Object[] values(Object bean);
 
 	private Field[] fields;
+	
+	private Class<?> type;
 
 	public Field[] getFields() {
 		return fields;
@@ -30,5 +32,13 @@ public abstract class BeanCodec {
 
 	public void setFields(Field[] fields) {
 		this.fields = fields;
+	}
+
+	public Class<?> getType() {
+		return type;
+	}
+
+	public void setType(Class<?> type) {
+		this.type = type;
 	}
 }

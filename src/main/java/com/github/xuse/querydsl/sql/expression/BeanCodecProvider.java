@@ -11,12 +11,13 @@ public interface BeanCodecProvider {
 	BeanCodec generateAccessor(CacheKey key, BindingProvider bindings,ClassLoaderAccessor cl);
 
 
-	default BeanCodec inputFields(BeanCodec bc, List<FieldProperty> properties) {
+	default BeanCodec inputFields(BeanCodec bc, Class<?> target,List<FieldProperty> properties) {
 		Field[] fields = new Field[properties.size()];
 		for (int i = 0; i < properties.size(); i++) {
 			fields[i] = properties.get(i).getField();
 		}
 		bc.setFields(fields);
+		bc.setType(target);
 		return bc;
 	}
 	

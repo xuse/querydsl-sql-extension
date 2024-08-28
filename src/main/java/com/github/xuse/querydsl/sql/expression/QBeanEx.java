@@ -98,7 +98,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		super(type);
 		this.bindings = Collections.unmodifiableMap(bindings);
-		this.beanCodec = BeanCodecManager.getInstance().getPopulator(type, new DefaultBindingProvider(bindings));
+		this.beanCodec = BeanCodecManager.getInstance().getCodec(type, new DefaultBindingProvider(bindings));
 	}
 
 	@SuppressWarnings("unchecked")

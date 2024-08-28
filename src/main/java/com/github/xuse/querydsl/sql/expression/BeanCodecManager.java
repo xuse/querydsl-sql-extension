@@ -75,30 +75,10 @@ public class BeanCodecManager {
 		}
 	}
 
-	public BeanCodec getPopulator(Class<?> target, BindingProvider bindings) {
+	public BeanCodec getCodec(Class<?> target, BindingProvider bindings) {
 		List<String> fieldNames = bindings.fieldNames();
 		CacheKey key = CacheKey.of(target, fieldNames);
-		BeanCodec result = beanCodecs.get(key);
-		if (result != null) {
-			return result;
-		}
-		synchronized (this) {
-			result = beanCodecs.get(key);
-			if (result == null) {
-				try {
-					result = generateAccessor(key, bindings);
-					beanCodecs.putIfAbsent(key, result);
-				} catch (RuntimeException e) {
-					result = beanCodecs.get(key);
-					if (result != null) {
-						log.error("", e);
-						return result;
-					}
-					throw e;
-				}
-			}
-			return result;
-		}
+		return beanCodecs.computeIfAbsent(key, (k)->generateAccessor(k, bindings));
 	}
 
 	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings){
@@ -114,7 +94,8 @@ public class BeanCodecManager {
 				provider = BeanCodecDefaultProvider.INSTANCE;
 			}
 		}
-		return provider.generateAccessor(key, bindings, cl);
+		BeanCodec bc= provider.generateAccessor(key, bindings, cl);
+		return bc;
 	}
 	
 

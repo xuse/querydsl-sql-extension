@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -49,6 +50,7 @@ import com.querydsl.sql.SQLNoCloseListener;
 import com.querydsl.sql.SQLSerializer;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.dml.EmptyResultSet;
+import com.querydsl.sql.dml.Mapper;
 import com.querydsl.sql.dml.SQLMergeClause;
 
 /**
@@ -203,7 +205,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	public SQLMergeClauseAlter populate(Object bean) {
 		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null ? entity.getPrimaryKey().getLocalColumns() : Collections.emptyList();
 		boolean tuple = (bean instanceof Tuple);
-		Map<Path<?>, Object> values = Mappers.getUpdate(tuple, writeNulls).createMap(entity, bean);
+		Map<Path<?>, Object> values = ((Mapper)Mappers.getUpdate(tuple, writeNulls)).createMap(entity, bean);
 		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
 			if (!primaryKeyColumns.contains(entry.getKey())) {
 				set((Path) entry.getKey(), entry.getValue());
