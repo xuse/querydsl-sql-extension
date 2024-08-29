@@ -187,7 +187,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			ResultSet rs = stmt.getGeneratedKeys();
 			return new ResultSetAdapter(rs) {
 				@Override
-				public void close() throws SQLException {
+				public void close(){
 					SQLTypeUtils.close(rs);
 					SQLTypeUtils.close(stmt2);
 					reset();
@@ -576,7 +576,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		if (!columns.isEmpty()) {
 			throw Exceptions.illegalState("This method should be called before method 'populate'.");
 		}
-		this.writeNulls = Boolean.valueOf(flag);
+		this.writeNulls = flag;
 		return this;
 	}
 

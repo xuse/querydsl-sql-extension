@@ -164,6 +164,8 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
 
 ### 性能优化
 
+性能相关项目数据，参见 [性能参考 Performance guide](performance_tunning.md)
+
 #### 无反射访问
 
 重写了QueryDSL 中JavaBean与JDBC交互部分以提升性能。使用ASM，为每个需要Bean对应的查询字段组合生成了一个访问器，作为反射的一个加速替代。

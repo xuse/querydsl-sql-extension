@@ -42,6 +42,8 @@ import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplatesEx {
 	private final TypeNames typeNames = TypeNames.generateDefault();
 	
+	private final boolean batchToBulk;
+	
 	protected final Set<Operator> unsupports=new HashSet<>();
 	
 	private SchemaReader schemaReader=new InfomationSchemaReader(0) {
@@ -92,15 +94,21 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
     
     public static class MySQLTemplateBuilderEx extends Builder{
     	private boolean supportsCheck;
+    	private boolean useBulk = true;
     	
     	public Builder supportsCheck() {
     		supportsCheck=true;
     		return this;
     	}
     	
+    	public Builder usingBatchToBulkInDefault(boolean flag) {
+			useBulk = flag;
+    		return this;
+    	}
+    	
         @Override
         protected SQLTemplates build(char escape, boolean quote) {
-			return new MySQLWithJSONTemplates(escape, quote, supportsCheck);
+			return new MySQLWithJSONTemplates(escape, quote, supportsCheck,useBulk);
         }
     }
     
@@ -112,12 +120,13 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 
 	public MySQLWithJSONTemplates() {
-		this('\\', false, false);
+		this('\\', false, false, true);
 	}
 	
-	public MySQLWithJSONTemplates(char escape, boolean quote,boolean supportsCheckConstraint) {
+	public MySQLWithJSONTemplates(char escape, boolean quote,boolean supportsCheckConstraint, boolean batchToBulk) {
 		super(escape, quote);
 		super.setPrintSchema(false);
+		this.batchToBulk = batchToBulk;
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
 		initJsonFunctions();
 		initPartitionOps();
@@ -295,7 +304,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	
 	@Override
 	public boolean isBatchToBulkInDefault() {
-		return true;
+		return batchToBulk;
 	}
 
 	@Override
