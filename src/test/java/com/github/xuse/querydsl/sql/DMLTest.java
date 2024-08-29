@@ -112,12 +112,12 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		metadataFactory.dropTable(QAaa.aaa).ifExists(true).execute();
 		metadataFactory.dropTable(QAvsUserAuthority.avsUserAuthority).ifExists(true).execute();
 		metadataFactory.dropTable(QCaAsset.caAsset).ifExists(true).execute();
-		metadataFactory.dropTable(()->Foo.class).ifExists(true).execute();
+		metadataFactory.dropTable(() -> Foo.class).ifExists(true).execute();
 
 		metadataFactory.createTable(QAaa.aaa).execute();
 		metadataFactory.createTable(QAvsUserAuthority.avsUserAuthority).execute();
 		metadataFactory.createTable(QCaAsset.caAsset).execute();
-		metadataFactory.createTable(()->Foo.class).execute();
+		metadataFactory.createTable(() -> Foo.class).execute();
 	}
 
 	@Test
@@ -170,7 +170,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		System.err.println(id);
 		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
 		System.err.println("Count:" + count);
-	
+
 		factory.selectFrom(t2).where(t2.id.eq(sid)).fetchOne();
 		factory.selectFrom(t2).where(t2.id.eq(sid)).fetchFirst();
 
@@ -183,21 +183,22 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void test2() {
-		boolean prepareData=false;
+		boolean prepareData = false;
 		QAaa t1 = QAaa.aaa;
-		
-		if(prepareData) {
+
+		if (prepareData) {
 			Aaa a = new Aaa();
 			a.setName("张三");
 			a.setGender(Gender.FEMALE);
 			a.setTaskStatus(TaskStatus.INIT);
 			Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
-			
+
 			System.err.println("===========查询t1===========");
-			for(Aaa aaa:factory.selectFrom(t1).fetch()) {
-				System.err.println(aaa);	
+			for (Aaa aaa : factory.selectFrom(t1).fetch()) {
+				System.err.println(aaa);
 			}
-			//assertEquals("[Aaa [created=2023-02-27 14:48:19.0, id=1, name=张三, gender=FEMALE,taskStatus=INIT, version=0]]",aaa.toString())
+			// assertEquals("[Aaa [created=2023-02-27 14:48:19.0, id=1, name=张三,
+			// gender=FEMALE,taskStatus=INIT, version=0]]",aaa.toString())
 		}
 		Aaa old = factory.selectFrom(t1).where(t1.id.eq(1)).fetchOne();
 
@@ -262,33 +263,39 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	}
 
 	@Test
-	public void testInertBatch() {
+	public void testInertBatch1() {
 		QAaa t1 = QAaa.aaa;
+		factory.getMetadataFactory().truncate(t1).execute();
 		Aaa a = new Aaa();
+		a.setName("张三");
+		a.setGender(Gender.FEMALE);
 		a.setTaskStatus(TaskStatus.RUNNING);
 		a.setCreated(new Date().toInstant());
-		a.setName("张三");
 		a.setTrantField("aaaa");
 
 		Aaa b = new Aaa();
 		b.setName("王五");
+		b.setGender(Gender.FEMALE);
 		b.setTaskStatus(TaskStatus.RUNNING);
 		b.setCreated(new Date().toInstant());
 		b.setTrantField("bbbb");
 
 		Aaa c = new Aaa();
 		c.setName("sadfsfsdfs");
+		c.setGender(Gender.MALE);
 		c.setTaskStatus(TaskStatus.RUNNING);
 		c.setCreated(new Date().toInstant());
 		c.setTrantField("cccc");
 
 		Aaa d = new Aaa();
 		d.setName("李四");
+		d.setGender(Gender.MALE);
 		d.setTaskStatus(TaskStatus.RUNNING);
 		d.setTrantField("dsaasdsa");
 		d.setVersion(123);
 		System.err.println("==== BATCH START ====");
-		List<Integer> x = factory.insert(t1).populateBatch(Arrays.asList(a, b, c, d)).executeWithKeys(Integer.class);
+		List<Integer> x = factory.insert(t1).writeNulls(false).populateBatch(Arrays.asList(a, b, c, d))
+				.executeWithKeys(Integer.class);
 		System.err.println(x);
 	}
 
@@ -555,16 +562,16 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 		// 写法三，接近queryDSL原生风格，同时支持lambda
 		{
-			repo.query().eq(Foo::getName, "张三").between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
-					.findAndCount();
+			repo.query().eq(Foo::getName, "张三")
+					.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now()).findAndCount();
 		}
 
 		// 写法四，QueryDSL风格
 		{
 			LambdaColumn<Foo, String> name = Foo::getName;
 			LambdaColumn<Foo, Instant> created = Foo::getCreated;
-			List<Foo> list = repo
-					.find(q -> q.where(name.eq("张三").and(created.between(DateUtils.getInstant(2023, 12, 1), Instant.now()))));
+			List<Foo> list = repo.find(
+					q -> q.where(name.eq("张三").and(created.between(DateUtils.getInstant(2023, 12, 1), Instant.now()))));
 		}
 
 		// 写法五，使用一个查询表单类
@@ -575,9 +582,9 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			repo.findByCondition(params);
 		}
 	}
-	
+
 	/**
-	 * 1. use UpdateHandler to set column value via an expression.  
+	 * 1. use UpdateHandler to set column value via an expression.
 	 */
 	@Test
 	public void testUpdateWithExpressions() {
@@ -591,9 +598,8 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 				// .set(Foo::getVolume).to(Foo::getId, id-> id.multiply(100))
 
 				// 相当于 set volume = volume * id
-				.set(Foo::getVolume).to(Foo::getId, (volume, id) -> volume.multiply(id.add(2)))
-				.set(Foo::getCode).concat("_suffix")
-				.execute();
+				.set(Foo::getVolume).to(Foo::getId, (volume, id) -> volume.multiply(id.add(2))).set(Foo::getCode)
+				.concat("_suffix").execute();
 	}
 
 	/**
@@ -601,10 +607,10 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	 */
 	@Test
 	public void testSelectItems1() {
-		boolean prepareData=false;
+		boolean prepareData = false;
 		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
-		if(prepareData){
-			Foo foo=new Foo();
+		if (prepareData) {
+			Foo foo = new Foo();
 			foo.setCode("123");
 			foo.setContent("contnbt");
 			foo.setName("ASSET1");
@@ -612,83 +618,70 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			foo.setUpdated(new Date());
 			foo.setMap(Collections.singletonMap("K", "V"));
 			foo.setVolume(100);
-			repo.insert(foo);	
+			repo.insert(foo);
 		}
 		{
-			//1. select one column from the table.
+			// 1. select one column from the table.
 			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
-			List<Integer> results = repo.find(
-				wrapper.selectSingleColumn(Foo::getId, id->id.max())
-				.like(Foo::getName, "%")
-				.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
-				.groupBy(Foo::getName)
-			);
+			List<Integer> results = repo.find(wrapper.selectSingleColumn(Foo::getId, id -> id.max())
+					.like(Foo::getName, "%").between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+					.groupBy(Foo::getName));
 			System.out.println(results);
 		}
 		{
-			//2. select multiple columns to Object[]
+			// 2. select multiple columns to Object[]
 			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
 			List<Object[]> list = repo.find(
-					wrapper.select(q -> q
-							.column(Foo::getCreated).to(e->e.max()).as("maxCreated")
-							.column(Foo::getId).to(ID -> ID.count()).as("IdCount")
-							.column(Foo::getUpdated).to(ComparableExpression::max).as("maxUpdated")
-							.column(Foo::getName).and()
-						.toArray())
-					.groupBy(Foo::getName)
-			);
-			for(Object[] obj:list) {
+					wrapper.select(q -> q.column(Foo::getCreated).to(e -> e.max()).as("maxCreated").column(Foo::getId)
+							.to(ID -> ID.count()).as("IdCount").column(Foo::getUpdated).to(ComparableExpression::max)
+							.as("maxUpdated").column(Foo::getName).and().toArray()).groupBy(Foo::getName));
+			for (Object[] obj : list) {
 				System.out.println(Arrays.toString(obj));
 			}
 		}
 		{
-			//3. select multiple columns to Map
+			// 3. select multiple columns to Map
 			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
-			List<Map<String,?>> list = repo.find(
-					wrapper.select(result -> result
-							.column(Foo::getCreated).to(e->e.max()).as("maxCreated")
-							.column(Foo::getId).to(ID -> ID.count()).as("IdCount")
-							.column(Foo::getUpdated).to(ComparableExpression::max).as("maxUpdated")
-							.column(Foo::getName).and()
-						.toMap())
-					.groupBy(Foo::getName)
-			);
-			for(Map<String,?> obj:list) {
+			List<Map<String, ?>> list = repo.find(wrapper
+					.select(result -> result.column(Foo::getCreated).to(e -> e.max()).as("maxCreated")
+							.column(Foo::getId).to(ID -> ID.count()).as("IdCount").column(Foo::getUpdated)
+							.to(ComparableExpression::max).as("maxUpdated").column(Foo::getName).and().toMap())
+					.groupBy(Foo::getName));
+			for (Map<String, ?> obj : list) {
 				System.out.println(obj);
 			}
 		}
 	}
-	
+
 	@Test
 	public void testSelectItems2() {
 		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
-		
-		List<Pair<Integer,String>> list = repo.query().eq(Foo::getName, "张三")
-			.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
-			.groupBy(Foo::getName)
-			.having($(Foo::getId).count().goe(100))
-			.selectPair(num(Foo::getId).max(), string(Foo::getName))
-		.fetch();
+
+		List<Pair<Integer, String>> list = repo.query().eq(Foo::getName, "张三")
+				.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now()).groupBy(Foo::getName)
+				.having($(Foo::getId).count().goe(100)).selectPair(num(Foo::getId).max(), string(Foo::getName)).fetch();
 	}
-	
+
 	/**
-	 * 1. Select the table data to another bean.
-	 * 2. Use LambdaHelpers to hint a lambda to a column model.
+	 * 1. Select the table data to another bean. 2. Use LambdaHelpers to hint a
+	 * lambda to a column model.
 	 * 
 	 */
 	@Test
 	public void testSelectAs() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		LambdaTable<Foo> foo=()->Foo.class;
+		LambdaTable<Foo> foo = () -> Foo.class;
 		{
-			List<Aaa> aaas=factory.select(Selects.bean(Aaa.class, foo)).from(foo).fetch();
+			List<Aaa> aaas = factory.select(Selects.bean(Aaa.class, foo)).from(foo).fetch();
 			System.out.println(aaas);
 		}
 		{
-			List<Aaa> aaas=factory.select(Selects.bean(Aaa.class, $(Foo::getName), $(Foo::getId),$(Foo::getVolume).as("version"),$(Foo::getCreated))).from(foo).fetch();
+			List<Aaa> aaas = factory.select(Selects.bean(Aaa.class, $(Foo::getName), $(Foo::getId),
+					$(Foo::getVolume).as("version"), $(Foo::getCreated))).from(foo).fetch();
 			System.out.println(aaas);
 		}
 	}
+
 	/*
 	 * 写法五中用到的查询表单类
 	 */
@@ -773,19 +766,54 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void testPureBean3() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		metadata.dropTable(() -> StateMachine.class).execute();
-		metadata.createTable(() -> StateMachine.class).execute();
+		LambdaTable<StateMachine> table = () -> StateMachine.class;
+		metadata.dropTable(table).execute();
+		metadata.createTable(table).execute();
 
-		CRUDRepository<StateMachine, String> repo = factory.asRepository(() -> StateMachine.class);
-		StateMachine s = new StateMachine();
-		s.setId(StringUtils.generateGuid());
-		s.setEndParams("123");
-		s.setGmtEnd(new Date());
-		s.setGmtUpdated(new Date());
-		s.setIsRunning(0);
-		s.setMachineId("aa");
-		s.setParentId("bb");
-		repo.insert(s);
+		CRUDRepository<StateMachine, String> repo = factory.asRepository(table);
+		{
+			StateMachine s = new StateMachine();
+			s.setId(StringUtils.generateGuid());
+			s.setEndParams("123");
+			s.setGmtEnd(new Date());
+			s.setGmtUpdated(new Date());
+			s.setIsRunning(0);
+			s.setMachineId("aa");
+			s.setParentId("bb");
+			String id = repo.insert(s);
+			
+			assertTrue(id==null || s.getId().equals(id));
+		}
+		{
+			StateMachine s1 = new StateMachine();
+			s1.setId(StringUtils.generateGuid());
+			s1.setEndParams("123");
+			s1.setGmtEnd(new Date());
+			s1.setGmtUpdated(new Date());
+			s1.setIsRunning(0);
+			s1.setMachineId("aa");
+			s1.setParentId("bb");
+			
+			StateMachine s2 = new StateMachine();
+			s2.setId(StringUtils.generateGuid());
+			s2.setEndParams("123");
+			s2.setGmtEnd(new Date());
+			s2.setGmtUpdated(new Date());
+			s2.setIsRunning(0);
+			s2.setMachineId("aa");
+			s2.setParentId("bb");
+			
+			StateMachine s3 = new StateMachine();
+			s3.setId(StringUtils.generateGuid());
+			s3.setEndParams("123");
+			s3.setGmtEnd(new Date());
+			s3.setGmtUpdated(new Date());
+			s3.setIsRunning(0);
+			s3.setMachineId("aa");
+			s3.setParentId("bb");
+			String vs=factory.insert(table).populateBatch(Arrays.asList(s1,s2,s3)).executeWithKey(String.class);
+			System.out.println(vs);
+		}
 
 		List<StateMachine> list = repo.query().fetch();
 		System.out.println(list);

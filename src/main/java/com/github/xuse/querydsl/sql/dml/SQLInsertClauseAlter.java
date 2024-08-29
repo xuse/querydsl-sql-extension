@@ -40,6 +40,7 @@ import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.github.xuse.querydsl.sql.expression.BindingProvider.ListPathBindings;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.Tuple;
@@ -76,7 +77,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 
 	private RoutingStrategy routing;
 
-	private boolean writeNulls = false;
+	private Boolean writeNulls;
 
 	private transient Collection<Object> populatedBatch = Collections.emptyList();
 
@@ -87,27 +88,27 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			SQLQuery<?> subQuery) {
 		super(connection, configuration.get(), entity, subQuery);
 		this.configuration = configuration;
-		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
+		this.batchToBulk = configuration.getTemplates().isBatchToBulkInDefault();
 	}
 
 	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configuration = configuration;
-		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
+		this.batchToBulk = configuration.getTemplates().isBatchToBulkInDefault();
 	}
 
 	public SQLInsertClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration,
 			RelationalPath<?> entity, SQLQuery<?> subQuery) {
 		super(connection, configuration.get(), entity, subQuery);
 		this.configuration = configuration;
-		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
+		this.batchToBulk = configuration.getTemplates().isBatchToBulkInDefault();
 	}
 
 	public SQLInsertClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration,
 			RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configuration = configuration;
-		this.batchToBulk = configuration.getTemplates().usingBatchToBulkInDefault();
+		this.batchToBulk = configuration.getTemplates().isBatchToBulkInDefault();
 	}
 
 	/**
@@ -153,35 +154,25 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		context = startContext(connection(), metadata, entity);
 		try {
 			lazyFillBatches();
-			
 			PreparedStatement stmt;
 			if (!populatedBatch.isEmpty()) {
 				// 新模式PopulatedBatch
 				if (batchToBulk) {
 					stmt = newStatementBulk(populatedBatch, true);
-					long start = System.currentTimeMillis();
-					int rc = stmt.executeUpdate();
-					postExecuted(context, System.currentTimeMillis() - start, "Insert", rc);	
+					executeStatementInternal(stmt,false);
 				} else {
 					stmt = newStatementBatch(populatedBatch, true);
-					long start = System.currentTimeMillis();
-					long rc = executeBatch(Collections.singletonList(stmt));
-					postExecuted(context, System.currentTimeMillis() - start, "BatchInsert",rc);
+					executeBatchInternal(Collections.singletonList(stmt), false);
 				}
 			}else if (batches.isEmpty()) {
 				stmt = createStatement(true);
 				listeners.notifyInsert(entity, metadata, columns, values, subQuery);
-				listeners.preExecute(context);
-				long start = System.currentTimeMillis();
-				int rc = stmt.executeUpdate();
-				postExecuted(context, System.currentTimeMillis() - start, "Insert", rc);
+				executeStatementInternal(stmt,false);
 			} else if (batchToBulk) {
 				stmt = createStatement(true);
 				listeners.notifyInserts(entity, metadata, batches);
 				listeners.preExecute(context);
-				long start = System.currentTimeMillis();
-				int rc = stmt.executeUpdate();
-				postExecuted(context, System.currentTimeMillis() - start, "Insert", rc);
+				executeStatementInternal(stmt,false);
 			} else {
 				Collection<PreparedStatement> stmts = createStatements(true);
 				if (stmts.size() > 1) {
@@ -190,28 +181,17 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				}
 				stmt = stmts.iterator().next();
 				listeners.notifyInserts(entity, metadata, batches);
-				listeners.preExecute(context);
-				long start = System.currentTimeMillis();
-				int[] rc = stmt.executeBatch();
-				long count = 0;
-				for (int r : rc) {
-					count = count + r;
-				}
-				postExecuted(context, System.currentTimeMillis() - start, "BatchInsert", count);
+				executeBatchInternal(Collections.singletonList(stmt), false);
 			}
 			final Statement stmt2 = stmt;
 			ResultSet rs = stmt.getGeneratedKeys();
 			return new ResultSetAdapter(rs) {
-
 				@Override
 				public void close() throws SQLException {
-					try {
-						super.close();
-					} finally {
-						stmt2.close();
-						reset();
-						endContext(context);
-					}
+					SQLTypeUtils.close(rs);
+					SQLTypeUtils.close(stmt2);
+					reset();
+					endContext(context);
 				}
 			};
 		} catch (SQLException e) {
@@ -231,10 +211,10 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				// 新模式PopulatedBatch
 				if (batchToBulk) {
 					PreparedStatement stmt = newStatementBulk(populatedBatch, false);
-					return executeStatementInternal(stmt);
+					return executeStatementInternal(stmt,true);
 				} else {
 					PreparedStatement stmt = newStatementBatch(populatedBatch, false);
-					return executeBatchInternal(Collections.singleton(stmt));
+					return executeBatchInternal(Collections.singleton(stmt),true);
 				}
 			} else if (batches.isEmpty()) {
 				// 单条模式
@@ -243,17 +223,17 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				}
 				PreparedStatement stmt = createStatement(false);
 				listeners.notifyInsert(entity, metadata, columns, values, subQuery);
-				return executeStatementInternal(stmt);
+				return executeStatementInternal(stmt,true);
 			} else if (batchToBulk) {
 				// 批量语句拼接模式
 				PreparedStatement stmt = createStatement(false);
 				listeners.notifyInserts(entity, metadata, batches);
-				return executeStatementInternal(stmt);
+				return executeStatementInternal(stmt,true);
 			} else {
 				// JDBC批操作模式
 				Collection<PreparedStatement> stmts = createStatements(false);
 				listeners.notifyInserts(entity, metadata, batches);
-				return executeBatchInternal(stmts);
+				return executeBatchInternal(stmts,true);
 			}
 		} catch (SQLException e) {
 			onException(context, e);
@@ -264,37 +244,41 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 	}
 
-	private long executeStatementInternal(PreparedStatement stmt) {
-		try (PreparedStatement closeable = stmt) {
+	private long executeStatementInternal(PreparedStatement stmt, boolean close) {
+		try {
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
-			int rc = closeable.executeUpdate();
-			start = System.currentTimeMillis() - start;
-			postExecuted(context, start, "Insert", rc);
+			int rc = stmt.executeUpdate();
+			postExecuted(context, System.currentTimeMillis() - start, "Insert", rc);
 			return rc;
 		} catch (SQLException e) {
 			onException(context, e);
 			throw configuration.translate(queryString, constants, e);
+		}finally {
+			if(close) {
+				SQLTypeUtils.close(stmt);
+			}
 		}
 	}
 
-	private long executeBatchInternal(Collection<PreparedStatement> stmts) {
+	private long executeBatchInternal(Collection<PreparedStatement> stmts, boolean close) {
 		listeners.preExecute(context);
 		long start = System.currentTimeMillis();
 		try {
-			long rc = executeBatch(stmts);
+			int rc = 0;
+			for (PreparedStatement stmt : stmts) {
+				for (int i : stmt.executeBatch()) {
+					rc += i;	
+				}
+			}
 			postExecuted(context, System.currentTimeMillis() - start, "BatchInsert", rc);
 			return rc;
 		} catch (SQLException e) {
 			onException(context, e);
 			throw configuration.translate(queryString, constants, e);
 		} finally {
-			for (PreparedStatement st : stmts) {
-				try {
-					st.close();
-				} catch (SQLException e) {
-					// nothing
-				}
+			if(close) {
+				stmts.forEach(SQLTypeUtils::close);
 			}
 		}
 	}
@@ -335,8 +319,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 * @return this SQLInsertClauseAlter
 	 */
 	public SQLInsertClauseAlter populateBatch(Collection<?> beans) {
-		populateBatch0(beans,
-				Mappers.get(Mappers.SCENARIO_INSERT | Mappers.NULLS_BIND | Mappers.TYPE_BEAN));
+		int type = Mappers.SCENARIO_INSERT | Mappers.TYPE_BEAN;
+		if(writeNulls==null || writeNulls) {
+			type = type | Mappers.NULLS_BIND;
+		}
+		populateBatch0(beans,Mappers.get(type));
 		return this;
 	}
 
@@ -390,7 +377,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	@SuppressWarnings("unchecked")
 	public SQLInsertClauseAlter populate(Object bean) {
 		int type = Mappers.SCENARIO_INSERT | Mappers.TYPE_BEAN;
-		if (writeNulls) {
+		if (writeNulls!=null && writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
 		return populate(bean, Mappers.get(type));
@@ -408,7 +395,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	@SuppressWarnings("unchecked")
 	public SQLInsertClauseAlter populate(Tuple bean) {
 		int type = Mappers.SCENARIO_INSERT | Mappers.TYPE_TUPLE;
-		if (writeNulls) {
+		if (writeNulls !=null && writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
 		return populate(bean, Mappers.get(type));
@@ -589,7 +576,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		if (!columns.isEmpty()) {
 			throw Exceptions.illegalState("This method should be called before method 'populate'.");
 		}
-		this.writeNulls = flag;
+		this.writeNulls = Boolean.valueOf(flag);
 		return this;
 	}
 

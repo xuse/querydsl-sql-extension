@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.Date;
 import java.util.List;
@@ -239,5 +240,20 @@ public class SQLTypeUtils {
 			}
 		}
 		return true;
+	}
+	
+	public static void close(ResultSet rs) {
+		try {
+			rs.close();
+		} catch (SQLException e) {
+			//do nothing
+		}
+	}
+	public static void close(Statement st) {
+		try {
+			st.close();
+		} catch (SQLException e) {
+			//do nothing
+		}
 	}
 }

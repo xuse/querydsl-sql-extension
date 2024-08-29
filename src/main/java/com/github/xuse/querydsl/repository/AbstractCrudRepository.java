@@ -126,10 +126,27 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if (ts == null || ts.isEmpty()) {
 			return 0;
 		}
+		SQLInsertClauseAlter insert = getFactory().insert(getPath());
 		if (ts.size() == 1) {
-			return (int) getFactory().insert(getPath()).populate(ts.get(0)).execute();
+			insert.populate(ts.get(0));
+		}else {
+			insert.populateBatch(ts);
 		}
-		return (int) getFactory().insert(getPath()).populateBatch(ts).execute();
+		return (int) insert.execute();
+	}
+	
+	@Override
+	public int insertBatch(List<T> ts, boolean selective) {
+		if (ts == null || ts.isEmpty()) {
+			return 0;
+		}
+		SQLInsertClauseAlter insert = getFactory().insert(getPath()).writeNulls(!selective);
+		if (ts.size() == 1) {
+			insert.populate(ts.get(0));
+		} else {
+			insert.populateBatch(ts);
+		}
+		return (int) insert.execute();
 	}
 
 	@Override

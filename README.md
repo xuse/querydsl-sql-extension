@@ -485,13 +485,14 @@ v{querydsl 版本号} - r(extension version)
   不支持重组织分区
   上述由数据库机制差异造成的特性差异，暂无支持计划。
 * Postgresql的支持比预想更为复杂，为此重构了Schema获取和DDL部分生成的机制。 主要功能开发完毕，测试中，计划9月初发布。
+* 优化BatchInsert下的数据插入性能。尤其对MySQL下的批量写入，默认从JDBC Batch更换为Bulk SQL语句，某些场景下性能提升约65倍。
 
 ### v5.0.0-r104
 
 2024-08-08
 
-* 支持GraalVM的Native模式（AOT）使用
-* 支持java 16以上的record类型作为实体。
+* 支持GraalVM的Native模式使用
+* 支持在java 16以上环境使用record类型作为实体。
 
 ### v5.0.0-r102
 

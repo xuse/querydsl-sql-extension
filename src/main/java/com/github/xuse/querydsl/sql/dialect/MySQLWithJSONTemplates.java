@@ -294,7 +294,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 	
 	@Override
-	public boolean usingBatchToBulkInDefault() {
+	public boolean isBatchToBulkInDefault() {
 		return true;
 	}
 

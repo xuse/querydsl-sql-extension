@@ -192,9 +192,7 @@ public interface SQLTemplatesEx {
 		return true;
 	}
 	
-	default boolean usingBatchToBulkInDefault() {
-		return false;
-	}
+	boolean isBatchToBulkInDefault();
 	
 	/**
 	 * @param columnDef columnDef

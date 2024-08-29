@@ -54,7 +54,7 @@ public abstract class AbstractTestBase {
 		
 	}
 
-	private static final DriverManagerDataSource effectiveDs = dsDerby;
+	private static final DriverManagerDataSource effectiveDs = pg14;
 	
 	
 	public static  DriverManagerDataSource getEffectiveDs() {
