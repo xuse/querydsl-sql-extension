@@ -49,9 +49,11 @@ public @interface InitializeData {
 	 * @return
 	 * 自增键使用记录中的值，不使用数据库的自增编号。
 	 * 注意，某些数据库可能不支持此特性。
-	 * 此配置当前无效果。
+	 * -1 自动
+	 * 0 不设置
+	 * 1 要设置
 	 */
-	boolean manualSequence() default false;
+	int setPrimaryKeys() default -1;
 
 	/**
 	 * @return

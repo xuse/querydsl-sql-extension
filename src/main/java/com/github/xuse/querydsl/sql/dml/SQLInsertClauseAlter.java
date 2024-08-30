@@ -13,6 +13,8 @@
  */
 package com.github.xuse.querydsl.sql.dml;
 
+import static com.github.xuse.querydsl.sql.expression.AbstractMapperSupport.SCENARIO_INSERT;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -132,7 +134,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			if (columns.contains(p)) {
 				continue;
 			}
-			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, Mappers.SCENARIO_INSERT);
+			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, SCENARIO_INSERT);
 			if (value instanceof Expression<?>) {
 				columns.add(p);
 				values.add((Expression<?>) value);
@@ -380,11 +382,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 * @return this SQLInsertClauseAlter
 	 */
 	public SQLInsertClauseAlter populateBatch(Collection<?> beans) {
-		int type = Mappers.SCENARIO_INSERT | Mappers.TYPE_BEAN;
+		int type = Mappers.TYPE_BEAN;
 		if(writeNulls==null || writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
-		populateBatch0(beans,Mappers.get(type));
+		populateBatch0(beans,Mappers.get(SCENARIO_INSERT,type));
 		return this;
 	}
 
@@ -416,7 +418,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 * @return this
 	 */
 	public SQLInsertClauseAlter populateTuples(Collection<Tuple> beans) {
-		populateBatch0(beans, Mappers.get(Mappers.SCENARIO_INSERT | Mappers.NULLS_BIND | Mappers.TYPE_TUPLE));
+		populateBatch0(beans, Mappers.get(SCENARIO_INSERT,Mappers.NULLS_BIND | Mappers.TYPE_TUPLE));
 		return this;
 	}
 
@@ -437,11 +439,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 */
 	@SuppressWarnings("unchecked")
 	public SQLInsertClauseAlter populate(Object bean) {
-		int type = Mappers.SCENARIO_INSERT | Mappers.TYPE_BEAN;
+		int type = Mappers.TYPE_BEAN;
 		if (writeNulls!=null && writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
-		return populate(bean, Mappers.get(type));
+		return populate(bean, Mappers.get(SCENARIO_INSERT, type));
 	}
 
 	/**
@@ -455,11 +457,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 */
 	@SuppressWarnings("unchecked")
 	public SQLInsertClauseAlter populate(Tuple bean) {
-		int type = Mappers.SCENARIO_INSERT | Mappers.TYPE_TUPLE;
+		int type = Mappers.TYPE_TUPLE;
 		if (writeNulls !=null && writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
-		return populate(bean, Mappers.get(type));
+		return populate(bean, Mappers.get(SCENARIO_INSERT,type));
 	}
 	
 	

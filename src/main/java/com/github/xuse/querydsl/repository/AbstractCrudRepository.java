@@ -162,7 +162,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int) delete.execute();
 	}
 
-	private static final AdvancedMapper DEFAULT = new AdvancedMapper(0);
+	private static final AdvancedMapper DEFAULT = new AdvancedMapper(0,false);
 
 	@Override
 	public int deleteByExample(T t) {
