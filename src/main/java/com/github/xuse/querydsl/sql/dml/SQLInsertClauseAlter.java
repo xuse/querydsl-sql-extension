@@ -81,7 +81,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 
 	private Boolean writeNulls;
 	
-	private boolean uniformBatchValues = true;
+	private boolean unifyBatchValues = true;
 
 	private transient Collection<Object> populatedBatch = Collections.emptyList();
 
@@ -294,12 +294,12 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
         }
         if(batches.isEmpty()) {
         	batches.add(new SQLInsertBatch(columns, values, subQuery));
-		} else if (uniformBatchValues) {
+		} else if (unifyBatchValues) {
         	List<Path<?>> columns = this.columns;
 			List<Path<?>> template = batches.get(0).getColumns();
         	List<Expression<?>> batchValues=this.values;
         	if(!fastEquals(template,columns)) {
-				batchValues = uniformValues(template, columns, batchValues);
+				batchValues = unifyValues(template, columns, batchValues);
     		}
         	batches.add(new SQLInsertBatch(template, batchValues, subQuery));
         }else {
@@ -325,7 +325,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		return true;
 	}
 
-	private List<Expression<?>> uniformValues(List<Path<?>> template, List<Path<?>> columns, List<Expression<?>> values) {
+	private List<Expression<?>> unifyValues(List<Path<?>> template, List<Path<?>> columns, List<Expression<?>> values) {
 		Map<Path<?>, Expression<?>> valuesMap = new HashMap<>();
 		for (int i = 0; i < columns.size(); i++) {
 			valuesMap.put(columns.get(i), values.get(i));

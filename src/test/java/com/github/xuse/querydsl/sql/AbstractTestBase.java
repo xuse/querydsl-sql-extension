@@ -25,7 +25,7 @@ public abstract class AbstractTestBase {
 	private static DriverManagerDataSource dsDerby = new DriverManagerDataSource();
 	private static DriverManagerDataSource dsMySQL = new DriverManagerDataSource();
 	private static DriverManagerDataSource dsMySQL8 = new DriverManagerDataSource();
-	private static DriverManagerDataSource pg14 = new DriverManagerDataSource();
+	private static DriverManagerDataSource dsPg14 = new DriverManagerDataSource();
 	
 
 	static {
@@ -47,14 +47,14 @@ public abstract class AbstractTestBase {
 		dsMySQL8.setPassword(testPws.replace("_", ""));
 		
 		
-		pg14.setDriverClassName("org.postgresql.Driver");
-		pg14.setUrl("jdbc:postgresql://"+host+":5432/test");
-		pg14.setUsername("postgres");
-		pg14.setPassword(testPws.replace("_", ""));
+		dsPg14.setDriverClassName("org.postgresql.Driver");
+		dsPg14.setUrl("jdbc:postgresql://"+host+":5432/test");
+		dsPg14.setUsername("postgres");
+		dsPg14.setPassword(testPws.replace("_", ""));
 		
 	}
 
-	private static final DriverManagerDataSource effectiveDs = dsMySQL;
+	private static final DriverManagerDataSource effectiveDs = dsPg14;
 	
 	
 	public static  DriverManagerDataSource getEffectiveDs() {
