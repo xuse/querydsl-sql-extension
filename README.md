@@ -72,14 +72,16 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
 
 
 * 提供增强的日志输出。通过com.github.xuse.querydsl.sql.log.QueryDSLSQLListener可以提供三种格式的日志输出格式
-**Example:**
+  **Example:**
 
   ```java
-// FORMAT_COMPACT  适合大型生产环境的紧凑格式
-// FORMAT_FULL 长的字符串会完整输出，SQL和参数之间会换行。 
-// FORMAT_DEBUG 详细的信息输出，有换行便于阅读，适合开发环境观察语句和逻辑。
-  configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
-  configuration.setSlowSqlWarnMillis(200);
+  /*
+   *  FORMAT_COMPACT  适合大型生产环境的紧凑格式
+   *  FORMAT_FULL 长的字符串会完整输出，SQL和参数之间会换行。 
+   *  FORMAT_DEBUG 详细的信息输出，有换行便于阅读，适合开发环境观察语句和逻辑。
+   */
+    configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
+    configuration.setSlowSqlWarnMillis(200);
   ```
   * 输出每个SQL和参数，以及执行时间和记录数。如果日志级别到WARN，这部分逻辑可被跳过，以最大限度提升性能。
   * 慢SQL以Error级别输出（慢SQL阈值可设置）
@@ -119,11 +121,11 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
   	@Comment("Asset's comments.")
   	private String content;
   ```
-  
+
   通过上方示例，可以定义字段在数据库中的映射方式。对应的，元模型类中的部分代码可以省略，但需要增加一行代码使其自动扫描注解:
-  
+
   **Example**
-  
+
   ```java
   public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
   	public static final QCaAsset caAsset = new QCaAsset("foo");
@@ -141,9 +143,9 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
   		super.scanClassMetadata();   //这行代码使元模型在构造时自动扫描实体上的注解。
   	}
   ```
+
   
-  
-  
+
 
 ### 访问安全
 
@@ -183,8 +185,6 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
 | 22字段表，查出5万记录<br />全部加载到内存中的List内  | 935, 930, 953<br />平均939.33          | 321, 323, 339<br />平均327.67                     | 286.67% |
 | 22字段表，查出30万记录<br />全部加载到内存中的List内 | 3340，3343, 3577<br />平均 3420        | 1832, 1925, 2313<br />平均 2023.33                | 169.03% |
 | 22字段表，查出1M记录<br />全部加载到内存中的List内   | 8478, 9219, 7468<br />平均 8388.33     | 6571, 7535, 5271<br />平均 6459                   | 129.87% |
-
-> 在5000条查询中出现了近8倍的差距，这还是在加上了网络开销后的数值，非常悬殊。估计可能是FetchSize=5000时，后者一次性从服务端接收了全部结果数
 
 备注：
 
