@@ -6,7 +6,7 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
 本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
 
-> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。`querydsl-sql`不是JPA的配件，是可以单个框架搞定企业级复杂项目的存在。 写这个框架的目的是轻量便捷，可以与MyBatis、Spring JDBC Template等一起用，不能和JPA一起被Spring集成。
+> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。`querydsl-sql`不是JPA的配件，是可以单个框架搞定企业级复杂项目的存在。 写这个框架的目的是轻量便捷，可以与MyBatis、Spring JDBC Template等一起用。
 
 **Getting started**
 
@@ -35,6 +35,10 @@ QueryDSL是针对SQL的词法树抽象进行建模的，这就使得它的查询
 QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。 (这种风格大概在十多年前就有了，近几年才被国内的一些MyBatis Facade作者学习和借鉴)
 
 在这个基础上，我将自己使用querydsl中用到的一些功能包装了一下，就有个这个框架。前面已经说过querydsl的查询构建界面(Facade)非常好，所以我针对对象构造与反射等场合作了重写，以期将性能推到极致，就此使用了好多年，功能上逐步接近我对数据库访问的理想。直到前期，我感觉功能上已经超过了我的前一个框架，于是进行了上传和分享。
+
+### 真的不能和QueryDsl-JPA一起使用吗？
+
+querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。两者如果要一起用，也不是不行。但两类操作难以协调到一个事务中，因为两者的Spring事务管理器不一样。总之麻烦有坑，不值得花费精力去解决。而MyBatis、Spring JDBC template等各类其他框架是基于DataSoruce做事务的，共享事务没有难度。最后，个人观点JPA已经是一个时代的眼泪，臃肿低效，不值得年轻人花时间去学习。
 
 ## 特性
 
