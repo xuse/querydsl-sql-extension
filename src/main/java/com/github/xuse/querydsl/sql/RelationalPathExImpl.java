@@ -24,7 +24,6 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.PathMetadataFactory;
 import com.querydsl.core.types.dsl.StringPath;
-import com.querydsl.core.util.ReflectionUtils;
 import com.querydsl.sql.Column;
 import com.querydsl.sql.ColumnMetadata;
 import com.querydsl.sql.PrimaryKey;
@@ -93,7 +92,6 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 	public <P> PathMapping addMetadataDynamic(Path<P> expr, ColumnMetadata metadata) {
 		PathMapping metadataExt = new PathMapping(expr, new DynamicField(expr), metadata);
 		super.columnMetadata.put(expr, metadataExt);
-		pathUpdate(expr, metadata);
 		super.bindingsMap.put(expr.getMetadata().getName(), expr);
 		return metadataExt;
 	}
@@ -157,11 +155,11 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 	}
 
 	public static <T> RelationalPathExImpl<T> valueOf(Class<T> beanType) {
-		PathMetadata pm=PathMetadataFactory.forVariable(beanType.getSimpleName());
+		PathMetadata pm=PathMetadataFactory.forVariable(beanType.getSimpleName().toLowerCase());
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
 		t.scanClassMetadata(()->{
 			List<Path<?>> paths = new ArrayList<>();
-			for(Field field:ReflectionUtils.getFields(beanType)) {
+			for(Field field:TypeUtils.getFields(beanType)) {
 				if(Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}

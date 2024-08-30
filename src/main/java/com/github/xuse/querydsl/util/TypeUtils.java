@@ -1,14 +1,18 @@
 package com.github.xuse.querydsl.util;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -55,14 +59,14 @@ public class TypeUtils {
 		PathCreators.put(Double.TYPE, PrimitiveNumberCreator);
 
 		PathCreators.put(java.sql.Date.class, DateCreator);
-		PathCreators.put(LocalDate.class, DateCreator);
+		PathCreators.put(LocalDate.class, (a, b) -> Expressions.datePath(a.asSubclass(LocalDate.class), b));
 
 		PathCreators.put(java.sql.Time.class, TimeCreator);
-		PathCreators.put(LocalTime.class, TimeCreator);
+		PathCreators.put(LocalTime.class, (a, b) ->Expressions.timePath(a.asSubclass(LocalTime.class), b));
 
-		PathCreators.put(Instant.class, DateTimeCreator);
+		PathCreators.put(Instant.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(Instant.class), b));
 		PathCreators.put(java.util.Date.class, DateTimeCreator);
-		PathCreators.put(LocalDateTime.class, DateTimeCreator);
+		PathCreators.put(LocalDateTime.class,  (a, b) ->Expressions.dateTimePath(a.asSubclass(LocalDateTime.class), b));
 
 		PathCreators.put(Boolean.class, BooleanCreator);
 		PathCreators.put(Boolean.TYPE, BooleanCreator);
@@ -171,6 +175,17 @@ public class TypeUtils {
 			return null;
 		}
 	}
+	
+    public static List<Field> getFields(Class<?> clazz) {
+        List<Field> fields = new ArrayList<Field>();
+        Class<?> c = clazz;
+        while (c != Object.class) {
+            fields.addAll(Arrays.asList(c.getDeclaredFields()));
+            c = c.getSuperclass();
+        }
+        return fields;
+    }
+    
 
 	/*
 	 * crate the path object according to the java type.

@@ -34,6 +34,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
 import com.github.xuse.querydsl.util.Assert;
 
 /**
@@ -71,6 +72,35 @@ public class CollectionUtils {
 		return buckets;
 	}
 
+	public static <K, V> Map<K, List<V>> group(Collection<V> c, Function<V, K> keyExt) {
+		if (c != null) {
+			Map<K, List<V>> buckets = new HashMap<>(c.size());
+			for (V value:c) {
+				K key = keyExt.apply(value);
+				List<V> bucket = buckets.get(key);
+				if (bucket == null) {
+					buckets.put(key, bucket = new ArrayList<>());
+				}
+				bucket.add(value);
+			}
+			return buckets;
+		}
+		return Collections.emptyMap();
+	}
+
+	public static <K, V> Map<K, List<V>> group2(Collection<V> c, Function<V, K> keyExt) {
+		if (c != null) {
+			Map<K, List<V>> buckets = new HashMap<>(c.size());
+			for (V value:c) {
+				K key = keyExt.apply(value);
+				List<V> bucket = buckets.computeIfAbsent(key, (e)->new ArrayList<>());
+				bucket.add(value);
+			}
+			return buckets;
+		}
+		return Collections.emptyMap();
+	}
+	
 	/**
 	 * 将数组转换为Map。（Map不保证顺序）
 	 * @param array        数组

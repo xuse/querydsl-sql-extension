@@ -114,7 +114,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 			return new SQLServer2012Templates();
 		} else if (url.startsWith("jdbc:oracle:")) {
 			return new OracleTemplates();
-		}
+		} 
 		throw Exceptions.illegalArgument(url);
 	}
 

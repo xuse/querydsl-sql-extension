@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
-import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
@@ -91,7 +90,8 @@ public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContext
 		Aaa c = new Aaa();
 		b.setName("王五");
 		b.setVersion(1);
-		factory.insert(QAaa.aaa).populate(b).addBatch().populate(c).addBatch().execute();
+		factory.insert(QAaa.aaa).populate(b).addBatch().populate(c).addBatch()
+		.batchToBulk(true).execute();
 		
 		factory.getMetadataFactory().truncate(QAaa.aaa).execute();
 	}

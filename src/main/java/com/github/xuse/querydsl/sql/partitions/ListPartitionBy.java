@@ -1,6 +1,8 @@
 package com.github.xuse.querydsl.sql.partitions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.github.xuse.querydsl.annotation.partition.Partition;
@@ -25,26 +27,31 @@ public class ListPartitionBy extends PartitionAssigned{
 
 	private final Partition[] partitions;
 
-
 	public Expression<?> define(ConfigurationEx configurationEx) {
 		Expression<?> expr = super.getExpr();
-		PartitionMethod op = isColumns ? PartitionMethod.LIST_COLUMNS : PartitionMethod.LIST;
-		return DDLExpressions.simple(op, expr, partitions(configurationEx));
-	}
-
-	private Expression<?> partitions(ConfigurationEx configurationEx) {
-		if(partitions==null) {
-			return DDLExpressions.empty();
-		}
-		List<Expression<?>> partitions=new ArrayList<>(this.partitions.length);
+		PartitionMethod op = getMethod();
+		List<Partition>  partitionDefs = partitions();
+		List<Expression<?>> partitions=new ArrayList<>(partitionDefs.size());
 		for(Partition p:this.partitions) {
 			partitions.add(defineOnePartition(p,configurationEx));
 		}
-		return DDLExpressions.wrapList(partitions);
+		return DDLExpressions.simple(op, expr, DDLExpressions.wrapList(partitions));
+	}
+
+	public List<Partition> partitions() {
+		if(partitions==null) {
+			return Collections.emptyList();
+		}
+		return Arrays.asList(partitions);
 	}
 
 	@Override
 	public Expression<?> defineOnePartition(Partition p, ConfigurationEx configurationEx) {
-		return DDLExpressions.simple(PartitionDefineOps.PARTITION_IN_LIST, DDLExpressions.text(p.name()),DDLExpressions.text(p.value()));
+		return DDLExpressions.simple(PartitionDefineOps.PARTITION_IN_LIST, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.value()));
+	}
+
+	@Override
+	public PartitionMethod getMethod() {
+		return isColumns ? PartitionMethod.LIST_COLUMNS : PartitionMethod.LIST;
 	}
 }

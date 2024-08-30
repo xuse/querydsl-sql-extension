@@ -6,7 +6,9 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
 本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
 
-## User Guide
+> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。`querydsl-sql`不是JPA的配件，是可以单个框架搞定企业级复杂项目的存在。 写这个框架的目的是轻量便捷，可以与MyBatis、Spring JDBC Template等一起用。
+
+**Getting started**
 
 ```xml
 <dependency>
@@ -16,7 +18,27 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 </dependency>
 ```
 
-See file [文档](USER_GUIDE.md)
+参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
+
+
+
+## 什么是QueryDSL
+
+[QueryDSL](https://github.com/querydsl/querydsl) 是一个历史悠久的SQL查询构建器。
+
+在Hibernate和JPA大行其道的年代里，开发者很快发现ORM无法表达一些稍微复杂的查询，更不要说带有多个组合查询了。Hibernate的方案是引入HQL，JPA的方案是引入QueryBuilder和NativeQuery，然而这些方案都不完美，逐渐被淘汰。大约在2015左右，我在编写GeeQuery以支持Spring-data的时候，发现Spring-Data引入了一套的新的QueryBuilder，即是QueryDSL。
+
+QueryDSL是针对SQL的词法树抽象进行建模的，这就使得它的查询模型非常丰富，几乎能涵盖查询语言（如SQL）的所有功能。QueryDSL用相同的方法为Lucene、JPA、ES、JDO、Mongo等都进行了查询模型的建模，使得开发者可以在强语法和类型检查的情况下访问持久层。
+
+如果开发者直接使用JSON、SQL、HQL、JPQL等查询语言，只能基于字符串拼接完成。而字符串拼接对于一个长期维护的业务项目是非常危险且繁琐的。开发者无法知道改对了没有，也无法确认要修改的代码位置是否都得到了修改。
+
+QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。 (这种风格大概在十多年前就有了，近几年才被国内的一些MyBatis Facade作者学习和借鉴)
+
+在这个基础上，我将自己使用querydsl中用到的一些功能包装了一下，就有个这个框架。前面已经说过querydsl的查询构建界面(Facade)非常好，所以我针对对象构造与反射等场合作了重写，以期将性能推到极致，就此使用了好多年，功能上逐步接近我对数据库访问的理想。直到前期，我感觉功能上已经超过了我的前一个框架，于是进行了上传和分享。
+
+### 真的不能和QueryDsl-JPA一起使用吗？
+
+querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。两者如果要一起用，也不是不行。但两类操作难以协调到一个事务中，因为两者的Spring事务管理器不一样。总之麻烦有坑，不值得花费精力去解决。而MyBatis、Spring JDBC template等各类其他框架是基于DataSoruce做事务的，共享事务没有难度。最后，个人观点JPA已经是一个时代的眼泪，臃肿低效，不值得年轻人花时间去学习。
 
 ## 特性
 
@@ -52,24 +74,25 @@ See file [文档](USER_GUIDE.md)
   	private Date updated;
   ```
 
-  
 
-* 提供增强的日志输出。通过com.github.xuse.querydsl.sql.log.QueryDSLSQLListener可以提供三种格式的日志输出格式，包括以下功能：
+* 提供增强的日志输出。通过com.github.xuse.querydsl.sql.log.QueryDSLSQLListener可以提供三种格式的日志输出格式
+  **Example:**
 
+  ```java
+  /*
+   *  FORMAT_COMPACT  适合大型生产环境的紧凑格式
+   *  FORMAT_FULL 长的字符串会完整输出，SQL和参数之间会换行。 
+   *  FORMAT_DEBUG 详细的信息输出，有换行便于阅读，适合开发环境观察语句和逻辑。
+   */
+    configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
+    configuration.setSlowSqlWarnMillis(200);
+  ```
   * 输出每个SQL和参数，以及执行时间和记录数。如果日志级别到WARN，这部分逻辑可被跳过，以最大限度提升性能。
   * 慢SQL以Error级别输出（慢SQL阈值可设置）
   * Batch模式下，省略N组之后的参数。
   * 生产环境建议使用紧凑格式输出。语句和参数在一行中显示有利于使用grep等命令查询和分析。
-
-  **Example:**
-
-  ```java
-  configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
-  configuration.setSlowSqlWarnMillis(200);
-  ```
   
 * 包扫描：前文中已经介绍了几种基于Annotation的功能增强，包扫描可以在应用启动时，分析所有数据库元模型定义，提前校验这些Annotation的正确性，并将其中的一些配置注册到全局上下文。@CustomType要生效需要提前进行包扫描。
-  备注：早期版本使用 configuration.registerExType()方法注册实体，比较麻烦，新版本可以使用包扫描替代。
 
 
 * 基于Annotation定义的元模型：QueryDSL原生的元模型（Metamodel）主要使用API进行定义。扩展提供了一套基于注解的元模型定义方式，效果覆盖原有的元模型和扩展功能。
@@ -102,11 +125,11 @@ See file [文档](USER_GUIDE.md)
   	@Comment("Asset's comments.")
   	private String content;
   ```
-  
+
   通过上方示例，可以定义字段在数据库中的映射方式。对应的，元模型类中的部分代码可以省略，但需要增加一行代码使其自动扫描注解:
-  
+
   **Example**
-  
+
   ```java
   public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
   	public static final QCaAsset caAsset = new QCaAsset("foo");
@@ -124,9 +147,9 @@ See file [文档](USER_GUIDE.md)
   		super.scanClassMetadata();   //这行代码使元模型在构造时自动扫描实体上的注解。
   	}
   ```
+
   
-  
-  
+
 
 ### 访问安全
 
@@ -143,20 +166,57 @@ See file [文档](USER_GUIDE.md)
   configuration.setDefaultQueryTimeout(5); //设置SQL最大执行时间为5秒
   ```
 
-  
 
 ### 性能优化
 
-#### 无反射访问
+对QueryDSL-SQL的性能进行了较大幅度的优化。优化后的性能基本与编写良好的JDBC操作持平。
 
-重写了QueryDSL 中JavaBean与JDBC交互部分以提升性能。使用ASM，为每个需要Bean对应的查询字段组合生成了一个访问器，作为反射的一个加速替代。
+下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](performance_tunning.md)
 
-动态类生成方案，每个一个SQL查询的SELECT 字段组合对应一个访问器，在第一次查询时生成并加载，第二次执行该SQL时性能就相当于硬编码。过程中去除了反射和IF分支，对ResultSet的全部访问均为按index的顺序访问（考虑CPU分支预测优化）。在内存操作次数较多的场合，性能超过某M 60%以上。
+#### 性能对比测试（v5.0.0-r110）
 
-* 使用ASM7的动态类生成，支持JDK 8~ 22，GraalVM（22）。
-* 在使用GraalVM native （AOT）模式下，ASM类生成无效，Java代码退化为基于反射的类型访问器，功能可正常使用。（在GraalVM编译期间，实质上这部分逻辑也已编译为本地静态代码，无需再使用ASM加速）
+* MySQL 5.7.26
+* MySQL JDBC Driver 5.1.49
+* URL：postgresql://局域网地址:3306/test?useSSL=false
+* jvm version=17
 
-* 提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
+| Case                                                 | Mybatis 3.5.9（单位ms）                | querydsl-sql-extension<br /> 5.0.0-r110（单位ms） | A/B     |
+| ---------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
+| 7列的表，15批次，每批10000条。<br />总计15万记录     | 7203, 7438, 7925<br />平均 7522        | 2476, 2711, 2834<br />平均2673.67                 | 281.34% |
+| 22列的表，15批次，每批10000条<br />总计15万记录      | 16939, 16870, 16782<br />平均 16863.67 | 5541, 5609, 5538<br />平均 5562.67                | 303.16% |
+| 22字段表，查出50记录<br />全部加载到内存中的List内   | 12, 14, 12<br />平均12.667             | 8, 9, 10<br />平均9                               | 140.7%  |
+| 22字段表，查出5000记录<br />全部加载到内存中的List内 | 646 , 601, 589<br />平均612            | 79, 75, 82<br />平均78.67                         | 777.90% |
+| 22字段表，查出5万记录<br />全部加载到内存中的List内  | 935, 930, 953<br />平均939.33          | 321, 323, 339<br />平均327.67                     | 286.67% |
+| 22字段表，查出30万记录<br />全部加载到内存中的List内 | 3340，3343, 3577<br />平均 3420        | 1832, 1925, 2313<br />平均 2023.33                | 169.03% |
+| 22字段表，查出1M记录<br />全部加载到内存中的List内   | 8478, 9219, 7468<br />平均 8388.33     | 6571, 7535, 5271<br />平均 6459                   | 129.87% |
+
+备注：
+
+* 均为单线程测试。会先执行一个50万左右的简单计算循环，使CPU睿频飙高。
+
+* 日志级别到ERROR。
+
+* 测试计时前，相同的SQL语句会先执行一遍，确保路径上的类都事先加载。
+
+* 数据库，环境等均使用相同环境。同一组测试两个框架操作先后时间不超过5分钟。
+
+* 每组用例跑三次，计算平均耗时（单位毫秒）
+
+* MyBatis在SELECT的配置中设置fetchSize="5000"，QueryDSL在查询时设置setFetchSize(5000)
+
+  
+
+#### 高性能的秘密
+
+* **无反射访问**：重写了QueryDSL 中JavaBean与JDBC交互部分以提升性能。使用ASM，为每个需要Bean对应的查询字段组合生成了一个访问器，作为反射的一个加速替代。
+
+动态类生成方案，每个一个SQL查询的SELECT 字段组合对应一个访问器，在第一次查询时生成并加载，第二次执行该SQL时性能就相当于硬编码。过程中去除了反射和IF分支，对ResultSet的全部访问均为按index的顺序访问（考虑CPU分支预测），大幅减少内存操作次数。
+
+* **表模型与BeanCodec缓存**：对表和字段模型。以及每个对象的编解码器进行了缓存。
+
+* **其他各种优化：**如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
+
+* **向开发者提供Tunning API：**提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
 
   **Example**：一次查出一百万ID。
 
@@ -167,20 +227,14 @@ See file [文档](USER_GUIDE.md)
   		.setQueryTimeout(15)
   		.fetch();
   ```
-  
-* 一些代码细节上的优化，减少内存拷贝和分配中的浪费。
 
-性能对比（v4.2.1-r8）
 
-两个典型场景测试。从相同的SQL从数据表中select数据；以及在相同的表中插入数据。对比MyBatis和QueryDSL-sql-extension.
+#### 兼容性
 
-![性能对比](static/performance.png)
+* 使用ASM7的动态类生成，支持JDK 8~ 22，GraalVM（22）。
 
-备注：
-
-* 相同的测试环境，相同的表和数据库。数据库:MySQL 5.7.26，无连接池。
-* QueryDSL在测试数据加载时，通过`setFetchSisze(5000)`将单批获取大小调整到5000。MyBatis未找到此特性。
-* 关于内存使用：QueryDSL的包扫描功能基于ASM对class文件内容解析的，分析文件结构确认需要加载后才会使用classLoader进行类加载。这种做法不会将未用到的类加载到虚拟机中。这可能是和MyBatis扫描的内存差别之一。
+* 在使用GraalVM native （AOT）模式下，ASM类生成无效，Java代码退化为基于反射的类型访问器，功能可正常使用。
+  （在GraalVM编译期间，实质上这部分逻辑也已编译为本地静态代码，无需再使用ASM加速）
 
 ### 功能增强
 
@@ -197,6 +251,8 @@ See file [文档](USER_GUIDE.md)
 
 QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成query class。本框架在该基础上作了一些增强，允许用户不创建QueryClass类，通过纯POJO加上若干注解来替代query class模型。并使用lambda表达式来表示表或列的模型。
 
+该功能主要为降低使用门槛，参见文档USER_GUIDE.md。
+
 #### 多种风格的低代码API
 
 有朋友和我反馈说QueryDSL的操作风格就像用java API在编写SQL语句，虽然功能很强大，但是对于SQL初学者他们还是更习惯于类似JPA、Hibernate、Mybatis Mapper等工具提供的一个支持简单对象操作的Repository。
@@ -211,9 +267,9 @@ QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成
 
 * 支持Truncate/Create/Drop/Alter table/ Partition等常用DDL的Java语法操作。
 
-#### record对象作为数据表映射
+#### Record对象作为数据表映射
 
-java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类对象作为数据表映射。代替传统的POJO实体Bean。详见quick start文档。
+java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持该类对象作为数据表映射。代替传统的POJO实体Bean。详见文档quick start.md。
 
 > 要使用Record特性，您必须使用JDK 16以上版本。
 > 本框架对Record对象的访问作了特殊处理，不依赖JDK 16以上版本，当前框架编译后依然可以在java 8上使用。
@@ -251,15 +307,7 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类�
 
 > 其他数据库可以自行编写SQLTemplates进行扩展 。
 
-**数据库支持(DDL)**
-
-* MySQL 5.6 and above
-* Apache Derby 10.14 and above
-
-支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
-> 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
-
-### 业务层分表支持
+### 业务层分表兼容机制
 
 > 本框架不提供分库分表功能
 
@@ -291,9 +339,29 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持将这类�
 
 ## 实验性功能
 
-> 试验性功能是根据特定使用场景或建议增加的一些新特性，用于体验和建议收集。
+> 实验性功能是根据特定使用场景或建议增加的一些新特性，用于体验和建议收集。
 
-### Partition管理（目前仅支持MySQL的方言）
+### Partition管理（已支持MySQL、PostgreSQL）
+
+> 示例为在MySQL上的功能。
+>
+> PostgreSQL分区机制与MySQL差异很大，目前仅支持创建分区表，添加/删除分区。在PostgreSQL上由于数据库机制差异造成的特性差异，暂无支持计划。
+
+分区特性支持表
+
+| 功能                 | MySQL | PostgreSQL | Oracle   | Etc.. |
+| -------------------- | ----- | ---------- | -------- | ----- |
+| 创建分区表           | Yes   | Yes        | Planning |       |
+| 查询已有表分区信息   | Yes   | Yes        | Planning |       |
+| 将已有表设置为分区表 | Yes   | X          | Planning |       |
+| 分区表清除分区设置   | Yes   | X          | Planning |       |
+| 创建HASH分区         | Yes   | X          | Planning |       |
+| 创建RANGE分区        | Yes   | Yes        | Planning |       |
+| 创建LIST分区         | Yes   | Yes        | Planning |       |
+| DROP分区             | Yes   | Yes        | Planning |       |
+| 重新组织分区         | Yes   | X          | Planning |       |
+| 调整HASH分区个数     | Yes   | X          | Planning |       |
+
 
 代码示例
 
@@ -313,15 +381,15 @@ List<PartitionInfo> list=metadata.getPartitions(t1.getSchemaAndTable());
 //清除分区设置（不删除数据）
 metadata.removePartitioning(t1).execute();
 
-//创建按时间范围进行的分区
+//创建按时间范围进行的分区。如果是MySQL上，开始日期可不指定。
 metadata.createPartitioning(t1).partitionBy(
 	Partitions.byRangeColumns(t1.created)
-		.add("p202401", "'2024-02-01'")
-		.add("p202402", "'2024-03-01'").build())
+		.add("p202401", "'1970-12-01'","'2024-02-01'")
+		.add("p202402", "'2024-02-01'","'2024-03-01'").build())
     .execute();
 
 //在按上述分区中再追加一个分区，
-//该操作会自动使用REORGANIZE PARTITION将落在原先第一个分区内的数据移动到新分区
+//该操作会自动使用REORGANIZE PARTITION将落在原先第一个分区内符合条件的数据移动到新分区
 metadata.addParition(t1)
 		.add("p20200101", "'2021-01-01'")
 		.execute();
@@ -333,9 +401,20 @@ metadata.dropPartition(t1)
 
 ### DDL Support
 
-> 实验性功能，个人精力有限目前仅完成了MySQL 和 Derby的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+> 实验性功能，个人精力有限目前仅完成了部分数据库的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+
+**数据库支持(DDL)**
+
+* MySQL 5.6 and above
+* Apache Derby 10.14 and above
+* PostgreSQL 10.3 and above
 
 相关说明参见文档 quick_start.md
+
+支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
+
+> 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
+
 
 ### MySQL Online DDL
 
@@ -434,12 +513,27 @@ List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")
 v{querydsl 版本号} - r(extension version)
 ```
 
+### v5.0.0-r110
+
+2024-09-01
+
+* PostgreSQL DDL支持。基于PostgreSQL 10.3测试。常规DDL操作已经支持完成。
+* PostgreSQL表分区功能支持，但PostgreSQL分区机制与MySQL差异很大，目前仅支持创建分区表，添加/删除分区。
+  不支持Hash分区，
+  不支持为已有的表添加/删除分区配置（机制上无法支持，Postgresql分区表在创建时就已明确是是否分区，之后无法修改）
+  不支持重组织分区
+  上述由数据库机制差异造成的特性差异，暂无支持计划。
+* Postgresql的支持比预想更为复杂，为此重构了Schema获取和DDL部分生成的机制。 主要功能开发完毕，测试中，计划9月初发布。
+* 优化BatchInsert下的数据插入性能。尤其对MySQL下的批量写入，默认从JDBC Batch更换为Bulk SQL语句，某些场景下性能提升约65倍。
+* QueryDSL Insert Batch功能调整，增加参数一致化处理。
+* 数据初始化增加配置，setPrimaryKeys用于控制主键列是否要写入到数据库。
+
 ### v5.0.0-r104
 
 2024-08-08
 
-* 支持GraalVM的Native模式（AOT）使用
-* 支持java 16以上的record类型作为实体。
+* 支持GraalVM的Native模式使用
+* 支持在java 16以上环境使用record类型作为实体。
 
 ### v5.0.0-r102
 
@@ -483,10 +577,9 @@ v{querydsl 版本号} - r(extension version)
 
 ## FAQ
 
-1. 关于SQL语句的换行影响日志查看，在创建SQLTemplate的时候就使用
- com.querydsl.sql.SQLTemplates.Builder.newLineToSingleSpace()方法来实现。
+1. 关于SQL语句的换行影响日志查看，在创建SQLTemplate的时候使用com.querydsl.sql.SQLTemplates.Builder.newLineToSingleSpace()方法。
 
-2. 如果我的项目已经用了querydsl-sql，现在集成这个框架，需要将原有的query class全部修改为继承`com.github.xuse.querydsl.sql.RelationalPathBaseEx`类吗？
+2. 如果我的项目已经用了querydsl-sql，现在集成这个框架，需要将原有的query class全部修改为继承com.github.xuse.querydsl.sql.RelationalPathBaseEx`类吗？
 
     A: 可以不用。本框架是在querydsl上的一些轻微调整格改进，querydsl的原生用法都不受影响。
 
@@ -494,16 +587,18 @@ v{querydsl 版本号} - r(extension version)
 
 ### 什么是元模型
 
-* 元模型(meta mode)：在QuerDSL中，对每个实体会有一个"Q"开头的class，在querydsl文档中，称为 `query classes`. 其实这个类和JPA中的元模型差不多，都是用于描述数据结构，并且提供查询API引用的类。（在OpenJPA中，会生成下划线结尾的类，用途是差不多的）。所以本文某些场合也会使用元模型一词，和QueryDSL文档中的 query class是一个东西。
+* 元模型(meta mode)：在QuerDSL中，对每个实体会有一个"Q"开头的class，在querydsl文档中，称为 `Query Class`. 其实这个类和JPA中的元模型差不多，都是用于描述数据结构，并且提供查询API引用的类。（在OpenJPA中，会生成下划线结尾的类，用途是差不多的）。所以本文某些场合也会使用元模型一词，和QueryDSL文档中的 query class是一个东西。
+* 本框架自r104后，可支持通过Lambda表达式代替元模型，从而省去`Query Class`，本质上是一种语法糖，但对初学者更加友好。
 
-### 写这个框架
+### 一点感想
 
-可以说是无心偶得，佛系维护。
+这个框架可以说是无心偶得，今后也会佛系维护。
 
-* 开始 (2017)
-近日使用QueryDSL-sql作为轻量级数据库操作框架，有着手写SQL的畅快，又有静态语法检查的安心，还有语法自动完成的高效。
-但是日志功能稍有不满，SQLDetailedListener中不能监听到所有的SQL参数、执行时间、影响记录数等信息。
-所以本着最小修改的原则，用这个项目对QueryDSL的监听行为进行扩展，从而可以得到更详细的日志信息。
+* 开始 (2017)。近日使用QueryDSL-sql作为轻量级数据库操作框架，有手写SQL的畅快，有静态语法检查的安心，还有语法自动完成的高效。
+  QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。
+
+  我在编写GeeQuery的几年中，阅读了几乎所有Java数据库访问框架的代码，当我意识到其他QueryDSL的代码要比用其他任何Facade的代码都要简练自由时，我抛弃了其他已知的框架，包括写了近十年的GeeQuery。在2017我将自己使用queryDSL的一些代码放在一个库里，只有几个类。
+  本着最小修改的原则，用这个项目对QueryDSL的监听行为进行扩展，从而可以得到更详细的日志信息。
 
 * 性能演进（2018）
 对性能进行了优化。除了代码细节修改外，还增加了基于ASM自动生成动态类来完成字段拼装对象，无反射调用。
@@ -513,4 +608,7 @@ v{querydsl 版本号} - r(extension version)
   之后就是自己用得非常爽快，期间仅对一些常用的功能进行了小改，使得代码更简洁。如自动时间戳、自动生成GUID等。
 
 * 再后来(2024)
-在使用过程中，阅读源码中发现原作者一开始是想要支持DDL语法的，后来不知道为什么没有再支持了。可能确实使用场景不太多，总归有点小缺憾，由于我早年在别的框架上写过相关的功能，于是花了不少时间在目前的框架上支持了DDL语法。
+  在使用过程中，阅读源码中发现原作者一开始是想要支持DDL语法的，后来不知道为什么没有再支持了。可能确实使用场景不太多，总归有点小缺憾，由于我早年在别的框架上写过相关的功能，于是花了不少时间在目前的框架上支持了DDL语法。
+  另外还有些朋友喜欢无代码自动生成，无Query class的纯POJO用法，为此也作了一些适配来降低使用门槛。
+
+* 今后：保持轻量是维护的宗旨，不会再考虑加入什么乐观锁、词法分析器、分库分表、内置连接池之类的东西，虽然都写过，但是将它们糅合在一起没有必要。

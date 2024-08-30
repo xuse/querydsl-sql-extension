@@ -10,6 +10,8 @@ import java.util.Map;
 import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.DataType;
+import com.github.xuse.querydsl.sql.dbmeta.DatabaseInfo;
 import com.github.xuse.querydsl.sql.dbmeta.ForeignKeyItem;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
@@ -330,6 +332,10 @@ public interface SQLMetadataQueryFactory {
 	 * @return version number of database. / 数据库版本。 
 	 */
 	String getDatabaseVersion();
+	
+	DatabaseInfo getDatabaseInfo();
+	
+	List<DataType> getDataTypes();
 	
 	int executeScriptFile(URL url, Charset charset, boolean ignoreErrors, Map<String, RuntimeException> exceptionCollector);
 

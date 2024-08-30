@@ -136,7 +136,7 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 		
 		createConstraint("unq_${table}_name_version",ConstraintType.UNIQUE,name, version);
 		createConstraint("idx_${table}_taskstatus",ConstraintType.KEY,taskStatus);
-		createCheck("cnt_${table}_int1", "TASK_STATUS < 10");
+		createCheck("cnt_${table}_int1", "TASK_STATUS< 10");
 		createCheck("cnt_${table}_float_lt_double", dataFloat.loe(dataDouble));
 		setComment("测试表新的备32");
 		setCollate(Collate.utf8mb4_general_ci);

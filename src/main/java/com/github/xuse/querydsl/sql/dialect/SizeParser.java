@@ -33,4 +33,12 @@ public interface SizeParser {
 			}
 		}
 	};
+	
+	
+	public static final SizeParser TIME_DIGIT_AS_SIZE = new SizeParser() {
+		@Override
+		public int size(int size, int digits) {
+			return digits;
+		}
+	};
 }

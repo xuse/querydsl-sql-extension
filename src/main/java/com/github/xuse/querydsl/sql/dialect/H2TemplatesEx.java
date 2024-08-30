@@ -8,9 +8,9 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.SQLTemplates;
 
-public class H2SQLTemplatesEx extends DefaultSQLTemplatesEx {
+public class H2TemplatesEx extends DefaultSQLTemplatesEx {
 
-	public H2SQLTemplatesEx(SQLTemplates templates) {
+	public H2TemplatesEx(SQLTemplates templates) {
 		super(templates);
 		typeNames.put(Types.TINYINT, "smallint").type(Types.SMALLINT);
 	}
@@ -24,7 +24,6 @@ public class H2SQLTemplatesEx extends DefaultSQLTemplatesEx {
 	public void init(SQLTemplates templates) {
 		SQLTemplatesEx.initDefaultDDLTemplate(templates);
 		add(templates, DDLOps.COLUMN_ALLOW_NULL, "");
-		add(templates, DDLOps.COMMENT, "{0}");
 		add(templates, DDLOps.CHARSET, "{0}");
 		add(templates, DDLOps.COLLATE, "{0}");
 		add(templates, DDLOps.UNSIGNED, "{0}");

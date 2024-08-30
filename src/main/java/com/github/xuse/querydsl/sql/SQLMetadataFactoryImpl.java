@@ -12,6 +12,8 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.DataType;
+import com.github.xuse.querydsl.sql.dbmeta.DatabaseInfo;
 import com.github.xuse.querydsl.sql.dbmeta.ForeignKeyItem;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
@@ -71,6 +73,8 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 			}
 		};
 	}
+	
+	
 
 	@Override
 	public <T> CreateTableQuery createTable(RelationalPath<T> path) {
@@ -235,6 +239,11 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 	}
 	
 	@Override
+	public DatabaseInfo getDatabaseInfo() {
+		return metadataQuery.getDriverInfo();
+	}
+
+	@Override
 	public String getDatabaseVersion() {
 		return metadataQuery.getDriverInfo().getDataProductVersion();
 	}
@@ -242,5 +251,10 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 	@Override
 	public Date getCurrentDateTime() {
 		return metadataQuery.getDatabaseTime();
+	}
+
+	@Override
+	public List<DataType> getDataTypes() {
+		return metadataQuery.getDataTypes();
 	}
 }

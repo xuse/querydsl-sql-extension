@@ -12,33 +12,49 @@ import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.spring.SpringExceptionTranslator;
 import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
+import com.github.xuse.querydsl.util.JefBase64;
 import com.querydsl.sql.SQLTemplates;
 
 public abstract class AbstractTestBase {
 
 	static String s1 = "r-o-o-t";
-	static String s2 = "pp-07-59-12";
+	static String s2 = "ODgtMDctNTktOTg=";
+	static String host="bmJfMy1oel8yMDAxXzczNzc=";
+	//static String host="10.25.3.25";
+	static String testPws="12_34_5";
 	private static DriverManagerDataSource dsDerby = new DriverManagerDataSource();
 	private static DriverManagerDataSource dsMySQL = new DriverManagerDataSource();
+	private static DriverManagerDataSource dsMySQL8 = new DriverManagerDataSource();
+	private static DriverManagerDataSource dsPg14 = new DriverManagerDataSource();
 	
 
 	static {
 		System.setProperty("mysql.user", s1.replace("-", ""));
-		System.setProperty("mysql.password", s2.replace("-", ""));
+		System.setProperty("mysql.password", JefBase64.decodeUTF8(s2).replace("-", ""));
 
 		dsDerby.setDriverClassName("org.apache.derby.jdbc.EmbeddedDriver");
 		dsDerby.setUrl("jdbc:derby:db;create=true");
 
-		dsMySQL.setDriverClassName("com.mysql.jdbc.Driver");
+		dsMySQL.setDriverClassName("com.mysql.cj.jdbc.Driver");
 		dsMySQL.setUrl("jdbc:mysql://10.86.15.203:3306/test?useSSL=false");
-		//dsMySQL.setUrl("jdbc:mysql://10.86.16.12:3306/test3?useSSL=false");
-		
-		
 		dsMySQL.setUsername(System.getProperty("mysql.user"));
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
+		
+		String host=JefBase64.decodeUTF8(AbstractTestBase.host).replace("_", "");
+		dsMySQL8.setDriverClassName("com.mysql.cj.jdbc.Driver");
+		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?useSSL=false");
+		dsMySQL8.setUsername("root");
+		dsMySQL8.setPassword(testPws.replace("_", ""));
+		
+		
+		dsPg14.setDriverClassName("org.postgresql.Driver");
+		dsPg14.setUrl("jdbc:postgresql://"+host+":5432/test");
+		dsPg14.setUsername("postgres");
+		dsPg14.setPassword(testPws.replace("_", ""));
+		
 	}
 
-	private static final DriverManagerDataSource effectiveDs = dsDerby;
+	private static final DriverManagerDataSource effectiveDs = dsPg14;
 	
 	
 	public static  DriverManagerDataSource getEffectiveDs() {
@@ -74,7 +90,6 @@ public abstract class AbstractTestBase {
 			e.printStackTrace();
 		}
 	}
-
 	
 	public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
 		ConfigurationEx configuration = new ConfigurationEx(templates);
@@ -92,5 +107,4 @@ public abstract class AbstractTestBase {
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
 	}
-
 }

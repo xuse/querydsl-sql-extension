@@ -17,6 +17,8 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	
 	protected final Set<Operator> unsupports=new HashSet<>();
 	
+	protected boolean bacthToBulk;
+	
 	public DefaultSQLTemplatesEx(SQLTemplates template) {
 		Assert.notNull(template);
 		this.template=template;
@@ -42,5 +44,10 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	@Override
 	public SQLTemplates getOriginal() {
 		return template;
+	}
+
+	@Override
+	public boolean isBatchToBulkInDefault() {
+		return bacthToBulk;
 	}
 }

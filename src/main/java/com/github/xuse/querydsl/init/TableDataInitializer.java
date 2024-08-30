@@ -13,15 +13,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.springframework.dao.DataIntegrityViolationException;
+
 import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.init.csv.Codecs;
 import com.github.xuse.querydsl.init.csv.CsvFileReader;
 import com.github.xuse.querydsl.sql.CloseableSQLQueryFactory;
 import com.github.xuse.querydsl.sql.Mappers;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
+import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
@@ -39,6 +44,7 @@ import com.querydsl.core.types.Path;
 import com.querydsl.sql.PrimaryKey;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.dml.Mapper;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -57,12 +63,9 @@ public class TableDataInitializer {
 
 	private final SQLQueryFactory factory;
 
-	private final RelationalPath<?> table;
+	private final RelationalPathEx<?> table;
 
 	private final Map<String, Path<?>> pathMap;
-
-	@SuppressWarnings("rawtypes")
-	private Mapper mapper;
 
 	// 选项：表名路由
 	private RoutingStrategy routing;
@@ -82,13 +85,18 @@ public class TableDataInitializer {
 	private boolean enable = true;
 	
 	private boolean forEmptyTableOnly = false;
+	
+	private int setPrimaryKeys = -1;
+	
+	private boolean nullsBind;
 
 	private transient Boolean emptyTable;
 
+	
 	public TableDataInitializer(SQLQueryFactory session, RelationalPath<?> table) {
 		this.factory = session;
 		this.configuration = session.getConfiguration();
-		this.table = table;
+		this.table = RelationalPathExImpl.toRelationPathEx(table);
 		this.pathMap = table.getColumns().stream().collect(Collectors.toMap(e -> e.getMetadata().getName(), e -> e));
 		updateNulls(false);
 		initMergeKeys();
@@ -146,11 +154,43 @@ public class TableDataInitializer {
 	 * @return this
 	 */
 	public TableDataInitializer updateNulls(boolean nullsBind) {
-		boolean isTuple = table.getType() == Tuple.class;
-		this.mapper = Mappers.getNormal(isTuple, nullsBind);
+		this.nullsBind = nullsBind;
 		return this;
 	}
 
+	@SuppressWarnings("unchecked")
+	private Mapper<Object> getMapper(){
+		boolean isTuple = table.getType() == Tuple.class;
+		int type=0;
+		if(isTuple) {
+			type=type|Mappers.TYPE_TUPLE;
+		}
+		if(nullsBind) {
+			type=type|Mappers.NULLS_BIND;
+		}
+		boolean ignoreKeys=false;
+		if(setPrimaryKeys==-1) {
+			PrimaryKey<?> pk=table.getPrimaryKey();
+			if(pk!=null && pk.getLocalColumns()!=null){
+				int pkColumnSize=pk.getLocalColumns().size();
+				if(pkColumnSize==1) {
+					//如果主键列仅有一个，且是自增列，那么就跳过
+					ColumnMapping key=table.getColumnMetadata(pk.getLocalColumns().get(0));
+					Assert.notNull(key);
+					if(key.isAutoIncreament()) {
+						ignoreKeys = true;
+					}
+				}	
+			}
+		}else if(setPrimaryKeys==0){
+			ignoreKeys = true;
+		}
+		if(ignoreKeys) {
+			type=type | Mappers.PRIMARKKEY_IGNORED;
+		}
+		return Mappers.get(0,type);
+	}
+	
 	/**
 	 * Specify that the resource file is to be executed as an SQL script.
 	 * <p>
@@ -232,8 +272,8 @@ public class TableDataInitializer {
 		return count;
 	}
 
-	@SuppressWarnings("unchecked")
 	private int doMerge(SQLQueryFactory session, Object obj) {
+		Mapper<Object> mapper = getMapper();
 		SQLQueryAlter<?> select = session.selectFrom(table).withRouting(routing);
 		Map<Path<?>, Object> values = mapper.createMap(table, obj);
 		SQLTypeUtils.setWhere(mergeKeys, select, values);
@@ -432,6 +472,7 @@ public class TableDataInitializer {
 		this.enable = anno.enable();
 		this.forEmptyTableOnly = anno.forEmptyTableOnly();
 		this.resource = anno.value();
+		this.setPrimaryKeys = anno.setPrimaryKeys();
 		if (StringUtils.isNotEmpty(anno.charset())) {
 			this.charset = Charset.forName(anno.charset());
 		}

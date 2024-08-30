@@ -5,7 +5,7 @@
 
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r104</version>
+	<version>5.0.0-r110</version>
 	<packaging>jar</packaging>
 
 	<name>querydsl-sql-extension</name>
@@ -43,8 +43,9 @@
 	<dependencies>
 		<dependency>
 			<groupId>javax.annotation</groupId>
-			<artifactId>jsr250-api</artifactId>
-			<version>1.0</version>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>

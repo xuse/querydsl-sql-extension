@@ -20,7 +20,7 @@ public abstract class PartitionAssigned implements PartitionBy {
 	protected Expression<?> expr;
 
 	// For generate expr only.
-	private final RelationalPathEx<?> table;
+	protected final RelationalPathEx<?> table;
 
 	private final String[] columns;
 

@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.sql.log;
 
 public interface ContextKeyConstants {
 	
-	int MAX_BATCH_LOG=5;
+	int MAX_BATCH_LOG = 5;
 	
 	/**
 	 * 执行花费的毫秒

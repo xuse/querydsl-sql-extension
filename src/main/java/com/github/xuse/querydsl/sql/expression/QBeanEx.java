@@ -18,8 +18,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import com.github.xuse.querydsl.sql.RelationalPathEx;
+
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -91,21 +90,6 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	}
 
 	/**
-	 * 构造
-	 * @param type type
-	 * @param ex ex
-	 */
-	protected QBeanEx(Class<? extends T> type, RelationalPathEx<?> ex) {
-		super(type);
-		Map<String, Expression<?>> bindings = new LinkedHashMap<>();
-		for (Path<?> p : ex.getColumns()) {
-			bindings.put(p.getMetadata().getName(), p);
-		}
-		this.bindings = Collections.unmodifiableMap(bindings);
-		this.beanCodec = BeanCodecManager.getInstance().getPopulator(this.getType(), new DefaultBindingProvider(this.bindings));
-	}
-
-	/**
 	 *  Create a new QBean instance
 	 *
 	 *  @param type        type of bean
@@ -114,12 +98,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		super(type);
 		this.bindings = Collections.unmodifiableMap(bindings);
-		this.beanCodec = BeanCodecManager.getInstance().getPopulator(this.getType(), new DefaultBindingProvider(this.bindings));
-	}
-
-	protected void typeMismatch(Class<?> type, Expression<?> expr) {
-		final String msg = expr.getType().getName() + " is not compatible with " + type.getName();
-		throw new IllegalArgumentException(msg);
+		this.beanCodec = BeanCodecManager.getInstance().getCodec(type, new DefaultBindingProvider(bindings));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -168,16 +147,5 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	@Override
 	public List<Expression<?>> getArgs() {
 		return new ArrayList<>(bindings.values());
-	}
-
-	/**
-	 * convert the result to another type using the function input.
-	 * @param <K> type of result output
-	 * @param function function
-	 * @param clz the type K
-	 * @return StreamExpressionWrapper
-	 */
-	public <K> StreamExpressionWrapper<T, K> map(Function<T, K> function, Class<K> clz) {
-		return new StreamExpressionWrapper<>(this, function, clz);
 	}
 }

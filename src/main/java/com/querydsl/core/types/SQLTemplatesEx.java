@@ -1,18 +1,12 @@
 package com.querydsl.core.types;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.Constraint;
-import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
-import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
-import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
+import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
-import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
@@ -65,26 +59,9 @@ public interface SQLTemplatesEx {
 	default void init(SQLTemplates templates) {
 		initDefaultDDLTemplate(templates);
 	}
-
-	/**
-	 * @param schema schema
-	 * @param table table
-	 * @param conn conn
-	 * @param detail detail
-	 * @return null means do not support to fetch. empty means there is no Constraints.
-	 */
-	default List<Constraint> getConstraints(String schema, String table, ConnectionWrapper conn, boolean detail) {
-		return null;
-	}
-
-	/**
-	 * @param schema schema
-	 * @param table table
-	 * @param conn conn
-	 * @return null means do not support partitions.
-	 */
-	default List<PartitionInfo> getPartitions(String schema, String table, ConnectionWrapper conn) {
-		return null;
+	
+	default SchemaReader getSchemaAccessor() {
+		return InfomationSchemaReader.DEFAULT;
 	}
 
 	default LetterCase getDefaultLetterCase() {
@@ -113,7 +90,8 @@ public interface SQLTemplatesEx {
 		templates.add(DDLOps.DATA_TYPE, "{0} {1} {2}");
 		templates.add(DDLOps.UNSIGNED, "{0} UNSIGNED");
 		templates.add(DDLOps.DEFAULT, "DEFAULT {0}");
-		templates.add(DDLOps.COMMENT, "{0} COMMENT {1}");
+		templates.add(DDLOps.COMMENT_ON_COLUMN, "{0}");
+		templates.add(DDLOps.COMMENT_ON_TABLE, "{0}");
 		templates.add(DDLOps.CHARSET, "{0} CHARSET = {1}");
 		templates.add(DDLOps.COLLATE, "{0} COLLATE = {1}");
 		templates.add(DDLOps.COLUMN_ALLOW_NULL, "NULL");
@@ -121,19 +99,19 @@ public interface SQLTemplatesEx {
 		templates.add(DDLOps.DEF_LIST, "{0} {1}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CHECK, "DROP CHECK {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_FOREIGNKEY, "DROP FOREIGN KEY {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP UNIQUE {0}");
+		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP CONSTRAINT {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY, "DROP PRIMARY KEY");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT, "DROP CONSTRAINT {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP, "DROP INDEX {0}");
 		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP INDEX {0}");
 		templates.add(DropStatement.DROP_TABLE, "DROP TABLE {0}");
-		templates.add(DropStatement.DROP_INDEX, " DROP INDEX {0}");
+		templates.add(DropStatement.DROP_INDEX, "DROP INDEX {0}");
 		// all constraint create def
-		templates.add(CreateStatement.CREATE_INDEX, "INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_HASH, "INDEX {1} ON {0} USING HASH");
-		templates.add(CreateStatement.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_BITMAP, "BITMAP INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH");
+		templates.add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}");
+		templates.add(CreateStatement.CREATE_BITMAP, "CREATE BITMAP INDEX {1} ON {0} {2}");
 		// All Constraint inline def
 		templates.add(ConstraintType.CHECK, "CONSTRAINT {1} CHECK ({2})");
 		templates.add(ConstraintType.UNIQUE, "UNIQUE KEY {1} {2}");
@@ -146,7 +124,7 @@ public interface SQLTemplatesEx {
 		templates.add(AlterColumnOps.SET_INCREMENT_BY, "SET INCREMENT BY {0}");
 		templates.add(AlterColumnOps.SET_DEFAULT, "SET DEFAULT {0}");
 		templates.add(AlterColumnOps.DROP_DEFAULT, "DROP DEFAULT");
-		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0}");
+		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0} {1}");
 		templates.add(AlterColumnOps.SET_GENERATED, "SET GENERATED {0}");
 		templates.add(AlterColumnOps.SET_NOTNULL, "SET NOT NULL");
 		templates.add(AlterColumnOps.SET_NULL, "SET NULL");
@@ -215,6 +193,12 @@ public interface SQLTemplatesEx {
 		return true;
 	}
 	
+	default boolean isBatchToBulkSupported() {
+		return getOriginal().isBatchToBulkSupported();
+	};
+	
+	boolean isBatchToBulkInDefault();
+	
 	/**
 	 * @param columnDef columnDef
 	 * @param type type
@@ -226,20 +210,11 @@ public interface SQLTemplatesEx {
 		return SQLTypeUtils.serializeLiteral(columnDef, type);
 	}
 
-	default List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName, ObjectType type) {
-		return e.metadataQuery(m -> m.getTables(catalog, schema, qMatchName, type == null ? null : new String[] { type.name() }), SQLTemplatesEx::fromRs);
+	/**
+	 * @return 获得数据库的DEFAULT关键字。不是用在表结构定义上的那个DEFAULT VALUE.
+	 */
+	default Expression<?> getDefaultExpr() {
+		return DDLExpressions.DEFAULT;
 	}
 
-	static TableInfo fromRs(ResultSet rs) throws SQLException {
-		TableInfo info = new TableInfo();
-		info.setCatalog(rs.getString("TABLE_CAT"));
-		info.setSchema(rs.getString("TABLE_SCHEM"));
-		info.setName(rs.getString("TABLE_NAME"));
-		info.setType(rs.getString("TABLE_TYPE"));
-		info.setRemarks(rs.getString("REMARKS"));
-		info.setTypeCat(rs.getString("TYPE_CAT"));
-		info.setTypeName(rs.getString("TYPE_NAME"));
-		info.setSchema(rs.getString("TYPE_SCHEM"));
-		return info;
-	}
 }

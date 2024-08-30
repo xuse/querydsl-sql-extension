@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
@@ -24,6 +23,8 @@ public class DDLExpressions {
 	private static final Expression<?> CASCADE = Expressions.simpleTemplate(Object.class, "CASCADE");
 
 	private static final Expression<?> EMPTY = Expressions.simpleTemplate(Object.class, "");
+	
+	public static final Expression<?> DEFAULT = Expressions.simpleTemplate(Object.class, "DEFAULT");
 
 	@SuppressWarnings("rawtypes")
 	public static final Expression[] ZERO_LENGTH_EXPRESION = new Expression[0];
@@ -58,7 +59,10 @@ public class DDLExpressions {
 		return wrap(Expressions.list(paths.toArray(new Expression[size])));
 	}
 
-	public static Expression<?> nullAblity(boolean isNullable) {
+	public static Expression<?> nullAblity(Boolean isNullable) {
+		if(isNullable==null) {
+			return EMPTY;
+		}
 		return isNullable ? simple(DDLOps.COLUMN_ALLOW_NULL) : NOT_NULL;
 	}
 
@@ -74,14 +78,14 @@ public class DDLExpressions {
 		return simple(DDLOps.COLUMN_SPEC, column, dataType, columnConstraints);
 	}
 
-	public static Expression<?> dataType(String dataType, boolean isNullable, boolean unsigned, Expression<?> defaultValue) {
+	public static Expression<?> dataType(Operator op,String dataType, Boolean isNullable, boolean unsigned, Expression<?> defaultValue) {
 		Expression<?> datatype = Expressions.template(Object.class, dataType);
 		if (unsigned) {
 			datatype = withUnsigned(datatype);
 		}
 		Expression<?> nullablity = nullAblity(isNullable);
 		Expression<?> defaultExp = defaultValue == null ? EMPTY : simple(DDLOps.DEFAULT, defaultValue);
-		return simple(DDLOps.DATA_TYPE, datatype, nullablity, defaultExp);
+		return simple(op, datatype, nullablity, defaultExp);
 	}
 
 	public static Expression<?> defList(List<Expression<?>> exprs) {
@@ -129,18 +133,14 @@ public class DDLExpressions {
 		return t;
 	}
 
-	public static Expression<?> comment(Expression<?> t, String comment) {
-		if (StringUtils.isNotEmpty(comment)) {
-			return simple(DDLOps.COMMENT, t, ConstantImpl.create(comment));
-		}
-		return t;
-	}
-
 	public static Expression<?> simple(Operator op, Expression<?>... expressions) {
 		return Expressions.simpleOperation(Void.class, op, expressions);
 	}
 
 	public static Expression<?> text(String str) {
+		if(str==null || str.isEmpty()) {
+			return EMPTY;
+		}
 		return Expressions.template(Object.class, str);
 	}
 
@@ -149,5 +149,10 @@ public class DDLExpressions {
 			return null;
 		}
 		return Expressions.template(Boolean.class, str);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> Expression<T> defaultExpr(){
+		return (Expression<T>) DEFAULT;
 	}
 }

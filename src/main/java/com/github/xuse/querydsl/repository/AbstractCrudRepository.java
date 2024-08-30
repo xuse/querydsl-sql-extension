@@ -29,6 +29,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Assert;
 import com.mysema.commons.lang.Pair;
+import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.Path;
@@ -125,10 +126,27 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if (ts == null || ts.isEmpty()) {
 			return 0;
 		}
+		SQLInsertClauseAlter insert = getFactory().insert(getPath());
 		if (ts.size() == 1) {
-			return (int) getFactory().insert(getPath()).populate(ts.get(0)).execute();
+			insert.populate(ts.get(0));
+		}else {
+			insert.populateBatch(ts);
 		}
-		return (int) getFactory().insert(getPath()).populateBatch(ts).execute();
+		return (int) insert.execute();
+	}
+	
+	@Override
+	public int insertBatch(List<T> ts, boolean selective) {
+		if (ts == null || ts.isEmpty()) {
+			return 0;
+		}
+		SQLInsertClauseAlter insert = getFactory().insert(getPath()).writeNulls(!selective);
+		if (ts.size() == 1) {
+			insert.populate(ts.get(0));
+		} else {
+			insert.populateBatch(ts);
+		}
+		return (int) insert.execute();
 	}
 
 	@Override
@@ -144,7 +162,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int) delete.execute();
 	}
 
-	private static final AdvancedMapper DEFAULT = new AdvancedMapper(0);
+	private static final AdvancedMapper DEFAULT = new AdvancedMapper(0,false);
 
 	@Override
 	public int deleteByExample(T t) {
@@ -198,8 +216,9 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int) update.execute();
 	}
 
-	public QueryExecutor<T> query() {
-		return new QueryExecutor<>(getPath(), this);
+	public QueryExecutor<T,T> query() {
+		RelationalPath<T> path=getPath();
+		return new QueryExecutor<>(path,new DefaultQueryMetadata(),this);
 	}
 
 	/**
@@ -242,7 +261,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if (cb == null) {
 			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
 		}
-		BeanCodec codec = BeanCodecManager.getInstance().getPopulator(clz, new FieldCollector());
+		BeanCodec codec = BeanCodecManager.getInstance().getCodec(clz, new FieldCollector());
 		Field[] fields = codec.getFields();
 		Object[] values = codec.values(conditionBean);
 		Map<String, Path<?>> bindings = new HashMap<>();
@@ -350,19 +369,19 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public List<T> find(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public <R> List<R> find(QueryWrapper<T, R, ?> wrapper) {
+		QueryExecutor<T,R> executor=new QueryExecutor<>(wrapper, this);
 		return executor.fetch();
 	}
 
 	@Override
-	public Pair<Integer, List<T>> findAndCount(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public  <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T,R, ?> wrapper) {
+		QueryExecutor<T,R> executor=new QueryExecutor<>(wrapper, this);
 		return executor.findAndCount();
 	}
 	
 	@Override
-	public Pair<Integer, List<T>> findAndCount(QueryWrapper<T, ?> wrapper, int limit, int offset) {
+	public <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset) {
 		if(limit>0) {
 			wrapper.limit(limit);
 		}
@@ -373,20 +392,20 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public int delete(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public int delete(QueryWrapper<T,?, ?> wrapper) {
+		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.delete();
 	}
 
 	@Override
-	public int update(T t, QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public int update(T t, QueryWrapper<T,T, ?> wrapper) {
+		QueryExecutor<T,T> executor=new QueryExecutor<>(wrapper, this);
 		return executor.update(t);
 	}
 
 	@Override
-	public int count(QueryWrapper<T, ?> wrapper) {
-		QueryExecutor<T> executor=new QueryExecutor<>(wrapper, this);
+	public int count(QueryWrapper<T,?, ?> wrapper) {
+		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.count();
 	}
 

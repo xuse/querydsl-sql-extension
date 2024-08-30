@@ -247,7 +247,39 @@ public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
 
 因为当前没有编写从数据库自动生成java代码的功能，所以可以先用官方文档中的 “code generation via maven” 一章中介绍来生成代码，生成的代码还需要修改一下。
 
-生成的代码如下——
+**使用Maven插件来生成Query class
+
+ ```xml
+	<plugin>
+		<groupId>com.querydsl</groupId>
+		<artifactId>querydsl-maven-plugin</artifactId>
+		<version>5.0.0</version>
+		<executions>
+			<execution>
+				<goals>
+					<goal>export</goal>
+				</goals>
+			</execution>
+		</executions>
+		<configuration>
+			<jdbcDriver>com.mysql.cj.jdbc.Driver</jdbcDriver>
+			<jdbcUrl>jdbc:mysql://host:port/database?useUnicode=true</jdbcUrl>
+			<jdbcUser>username</jdbcUser>
+			<jdbcPassword>password</jdbcPassword>
+			<exportBeans>true</exportBeans>
+			<packageName>xxx.xxx.dal.domain</packageName>
+			<targetFolder>${project.basedir}/src/main/java</targetFolder>
+			<tableNamePattern>%</tableNamePattern>
+			<beanAddToString>true</beanAddToString>
+		</configuration>
+	</plugin>
+ ```
+
+
+
+**微调生成后的代码**
+
+生成的代码还需要修改一下，举例：生成的代码如下——
 
 ```java
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
@@ -258,7 +290,8 @@ public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
     public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
 ```
 
-要使用扩展功能，请将上文的 `com.querydsl.sql.RelationalPathBase` 类替换为 `com.github.xuse.querydsl.sql.RelationalPathBaseEx`。替换后为_
+要使用扩展功能，请将上文的 `com.querydsl.sql.RelationalPathBase` 类替换为 `com.github.xuse.querydsl.sql.RelationalPathBaseEx`。
+替换后为：
 
 ```java
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
@@ -270,6 +303,8 @@ private static final long serialVersionUID = -124472086;
 ```
 
 替换后，在addMetadata()方法中，可以使用更多的API来定义数据结构和框架行为。
+
+另外如果对生成对象的一些字段类型不满意，也可以自行手工修改。
 
 
 

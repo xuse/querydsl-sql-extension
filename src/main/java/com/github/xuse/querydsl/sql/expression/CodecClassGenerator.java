@@ -91,13 +91,13 @@ public class CodecClassGenerator implements Opcodes {
 			MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "values", getMethodDesc(Object[].class, Object.class), null,
 					null);
 
-			mw.visitVarInsn(ALOAD, 1);// s1
+			mw.visitVarInsn(ALOAD, 1);// s1 入参1上栈（Bean）
 			mw.visitTypeInsn(CHECKCAST, getType(beanType));// 类型转换
-			mw.visitVarInsn(ASTORE, 2);// s0 转换后的Bean写入
+			mw.visitVarInsn(ASTORE, 2);// s0 转换后的Bean写入变量2.
 
 			iconst(mw, methods.size());
 			mw.visitTypeInsn(ANEWARRAY, getType(Object.class));// 创建数组
-			mw.visitVarInsn(ASTORE, 3);// s0
+			mw.visitVarInsn(ASTORE, 3);// s0 结果数组写入变量3
 
 			int index = 0;
 			for (FieldProperty property : methods) {
@@ -107,7 +107,7 @@ public class CodecClassGenerator implements Opcodes {
 					index++;
 					continue;
 				}
-				mw.visitVarInsn(ALOAD, 3);// S1
+				mw.visitVarInsn(ALOAD, 3);// S1 
 				iconst(mw, index++);// S2
 				mw.visitVarInsn(ALOAD, 2);// S3 获得转换后的Bean对象
 				mw.visitMethodInsn(INVOKEVIRTUAL, getType(beanType), getter.getName(), getDesc(getter), false);// S3
@@ -118,8 +118,7 @@ public class CodecClassGenerator implements Opcodes {
 				}
 				mw.visitInsn(AASTORE); // 写入数组,S0
 			}
-
-			mw.visitVarInsn(ALOAD, 3);//
+			mw.visitVarInsn(ALOAD, 3);
 			mw.visitInsn(ARETURN);
 			mw.visitMaxs(3, 4);
 			mw.visitEnd();

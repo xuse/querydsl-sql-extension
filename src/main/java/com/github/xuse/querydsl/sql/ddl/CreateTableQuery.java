@@ -1,16 +1,13 @@
 package com.github.xuse.querydsl.sql.ddl;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
-import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
 import lombok.extern.slf4j.Slf4j;
@@ -41,29 +38,9 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 
 	@Override
 	protected List<String> generateSQLs() {
-		List<String> sqls=new ArrayList<>();
-		List<Constraint> others;
-		//开始建
-		{
-			SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
-			serializer.setRouting(routing);
-			others = serializer.serializeTableCreate(table, processPartition);
-			String sql=serializer.toString();
-			sqls.add(sql);	
-		}
-		for(Constraint c:others) {
-			if(configuration.getTemplates().supports(c.getConstraintType().getIndependentCreateOps())) {
-				SQLSerializerAlter serializer=new SQLSerializerAlter(configuration,true);
-				serializer.serialzeConstraintIndepentCreate(table,c);
-				serializer.setRouting(routing);
-				String sql=serializer.toString();
-				//log.info(sql);
-				sqls.add(sql);	
-			}else {
-				log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.",c);
-			}
-		}
-		return sqls;
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		builder.serializeTableCreate(processPartition);
+		return builder.getSqls();
 	}
 
 	@Override

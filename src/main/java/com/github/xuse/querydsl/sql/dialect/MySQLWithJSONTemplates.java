@@ -4,23 +4,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.Constraint;
-import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;
+import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
-import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
+import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
@@ -30,7 +26,6 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.expression.JsonOps;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.MySQLTemplates;
@@ -46,10 +41,51 @@ import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
  */
 public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplatesEx {
 	private final TypeNames typeNames = TypeNames.generateDefault();
-
-	private final boolean usingInfoSchema;
+	
+	private final boolean batchToBulk;
 	
 	protected final Set<Operator> unsupports=new HashSet<>();
+	
+	private SchemaReader schemaReader=new InfomationSchemaReader(0) {
+		@Override
+		public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
+				ObjectType type) {
+			// &useInformationSchema=true获得的数据不一样，比现有驱动的要好。但是测试发现，正常情况下无法获得table info的comment等信息，所以直接访问MySQL系统表更好
+			List<Object> params = new ArrayList<>();
+			params.add(qMatchName);
+			String sql = "SELECT TABLE_CATALOG AS TABLE_CAT,TABLE_SCHEMA AS TABLE_SCHEM,TABLE_NAME,CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN CASE WHEN TABLE_SCHEMA = 'mysql' OR TABLE_SCHEMA = 'performance_schema' THEN 'SYSTEM TABLE' ELSE 'TABLE' END WHEN TABLE_TYPE = 'TEMPORARY' THEN 'LOCAL_TEMPORARY' ELSE TABLE_TYPE END AS TABLE_TYPE, TABLE_COMMENT AS REMARKS,"
+					+ "ENGINE, VERSION, ROW_FORMAT, AUTO_INCREMENT, CREATE_TIME, UPDATE_TIME, TABLE_COLLATION "
+					+ "FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE ?";
+			if (StringUtils.isNotEmpty(catalog) && !"%".equals(catalog)) {
+				sql += " AND TABLE_SCHEMA LIKE ?";
+				params.add(catalog);
+			}
+			if (type != null) {
+				sql += " HAVING TABLE_TYPE = ?";
+				params.add(type.name());
+			}
+			SQLBindings sb = new SQLBindings(sql, params);
+			return e.query(sb, this::fromRsEx);
+		}
+
+		private TableInfo fromRsEx(ResultSet rs) throws SQLException {
+			TableInfo info = new TableInfo();
+			info.setCatalog(rs.getString("TABLE_CAT"));
+			info.setSchema(rs.getString("TABLE_SCHEM"));
+			info.setName(rs.getString("TABLE_NAME"));
+			info.setType(rs.getString("TABLE_TYPE"));
+			info.setRemarks(rs.getString("REMARKS"));
+			info.setAttribute("ENGINE", rs.getString("ENGINE"));
+			info.setAttribute("VERSION", rs.getInt("VERSION"));
+			info.setAttribute("ROW_FORMAT", rs.getString("ROW_FORMAT"));
+			info.setAttribute("AUTO_INCREMENT", rs.getLong("AUTO_INCREMENT"));
+			info.setAttribute("CREATE_TIME", rs.getTimestamp("CREATE_TIME"));
+			info.setAttribute("UPDATE_TIME", rs.getTimestamp("UPDATE_TIME"));
+			info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
+			return info;
+		}
+	};
+	
 	
     public static MySQLTemplateBuilderEx builder() {
         return new MySQLTemplateBuilderEx();
@@ -58,15 +94,21 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
     
     public static class MySQLTemplateBuilderEx extends Builder{
     	private boolean supportsCheck;
+    	private boolean useBulk = true;
     	
     	public Builder supportsCheck() {
     		supportsCheck=true;
     		return this;
     	}
     	
+    	public Builder usingBatchToBulkInDefault(boolean flag) {
+			useBulk = flag;
+    		return this;
+    	}
+    	
         @Override
         protected SQLTemplates build(char escape, boolean quote) {
-            return new MySQLWithJSONTemplates(escape, quote,false,supportsCheck);
+			return new MySQLWithJSONTemplates(escape, quote, supportsCheck,useBulk);
         }
     }
     
@@ -78,14 +120,13 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 
 	public MySQLWithJSONTemplates() {
-		this('\\',false,false,false);
+		this('\\', false, false, true);
 	}
 	
-	public MySQLWithJSONTemplates(char escape, boolean quote,boolean usingInfoSchema,boolean supportsCheckConstraint) {
+	public MySQLWithJSONTemplates(char escape, boolean quote,boolean supportsCheckConstraint, boolean batchToBulk) {
 		super(escape, quote);
 		super.setPrintSchema(false);
-		this.usingInfoSchema = usingInfoSchema;
-		
+		this.batchToBulk = batchToBulk;
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
 		initJsonFunctions();
 		initPartitionOps();
@@ -95,20 +136,22 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
+		add(DDLOps.COMMENT_ON_COLUMN, "{0} COMMENT {1}");
+		add(DDLOps.COMMENT_ON_TABLE, "{0} COMMENT {1}");
 		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1},ALGORITHM=INPLACE, LOCK=NONE");
-		add(AlterTableOps.COMMENT, "COMMENT = {0}");
+		//add(AlterTableOps.COMMENT_ON_TABLE, "COMMENT = {0}");
 		
 		add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
 		add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
 		
 		add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}, ALGORITHM=INPLACE, LOCK=SHARED");
-		add(CreateStatement.CREATE_INDEX, "INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=SHARED");
-		add(CreateStatement.CREATE_UNIQUE, "UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_HASH, "INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_SPATIAL, "SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(SpecialFeature.PARTITION_SUPPORT,"");
-		
+		add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_FULLTEXT, "CREATE FULLTEXT INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=SHARED");
+		add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
+		add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(SpecialFeature.MULTI_COLUMNS_IN_ALTER_TABLE, "");
+		add(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY,"");
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
 		if(!supportsCheckConstraint) {
 			unsupports.add(ConstraintType.CHECK);
@@ -145,11 +188,22 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		
 		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB).noSize();
 		typeNames.put(Types.LONGVARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.LONGVARBINARY).noSize();
-
+		// LOBS
+		typeNames.put(Types.CLOB, "mediumtext").noSize();
+		typeNames.put(Types.BLOB, "mediumblob").noSize();
+		typeNames.put(Types.BLOB, 255, "tinyblob").noSize();
+		typeNames.put(Types.CLOB, 255, "tinytext").noSize();
+		typeNames.put(Types.BLOB, 65535, "blob").noSize();
+		typeNames.put(Types.CLOB, 65535, "text").noSize();
+		typeNames.put(Types.BLOB, 1024 * 1024 * 16, "mediumblob").noSize();
+		typeNames.put(Types.CLOB, 1024 * 1024 * 16, "mediumtext").noSize();
+		typeNames.put(Types.BLOB, 1024 * 1024 * 1024, "longblob").noSize();
+		typeNames.put(Types.CLOB, 1024 * 1024 * 1024, "longtext").noSize();
 	}
 
 	private void initPartitionOps() {
 		add(PartitionDefineOps.PARTITION_BY,"PARTITION BY {0}");
+		
 		
 		add(PartitionMethod.KEY,"KEY({0}) PARTITIONS {1}");
 		add(PartitionMethod.HASH,"HASH({0}) PARTITIONS {1}");
@@ -158,11 +212,18 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(PartitionMethod.RANGE_COLUMNS,"RANGE COLUMNS({0}) {1}");
 		add(PartitionMethod.LIST,"LIST ({0}) {1}");
 		add(PartitionMethod.LIST_COLUMNS,"LIST COLUMNS({0}) {1}");
-		add(PartitionDefineOps.PARTITION_IN_LIST," PARTITION {0} VALUES IN ({1})");
-		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({1})");
+		add(PartitionDefineOps.PARTITION_IN_LIST," PARTITION {0} VALUES IN ({2})");
+		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({2})");
 		
-		add(AlterTablePartitionOps.ADD_PARTITION," ADD PARTITION ({0})");
-		add(AlterTablePartitionOps.REORGANIZE_PARTITION," REORGANIZE PARTITION {0} INTO {1}");
+		add(AlterTablePartitionOps.ADD_PARTITION,"ALTER TABLE {1} ADD PARTITION ({0})");
+		add(AlterTablePartitionOps.DROP_PARTITION,"ALTER TABLE {1} DROP PARTITION {0}");
+		add(AlterTablePartitionOps.REORGANIZE_PARTITION,"ALTER TABLE {2} REORGANIZE PARTITION {0} INTO {1}");
+		
+		add(AlterTablePartitionOps.REMOVE_PARTITIONING,"ALTER TABLE {0} REMOVE PARTITIONING");
+		add(AlterTablePartitionOps.ADD_PARTITIONING,"PARTITION BY {0}");
+		
+		add(AlterTablePartitionOps.COALESCE_PARTITION,"ALTER TABLE {0} COALESCE PARTITION {1}");
+		add(AlterTablePartitionOps.ADD_PARTITION_COUNT,"ALTER TABLE {0} ADD PARTITION PARTITIONS {1}");
 		
 	}
 
@@ -225,78 +286,10 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		// add(template, DDLOps.ALTER_COLUMN,"CHANGE {0} {0} {1}");
 	}
 
-	
-	
+
 	@Override
-	public List<PartitionInfo> getPartitions(String schema, String tableName, ConnectionWrapper w) {
-		if (StringUtils.isEmpty(schema)) {
-			schema = "%";
-		}
-		SQLBindings sql = new SQLBindings(
-				"SELECT * FROM information_schema.partitions WHERE table_name=? AND TABLE_SCHEMA LIKE ? ORDER BY PARTITION_ORDINAL_POSITION ASC",
-				Arrays.asList(tableName, schema));
-		List<PartitionInfo> partitions = w.query(sql, rs -> {
-			PartitionInfo c = new PartitionInfo();
-			c.setTableCat(rs.getString("TABLE_CATALOG"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setName(rs.getString("PARTITION_NAME"));
-			c.setMethod(PartitionMethod.parse(rs.getString("PARTITION_METHOD")));
-			c.setCreateTime(rs.getTimestamp("CREATE_TIME"));
-			c.setPartitionExpression(rs.getString("PARTITION_EXPRESSION"));
-			c.setPartitionOrdinal(rs.getInt("PARTITION_ORDINAL_POSITION"));
-			c.setPartitionDescription(rs.getString("PARTITION_DESCRIPTION"));
-			return c;
-		});
-		return partitions;
-	}
-	
-	@Override
-	public List<Constraint> getConstraints(String schema, String tableName, ConnectionWrapper w, boolean detail) {
-		if (StringUtils.isEmpty(schema)) {
-			schema = "%";
-		}
-		// 只会得到UNIQUE，普通的KEY不会在这个表返回（纯索引）
-		SQLBindings sql = new SQLBindings(
-				"SELECT * FROM information_schema.table_constraints WHERE  table_name=? AND constraint_schema LIKE ?",
-				Arrays.asList(tableName, schema));
-		List<Constraint> constraints = w.query(sql, rs -> {
-			Constraint c = new Constraint();
-			c.setName(rs.getString("CONSTRAINT_NAME"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			ConstraintType type = ConstraintType.valueOf(rs.getString("CONSTRAINT_TYPE").replace(' ', '_'));
-			c.setConstraintType(type);
-			return c;
-		});
-		if (!detail) {
-			return constraints;
-		}
-		// 尝试获取字段填入
-		sql = new SQLBindings(
-				"SELECT * FROM information_schema.key_column_usage WHERE  table_name=? AND constraint_schema LIKE ?",
-				Arrays.asList(tableName, schema));
-		List<KeyColumn> keyColumns = w.query(sql, rs -> {
-			KeyColumn c = new KeyColumn();
-			c.setKeyName(rs.getString("CONSTRAINT_NAME"));
-			c.setTableCat(rs.getString("TABLE_CATALOG"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setColumnName(rs.getString("COLUMN_NAME"));
-			c.setSeq(rs.getInt("ORDINAL_POSITION"));
-			return c;
-		});
-		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(keyColumns, KeyColumn::getKeyName, e -> e);
-		for (Constraint c : constraints) {
-			String name = c.getName();
-			List<KeyColumn> columns = map.get(name);
-			if (columns == null) {
-				continue;
-			}
-			columns.sort(Comparator.comparingInt(a -> a.seq));
-			c.setColumnNames(columns.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
-		}
-		return constraints;
+	public SchemaReader getSchemaAccessor() {
+		return schemaReader;
 	}
 
 	@Override
@@ -307,6 +300,11 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	@Override
 	public SchemaPolicy getSchemaPolicy() {
 		return SchemaPolicy.CATALOG_ONLY;
+	}
+	
+	@Override
+	public boolean isBatchToBulkInDefault() {
+		return batchToBulk;
 	}
 
 	@Override
@@ -329,50 +327,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		default:
 			return SizeParser.DEFAULT;
 		}
-	}
-
-	@Override
-	public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
-			ObjectType type) {
-		// 测试发现，正常情况下无法获得table info的comment等信息
-		// &useInformationSchema=true
-		if(usingInfoSchema) {
-			return SQLTemplatesEx.super.fetchTables(e, catalog, schema, qMatchName, type);	
-		}else {
-			List<Object> params=new ArrayList<>();
-			params.add(qMatchName);
-			String sql="SELECT TABLE_CATALOG AS TABLE_CAT,TABLE_SCHEMA AS TABLE_SCHEM,TABLE_NAME,CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN CASE WHEN TABLE_SCHEMA = 'mysql' OR TABLE_SCHEMA = 'performance_schema' THEN 'SYSTEM TABLE' ELSE 'TABLE' END WHEN TABLE_TYPE = 'TEMPORARY' THEN 'LOCAL_TEMPORARY' ELSE TABLE_TYPE END AS TABLE_TYPE, TABLE_COMMENT AS REMARKS,"
-					+"ENGINE, VERSION, ROW_FORMAT, AUTO_INCREMENT, CREATE_TIME, UPDATE_TIME, TABLE_COLLATION "
-					+ "FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE ?";
-			if(StringUtils.isNotEmpty(catalog)&& !"%".equals(catalog)) {
-				sql+=" AND TABLE_SCHEMA LIKE ?";
-				params.add(catalog);
-			}
-			if(type!=null) {
-				sql+=" HAVING TABLE_TYPE = ?";
-				params.add(type.name());
-			}
-			SQLBindings sb=new SQLBindings(sql, params);
-			return e.query(sb, this::fromRsEx);
-		}
-	}
-	
-
-	private TableInfo fromRsEx(ResultSet rs) throws SQLException {
-		TableInfo info = new TableInfo();
-		info.setCatalog(rs.getString("TABLE_CAT"));
-		info.setSchema(rs.getString("TABLE_SCHEM"));
-		info.setName(rs.getString("TABLE_NAME"));
-		info.setType(rs.getString("TABLE_TYPE"));
-		info.setRemarks(rs.getString("REMARKS"));
-		info.setAttribute("ENGINE", rs.getString("ENGINE"));
-		info.setAttribute("VERSION", rs.getInt("VERSION"));
-		info.setAttribute("ROW_FORMAT", rs.getString("ROW_FORMAT"));
-		info.setAttribute("AUTO_INCREMENT", rs.getLong("AUTO_INCREMENT"));
-		info.setAttribute("CREATE_TIME", rs.getTimestamp("CREATE_TIME"));
-		info.setAttribute("UPDATE_TIME", rs.getTimestamp("UPDATE_TIME"));
-		info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
-		return info;
 	}
 
 	@Override
