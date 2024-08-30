@@ -46,7 +46,7 @@ import com.querydsl.sql.RelationalPath;
  * <li>指定查询列/表达式</li>
  * <li>指定返回类格式</li>
  * </ol>
- * <h4>指定查询列/表达式</h4>
+ * <h3>指定查询列/表达式</h3>
  * <ul>
  * <li>{@link #column(LambdaColumn)} 选择一个列，可以使用它构建函数表达式</li>
  * <li>{@link #column(NumberLambdaColumn)}  选择一个数值列，可以使用它构建函数表达式</li>
@@ -62,10 +62,10 @@ import com.querydsl.sql.RelationalPath;
  * <li>{@link #toArray(Class)} 表的每行记录以指定类型的T[]数组返回</li>
  * <li>{@link #toBean(Class)} 表的每行记录按字段名匹配到新的Class作为返回对象</li>
  * <li>{@link #toList()} 表的每行记录以List格式返回</li> 
- * <li>{@link #toMap()} 表的每行记录以Map<String,?>格式返回</li>
- * <li>{@link #toExprMap()} 表的每行记录以Map<列表达式,?>格式返回</li>
- * <li>{@link #toPair()} 当仅选取两个列时，每行记录以Pair<?,?>格式返回</li>
- * <li>{@link #toPair(Class, Class)} 当仅选取两个列时，每行记录以Pair<K,V>格式返回</li>
+ * <li>{@link #toMap()} 表的每行记录以Map&lt;String,?&gt;格式返回</li>
+ * <li>{@link #toExprMap()} 表的每行记录以Map&lt;列表达式,?&gt;格式返回</li>
+ * <li>{@link #toPair()} 当仅选取两个列时，每行记录以Pair&lt;?,?&gt;格式返回</li>
+ * <li>{@link #toPair(Class, Class)} 当仅选取两个列时，每行记录以Pair&lt;K,V&gt;格式返回</li>
  * <li>{@link #toTuple()} 每行记录以Tuple格式返回，该格式和ExprMap()基本一样</li>
  * </ul>
  * @author Joey
