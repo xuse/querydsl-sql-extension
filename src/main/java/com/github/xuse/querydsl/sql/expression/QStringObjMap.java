@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
-
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpressionBase;
 import com.querydsl.core.types.Operation;
@@ -61,7 +59,7 @@ public class QStringObjMap extends FactoryExpressionBase<Map<String, ?>> {
 	}
 
 	@Override
-	public @Nullable Map<String, ?> newInstance(Object... args) {
+	public Map<String, ?> newInstance(Object... args) {
 		List<String> argNames =this.argNames; 
 		Map<String, Object> map = new HashMap<>();
         for (int i = 0; i < args.length; i++) {
@@ -71,7 +69,7 @@ public class QStringObjMap extends FactoryExpressionBase<Map<String, ?>> {
 	}
 
 	@Override
-	public <R, C> @Nullable R accept(Visitor<R, C> v, @Nullable C context) {
+	public <R, C> R accept(Visitor<R, C> v, C context) {
 		 return v.visit(this, context);
 	}
 

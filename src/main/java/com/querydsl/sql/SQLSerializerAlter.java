@@ -5,8 +5,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.jetbrains.annotations.Nullable;
-
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.Assert;
@@ -17,6 +15,7 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.sql.dml.SQLInsertBatch;
 import com.querydsl.sql.types.Null;
 
 /**
@@ -197,42 +196,9 @@ public class SQLSerializerAlter extends SQLSerializer {
 		inJoin = false;
 	}
 
-	public void handleBulk(List<Path<?>> columns, List<Object> prepareValueExpr) {
-		Assert.equals(columns.size(), prepareValueExpr.size());
-		int len = columns.size();
-		Path<?> path = columns.get(0);
-		Object value = prepareValueExpr.get(0);
-		if (value instanceof Expression<?>) {
-			handle(value);
-		} else if (value != null) {
-			append("?");
-			constants.add(value);
-			this.constantPaths.add(path);
-		} else {
-			append("?");
-			constants.add(Null.DEFAULT);
-			this.constantPaths.add(path);
-		}
-		for (int i = 1; i < len; i++) {
-			append(COMMA);
-			path = columns.get(i);
-			value = prepareValueExpr.get(i);
-			if (value instanceof Expression<?>) {
-				handle(value);
-			} else if (value != null) {
-				append("?");
-				constants.add(value);
-				this.constantPaths.add(path);
-			} else {
-				append("?");
-				constants.add(Null.DEFAULT);
-				this.constantPaths.add(path);
-			}
-		}
-	}
 
 	public void serializeForInsert(QueryMetadata metadata, RelationalPath<?> entity, List<Path<?>> columns,
-			List<Expression<?>> values, @Nullable SubQueryExpression<?> subQuery) {
+			List<Expression<?>> values, SubQueryExpression<?> subQuery) {
 		super.serializeForInsert(metadata, entity, columns, values, subQuery);
 	}
 
@@ -259,6 +225,57 @@ public class SQLSerializerAlter extends SQLSerializer {
 			}
 		}
 	}
+	
+	public final SQLSerializerAlter handleValueList(List<? extends Expression<?>> expressions, 
+			List<Path<?>> columns, List<Path<?>> expectedColumns) {
+		String sep=COMMA;
+		if(columns.equals(expectedColumns)) {
+			
+		}
+		if (!expressions.isEmpty()) {
+			handle(expressions.get(0));
+			for (int i = 1; i < expressions.size(); i++) {
+				append(sep);
+				handle(expressions.get(i));
+			}
+		}
+		return this;
+		
+
+//		public void handleBulk(List<Path<?>> columns, List<Object> prepareValueExpr) {
+//			Assert.equals(columns.size(), prepareValueExpr.size());
+//			int len = columns.size();
+//			Path<?> path = columns.get(0);
+//			Object value = prepareValueExpr.get(0);
+//			if (value instanceof Expression<?>) {
+//				handle(value);
+//			} else if (value != null) {
+//				append("?");
+//				constants.add(value);
+//				this.constantPaths.add(path);
+//			} else {
+//				append("?");
+//				constants.add(Null.DEFAULT);
+//				this.constantPaths.add(path);
+//			}
+//			for (int i = 1; i < len; i++) {
+//				append(COMMA);
+//				path = columns.get(i);
+//				value = prepareValueExpr.get(i);
+//				if (value instanceof Expression<?>) {
+//					handle(value);
+//				} else if (value != null) {
+//					append("?");
+//					constants.add(value);
+//					this.constantPaths.add(path);
+//				} else {
+//					append("?");
+//					constants.add(Null.DEFAULT);
+//					this.constantPaths.add(path);
+//				}
+//			}
+//		}
+	}
 
 	public void serializeAction(String action, RelationalPath<?> path, List<Expression<?>> exprs) {
 		this.entity = path;
@@ -276,6 +293,20 @@ public class SQLSerializerAlter extends SQLSerializer {
 			iter.next().accept(this, null);
 		}
 	}
+
+	protected void serializeForInsert(QueryMetadata metadata, RelationalPath<?> entity, List<SQLInsertBatch> batches) {
+		SQLInsertBatch batch=batches.get(0);
+		List<Path<?>> sqlColumns = batch.getColumns();
+		serializeForInsert(metadata, entity, sqlColumns, batch.getValues(), null);
+		for (int i = 1; i < batches.size(); i++) {
+			batch = batches.get(i);
+			append(COMMA);
+			append("(");
+			handleValueList(batch.getValues(), batch.getColumns(),sqlColumns);
+			append(")");
+		}
+	}
+
 
 	public RoutingStrategy getRouting() {
 		return routing;

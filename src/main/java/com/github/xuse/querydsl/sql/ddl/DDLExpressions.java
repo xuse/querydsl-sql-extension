@@ -23,6 +23,8 @@ public class DDLExpressions {
 	private static final Expression<?> CASCADE = Expressions.simpleTemplate(Object.class, "CASCADE");
 
 	private static final Expression<?> EMPTY = Expressions.simpleTemplate(Object.class, "");
+	
+	public static final Expression<?> DEFAULT = Expressions.simpleTemplate(Object.class, "DEFAULT");
 
 	@SuppressWarnings("rawtypes")
 	public static final Expression[] ZERO_LENGTH_EXPRESION = new Expression[0];
@@ -131,14 +133,6 @@ public class DDLExpressions {
 		return t;
 	}
 
-//	public static Expression<?> comment(Expression<?> t, String comment, boolean isColumn) {
-//		DDLOps ops = isColumn ? DDLOps.COMMENT_ON_COLUMN : DDLOps.COMMENT_ON_TABLE;
-//		if (StringUtils.isNotEmpty(comment)) {
-//			return simple(ops, t, ConstantImpl.create(comment));
-//		}
-//		return t;
-//	}
-
 	public static Expression<?> simple(Operator op, Expression<?>... expressions) {
 		return Expressions.simpleOperation(Void.class, op, expressions);
 	}
@@ -155,5 +149,10 @@ public class DDLExpressions {
 			return null;
 		}
 		return Expressions.template(Boolean.class, str);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> Expression<T> defaultExpr(){
+		return (Expression<T>) DEFAULT;
 	}
 }

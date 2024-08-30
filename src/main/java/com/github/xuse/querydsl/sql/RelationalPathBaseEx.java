@@ -11,9 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import org.jetbrains.annotations.Nullable;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.annotation.dbdef.Check;
@@ -251,9 +248,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		checkColumnLength(metadata);
 		
 		PathMapping metadataExt = new PathMapping(expr, field, metadata);
-		columnMetadata.put(expr, metadataExt);
-		pathUpdate(expr, metadata);
-		bindingsMap.put(expr.getMetadata().getName(), expr);
+		addMetadata(expr, metadataExt);
 		return new ColumnBuilder<>(metadataExt);
 	}
 
@@ -265,42 +260,35 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		}
 	}
 
-	protected synchronized void pathUpdate(Path<?> expr, ColumnMetadata metadata) {
-		Path<?>[] columns = this.columns;
-		if (columns == null) {
-			columns = new Path<?>[] { expr };
-		} else {
-			List<Entry<Path<?>, ColumnMetadata>> list = new ArrayList<>();
-			for (Path<?> p : columns) {
-				list.add(new Entry<>(p, getMetadata(p)));
-			}
-			list.add(new Entry<>(expr, metadata));
-			// resort for columns
-			list.sort((a, b) -> {
-				ColumnMetadata ma = a.getValue();
-				ColumnMetadata mb = b.getValue();
-				int indexA = 0, indexB = 0;
-				try {
-					indexA = ma.getIndex();
-				} catch (NullPointerException e) {
-				// There is a NPE by unbox an Integer suspect in ColumnMetadata. do nothing.
-				}
-				try {
-					indexB = mb.getIndex();
-				} catch (NullPointerException e) {
-				// There is a NPE by unbox an Integer suspect in ColumnMetadata. do nothing.
-				}
-				return Integer.compare(indexA, indexB);
-			});
-			columns = list.stream().map(Entry::getKey).collect(Collectors.toList()).toArray(new Path<?>[list.size()]);
+	protected Path<?>[] initColumns(){
+		List<Entry<Path<?>, ColumnMetadata>> list = new ArrayList<>();
+		for (Path<?> p : columnMetadata.keySet()) {
+			list.add(new Entry<>(p, getMetadata(p)));
 		}
-		this.columns = columns;
+		list.sort((a, b) -> {
+			ColumnMetadata ma = a.getValue();
+			ColumnMetadata mb = b.getValue();
+			int indexA = 0, indexB = 0;
+			try {
+				indexA = ma.getIndex();
+			} catch (NullPointerException e) {
+				// There is a NPE by unbox an Integer suspect in ColumnMetadata. do nothing.
+			}
+			try {
+				indexB = mb.getIndex();
+			} catch (NullPointerException e) {
+				// There is a NPE by unbox an Integer suspect in ColumnMetadata. do nothing.
+			}
+			return Integer.compare(indexA, indexB);
+		});
+		Path<?>[] columns=list.stream().map(Entry::getKey).toArray(Path<?>[]::new);
+		return columns;
 	}
 
 	protected <P extends Path<?>> P addMetadata(P path, ColumnMapping metadata) {
 		columnMetadata.put(path, metadata);
-		pathUpdate(path, metadata.getColumn());
 		bindingsMap.put(path.getMetadata().getName(), path);
+		//pathUpdate(path, metadata.getColumn());
 		return path;
 	}
 
@@ -418,11 +406,17 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	}
 
 	public Path<?>[] all() {
+		if(columns==null) {
+			return columns = initColumns();
+		}
 		return columns;
 	}
 
 	@Override
 	public List<Path<?>> getColumns() {
+		if(columns==null) {
+			return Arrays.asList(columns=initColumns());
+		}
 		return Arrays.asList(columns);
 	}
 
@@ -486,9 +480,6 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		}
 	}
 	
-	/*
-	 * @deprecated
-	 */
 	protected void scanClassMetadata(Supplier<List<Path<?>>> pathProvider) {
 		Class<? extends T> beanType = super.getType();
 		int count = 1;
@@ -499,7 +490,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		initByClassAnnotation(beanType, null);
 	}
 
-	private PathMapping builderMetadata(Class<? extends T> beanType, Path<?> path, @Nullable Field metadataField, int index) {
+	private PathMapping builderMetadata(Class<? extends T> beanType, Path<?> path, Field metadataField, int index) {
 		Field field = ReflectionUtils.getFieldOrNull(beanType, path.getMetadata().getName());
 		if (field == null) {
 			throw new IllegalArgumentException("Not found field [" + path.getMetadata().getName() + "] in bean " + beanType.getName());
@@ -659,6 +650,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		t.partitionBy = this.partitionBy;
 		t.primaryKey = this.primaryKey;
 		t.columnMetadata.putAll(this.columnMetadata);
+		Path<?>[] columns = all();
 		t.columns = Arrays.copyOf(columns, columns.length);
 		t.bindingsMap.putAll(this.bindingsMap);
 		t.constraints.addAll(this.constraints);

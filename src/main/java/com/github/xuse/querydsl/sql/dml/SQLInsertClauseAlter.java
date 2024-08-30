@@ -68,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  * SQLInsertClause defines an INSERT INTO clause If you need to subtype this,
  * use {@link AbstractSQLInsertClause} instead.
  *
- * @author tiwe
+ * @author tiwe. revised by Joey
  */
 @Slf4j
 public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClauseAlter> {
@@ -78,6 +78,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	private RoutingStrategy routing;
 
 	private Boolean writeNulls;
+	
+	private boolean uniformBatchValues = true;
 
 	private transient Collection<Object> populatedBatch = Collections.emptyList();
 
@@ -282,6 +284,65 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			}
 		}
 	}
+	
+    public SQLInsertClauseAlter addBatch() {
+        if (subQueryBuilder != null) {
+            subQuery = subQueryBuilder.select(values.toArray(new Expression[0])).clone();
+            values.clear();
+        }
+        if(batches.isEmpty()) {
+        	batches.add(new SQLInsertBatch(columns, values, subQuery));
+		} else if (uniformBatchValues) {
+        	List<Path<?>> columns = this.columns;
+			List<Path<?>> template = batches.get(0).getColumns();
+        	List<Expression<?>> batchValues=this.values;
+        	if(!fastEquals(template,columns)) {
+				batchValues = uniformValues(template, columns, batchValues);
+    		}
+        	batches.add(new SQLInsertBatch(template, batchValues, subQuery));
+        }else {
+        	batches.add(new SQLInsertBatch(columns, values, subQuery));
+        }
+        this.columns.clear();
+        this.values.clear();
+        subQuery = null;
+        return this;
+    }
+
+	private boolean fastEquals(List<Path<?>> template, List<Path<?>> columns) {
+		int len = template.size();
+		if(len!=columns.size()) {
+			return false;
+		}
+		for(int i=0;i<len;i++) {
+			//use !=, not !equals()
+			if(template.get(i)!=columns.get(i)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private List<Expression<?>> uniformValues(List<Path<?>> template, List<Path<?>> columns, List<Expression<?>> values) {
+		Map<Path<?>, Expression<?>> valuesMap = new HashMap<>();
+		for (int i = 0; i < columns.size(); i++) {
+			valuesMap.put(columns.get(i), values.get(i));
+		}
+		int len = template.size();
+		List<Expression<?>> result = new ArrayList<>(len);
+		for (int i = 0; i < len; i++) {
+			Path<?> p = template.get(i);
+			Expression<?> value = valuesMap.get(p);
+			if (value == null) {
+				value = configuration.getTemplates().getDefaultExpr();
+			}
+			if (value == null) {
+				value = Null.CONSTANT;
+			}
+			result.add(value);
+		}
+		return result;
+	}
 
 	private PreparedStatement newStatementBulk(Collection<Object> beans, boolean withKeys) throws SQLException {
 		Iterator<Object> iter = beans.iterator();
@@ -400,6 +461,18 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 		return populate(bean, Mappers.get(type));
 	}
+	
+	
+    /**
+     * Set whether batches should be optimized into a single bulk operation.
+     * Will revert to batches, if bulk is not supported.
+     * 
+     * 
+     */
+    public SQLInsertClauseAlter batchToBulk(boolean b) {
+        this.batchToBulk = b && configuration.getTemplates().isBatchToBulkSupported();
+        return this;
+    }
 
 	protected Collection<PreparedStatement> createStatements(boolean withKeys) throws SQLException {
 		boolean addBatches = !super.configuration.getUseLiterals();
@@ -468,6 +541,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			values.clear();
 		}
 		if (!batches.isEmpty() && batchToBulk) {
+			//这个实现是有问题的,所有Batch都必须有完全相同的Column，必须先按Column分组
 			serializer.serializeInsert(metadata, entity, batches);
 		} else {
 			serializer.serializeInsert(metadata, entity, columns, values, subQuery);

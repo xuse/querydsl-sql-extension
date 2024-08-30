@@ -10,6 +10,7 @@ import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
+import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.expression.BindingProvider.RelationalPathBindings;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.collection.ArrayListMap;
@@ -96,7 +97,7 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 				}
 				if (metadata != null && !metadata.isNullable()) {
 					// set use the database default.
-					data.add(new Entry<>(path, Expressions.template(path.getType(), "DEFAULT")));
+					data.add(new Entry<>(path, DDLExpressions.DEFAULT));
 				} else {
 					// set as null
 					data.add(new Entry<>(path, com.querydsl.sql.types.Null.DEFAULT));

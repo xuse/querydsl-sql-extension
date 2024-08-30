@@ -1,14 +1,18 @@
 package com.github.xuse.querydsl.util;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -171,6 +175,17 @@ public class TypeUtils {
 			return null;
 		}
 	}
+	
+    public static List<Field> getFields(Class<?> clazz) {
+        List<Field> fields = new ArrayList<Field>();
+        Class<?> c = clazz;
+        while (c != Object.class) {
+            fields.addAll(Arrays.asList(c.getDeclaredFields()));
+            c = c.getSuperclass();
+        }
+        return fields;
+    }
+    
 
 	/*
 	 * crate the path object according to the java type.

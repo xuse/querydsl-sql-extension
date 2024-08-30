@@ -54,7 +54,7 @@ public abstract class AbstractTestBase {
 		
 	}
 
-	private static final DriverManagerDataSource effectiveDs = pg14;
+	private static final DriverManagerDataSource effectiveDs = dsMySQL;
 	
 	
 	public static  DriverManagerDataSource getEffectiveDs() {

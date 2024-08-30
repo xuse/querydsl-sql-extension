@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.lambda;
 
 import java.util.Collection;
 
-import org.jetbrains.annotations.Nullable;
-
 import com.querydsl.core.types.CollectionExpression;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -405,7 +403,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param to inclusive end of range
      * @return this between from and to
      */
-    default BooleanExpression between(@Nullable Expression<T> from, @Nullable Expression<T> to) {
+    default BooleanExpression between(Expression<T> from, Expression<T> to) {
     	return mixin().between(from, to);
     }
 

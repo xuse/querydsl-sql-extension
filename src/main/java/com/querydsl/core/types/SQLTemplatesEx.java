@@ -5,6 +5,7 @@ import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
@@ -192,6 +193,10 @@ public interface SQLTemplatesEx {
 		return true;
 	}
 	
+	default boolean isBatchToBulkSupported() {
+		return getOriginal().isBatchToBulkSupported();
+	};
+	
 	boolean isBatchToBulkInDefault();
 	
 	/**
@@ -204,4 +209,12 @@ public interface SQLTemplatesEx {
 	default String translateDefault(String columnDef, int type, int size, int digits) {
 		return SQLTypeUtils.serializeLiteral(columnDef, type);
 	}
+
+	/**
+	 * @return 获得数据库的DEFAULT关键字。不是用在表结构定义上的那个DEFAULT VALUE.
+	 */
+	default Expression<?> getDefaultExpr() {
+		return DDLExpressions.DEFAULT;
+	}
+
 }

@@ -90,7 +90,8 @@ public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContext
 		Aaa c = new Aaa();
 		b.setName("王五");
 		b.setVersion(1);
-		factory.insert(QAaa.aaa).populate(b).addBatch().populate(c).addBatch().execute();
+		factory.insert(QAaa.aaa).populate(b).addBatch().populate(c).addBatch()
+		.batchToBulk(true).execute();
 		
 		factory.getMetadataFactory().truncate(QAaa.aaa).execute();
 	}
