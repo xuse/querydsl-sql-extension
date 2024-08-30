@@ -10,6 +10,8 @@ import lombok.Data;
 public class PartitionDef implements com.github.xuse.querydsl.annotation.partition.Partition{
 	private String name;
 	
+	private String from;
+	
 	private String value;
 
 	@Override
@@ -25,6 +27,11 @@ public class PartitionDef implements com.github.xuse.querydsl.annotation.partiti
 	@Override
 	public String value() {
 		return value;
+	}
+
+	@Override
+	public String from() {
+		return from;
 	}
 
 }

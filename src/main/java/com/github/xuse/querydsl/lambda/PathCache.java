@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PathCache {
 	private static final Map<Class<?>, RelationalPathEx<?>> TABLE_CACHE = new ConcurrentHashMap<>();
-	private static final Map<LambdaColumn, Path<?>> COLUMN_CACHE = new ConcurrentHashMap<>();
+	private static final Map<LambdaColumnBase, Path<?>> COLUMN_CACHE = new ConcurrentHashMap<>();
 	
 	
 	@SuppressWarnings("unchecked")
@@ -36,7 +36,7 @@ public class PathCache {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <B, T extends Comparable<T>> Path<T> getPath(LambdaColumn<B, T> func) {
+	public static <B, T> Path<T> getPath(LambdaColumnBase<B, T> func) {
 		try {
 			Path<T> p= (Path<T>) COLUMN_CACHE.computeIfAbsent(func, PathCache::generate);
 			return p;
@@ -61,7 +61,7 @@ public class PathCache {
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected static <B, T extends Comparable<T>> Path<T> generate(LambdaColumn<B, T> func) {
+	protected static <B, T> Path<T> generate(LambdaColumnBase<B, T> func) {
 		Pair<String,String> pair;
 		try {
 			Method method = func.getClass().getDeclaredMethod("writeReplace");

@@ -7,8 +7,6 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.TimeZone;
 
-import org.jetbrains.annotations.Nullable;
-
 
 /**
  * Used to provide various thread-safe date and time formats.
@@ -163,7 +161,6 @@ public abstract class DateFormats {
 		 * @param date date
 		 * @return text
 		 */
-		@Nullable
 		public String format(Date date) {
 			return date == null ? null : get().format(date);
 		}

@@ -6,19 +6,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.xuse.querydsl.util.Radix;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Assert;
 
 public class BeanCodecManager {
-	private static final Logger log = LoggerFactory.getLogger(BeanCodecManager.class);
-
 	private static final BeanCodecManager INSTANCE = new BeanCodecManager();
 	
-	private final Set<Class<?>> normalClassess=new HashSet<>();
+	private final Set<Class<?>> normalClazzes =new HashSet<>();
 
 	private final Map<CacheKey, BeanCodec> beanCodecs = new ConcurrentHashMap<CacheKey, BeanCodec>();
 
@@ -75,47 +70,27 @@ public class BeanCodecManager {
 		}
 	}
 
-	public BeanCodec getPopulator(Class<?> target, BindingProvider bindings) {
+	public BeanCodec getCodec(Class<?> target, BindingProvider bindings) {
 		List<String> fieldNames = bindings.fieldNames();
 		CacheKey key = CacheKey.of(target, fieldNames);
-		BeanCodec result = beanCodecs.get(key);
-		if (result != null) {
-			return result;
-		}
-		synchronized (this) {
-			result = beanCodecs.get(key);
-			// 使用双重检查锁定来提高并发安全性
-			if (result == null) {
-				try {
-					result = generateAccessor(key, bindings);
-					beanCodecs.putIfAbsent(key, result);
-				} catch (RuntimeException e) {
-					result = beanCodecs.get(key);
-					if (result != null) {
-						log.error("", e);
-						return result;
-					}
-					throw e;
-				}
-			}
-			return result;
-		}
+		return beanCodecs.computeIfAbsent(key, (k)->generateAccessor(k, bindings));
 	}
 
 	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings){
 		BeanCodecProvider provider;
-		if (normalClassess.contains(key.targetClass)) {
+		if (normalClazzes.contains(key.targetClass)) {
 			provider = BeanCodecDefaultProvider.INSTANCE;
 		} else {
 			boolean isRecord = TypeUtils.isRecord(key.targetClass);
 			if (isRecord) {
 				provider = BeanCodecRecordProvider.INSTANCE;
 			} else {
-				normalClassess.add(key.targetClass);
+				normalClazzes.add(key.targetClass);
 				provider = BeanCodecDefaultProvider.INSTANCE;
 			}
 		}
-		return provider.generateAccessor(key, bindings, cl);
+		BeanCodec bc= provider.generateAccessor(key, bindings, cl);
+		return bc;
 	}
 	
 

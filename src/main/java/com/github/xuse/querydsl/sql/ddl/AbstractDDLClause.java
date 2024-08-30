@@ -15,9 +15,11 @@ import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.DistributedLock;
 import com.github.xuse.querydsl.util.Entry;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
@@ -50,8 +52,17 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 		this.configuration = configuration;
 		this.table = path;
 		this.listeners = new SQLListeners(configuration.get().getListeners());
+		for(Operator op:checkSupports()) {
+			if(!configuration.supports(op)) {
+				throw Exceptions.unsupportedOperation("Current database do not support this operation. op={}", op);
+			}
+		}
 	}
 	
+	protected List<Operator> checkSupports() {
+		return Collections.emptyList();
+	};
+
 	protected SQLTemplatesEx getTemplates() {
 		return configuration.getTemplates();
 	}

@@ -17,6 +17,7 @@ import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.partitions.PartitionAssigned;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.partitions.PartitionDef;
@@ -24,6 +25,8 @@ import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Operator;
+import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
@@ -60,9 +63,22 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	 * @return this
 	 */
 	public AddPartitionQuery add(String name, String value) {
-		partitions.add(new PartitionDef(name, value));
+		partitions.add(new PartitionDef(name, "",value));
 		return this;
 	}
+	
+	/**
+	 * 增加一个分区(Range)
+	 * @param name name
+	 * @param from range from
+	 * @param to range to
+	 * @return this
+	 */
+	public AddPartitionQuery add(String name, String from, String to) {
+		partitions.add(new PartitionDef(name, from, to));
+		return this;
+	}
+	
 
 	/**
 	 *  @return 根据当前时间生成合适的分区。
@@ -130,24 +146,32 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	 */
 	protected String generateSQL(Partition p) {
 		List<PartitionInfo> info = getCurrentPartitions();
-		Reorganize reorgnize;
-		if (partitionBy instanceof RangePartitionBy) {
-			reorgnize = calcRange(p, info);
-		} else {
-			reorgnize = calcList(p, info);
+		//Prepare Reorganization
+		Reorganize reorgnize = null;
+		SQLTemplatesEx templates=configuration.getTemplates();
+		if(templates.supports(PartitionDefineOps.PARTITION_LESS_THAN)
+				&& templates.supports(AlterTablePartitionOps.REORGANIZE_PARTITION)
+				) {
+			if (partitionBy instanceof RangePartitionBy) {
+				reorgnize = calcRange(p, info);
+			} else {
+				reorgnize = calcList(p, info);
+			}
+			if (reorgnize == DUPLICATE) {
+				// A same partition (with different name already exists.)
+				return null;
+			}
 		}
-		if (reorgnize == DUPLICATE) {
-			// A same partition (with different name already exists.)
-			return null;
-		}
+		
 		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
 		serializer.setRouting(routing);
 		if (reorgnize == null) {
 			// Do not support , ALGORITHM=INPLACE, LOCK=NONE
-			serializer.serializeAction("ALTER TABLE ", table, " ADD PARTITION (", partitionBy.defineOnePartition(p, configuration), ")");
+			Expression<?> exp=DDLExpressions.simple(AlterTablePartitionOps.ADD_PARTITION, partitionBy.defineOnePartition(p, configuration),table);
+			serializer.serializeAction(null,null,Collections.singletonList(exp));
 		} else {
 			// Do not support ", ALGORITHM=INPLACE, LOCK=NONE"
-			serializer.serializeAction("ALTER TABLE ", table, reorgnize.getClause(partitionBy, configuration));
+			serializer.serializeAction(null, null, Collections.singletonList(reorgnize.getClause(partitionBy, configuration,table)));
 		}
 		return serializer.toString();
 	}
@@ -163,7 +187,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 			ss.removeAll(newList);
 			if (ss.size() < originalSize) {
 				String effectedList = StringUtils.join(ss, ',');
-				effected.put(info.getName(), new PartitionDef(info.getName(), effectedList));
+				effected.put(info.getName(), new PartitionDef(info.getName(),null, effectedList));
 				lastEffected = info;
 			}
 		}
@@ -196,7 +220,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 				sourcePartitions.add(info.getName());
 				Partition target = effected.get(info.getName());
 				if (target == null) {
-					target = new PartitionDef(info.getName(), info.getPartitionDescription());
+					target = new PartitionDef(info.getName(),null, info.getPartitionDescription());
 				}
 				targetPartitionDefine.add(target);
 			}
@@ -221,7 +245,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 		}
 		if (effected != null) {
 			String s = effected.getName();
-			Partition e = new PartitionDef(effected.getName(), effected.getPartitionDescription());
+			Partition e = new PartitionDef(effected.getName(), "", effected.getPartitionDescription());
 			return new Reorganize(Collections.singletonList(s), Arrays.asList(p, e));
 		}
 		return null;
@@ -257,18 +281,23 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 
 		List<Partition> targetPartitions;
 
-		public Expression<?> getClause(PartitionAssigned partitionBy, ConfigurationEx configuration) {
+		public Expression<?> getClause(PartitionAssigned partitionBy, ConfigurationEx configuration,RelationalPath<?> table) {
 			List<Expression<?>> defines = new ArrayList<>(targetPartitions.size());
 			for (Partition p : targetPartitions) {
 				defines.add(partitionBy.defineOnePartition(p, configuration));
 			}
 			String source = StringUtils.join(sourcePartition, ',');
-			return DDLExpressions.simple(AlterTablePartitionOps.REORGANIZE_PARTITION, DDLExpressions.text(source), DDLExpressions.wrapList(defines));
+			return DDLExpressions.simple(AlterTablePartitionOps.REORGANIZE_PARTITION, DDLExpressions.text(source), DDLExpressions.wrapList(defines),table);
 		}
 	}
 
 	@Override
 	protected String generateSQL() {
 		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	protected List<Operator> checkSupports() {
+		return Collections.singletonList(AlterTablePartitionOps.ADD_PARTITION);
 	}
 }

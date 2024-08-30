@@ -3,6 +3,11 @@ package com.github.xuse.querydsl.sql.expression;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import com.github.xuse.querydsl.util.Primitives;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 final class FieldProperty {
 	private final Method getter;
 	private final Method setter;
@@ -39,7 +44,17 @@ final class FieldProperty {
 	}
 
 	public void setBindingType(Class<?> bindingType) {
+		if(field!=null) {
+			if(isNotAssignableFrom(bindingType)) {
+				log.warn("Data type incompatible between field [{}] and expression type {}",field,bindingType);
+			}
+		}
 		this.bindingType = bindingType;
+	}
+
+	private boolean isNotAssignableFrom(Class<?> bindingType) {
+		Class<?> type=Primitives.toWrapperClass(field.getType());
+		return !type.isAssignableFrom(bindingType);
 	}
 
 	public String getName() {

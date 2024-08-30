@@ -1,16 +1,23 @@
 package com.github.xuse.querydsl.sql;
 
+import static org.junit.Assert.assertEquals;
+
 import java.sql.Types;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.Test;
 
+import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
+import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.querydsl.sql.ColumnMetadata;
 
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +87,10 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void testTableRefresh() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		metadata.refreshTable(QAaa.aaa)
+		RelationalPathExImpl<Aaa> table=QAaa.aaa.clone();
+		PathMapping pathex = (PathMapping) table.getColumnMetadata(table.getColumn("version"));
+		pathex.setComment("新的版本列注解");
+		metadata.refreshTable(table)
 			.dropColumns(true)
 			.dropConstraint(true)
 			.dropIndexes(true)
@@ -115,10 +125,13 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void testTableAlter() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+//		metadata.dropTable(QAaa.aaa).execute();
+//		metadata.createTable(QAaa.aaa).execute();
 		metadata.refreshTable(QAaa.aaa)
 			.removeConstraintOrIndex("unq_${table}_name_version")
 			.addColumn(
 					ColumnMetadata.named("new_column").ofType(Types.VARCHAR).withSize(64).notNull(), String.class).defaultValue("").build()
+			.dropColumns(true)
 			.dropConstraint(true)
 			.execute();
 	}
@@ -130,5 +143,38 @@ public class DDLTest extends AbstractTestBase {
 		metadata.refreshTable(QAaa.aaa)
 			.createIndex("idx_foo_gender", t.gender)
 			.execute();
+	}
+	
+	@Test
+	public void testFetchInfo() {
+		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+		
+		List<TableInfo> infos=metadata.getTables("test","public");
+		System.err.println(infos.size());
+		for(TableInfo t:infos) {
+			System.err.println(t);
+		}
+	}
+	
+	@Test
+	public void testGetIndex() {
+		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+		metadata.dropTable(QAaa.aaa).execute();
+		metadata.createTable(QAaa.aaa).execute();
+		
+		Collection<Constraint> list;
+		for(Constraint index: list = metadata.getIndices(QAaa.aaa.getSchemaAndTable())) {
+			System.err.println(index);
+		};
+		assertEquals(1, list.size());
+		for(Constraint index:list = metadata.getConstraints(QAaa.aaa.getSchemaAndTable())) {
+			System.out.println(index);
+		};
+		if(metadata.getDatabaseInfo().getDbType()==DbType.mysql) {
+			//目前用MySQL 5.x测试，Check在加入表后实际无效。所以只有2
+			assertEquals(2, list.size());	
+		}else {
+			assertEquals(4, list.size());
+		}
 	}
 }

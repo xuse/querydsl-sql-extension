@@ -13,10 +13,12 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Operator;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
 /**
@@ -118,15 +120,20 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 	}
 
 	protected String generateSQL(String partition) {
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
-		// ,", ALGORITHM=INPLACE, LOCK=NONE" not support
-		serializer.serializeAction("ALTER TABLE ", table, " DROP PARTITION ", partition);
-		return serializer.toString();
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		Expression<?> pName=DDLExpressions.text(partition);
+		builder.serilizeSimple(AlterTablePartitionOps.DROP_PARTITION, pName, table);
+		// ,", ALGORITHM=INPLACE, LOCK=NONE" not support on mysql
+		return builder.getSql();
 	}
 
 	@Override
 	protected String generateSQL() {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	protected List<Operator> checkSupports() {
+		return Collections.singletonList(AlterTablePartitionOps.DROP_PARTITION);
 	}
 }

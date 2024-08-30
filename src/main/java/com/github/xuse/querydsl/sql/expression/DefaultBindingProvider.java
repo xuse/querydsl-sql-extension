@@ -8,10 +8,10 @@ import java.util.Map;
 import com.querydsl.core.types.Expression;
 
 final class DefaultBindingProvider implements BindingProvider{
-	private final Map<String, Expression<?>> bindings;
+	private final Map<String, ? extends Expression<?>> bindings;
 	private final List<String> fieldNames;
 
-	public DefaultBindingProvider(Map<String, Expression<?>> map) {
+	public DefaultBindingProvider(Map<String, ? extends Expression<?>> map) {
 		this.bindings = map;
 		this.fieldNames = new ArrayList<>(bindings.keySet());
 	}

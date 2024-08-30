@@ -19,11 +19,21 @@ public class PartitionInfo {
 	private String partitionExpression;
 	private String partitionDescription;
 	private Date createTime;
+	
+	private final boolean hasRangeDesc;
+	
+	public PartitionInfo(){
+		this(false);
+	}
+	
+	public PartitionInfo(boolean hasRangeDesc){
+		this.hasRangeDesc = hasRangeDesc;
+	}
 
 	@Override
 	public String toString() {
-		String s = "";
-		if (method != null) {
+		String s = " ";
+		if (method != null && !hasRangeDesc) {
 			switch (method) {
 			case KEY:
 			case HASH:

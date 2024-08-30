@@ -1,10 +1,7 @@
 package com.github.xuse.querydsl.config;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashSet;
@@ -22,25 +19,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-import com.github.xuse.querydsl.asm.ClassReader;
-import com.github.xuse.querydsl.asm.Opcodes;
 import com.github.xuse.querydsl.init.ScanOptions;
 import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.lambda.PathCache;
-import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
-import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
 import com.github.xuse.querydsl.sql.dialect.DefaultSQLTemplatesEx;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.support.DistributedLockProvider;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
-import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.SnowflakeIdWorker;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.Configuration;
@@ -62,9 +55,10 @@ public class ConfigurationEx {
 
 	public static boolean FREE_PRIMITIVE = false;
 	
-	private final Set<RelationalPath<?>> scannedClazzs=new HashSet<>();
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);
+	
+	final Set<RelationalPath<?>> registededRelations = new HashSet<>();
 
 	/**
 	 * configuration of the original Querydsl.
@@ -287,26 +281,36 @@ public class ConfigurationEx {
 	}
 
 	/**
+	 * @deprecated use {@link #registerRelation(RelationalPathEx)}
+	 * @param table
+	 */
+	public void registerType(RelationalPathEx<?> table) {
+		registerRelation(table);
+	}
+	
+	/**
 	 * Register a table mapping instance. Identify the information in the table
 	 * definition by scanning the annotations on the object.
 	 * <p>
 	 * 注册一个表映射实例。通过扫描该对象上的注解，来识别表定义中的信息。
 	 *
 	 * @param table path
+	 * @return true if registered.
 	 */
-	public void registerType(RelationalPathEx<?> table) {
-		if(scannedClazzs.add(table)) {
+	public boolean registerRelation(RelationalPathEx<?> table) {
+		if(registededRelations.add(table)) {
 			PathCache.register(table);
 			for (Path<?> p : table.getColumns()) {
 				ColumnMapping c = table.getColumnMetadata(p);
 				Type<?> customType = c.getCustomType();
 				if (customType != null) {
 					configuration.register(table.getTableName(), c.getColumn().getName(), customType);
-					log.info("Column [{}.{}] is registered to:{}", table.getTableName(), c.getColumn().getName(),
-							customType);
+					log.info("Column [{}.{}] is registered to:{}", table.getTableName(), c.getColumn().getName(),customType);
 				}
-			}	
+			}
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -428,25 +432,11 @@ public class ConfigurationEx {
 	 * @return 扫描实体定义数量
 	 */
 	public int scanPackages(String... pkgNames) {
-		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		List<Resource> resources = new ClassScanner().scan(pkgNames);
-		int n = 0;
-		for (Resource resource : resources) {
-			if (!resource.isReadable()) {
-				continue;
-			}
-			if (resource.getFilename().startsWith("Q")) {
-				try {
-					if (loadMetaModel(resource, cl)) {
-						n++;
-					}
-				} catch (Exception e) {
-					log.error("Enhance error: {}", resource, e);
-				}
-			}
-		}
-		return n;
+		ScanContext context=new ScanContext(this);
+		context.scan(pkgNames);
+		return context.getCount();
 	}
+
 
 	public boolean isPrintSchema(RelationalPath<?> path) {
 		return withSchemas.contains(path);
@@ -492,63 +482,11 @@ public class ConfigurationEx {
 		return this.letterCase == letterCase;
 	}
 
-	private boolean loadMetaModel(Resource resource, ClassLoader cl) {
-		byte[] data;
-		try (InputStream in = resource.getInputStream()) {
-			data = IOUtils.toByteArray(in);
-		} catch (IOException e) {
-			throw Exceptions.illegalState("Load resource {} error", resource, e);
-		}
-		ClassReader reader = new ClassReader(data);
-		if ((reader.getAccess() & Opcodes.ACC_PUBLIC) == 0) {
-			// 非公有跳过
-			return false;
-		}
-		String superName = reader.getSuperName();
-		// 如果父类在，直接加载即可
-		RelationalPathEx<?> table = null;
-		if ("com/github/xuse/querydsl/sql/RelationalPathBaseEx".equals(superName)) {
-			table = (RelationalPathEx<?>)getMetaModel(reader, cl);
-		}else if("com/querydsl/sql/RelationalPathBase".equals(superName)) {
-			RelationalPath<?> path=getMetaModel(reader, cl);
-			if(path!=null) {
-				table = RelationalPathExImpl.toRelationPathEx(path);
-			}
-		}
-		if (table == null) {
-			return false;
-		}
-		log.info("Scan register entity class:{}", table.getSchemaName());
-		registerType(table);
-		TableInitTask task = new TableInitTask(table);
-		initTasks.offer(task);
-		return true;
-	}
-
-	private RelationalPath<?> getMetaModel(ClassReader res, ClassLoader cl) {
-		String name = res.getClassName().replace('/', '.');
-		Class<?> clz;
-		try {
-			clz = cl.loadClass(name);
-		} catch (ClassNotFoundException e) {
-			log.error("class {} load error.", name, e);
-			return null;
-		}
-		for (Field field : clz.getDeclaredFields()) {
-			if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {
-				try {
-					RelationalPath<?> obj = (RelationalPath<?>) field.get(null);
-					return obj;
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					log.error("register class {}", name, e);
-					throw Exceptions.toRuntime(e);
-				}
-			}
-		}
-		return null;
-	}
-
 	public boolean has(SpecialFeature feature) {
+		return getTemplates().supports(feature);
+	}
+	
+	public boolean supports(Operator feature) {
 		return getTemplates().supports(feature);
 	}
 

@@ -26,7 +26,7 @@ public class BeanCodecRecordProvider implements BeanCodecProvider{
 		List<FieldProperty> properties = initMethods(key, bindings);
 		// For Android and graalvm
 		if (JDKEnvironment.ANDROID || JDKEnvironment.GRAAL_NATIVE|| JDKEnvironment.DISABLE_ASM) {
-			return inputFields(new ReflectCodecRecord(key.targetClass, properties), properties);
+			return inputFields(new ReflectCodecRecord(key.targetClass, properties), key.targetClass,properties);
 		}
 		// Normal JDK
 		CodecClassGenerator g = new CodecClassGenerator(cl);
@@ -37,7 +37,7 @@ public class BeanCodecRecordProvider implements BeanCodecProvider{
 		} else {
 			bc = (BeanCodec) TypeUtils.newInstance(clz);
 		}
-		return inputFields(bc,properties);
+		return inputFields(bc,key.targetClass,properties);
 	}
 
 	private List<FieldProperty> initMethods(CacheKey key, BindingProvider bindings) {

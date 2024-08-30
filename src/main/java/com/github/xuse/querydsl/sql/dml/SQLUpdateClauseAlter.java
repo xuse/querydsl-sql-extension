@@ -29,6 +29,7 @@ import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
+import com.github.xuse.querydsl.sql.expression.AbstractMapperSupport;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
@@ -377,7 +378,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 			if (metadata.getGenerated() == null || this.updates.get(p) != null) {
 				continue;
 			}
-			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, Mappers.SCENARIO_UPDATE);
+			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AbstractMapperSupport.SCENARIO_UPDATE);
 			if (value instanceof Expression<?>) {
 				updates.put(p, (Expression<?>) value);
 			} else if (!metadata.isUnsavedValue(value)) {
@@ -401,7 +402,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		RelationalPathEx<?> entity = (RelationalPathEx<?>) this.entity;
 		for (Path<?> p : paths) {
 			ColumnMapping metadata = entity.getColumnMetadata(p);
-			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, Mappers.SCENARIO_UPDATE);
+			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata, AbstractMapperSupport.SCENARIO_UPDATE);
 			if (value instanceof Expression<?>) {
 				updates.put(p, (Expression<?>) value);
 			} else if (!metadata.isUnsavedValue(value)) {

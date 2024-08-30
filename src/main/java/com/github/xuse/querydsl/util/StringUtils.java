@@ -2566,6 +2566,17 @@ public class StringUtils {
 		return location==null? location:location.replace(s1, s2);
 	}
 	
+	public static String removeChars(String str, char... remove) {
+		if (isEmpty(str))
+			return str;
+		char chars[] = str.toCharArray();
+		int pos = 0;
+		for (int i = 0; i < chars.length; i++)
+			if (ArrayUtils.contains(remove, chars[i]))
+				chars[pos++] = chars[i];
+		return new String(chars, 0, pos);
+	}
+	
     public static boolean equalsIgnoreCase(final CharSequence str1, final CharSequence str2) {
         if (str1 == null || str2 == null) {
             return str1 == str2;
@@ -2588,4 +2599,17 @@ public class StringUtils {
         	return true;
         }
     }
+    
+
+	public static String removeBucket(String check) {
+		if(isEmpty(check)) {
+			return check;
+		}
+		char f=check.charAt(0);
+		char l=check.charAt(check.length()-1);
+		if(f=='(' && l==')') {
+			return check.substring(1,check.length()-1);
+		}
+		return check;
+	}
 }

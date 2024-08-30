@@ -1,15 +1,19 @@
 package com.github.xuse.querydsl.sql.ddl;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.querydsl.core.types.ConstantImpl;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Operator;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
 import lombok.extern.slf4j.Slf4j;
@@ -108,17 +112,22 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 		if (current == toSize) {
 			return null;
 		}
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
+		
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
 		if (current > toSize) {
 			// 收缩
-			serializer.serializeAction("ALTER TABLE ", table, " COALESCE PARTITION ", String.valueOf(current - toSize));
+			Expression<?> text=ConstantImpl.create(current - toSize);
+			builder.serilizeSimple(AlterTablePartitionOps.COALESCE_PARTITION, table, text);
 		} else {
 			// 扩张
-			serializer.serializeAction("ALTER TABLE ", table, " ADD PARTITION PARTITIONS ",
-					String.valueOf(toSize - current));
+			Expression<?> text=ConstantImpl.create(toSize - current);
+			builder.serilizeSimple(AlterTablePartitionOps.ADD_PARTITION_COUNT, table, text);
 		}
-		return serializer.toString();
+		return builder.getSql();
 	}
 
+	@Override
+	protected List<Operator> checkSupports() {
+		return Arrays.asList(AlterTablePartitionOps.ADD_PARTITION_COUNT, AlterTablePartitionOps.COALESCE_PARTITION);
+	}
 }

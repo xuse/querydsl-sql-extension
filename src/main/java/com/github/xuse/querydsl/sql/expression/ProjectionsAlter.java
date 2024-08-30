@@ -3,82 +3,38 @@ package com.github.xuse.querydsl.sql.expression;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
-import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.querydsl.core.group.QPair;
+import com.querydsl.core.types.ArrayConstructorExpression;
 import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
+import com.querydsl.core.types.FactoryExpressionBase;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.QList;
+import com.querydsl.sql.Beans;
 import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
-
-	private static final Map<CacheKey, QBeanEx<?>> CACHE = new ConcurrentHashMap<>();
-
-	private static final class CacheKey {
-
-		private final Class<?> clz;
-
-		private final RelationalPathEx<?> entity;
-
-		public CacheKey(Class<?> type, RelationalPathEx<?> beanPath) {
-			this.clz = type;
-			this.entity = beanPath;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((entity == null) ? 0 : entity.hashCode());
-			result = prime * result + ((clz == null) ? 0 : clz.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			CacheKey other = (CacheKey) obj;
-			if (entity == null) {
-				if (other.entity != null)
-					return false;
-			} else if (!entity.equals(other.entity)) {
-				return false;
-			}
-			if (clz == null) {
-				return other.clz == null;
-			} else {
-				return clz.equals(other.clz);
-			}
-		}
-	}
-
+	
 	@SuppressWarnings("unchecked")
-	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPathEx<?> beanPath) {
+	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPath<?> beanPath) {
 		if (type == beanPath.getType()) {
-			return (QBeanEx<T>) beanPath.getProjection();
+			 Expression<?> expr=beanPath.getProjection();
+			if(expr instanceof QBeanEx) {
+				return (QBeanEx<T>)expr;
+			}
 		}
-		CacheKey key = new CacheKey(type, beanPath);
-		QBeanEx<?> result = CACHE.get(key);
-		if (result == null) {
-			QBeanEx<T> t = new QBeanEx<T>(type, beanPath);
-			CACHE.putIfAbsent(key, t);
-			return t;
+		Map<String, Expression<?>> bindings = new LinkedHashMap<>();
+		for (Path<?> p : beanPath.getColumns()) {
+			bindings.put(p.getMetadata().getName(), p);
 		}
-		return (QBeanEx<T>) result;
+		return new QBeanEx<T>(type, bindings);
 	}
 
 	/**
 	 *  Create a Bean populating projection for the given type and expressions
-	 *
 	 *  <p>
 	 *  Example
 	 *  </p>
@@ -94,23 +50,6 @@ public class ProjectionsAlter {
 	 */
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, Expression<?>... exprs) {
 		return new QBeanEx<T>(type, exprs);
-	}
-
-	/**
-	 * create a StreamExpression to apply function on result.
-	 * @param fac fac
-	 * @param clz clz
-	 * @param function function
-	 * @return StreamExpressionWrapper
-	 * @param <T> The type of target object.
-	 * @param <K> The type of target object.
-	 */
-	public static <T, K> StreamExpressionWrapper<T, K> map(FactoryExpression<T> fac, Class<K> clz, Function<T, K> function) {
-		return new StreamExpressionWrapper<>(fac, function, clz);
-	}
-
-	public static QBeanBuilder on(Expression<?>... exprs) {
-		return new QBeanBuilder(exprs);
 	}
 
 	/**
@@ -179,7 +118,7 @@ public class ProjectionsAlter {
 		return Projections.constructor(path.getType(), exprs);
 	}
 
-	private ProjectionsAlter() {
+	protected ProjectionsAlter() {
 	}
 
 	/**
@@ -225,4 +164,46 @@ public class ProjectionsAlter {
 	public static <T> ConstructorExpression<T> constructor(Class<? extends T> type, Class<?>[] paramTypes, List<Expression<?>> exprs) {
 		return Projections.constructor(type, paramTypes, exprs);
 	}
+	
+	 /**
+     * Create a typed array projection for the given type and expressions
+     *
+     * @param <T> type of projection
+     * @param type type of the projection
+     * @param exprs arguments for the projection
+     * @return factory expression
+     */
+    @SafeVarargs
+	public static <T> ArrayConstructorExpression<T> array(Class<T[]> type, Expression<T>... exprs) {
+        return new ArrayConstructorExpression<T>(type, exprs);
+    }
+    
+	public static ArrayConstructorExpression<Object> array(Expression<?>... exprs) {
+        return new ArrayConstructorExpression<>(exprs);
+    }
+    
+    public static QStringObjMap stringMap(Expression<?>... exprs){
+    	return new QStringObjMap(exprs);
+    }
+
+    public static QList list(Expression<?>... exprs){
+    	return Projections.list(exprs);
+    }
+    
+    public static FactoryExpressionBase<Beans> beans(RelationalPath<?>... tables){
+    	return new QBeansContinuous(tables);
+    }
+    
+    public static QBeansDiscontinuous.Builder beansBuilder(){
+    	return QBeansDiscontinuous.builder();
+    }
+    
+    public static QAliasBeansDiscontinuous.Builder aliasBeansBuilder(RelationalPath<?>... tables){
+    	return QAliasBeansDiscontinuous.builder();
+    }
+    
+    
+    public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){
+    	return new QPair<>(expr1,expr2);
+    }
 }

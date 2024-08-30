@@ -103,6 +103,7 @@ final class DataTypePolicy {
 	
 	/**
 	 * Adjust the column data size on local database.
+	 * NoSize means will not compare the size between java model and database model
 	 * @return current object.
 	 */
 	public DataTypePolicy noSize() {

@@ -209,18 +209,25 @@ public class Constraint {
 			List<String> rc=rhs.getLowerColumnNames();
 			return Objects.equals(lc, rc);
 		}else if(type.isCheckClause()) {
-			Expression<?> l=getCheckClause();
-			Expression<?> r=rhs.getCheckClause();
-			if(!Objects.equals(l, r)) {
-				String s1=l.accept(ToStringVisitor2.DEFAULT, Templates.DEFAULT);
-				String s2=r.accept(ToStringVisitor2.DEFAULT, Templates.DEFAULT);
-				return Objects.equals(s1,s2);	
-			}
-			return true;
+			return compareChecks(rhs);
 		}
 		return false;
 	}
 	
+
+	private boolean compareChecks(Constraint rhs) {
+		Expression<?> l=getCheckClause();
+		Expression<?> r=rhs.getCheckClause();
+		if(Objects.equals(l, r)) {
+			return true;
+		}
+		//对于手动编写的表达式，没有太好的比较方法。用词法分析器固然可以，但违背了编写初衷，后续再改进。
+		String s1 = l.accept(ToStringVisitor2.DEFAULT, Templates.DEFAULT);
+		String s2 = r.accept(ToStringVisitor2.DEFAULT, Templates.DEFAULT);
+		s1=StringUtils.removeChars(s1, ' ');
+		s2=StringUtils.removeChars(s2, ' ');
+		return s1.equalsIgnoreCase(s2);
+	}
 
 	@Override
 	public boolean equals(Object obj) {

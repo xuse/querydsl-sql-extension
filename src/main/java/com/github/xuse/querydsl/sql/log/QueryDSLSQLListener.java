@@ -112,8 +112,13 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			this.maxBatchOutput = maxBatchOutput;
 		}
 
-		protected String formatSQL(String sql) {
-			return sql.replace('\n', ' ');
+		protected StringBuilder formatSQL(String sql) {
+			if(sql.length()>2048) {
+				//Print up to 2K size SQL, considering the balance between I/O performance and usage.
+				StringBuilder sb=new StringBuilder(2560);
+				return sb.append(sql, 0, 2048).append("...");
+			}
+			return new StringBuilder(sql);
 		}
 
 		String format(Collection<SQLBindings> bs) {
@@ -122,7 +127,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			}
 			Iterator<SQLBindings> iter = bs.iterator();
 			SQLBindings binding = iter.next();
-			StringBuilder sb = new StringBuilder(formatSQL(binding.getSQL()));
+			StringBuilder sb = formatSQL(binding.getSQL());
 			List<Path<?>> constantPaths = ALL_NULL_LIST;
 			if (binding instanceof SQLBindingsAlter) {
 				constantPaths = ((SQLBindingsAlter) binding).getPaths();
@@ -138,8 +143,8 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 				binding = iter.next();
 				sb.append("\nBatch Params: (").append(++row).append('/').append(total).append(")");
 				appendParams(sb, binding.getNullFriendlyBindings(), constantPaths);
-				if (row > maxBatchOutput) {
-					sb.append("Parameters after are ignored to reduce the size of log.");
+				if (row >= maxBatchOutput) {
+					sb.append(" ... Parameters after are ignored to reduce the size of log.");
 					break;
 				}
 			}
@@ -147,7 +152,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		}
 
 		private void appendParams(StringBuilder sb, List<Object> params, List<Path<?>> constantPaths) {
-			int size = params.size();
+			int size = Math.min(params.size(),100);
 			if (size > 0) {
 				paramsBegin(sb);
 				for (int count = 0; count < size; count++) {
@@ -156,13 +161,16 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 					}
 					Path<?> p = constantPaths.get(count);
 					Object value = params.get(count);
-					append0(sb, p, value, count);
+					append0(sb, p, value == null ? Null.DEFAULT : value, count);
 				}
-				paramsEnd(sb);
+				paramsEnd(sb, params.size() - size);
 			}
 		}
 
-		protected void paramsEnd(StringBuilder sb) {
+		protected void paramsEnd(StringBuilder sb, int extraParams) {
+			if(extraParams>0) {
+				sb.append("...(").append(extraParams).append(" params skipped");
+			}
 			sb.append(']');
 		}
 
@@ -220,7 +228,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			sb.append('\n');
 		}
 
-		protected void paramsEnd(StringBuilder sb) {
+		protected void paramsEnd(StringBuilder sb, int extra) {
 		}
 	}
 

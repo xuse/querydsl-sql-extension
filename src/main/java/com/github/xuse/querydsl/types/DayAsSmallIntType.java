@@ -7,8 +7,6 @@ import java.sql.Types;
 import java.util.Date;
 import java.util.TimeZone;
 
-import org.jetbrains.annotations.Nullable;
-
 import com.querydsl.sql.types.AbstractType;
 
 public class DayAsSmallIntType extends AbstractType<Date>{
@@ -28,7 +26,7 @@ public class DayAsSmallIntType extends AbstractType<Date>{
 	}
 
 	@Override
-	public @Nullable Date getValue(ResultSet rs, int startIndex) throws SQLException {
+	public Date getValue(ResultSet rs, int startIndex) throws SQLException {
 		int i=rs.getInt(startIndex);
 		return rs.wasNull()?null:toDate(i);
 	}

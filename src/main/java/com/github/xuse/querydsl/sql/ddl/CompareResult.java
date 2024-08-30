@@ -26,10 +26,17 @@ public class CompareResult {
 	private Collection<ColumnMapping> addColumns = Collections.emptyList();
 	
 	/**
-	 * 表备注修改
+	 * 表备注等修改
 	 */
 	private Map<Operator,String> otherChange = new HashMap<>();
 
+
+	public CompareResult ofOthers() {
+		CompareResult cr = new CompareResult();
+		cr.setOtherChange(otherChange);
+		return cr;
+	}
+	
 	public CompareResult ofAddSingleColumn(ColumnMapping c) {
 		CompareResult cr = new CompareResult();
 		cr.setAddColumns(Collections.singletonList(c));
@@ -68,8 +75,12 @@ public class CompareResult {
 		this.addConstraints.addAll(toCreate);
 	}
 
+	public void addOtherChange(Operator operator, String change) {
+		this.otherChange.put(operator, change);
+		
+	}
 	public void setTableCommentChange(String changeTo) {
-		this.otherChange.put(DDLOps.COMMENT, changeTo);
+		this.otherChange.put(DDLOps.COMMENT_ON_TABLE, changeTo);
 	}
 	
 	public void setTableCollation(String changeTo) {

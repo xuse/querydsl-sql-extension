@@ -1,10 +1,14 @@
 package com.github.xuse.querydsl.sql.ddl;
 
+import java.util.Collections;
+import java.util.List;
+
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
+import com.querydsl.core.types.Operator;
 import com.querydsl.sql.RelationalPath;
-import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.SchemaAndTable;
 
 public class RemovePartitioningQuery extends AbstractDDLClause<RemovePartitioningQuery> {
@@ -39,11 +43,17 @@ public class RemovePartitioningQuery extends AbstractDDLClause<RemovePartitionin
 				return null;
 			}
 		}
-		
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
-		//", ALGORITHM=INPLACE, LOCK=NONE" not support
-		serializer.serializeAction("ALTER TABLE ", table, " REMOVE PARTITIONING");
-		return serializer.toString();
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		//", ALGORITHM=INPLACE, LOCK=NONE" not support on mysql
+		builder.serilizeSimple(AlterTablePartitionOps.REMOVE_PARTITIONING, table);
+		return builder.getSql();
+	}
+
+	@Override
+	protected List<Operator> checkSupports() {
+		return Collections.singletonList(AlterTablePartitionOps.REMOVE_PARTITIONING);
 	}
 }
+
+
+

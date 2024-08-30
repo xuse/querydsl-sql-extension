@@ -19,8 +19,10 @@ import com.github.xuse.querydsl.entity.partition.QPartitionFoo3;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo4;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.partitions.Partitions;
 import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
 import com.github.xuse.querydsl.util.DateFormats;
@@ -30,7 +32,8 @@ import com.querydsl.sql.SchemaAndTable;
 public class TestPartitions extends AbstractTestBase{
 	@Test
 	public void testAdjustPartitionsCount() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionMethod.HASH));
 		
 		QPartitionFoo4 t4 = QPartitionFoo4.partitionFoo4;
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
@@ -63,7 +66,7 @@ public class TestPartitions extends AbstractTestBase{
 	@Test
 	@Ignore
 	public void createTables() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 //		metadata.createTable(QPartitionFoo1.partitionFoo1).reCreate().execute();
 //		metadata.createTable(QPartitionFoo2.partitionFoo2).reCreate().execute();
@@ -77,25 +80,33 @@ public class TestPartitions extends AbstractTestBase{
 
 	@Test
 	public void testPartitionsAddSimple() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1=QPartitionFoo1.partitionFoo1;
 		metadata.dropTable(t1).execute();
-		metadata.createTable(t1).partitions(false).execute();
-		metadata.createPartitioning(t1).partitionBy(
-				Partitions.byRangeColumns(t1.created)
-				.add("p202401", "'2024-02-01'")
-				.add("p202402", "'2024-03-01'")
-				.build()).execute();
-		metadata.addPartition(t1)
-			.add("p202403", "'2024-04-01'").execute();
 		
-		assertEquals(3,metadata.getPartitions(t1.getSchemaAndTable()).size());
+		boolean supports=factory.getConfigurationEx().supports(AlterTablePartitionOps.ADD_PARTITIONING);
+		if(supports) {
+			metadata.createTable(t1).partitions(false).execute();
+			metadata.createPartitioning(t1).partitionBy(
+					Partitions.byRangeColumns(t1.created)
+					.add("p202401", "'2024-02-01'")
+					.add("p202402", "'2024-03-01'")
+					.build()).execute();
+			metadata.addPartition(t1)
+			.add("p202403","'2024-03-01'", "'2024-04-01'").execute();
+			assertEquals(3,metadata.getPartitions(t1.getSchemaAndTable()).size());
+		}else {
+			metadata.createTable(t1).partitions(true).execute();
+			metadata.addPartition(t1)
+			.add("p202403","'2024-03-01'", "'2024-04-01'").execute();
+			assertEquals(8,metadata.getPartitions(t1.getSchemaAndTable()).size());
+		}
 	}
 	
 	@Test
 	public void testPartitionsAddSimple2() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1b t1=QPartitionFoo1b.partitionFoo1b;
 		metadata.dropTable(t1).execute();
@@ -110,7 +121,8 @@ public class TestPartitions extends AbstractTestBase{
 	 */
 	@Test
 	public void testPartitionsReorganiztion() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
+		Assume.assumeTrue("Only for Database supports Partition REORGANIZE_PARTITION",factory.getConfigurationEx().supports(AlterTablePartitionOps.REORGANIZE_PARTITION));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1=QPartitionFoo1.partitionFoo1;
 		metadata.dropTable(t1).execute();
@@ -145,34 +157,37 @@ public class TestPartitions extends AbstractTestBase{
 	
 	@Test
 	public void terPartitionsReorganiztionList() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo3 t1 = QPartitionFoo3.partitionFoo3;
 		metadata.dropTable(t1).execute();
 		metadata.createTable(t1).execute();
 		
-		
 		List<PartitionInfo> list = metadata.getPartitions(t1.getSchemaAndTable());
-		 
 		System.out.println(list.size());
 		for(PartitionInfo p:list) {
 			System.out.println(p);
 		}
-		
 		assertEquals(4, list.size());
 		
-		metadata.addPartition(t1)
+		boolean supportsReorganize = factory.getConfigurationEx().supports(AlterTablePartitionOps.REORGANIZE_PARTITION);
+		if(supportsReorganize) {
+			//对于支持分区重组织的DB (MySQL)，给一个涉及分区重组的测试数据。
+			metadata.addPartition(t1)
 			.add("p5", "'3','4','g'")
+			.execute();	
+		}else {
+			//对于不支持分区重组织的DB，给一个简单测试数据。
+			metadata.addPartition(t1)
+			.add("p5", "'g','h','i'")
 			.execute();
-	
+		}
 		metadata.getPartitions(t1.getSchemaAndTable());
-		 
 		list = metadata.getPartitions(t1.getSchemaAndTable());
 		System.out.println(list.size());
 		for(PartitionInfo p:list) {
 			System.out.println(p);
 		}
-		
 		assertEquals(5, list.size());
 	}
 	
@@ -182,7 +197,9 @@ public class TestPartitions extends AbstractTestBase{
 	 */
 	@Test
 	public void testRemoveAndRebuild() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(AlterTablePartitionOps.REMOVE_PARTITIONING));
+		
 		QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		
@@ -214,7 +231,9 @@ public class TestPartitions extends AbstractTestBase{
 	 */
 	@Test
 	public void testAlterTableAddPrimaryKeyColumn() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(AlterTablePartitionOps.REMOVE_PARTITIONING));
+		
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
 		
@@ -241,9 +260,9 @@ public class TestPartitions extends AbstractTestBase{
 	
 	@Test
 	public void testFetchPartitions() {
-		Assume.assumeTrue("Only for MYSQL",factory.getConfigurationEx().has(SpecialFeature.PARTITION_SUPPORT));
+		Assume.assumeTrue("Only for Database supports Partition",factory.getConfigurationEx().supports(PartitionDefineOps.PARTITION_BY));
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
-		List<PartitionInfo> partitions=metadata.getPartitions(new SchemaAndTable("alarm_request", "alarm_ext_attribute_detect_result_backup"));
+		List<PartitionInfo> partitions=metadata.getPartitions(new SchemaAndTable(null, "s3"));
 		for(PartitionInfo p:partitions) {
 			System.out.println(p);
 		}

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.github.xuse.querydsl.annotation.partition.AutoTimePartitions;
 import com.github.xuse.querydsl.annotation.partition.ColumnFormat;
 import com.github.xuse.querydsl.annotation.partition.HashType;
@@ -12,6 +13,7 @@ import com.github.xuse.querydsl.annotation.partition.Period;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.Assert;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
@@ -132,7 +134,7 @@ public class Partitions {
 		/**
 		 *  分区信息
 		 */
-		Map<String, String> partitions = new LinkedHashMap<>();
+		Map<String, Pair<String,String>> partitions = new LinkedHashMap<>();
 
 		private Period autoPartitionPeriod;
 
@@ -157,7 +159,19 @@ public class Partitions {
 		 *  @return PartitionBuilder
 		 */
 		public PartitionBuilder add(String name, String expression) {
-			partitions.put(name, expression);
+			partitions.put(name,new Pair<>(null,expression));
+			return this;
+		}
+		
+		/**
+		 *  添加一个分区定义
+		 *  @param name 名称
+		 *  @param from 分区范围（开始），在MySQL上这个边界会被忽略。
+		 *  @param to 分区范围（结束）
+		 *  @return PartitionBuilder
+		 */
+		public PartitionBuilder add(String name, String from, String to) {
+			partitions.put(name,new Pair<>(from,to));
 			return this;
 		}
 
@@ -204,8 +218,9 @@ public class Partitions {
 
 		public PartitionBy build() {
 			List<PartitionDef> partitions = new ArrayList<>();
-			for (Map.Entry<String, String> entry : this.partitions.entrySet()) {
-				partitions.add(new PartitionDef(entry.getKey(), entry.getValue()));
+			for (Map.Entry<String, Pair<String,String>> entry : this.partitions.entrySet()) {
+				Pair<String,String> fromTo=entry.getValue();
+				partitions.add(new PartitionDef(entry.getKey(),fromTo.getFirst(),fromTo.getSecond()));
 			}
 			Partition[] pArray = partitions.toArray(new Partition[partitions.size()]);
 			switch(method) {
