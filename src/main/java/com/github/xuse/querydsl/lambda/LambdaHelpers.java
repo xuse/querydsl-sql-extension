@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.lambda;
 
+import com.github.xuse.querydsl.sql.RelationalPathEx;
+
 /**
  * 用于帮助编码者获得字段引用对象。
  * <p>
@@ -134,6 +136,14 @@ public interface LambdaHelpers {
 		return path;
 	}
 	
-	
+	/**
+	 * @param <B> java type of the table.
+	 * @param table lambdaTable
+	 * @param variable table alias(variable)
+	 * @return 获得一个指定了别名的表模型对象
+	 */
+	default <B> RelationalPathEx<B> forVariable(LambdaTable<B> table, String variable){
+		return PathCache.getPath(table, variable);	
+	}
 	
 }

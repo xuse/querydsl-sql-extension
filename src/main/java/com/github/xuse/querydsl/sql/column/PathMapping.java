@@ -66,6 +66,13 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 	 *  自定义类型
 	 */
 	private Type<?> customType;
+	
+	private PathMapping(Path<?> path, AccessibleElement field, ColumnMetadata column,Type<?> customType) {
+		super(column);
+		this.path=path;
+		this.field=field;
+		this.customType=customType;
+	}
 
 	public PathMapping(Path<?> path, Field field, ColumnMetadata column) {
 		this(path, AccessibleElement.ofField(field), column);
@@ -182,5 +189,18 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 	@Override
 	public String toString() {
 		return path + "(" + this.getColumn().getName() + ")";
+	}
+	
+	public PathMapping copyForPath(Path<?> newPath) {
+		PathMapping p = new PathMapping(newPath, field, super.getColumn(), customType);
+		p.unsavedValue = this.unsavedValue;
+		p.unsigned = this.unsigned;
+		p.defaultExpression = this.defaultExpression;
+		p.features = this.features;
+		p.comment = this.comment;
+		p.notInsert = this.notInsert;
+		p.notUpdate = this.notUpdate;
+		p.generated = this.generated;
+		return p;
 	}
 }

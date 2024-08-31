@@ -210,7 +210,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 	public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
 		return new SQLDeleteClauseAlter(connection, configEx, path);
 	}
-
+	
 	@Override
 	public final SQLInsertClauseAlter insert(RelationalPath<?> path) {
 		return new SQLInsertClauseAlter(connection, configEx, path);
@@ -224,6 +224,27 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 	@Override
 	public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
 		return new SQLUpdateClauseAlter(connection, configEx, path);
+	}
+	
+	//Support for Lambda tables.
+	public final <T> SQLDeleteClauseAlter delete(LambdaTable<T> path) {
+		return new SQLDeleteClauseAlter(connection, configEx, path);
+	}
+	
+	public final <T> SQLInsertClauseAlter insert(LambdaTable<T> path) {
+		return new SQLInsertClauseAlter(connection, configEx, path);
+	}
+
+	public final <T> SQLUpdateClauseAlter update(LambdaTable<T> path) {
+		return new SQLUpdateClauseAlter(connection, configEx, path);
+	}
+
+	public final <T> SQLMergeClauseAlter merge(LambdaTable<T> path) {
+		return new SQLMergeClauseAlter(connection, configEx, path);
+	}
+	
+	public <T> SQLQueryAlter<T> selectFrom(LambdaTable<T> expr) {
+		return select(expr).from(expr);
 	}
 
 	public boolean isInSpringTransaction() {
@@ -291,12 +312,8 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 	}
 	
 	public <T, ID> CRUDRepository<T, ID> asRepository(LambdaTable<T> clz){
-		return asRepository(PathCache.get(clz.get()));
+		return asRepository(PathCache.get(clz.get(), null));
 	}
-	
-//	public <T, ID> CRUDRepository<T, ID> asRepository(Class<T> clz){
-//		return asRepository(PathCache.get(clz));
-//	}
 	
 	public <T, ID> CRUDRepository<T, ID> asRepository(RelationalPath<T> path,Class<ID> primaryKeyType){
 		return asRepository(path);

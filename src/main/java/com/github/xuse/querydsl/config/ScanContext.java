@@ -77,7 +77,7 @@ public class ScanContext {
 			try {
 				clz = cl.loadClass(name);
 				log.info("Scan Entity Class:{}", name);
-				RelationalPathEx<?> table = PathCache.get(clz);
+				RelationalPathEx<?> table = PathCache.get(clz, null);
 				scanned(table);
 			} catch (ClassNotFoundException e) {
 				log.error("class {} load error.", name, e);

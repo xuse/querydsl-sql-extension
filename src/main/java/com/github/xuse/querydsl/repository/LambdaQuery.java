@@ -11,7 +11,7 @@ public class LambdaQuery<T,R> extends QueryWrapper<T,R,LambdaQuery<T,R>>{
 	}
 	
 	public LambdaQuery(Class<T> clz) {
-		super(PathCache.get(clz),new DefaultQueryMetadata());
+		super(PathCache.get(clz, null),new DefaultQueryMetadata());
 	}
 
 	protected LambdaQuery(RelationalPath<T> table, DefaultQueryMetadata mixin) {

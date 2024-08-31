@@ -8,7 +8,10 @@ import java.util.Collection;
 import java.util.List;
 
 import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
+import com.github.xuse.querydsl.lambda.LambdaColumn;
+import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.PathCache;
+import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.sql.column.AccessibleElement;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.PathMapping;
@@ -19,10 +22,13 @@ import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.PathMetadataFactory;
+import com.querydsl.core.types.dsl.ComparableExpression;
+import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.sql.Column;
 import com.querydsl.sql.ColumnMetadata;
@@ -32,7 +38,7 @@ import com.querydsl.sql.RelationalPath;
 /**
  * @param <T> the type of entity
  */
-public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
+public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements TablePath<T> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -45,21 +51,24 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 	}
 
 	/**
-	 *  Create a normal constraint or index.
-	 *  @param name constraint name, can be null
-	 *  @param type The type of index/constraint
-	 *  @param columns columns that in the constraint/index
-	 *  @return Constraint
+	 * Create a normal constraint or index.
+	 * 
+	 * @param name    constraint name, can be null
+	 * @param type    The type of index/constraint
+	 * @param columns columns that in the constraint/index
+	 * @return Constraint
 	 */
 	public Constraint createConstraint(String name, ConstraintType type, Path<?>... columns) {
 		return super.createConstraint(name, type, columns);
 	}
 
 	/**
-	 *  Create an index, typically a B-Tree index. to create more types, use {@link #createConstraint(String, ConstraintType, Path...)}
-	 *  @param name name of index.
-	 *  @param columns columns in the index.
-	 *  @return Constraint
+	 * Create an index, typically a B-Tree index. to create more types, use
+	 * {@link #createConstraint(String, ConstraintType, Path...)}
+	 * 
+	 * @param name    name of index.
+	 * @param columns columns in the index.
+	 * @return Constraint
 	 */
 	public Constraint createIndex(String name, Path<?>... columns) {
 		return super.createConstraint(name, ConstraintType.KEY, columns);
@@ -98,13 +107,16 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 
 	static class DynamicField implements AccessibleElement {
 		private final Path<?> path;
+
 		DynamicField(Path<?> path) {
 			this.path = path;
 		}
+
 		@Override
 		public <T extends Annotation> T getAnnotation(Class<T> clz) {
 			return null;
 		}
+
 		@Override
 		public Class<?> getType() {
 			return path.getType();
@@ -138,40 +150,43 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 	 * 内部使用，用于对齐原生querydsl的表模型和扩展后的表模型。
 	 */
 	public static <T> RelationalPathEx<T> toRelationPathEx(RelationalPath<T> path) {
-		if(path instanceof RelationalPathEx) {
-			return (RelationalPathEx<T>)path;
-		}
-		return generateForOriginal(path);
-	}
-	
-	public static <T> RelationalPathExImpl<T> valueOf(RelationalPath<T> path) {
-		if(path instanceof RelationalPathExImpl) {
-			return (RelationalPathExImpl<T>)path;
-		}
-		if(path instanceof RelationalPathBaseEx) {
-			return ((RelationalPathBaseEx<T>)path).clone();
+		if (path instanceof RelationalPathEx) {
+			return (RelationalPathEx<T>) path;
 		}
 		return generateForOriginal(path);
 	}
 
-	public static <T> RelationalPathExImpl<T> valueOf(Class<T> beanType) {
-		PathMetadata pm=PathMetadataFactory.forVariable(beanType.getSimpleName().toLowerCase());
+	public static <T> RelationalPathExImpl<T> valueOf(RelationalPath<T> path) {
+		if (path instanceof RelationalPathExImpl) {
+			return (RelationalPathExImpl<T>) path;
+		}
+		if (path instanceof RelationalPathBaseEx) {
+			return ((RelationalPathBaseEx<T>) path).clone();
+		}
+		return generateForOriginal(path);
+	}
+
+	public static <T> RelationalPathExImpl<T> valueOf(Class<T> beanType, String variable) {
+		if (variable == null || variable.isEmpty()) {
+			variable = beanType.getSimpleName().toLowerCase();
+		}
+		PathMetadata pm = PathMetadataFactory.forVariable(variable);
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
-		t.scanClassMetadata(()->{
+		t.scanClassMetadata(() -> {
 			List<Path<?>> paths = new ArrayList<>();
-			for(Field field:TypeUtils.getFields(beanType)) {
-				if(Modifier.isStatic(field.getModifiers())) {
+			for (Field field : TypeUtils.getFields(beanType)) {
+				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}
-				Column column=field.getAnnotation(Column.class);
-				ColumnSpec anno=field.getAnnotation(ColumnSpec.class);
-				if(column == null && anno==null) {
+				Column column = field.getAnnotation(Column.class);
+				ColumnSpec anno = field.getAnnotation(ColumnSpec.class);
+				if (column == null && anno == null) {
 					continue;
 				}
-				Path<?> path=TypeUtils.createPathByType(field.getType(),field.getName(),t);
+				Path<?> path = TypeUtils.createPathByType(field.getType(), field.getName(), t);
 				paths.add(path);
 			}
-			if(paths.isEmpty()) {
+			if (paths.isEmpty()) {
 				throw Exceptions.illegalArgument("Invalid entity bean {}, please add @ColumnSpec annotation to the fields in this class.", beanType.getName());
 			}
 			return paths;
@@ -180,11 +195,11 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 	}
 
 	private static <T> RelationalPathExImpl<T> generateForOriginal(RelationalPath<T> path) {
-		//Use table cache to accelerate.
-		return PathCache.compute(path.getType(), () -> {
+		// Use table cache to accelerate.
+		String variable = path.getMetadata().getName();
+		RelationalPathEx<T> relation = PathCache.compute(path.getType(), variable, () -> {
 			Class<? extends T> beanType = path.getType();
-			RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, path.getMetadata(), path.getSchemaName(),
-					path.getTableName());
+			RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, path.getMetadata(), path.getSchemaName(), path.getTableName());
 			t.primaryKey = path.getPrimaryKey();
 			for (Path<?> p : path.getColumns()) {
 				ColumnMetadata meta = path.getMetadata(p);
@@ -196,5 +211,59 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> {
 			t.initByClassAnnotation(beanType, null);
 			return t;
 		});
-	}	
+		if (relation instanceof RelationalPathExImpl) {
+			return (RelationalPathExImpl<T>) relation;
+		}
+		return ((RelationalPathBaseEx<T>) path).clone();
+	}
+
+	@Override
+	public StringPath get(StringLambdaColumn<T> column) {
+		Pair<Class<?>, String> pair = PathCache.analysis(column);
+		if (pair.getFirst() == this.getType()) {
+			// 应当相同
+			Path<?> p = this.getColumn(pair.getSecond());
+			return (StringPath) p;
+		} else {
+			throw Exceptions.illegalArgument("Lambda value is {}, this type is{}", pair, getType());
+		}
+	}
+	
+	public StringPath getString(String pathName) {
+		Path<?> p = this.getColumn(pathName);
+		return (StringPath) p;
+	}
+	
+	public NumberPath<?> getNumber(String pathName){
+		Path<?> p = this.getColumn(pathName);
+		return (NumberPath<?>) p;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <C extends Number & Comparable<C>> NumberPath<C> get(NumberLambdaColumn<T, C> column) {
+		Pair<Class<?>, String> pair = PathCache.analysis(column);
+		if (pair.getFirst() == this.getType()) {
+			// 应当相同
+			Path<?> p = this.getColumn(pair.getSecond());
+			return (NumberPath<C>) p;
+		} else {
+			throw Exceptions.illegalArgument("Lambda value is {}, this type is{}", pair, getType());
+		}
+	}
+	
+	
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <C extends Comparable<C>> ComparableExpression<C> get(LambdaColumn<T, C> column) {
+		Pair<Class<?>, String> pair = PathCache.analysis(column);
+		if (pair.getFirst() == this.getType()) {
+			// 应当相同
+			Path<?> p = this.getColumn(pair.getSecond());
+			return (ComparableExpression<C>) p;
+		} else {
+			throw Exceptions.illegalArgument("Lambda value is {}, this type is{}", pair, getType());
+		}
+	}
 }

@@ -39,6 +39,7 @@ import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Operator;
@@ -658,5 +659,44 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		t.inverseForeignKeys.addAll(this.inverseForeignKeys);
 		t.initializeData=this.initializeData;
 		return (RelationalPathExImpl<T>) t;
+	}
+	
+	public RelationalPathExImpl<T> copyTo(String variable) {
+		RelationalPathBaseEx<T> t = new RelationalPathExImpl<T>(this.getType(),PathMetadataFactory.forVariable(variable) , schema, table);
+		t.collate = this.collate;
+		t.comment = this.comment;
+		t.partitionBy = this.partitionBy;
+		
+		Map<Path<?>,Path<?>> pathMapping=new HashMap<>();
+		Path<?>[] columns=all();
+		Path<?>[] newColumns=new Path<?>[columns.length];
+		t.columns = newColumns;
+		for (int i = 0; i < columns.length; i++) {
+			// 重建Path
+			Path<?> p = columns[i];
+			String name=p.getMetadata().getName();
+			Path<?> newPath = TypeUtils.createPathByType(p.getType(), name, t);
+			newColumns[i] = newPath;
+			pathMapping.put(p, newPath);
+			t.bindingsMap.put(name, newPath);
+			t.columnMetadata.put(newPath, ((PathMapping) this.columnMetadata.get(p)).copyForPath(newPath));
+			
+		}
+		t.primaryKey = t.createPrimaryKey(replace(pathMapping,primaryKey.getLocalColumns()).toArray(new Path<?>[0]));
+		//约束是在DDL中用的，用旧的Path没有问题，不重建了
+		t.constraints.addAll(this.constraints);
+		t.foreignKeys.addAll(this.foreignKeys);
+		t.inverseForeignKeys.addAll(this.inverseForeignKeys);
+		t.initializeData=this.initializeData;
+		return (RelationalPathExImpl<T>) t;
+	}
+
+	private List<Path<?>> replace(Map<Path<?>, Path<?>> pathMapping, List<? extends Path<?>> localColumns) {
+		List<Path<?>> newPaths = new ArrayList<>(localColumns.size());
+		for (Path<?> p : localColumns) {
+			Path<?> newPath = pathMapping.get(p);
+			newPaths.add(newPath);
+		}
+		return newPaths;
 	}
 }

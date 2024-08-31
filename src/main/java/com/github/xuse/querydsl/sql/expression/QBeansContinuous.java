@@ -52,7 +52,7 @@ public class QBeansContinuous extends FactoryExpressionBase<Beans> {
         super(Beans.class);
         try {
             final List<Expression<?>> listBuilder = new ArrayList<>();
-            final Map<RelationalPath<?>, QBeanEx<?>> mapBuilder = new HashMap<>();
+            final Map<RelationalPath<?>, QBeanEx<?>> mapBuilder = new LinkedHashMap<>();
             for (RelationalPath<?> path : beanPaths) {
                 Map<String, Expression<?>> bindings = new LinkedHashMap<String, Expression<?>>();
                 for (Path<?> column : path.getColumns()) {

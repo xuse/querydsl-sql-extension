@@ -77,7 +77,7 @@ public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T,
 		try {
 			clz = entity.getClassLoader().loadClass(qClassName);
 		} catch (ClassNotFoundException e) {
-			return PathCache.get(entity);
+			return PathCache.get(entity, null);
 		}
 		for (Field field : clz.getDeclaredFields()) {
 			if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {

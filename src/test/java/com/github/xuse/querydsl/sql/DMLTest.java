@@ -54,6 +54,7 @@ import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.sql.Beans;
 import com.querydsl.sql.Column;
 import com.querydsl.sql.SQLExpressions;
 
@@ -679,6 +680,50 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			List<Aaa> aaas = factory.select(Selects.bean(Aaa.class, $(Foo::getName), $(Foo::getId),
 					$(Foo::getVolume).as("version"), $(Foo::getCreated))).from(foo).fetch();
 			System.out.println(aaas);
+		}
+	}
+	
+	/**
+	 * 在没有Query class情况下的自表关联查询 
+	 */
+	@Test
+	public void testTableSelfJoin() {
+		factory.getMetadataFactory().truncate(()->Foo.class).execute();
+		{
+			//准备数据
+			Foo foo = new Foo();
+			foo.setName("张三");
+			foo.setCode("Zhangsan");
+			foo.setCreated(Instant.now());
+			Integer id=factory.insert(()->Foo.class).populate(foo).executeWithKey(Integer.class);	
+			
+			Foo foo2 = new Foo();
+			foo2.setName("张三的儿子");
+			foo2.setCode("Lisi");
+			foo2.setCreated(Instant.now());
+			//这个字段当作ParentId使用
+			foo2.setVolume(id);
+			factory.insert(()->Foo.class).populate(foo2).executeWithKey(Integer.class);	
+		}
+		
+		//自表关联查询
+		RelationalPathExImpl<Foo> t1 = ((LambdaTable<Foo>)() -> Foo.class).forVariable("t1");
+		RelationalPathExImpl<Foo> parent = t1.forVariable("parent");
+		
+		List<Beans> list = factory.select(Selects.beans(t1,parent)).from(t1)
+			.innerJoin(parent)
+			.on(parent.get(Foo::getId).eq(t1.get(Foo::getVolume)))
+			.where(parent.get(Foo::getName).eq("张三")).fetch();
+		
+		assertEquals(1, list.size());
+		for(Beans beans:list) {
+			Foo childFoo=beans.get(t1);
+			Foo parentFoo=beans.get(parent);
+			System.out.println(childFoo);
+			System.out.println(parentFoo);
+			assertEquals("张三的儿子", childFoo.getName());
+			assertEquals("张三", parentFoo.getName());
+
 		}
 	}
 

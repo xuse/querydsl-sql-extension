@@ -2,10 +2,12 @@ package com.github.xuse.querydsl.lambda;
 
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -21,9 +23,63 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("rawtypes")
 @Slf4j
 public class PathCache {
-	private static final Map<Class<?>, RelationalPathEx<?>> TABLE_CACHE = new ConcurrentHashMap<>();
+	private static final Map<Class<?>, TablePathHolder> TABLE_CACHE = new ConcurrentHashMap<>();
 	private static final Map<LambdaColumnBase, Path<?>> COLUMN_CACHE = new ConcurrentHashMap<>();
 	
+	static class TablePathHolder{
+		@SuppressWarnings("unused")
+		private final Class<?> beanType;
+		private final RelationalPathEx<?> defaultPath;
+		private final String defaultPathVariable;
+		private final Map<String,RelationalPathEx<?>> data=new HashMap<>();
+
+		TablePathHolder(Class<?> beanType) {
+			this.beanType = beanType;
+			log.info("Generate dynamic table path for {}", beanType);
+			this.defaultPath = RelationalPathExImpl.valueOf(beanType, null);
+			this.defaultPathVariable = defaultPath.getMetadata().getName();
+		}
+		
+		TablePathHolder(Class<?> beanType, RelationalPathEx<?> path) {
+			this.beanType = beanType;
+			this.defaultPath = path;
+			this.defaultPathVariable = defaultPath.getMetadata().getName();
+		}
+
+		public RelationalPathEx<?> get(String variable) {
+			if(variable==null || variable.isEmpty() || defaultPathVariable.equals(variable)) {
+				return defaultPath;
+			}
+			return data.computeIfAbsent(variable, this::generate);
+		}
+
+		private RelationalPathEx<?> generate(String variable) {
+			return ((RelationalPathBaseEx) defaultPath).copyTo(variable);
+		}
+
+		/**
+		 * @param tablePath tablePath
+		 * @return true表示新增成功，false表示已有
+		 */
+		public boolean add(RelationalPathEx<?> tablePath) {
+			String variable = tablePath.getMetadata().getName();
+			if(defaultPathVariable.equals(variable)) {
+				return false;
+			}
+			return data.put(variable, tablePath) == null;
+		}
+
+		@SuppressWarnings("unchecked")
+		public <T> RelationalPathEx<T> computeIfAbsent(String variable, Supplier<RelationalPathExImpl<T>> supplier) {
+			RelationalPathEx<?> result;
+			if (variable == null || variable.isEmpty() || defaultPathVariable.equals(variable)) {
+				result = defaultPath;
+			} else {
+				result = data.computeIfAbsent(variable, e -> supplier.get());
+			}
+			return (RelationalPathEx<T>) result;
+		}
+	}
 	
 	@SuppressWarnings("unchecked")
 	public static <B, T extends Comparable<T>> ComparableExpression<T> getPathAsExpr(LambdaColumn<B, T> func) {
@@ -38,42 +94,46 @@ public class PathCache {
 	@SuppressWarnings("unchecked")
 	public static <B, T> Path<T> getPath(LambdaColumnBase<B, T> func) {
 		try {
-			Path<T> p= (Path<T>) COLUMN_CACHE.computeIfAbsent(func, PathCache::generate);
+			Path<T> p = (Path<T>) COLUMN_CACHE.computeIfAbsent(func, PathCache::generate);
 			return p;
 		}catch(Exception e) {
 			throw Exceptions.toRuntime(e);
 		}
 	}
 
-	public static <T> RelationalPathEx<T> getPath(LambdaTable<T> func) {
-		return get(func.get());
+	public static <T> RelationalPathEx<T> getPath(LambdaTable<T> func, String variable) {
+		return get(func.get(), variable);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> RelationalPathEx<T> get(Class<T> beanType){
-		RelationalPathEx<T> result= (RelationalPathEx<T>) TABLE_CACHE.computeIfAbsent(beanType, PathCache::generate);
-		return result;
-	}
-	
-	protected static <T> RelationalPathExImpl<T> generate(Class<T> beanType){
-		log.info("Generate dynamic table path for {}",beanType);
-		return RelationalPathExImpl.valueOf(beanType);
+	public static <T> RelationalPathEx<T> get(Class<T> clazz,String variable){
+		return (RelationalPathEx<T>) TABLE_CACHE.computeIfAbsent(clazz, TablePathHolder::new).get(variable);
 	}
 	
 	@SuppressWarnings("unchecked")
 	protected static <B, T> Path<T> generate(LambdaColumnBase<B, T> func) {
-		Pair<String,String> pair;
+		Pair<Class<?>, String> pair = analysis(func);
+		RelationalPathEx path = get(pair.getFirst(), null);
+		Class<?> clazz = pair.getFirst();
+		String fieldName = pair.getSecond();
+		Path<T> p = path.getColumn(fieldName);
+		log.info("Generate column path for {}::{} from {}", clazz.getName(), fieldName, path.getClass());
+		return p;
+	}
+	
+	public static Pair<Class<?>, String> analysis(LambdaColumnBase<?, ?> func) {
+		ClassLoader cl=Thread.currentThread().getContextClassLoader();
+		String clzName;
+		String methodName;
 		try {
 			Method method = func.getClass().getDeclaredMethod("writeReplace");
 			method.setAccessible(true);
 			SerializedLambda o=(SerializedLambda)method.invoke(func);
-			pair=Pair.of(o.getImplClass(), o.getImplMethodName());
+			clzName=o.getImplClass().replace('/', '.');
+			methodName=o.getImplMethodName();			
 		}catch(Exception e) {
 			throw Exceptions.toRuntime(e);
 		}
-		ClassLoader cl=Thread.currentThread().getContextClassLoader();
-		String clzName=pair.getFirst().replace('/', '.');
-		String methodName=pair.getSecond();
 		try {
 			Class<?> clz = cl.loadClass(clzName);
 			boolean isRecord = TypeUtils.isRecord(clz);
@@ -91,23 +151,21 @@ public class PathCache {
 				}	
 			}
 			fieldName = StringUtils.uncapitalize(fieldName);
-			RelationalPathEx path = get(clz);
-			Path<T> p=path.getColumn(fieldName);
-			log.info("Generate column path for {}::{} from {}", clzName, methodName, path.getClass());
-			return p;
+			return Pair.of(clz, fieldName);
 		}catch(Exception e) {
 			throw Exceptions.illegalState("path generate:{}.{} error.", clzName,methodName, e);
 		}
 	}
-	
+
 	public static boolean register(RelationalPathEx<?> tablePath) {
-		RelationalPathEx<?> previous = TABLE_CACHE.putIfAbsent(tablePath.getType(), tablePath);
-		return previous == null;
+		TablePathHolder holder = TABLE_CACHE.computeIfAbsent(tablePath.getType(), clz -> new TablePathHolder(clz, tablePath));
+		return holder.add(tablePath);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static <T> RelationalPathExImpl<T> compute(Class<? extends T> clz,Supplier<RelationalPathExImpl<T>> supplier) {
-		return (RelationalPathExImpl<T>) TABLE_CACHE.computeIfAbsent(clz, (t)->supplier.get());
+	public static <T> RelationalPathEx<T> compute(Class<? extends T> clz, String variabe, Supplier<RelationalPathExImpl<T>> supplier) {
+		TablePathHolder holder=TABLE_CACHE.computeIfAbsent(clz, TablePathHolder::new);
+		return holder.computeIfAbsent(variabe,supplier);
 	}
 }
+
 
