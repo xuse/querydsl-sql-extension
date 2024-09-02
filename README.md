@@ -167,7 +167,7 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
 
 对QueryDSL-SQL的性能进行了较大幅度的优化。优化后的性能基本与编写良好的JDBC操作持平。
 
-下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](performance_tunning.md)
+下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](static/performance_tunning.md)
 
 #### 性能对比测试（v5.0.0-r110）
 
@@ -608,3 +608,6 @@ v{querydsl 版本号} - r(extension version)
   另外还有些朋友喜欢无代码自动生成，无Query class的纯POJO用法，为此也作了一些适配来降低使用门槛。
 
 * 今后：保持轻量是维护的宗旨，不会再考虑加入什么乐观锁、词法分析器、分库分表、内置连接池之类的东西，虽然都写过，但是将它们糅合在一起没有必要。
+
+* 如果有使用下来觉得不错的朋友，无需给这个项目Star，请 Star [QueryDSL](https://github.com/querydsl/querydsl) 项目，各位觉得好的设计都来自QueryDSL，我只是为方便自己做了一些微不足道的修改而已。
+

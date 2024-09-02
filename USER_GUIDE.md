@@ -735,7 +735,7 @@ configuration.setExternalDistributedLockProvider(new MyLockProvider());
 
 ## 7. 执行DDL语句
 
-> 实验性功能，个人精力有限目前仅完成了MySQL 和 Derby的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+> 实验性功能，个人精力有限目前仅完成了部分数据的方言适配（清单参见 README.md ）。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
 
 ### 表修改示例
 
