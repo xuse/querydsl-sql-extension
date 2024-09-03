@@ -1,377 +1,197 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  	
-  <modelVersion>4.0.0</modelVersion>
-  	
-  <groupId>io.github.xuse</groupId>
-  	
-  <artifactId>querydsl-sql-extension-parent</artifactId>
-  	
-  <version>5.0.0-r111</version>
-  	
-  <packaging>pom</packaging>
-  	
-  <modules>
-    		
-    <module>querydsl-sql-extension</module>
-    		
-    <module>querydsl-sql-extension-spring</module>
-    	  
-    <module>querydsl-sql-extension-datatype</module>
-      
-  </modules>
-  	
-  <name>querydsl-sql-extension-parent</name>
-  	
-  <description>extension of querdsl-sql, extending its capabilities and
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>io.github.xuse</groupId>
+	<artifactId>querydsl-sql-extension-parent</artifactId>
+	<version>5.0.0-r111</version>
+	<packaging>pom</packaging>
+	<modules>
+		<module>querydsl-sql-extension</module>
+		<module>querydsl-sql-extension-spring</module>
+		<module>querydsl-sql-extension-datatype</module>
+	</modules>
+	<name>querydsl-sql-extension-parent</name>
+	<description>extension of querdsl-sql, extending its capabilities and
 		providing higher performance.</description>
-  	
-  <url>https://github.com/xuse/querydsl-sql-extension</url>
-  	
-  <licenses>
-    		
-    <license>
-      			
-      <name>The Apache Software License, Version 2.0</name>
-      			
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      		
-    </license>
-    	
-  </licenses>
-  	
-  <developers>
-    		
-    <developer>
-      			
-      <name>Joey</name>
-      			
-      <email>mr.jiyi@gmail.com</email>
-      		
-    </developer>
-    	
-  </developers>
-  	
-  <scm>
-    		
-    <connection>scm:git:git://github.com/xuse/querydsl-sql-extension.git</connection>
-    		
-    <developerConnection>scm:git:ssh://github.com/xuse.git</developerConnection>
-    		
-    <url>https://github.com/xuse/querydsl-sql-extension/tree/master</url>
-    	
-  </scm>
-  	
-  <properties>
-    		
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    		
-    <maven.compiler.source>8</maven.compiler.source>
-    		
-    <maven.compiler.target>8</maven.compiler.target>
-    		
-    <maven.compiler.testSource>8</maven.compiler.testSource>
-    		
-    <maven.compiler.testTarget>8</maven.compiler.testTarget>
-    		
-    <querydsl.version>5.0.0</querydsl.version>
-    	
-  </properties>
-  	
-  <dependencies>
-    		
-    <dependency>
-      			
-      <groupId>org.projectlombok</groupId>
-      			
-      <artifactId>lombok</artifactId>
-      			
-      <version>1.18.32</version>
-      			
-      <scope>provided</scope>
-      		
-    </dependency>
-    				
-    <!-- test -->
-    		
-    <dependency>
-      			
-      <groupId>org.apache.derby</groupId>
-      			
-      <artifactId>derby</artifactId>
-      			
-      <version>10.14.2.0</version>
-      			
-      <scope>test</scope>
-      		
-    </dependency>
-    		
-    <dependency>
-      			
-      <groupId>com.zaxxer</groupId>
-      			
-      <artifactId>HikariCP</artifactId>
-      			
-      <version>2.4.7</version>
-      			
-      <scope>test</scope>
-      		
-    </dependency>
-    		
-    <dependency>
-      			
-      <groupId>mysql</groupId>
-      			
-      <artifactId>mysql-connector-java</artifactId>
-      			
-      <version>8.0.33</version>
-      			
-      <scope>test</scope>
-      		
-    </dependency>
-    		
-    <dependency>
-      			
-      <groupId>org.postgresql</groupId>
-      			
-      <artifactId>postgresql</artifactId>
-      			
-      <version>42.7.3</version>
-      			
-      <scope>test</scope>
-      		
-    </dependency>
-    		
-    <dependency>
-      			
-      <groupId>org.slf4j</groupId>
-      			
-      <artifactId>slf4j-simple</artifactId>
-      			
-      <version>1.7.30</version>
-      			
-      <scope>test</scope>
-      		
-    </dependency>
-    		
-    <dependency>
-      			
-      <groupId>junit</groupId>
-      			
-      <artifactId>junit</artifactId>
-      			
-      <version>4.13.2</version>
-      			
-      <scope>test</scope>
-      		
-    </dependency>
-    		
-    <dependency>
-      			
-      <groupId>org.jetbrains</groupId>
-      			
-      <artifactId>annotations</artifactId>
-      			
-      <version>20.0.0</version>
-      			
-      <scope>provided</scope>
-      		
-    </dependency>
-    	
-  </dependencies>
-  	
-  <build>
-    		
-    <plugins>
-      			
-      <plugin>
-        				
-        <groupId>org.apache.maven.plugins</groupId>
-        				
-        <artifactId>maven-javadoc-plugin</artifactId>
-        				
-        <version>3.5.0</version>
-        				
-        <configuration>
-          					
-          <charset>UTF-8</charset>
-          					
-          <encoding>UTF-8</encoding>
-          					
-          <docencoding>UTF-8</docencoding>
-          					
-          <show>public</show>
-          				
-        </configuration>
-        				
-        <executions>
-          					
-          <execution>
-            						
-            <id>attach-javadocs</id>
-            						
-            <goals>
-              							
-              <goal>jar</goal>
-              						
-            </goals>
-            						
-            <configuration>
-              							
-              <tags>
-                								
-                <tag>
-                  									
-                  <name>implSpec</name>
-                  									
-                  <placement>a</placement>
-                  									
-                  <head>Implementation Requirements:</head>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>implNote</name>
-                  									
-                  <placement>a</placement>
-                  									
-                  <head>Implementation Note:</head>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>return</name>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>param</name>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>throws</name>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>since</name>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>version</name>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>serialData</name>
-                  								
-                </tag>
-                								
-                <tag>
-                  									
-                  <name>see</name>
-                  								
-                </tag>
-                							
-              </tags>
-              						
-            </configuration>
-            					
-          </execution>
-          				
-        </executions>
-        			
-      </plugin>
-      			
-      <plugin>
-        				
-        <artifactId>maven-source-plugin</artifactId>
-        				
-        <configuration>
-          					
-          <attach>true</attach>
-          					
-          <defaultManifestFile/>
-          				
-        </configuration>
-        				
-        <executions>
-          					
-          <execution>
-            						
-            <id>attach-sources</id>
-            						
-            <goals>
-              							
-              <goal>jar-no-fork</goal>
-              						
-            </goals>
-            					
-          </execution>
-          				
-        </executions>
-        			
-      </plugin>
-      			
-      <plugin>
-        				
-        <groupId>org.apache.maven.plugins</groupId>
-        				
-        <artifactId>maven-gpg-plugin</artifactId>
-        				
-        <version>3.1.0</version>
-        				
-        <executions>
-          					
-          <execution>
-            						
-            <id>sign-artifacts</id>
-            						
-            <phase>verify</phase>
-            						
-            <goals>
-              							
-              <goal>sign</goal>
-              						
-            </goals>
-            					
-          </execution>
-          				
-        </executions>
-        			
-      </plugin>
-      			
-      <plugin>
-        				
-        <groupId>org.sonatype.central</groupId>
-        				
-        <artifactId>central-publishing-maven-plugin</artifactId>
-        				
-        <version>0.4.0</version>
-        				
-        <extensions>true</extensions>
-        				
-        <configuration>
-          					
-          <publishingServerId>sonatype</publishingServerId>
-          					
-          <tokenAuth>true</tokenAuth>
-          				
-        </configuration>
-        			
-      </plugin>
-      		
-    </plugins>
-    	
-  </build>
-  
+	<url>https://github.com/xuse/querydsl-sql-extension</url>
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<name>Joey</name>
+			<email>mr.jiyi@gmail.com</email>
+		</developer>
+	</developers>
+	<scm>
+		<connection>scm:git:git://github.com/xuse/querydsl-sql-extension.git</connection>
+		<developerConnection>scm:git:ssh://github.com/xuse.git</developerConnection>
+		<url>https://github.com/xuse/querydsl-sql-extension/tree/master</url>
+	</scm>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>8</maven.compiler.source>
+		<maven.compiler.target>8</maven.compiler.target>
+		<maven.compiler.testSource>8</maven.compiler.testSource>
+		<maven.compiler.testTarget>8</maven.compiler.testTarget>
+		<querydsl.version>5.0.0</querydsl.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.32</version>
+			<scope>provided</scope>
+		</dependency>
+		<!-- test -->
+		<dependency>
+			<groupId>org.apache.derby</groupId>
+			<artifactId>derby</artifactId>
+			<version>10.14.2.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>2.4.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.7.3</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.30</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jetbrains</groupId>
+			<artifactId>annotations</artifactId>
+			<version>20.0.0</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.5.0</version>
+				<configuration>
+					<charset>UTF-8</charset>
+					<encoding>UTF-8</encoding>
+					<docencoding>UTF-8</docencoding>
+					<show>public</show>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							 <additionalJOptions>
+            					<additionalJOption>-Xdoclint:none</additionalJOption>
+          					</additionalJOptions>
+							<tags>
+								<tag>
+									<name>implSpec</name>
+									<placement>a</placement>
+									<head>Implementation Requirements:</head>
+								</tag>
+								<tag>
+									<name>implNote</name>
+									<placement>a</placement>
+									<head>Implementation Note:</head>
+								</tag>
+								<tag>
+									<name>return</name>
+								</tag>
+								<tag>
+									<name>param</name>
+								</tag>
+								<tag>
+									<name>throws</name>
+								</tag>
+								<tag>
+									<name>since</name>
+								</tag>
+								<tag>
+									<name>version</name>
+								</tag>
+								<tag>
+									<name>serialData</name>
+								</tag>
+								<tag>
+									<name>see</name>
+								</tag>
+							</tags>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<attach>true</attach>
+					<defaultManifestFile />
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.central</groupId>
+				<artifactId>central-publishing-maven-plugin</artifactId>
+				<version>0.4.0</version>
+				<extensions>true</extensions>
+				<configuration>
+					<publishingServerId>sonatype</publishingServerId>
+					<tokenAuth>true</tokenAuth>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
