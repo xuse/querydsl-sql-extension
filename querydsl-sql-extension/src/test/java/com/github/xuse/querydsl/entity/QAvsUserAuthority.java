@@ -10,7 +10,7 @@ import javax.annotation.Generated;
 
 import com.github.xuse.querydsl.annotation.GeneratedType;
 import com.github.xuse.querydsl.annotation.UnsavedValue;
-import com.github.xuse.querydsl.datatype.JSONObjectType;
+import com.github.xuse.querydsl.entity.type.TestForJSONObjectType;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
@@ -96,7 +96,7 @@ public class QAvsUserAuthority extends RelationalPathBaseEx<AvsUserAuthority> {
         addMetadata(createTime, ColumnMetadata.named("CREATE_TIME").withIndex(7).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull()).withAutoGenerate(GeneratedType.CREATED_TIMESTAMP);
         addMetadata(updateTime, ColumnMetadata.named("UPDATE_TIME").withIndex(8).ofType(Types.TIMESTAMP).withSize(29).withDigits(9).notNull());
         addMetadata(gender, ColumnMetadata.named("GENDER").withIndex(9).ofType(Types.VARCHAR).withSize(64));
-        addMetadata(map, ColumnMetadata.named("MAP_DATA").withIndex(10).ofType(Types.VARCHAR).withSize(512)).withCustomType(new JSONObjectType<Map<String,String>>(Map.class));
+        addMetadata(map, ColumnMetadata.named("MAP_DATA").withIndex(10).ofType(Types.VARCHAR).withSize(512)).withCustomType(new TestForJSONObjectType<Map<String,String>>(Map.class));
         addMetadata(asserts, ColumnMetadata.named("ASSERTS").withIndex(9).ofType(Types.VARCHAR).withSize(256));
     }
 }

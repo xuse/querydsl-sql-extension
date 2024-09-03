@@ -14,6 +14,7 @@ public class QueryDSLSqlExtension {
 	 */
 	public static SQLQueryFactory createSpringQueryFactory(DataSource datasource, ConfigurationEx configuration) {
 		configuration.addListener(UnmanagedConnectionCloseListener.DEFAULT);
+		configuration.setExceptionTranslator(new SpringExceptionTranslator());
 		return new SQLQueryFactory(configuration, new SpringProvider(datasource));
 	}
 }

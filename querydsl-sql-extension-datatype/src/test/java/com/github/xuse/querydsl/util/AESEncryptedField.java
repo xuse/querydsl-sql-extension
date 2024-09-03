@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.entity.type;
+package com.github.xuse.querydsl.util;
 
 import java.nio.charset.StandardCharsets;
 

@@ -2,14 +2,12 @@ package com.github.xuse.querydsl.sql;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
-import com.github.xuse.querydsl.sql.spring.SpringExceptionTranslator;
 import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.github.xuse.querydsl.util.JefBase64;
@@ -22,10 +20,10 @@ public abstract class AbstractTestBase {
 	static String host="bmJfMy1oel8yMDAxXzczNzc=";
 	//static String host="10.25.3.25";
 	static String testPws="12_34_5";
-	private static DriverManagerDataSource dsDerby = new DriverManagerDataSource();
-	private static DriverManagerDataSource dsMySQL = new DriverManagerDataSource();
-	private static DriverManagerDataSource dsMySQL8 = new DriverManagerDataSource();
-	private static DriverManagerDataSource dsPg14 = new DriverManagerDataSource();
+	private static SimpleDataSource dsDerby = new SimpleDataSource();
+	private static SimpleDataSource dsMySQL = new SimpleDataSource();
+	private static SimpleDataSource dsMySQL8 = new SimpleDataSource();
+	private static SimpleDataSource dsPg14 = new SimpleDataSource();
 	
 
 	static {
@@ -54,10 +52,10 @@ public abstract class AbstractTestBase {
 		
 	}
 
-	private static final DriverManagerDataSource effectiveDs = dsDerby;
+	private static final SimpleDataSource effectiveDs = dsDerby;
 	
 	
-	public static  DriverManagerDataSource getEffectiveDs() {
+	public static  SimpleDataSource getEffectiveDs() {
 		return effectiveDs;
 	}
 	
@@ -98,7 +96,7 @@ public abstract class AbstractTestBase {
 		configuration.addListener(new UpdateDeleteProtectListener());
 		configuration.register(new EnumByCodeType<>(Gender.class));
 		configuration.register(new EnumByCodeType<>(TaskStatus.class));
-		configuration.setExceptionTranslator(new SpringExceptionTranslator());
+		//configuration.setExceptionTranslator(new SpringExceptionTranslator());
 		// 如果使用了自定义映射，需要提前注册，或者扫描指定包
 		configuration.allowTableDropAndCreate();
 		configuration.getScanOptions()

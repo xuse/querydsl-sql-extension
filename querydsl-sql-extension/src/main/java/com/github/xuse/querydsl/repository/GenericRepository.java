@@ -12,6 +12,8 @@ import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.sql.RelationalPath;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * AbstractCrudRepository requires developers to implement the
  * {@code AbstractCrudRepository.getFactory()} and {@code AbstractCrudRepository.getPath()} methods. To further simplify
@@ -24,6 +26,7 @@ import com.querydsl.sql.RelationalPath;
  * @param <T>  the type of entity bean.
  * @param <ID> the type of ID
  */
+@Slf4j
 public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T, ID> {
 	@Resource
 	protected SQLQueryFactory factory;
@@ -77,6 +80,7 @@ public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T,
 		try {
 			clz = entity.getClassLoader().loadClass(qClassName);
 		} catch (ClassNotFoundException e) {
+			log.warn("Query Class not found {}, will generate a dynanamic model.", qClassName);
 			return PathCache.get(entity, null);
 		}
 		for (Field field : clz.getDeclaredFields()) {

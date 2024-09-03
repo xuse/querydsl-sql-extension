@@ -16,8 +16,10 @@ public final class NoReadLockHashMap<K, V> extends HashMap<K, V> {
 	static Field threshold;
 	static {
 		try {
-			threshold = HashMap.class.getDeclaredField("threshold");
+			Field threshold = HashMap.class.getDeclaredField("threshold");
 			threshold.setAccessible(true);
+			threshold.getInt(new HashMap<String, String>());
+			NoReadLockHashMap.threshold = threshold;
 		} catch (Exception ex) {
 			log.error("Field java.util.HashMap.threshold is not accessiable.");
 		}
@@ -26,7 +28,7 @@ public final class NoReadLockHashMap<K, V> extends HashMap<K, V> {
 	public NoReadLockHashMap() {
 		this(12);
 	}
-	
+
 	public NoReadLockHashMap(int capacity) {
 		super(capacity * 4 / 3);
 		if (threshold != null) {
@@ -43,7 +45,7 @@ public final class NoReadLockHashMap<K, V> extends HashMap<K, V> {
 	@Override
 	public synchronized V put(K key, V value) {
 		if (size() >= actualThreshold) {
-			throw new IllegalArgumentException("Too many elements. maximum="+getThreshold());
+			throw new IllegalArgumentException("Too many elements. maximum=" + getThreshold());
 		}
 		return super.put(key, value);
 	}
@@ -51,7 +53,7 @@ public final class NoReadLockHashMap<K, V> extends HashMap<K, V> {
 	@Override
 	public synchronized V putIfAbsent(K key, V value) {
 		if (size() >= actualThreshold) {
-			throw new IllegalArgumentException("Too many elements. maximum="+this.getThreshold());
+			throw new IllegalArgumentException("Too many elements. maximum=" + this.getThreshold());
 		}
 		return super.putIfAbsent(key, value);
 	}

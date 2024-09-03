@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql.test;
+package com.github.xuse.querydsl.spring;
 
 import javax.sql.DataSource;
 
@@ -10,10 +10,9 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.enums.Gender;
-import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
-import com.github.xuse.querydsl.sql.AbstractTestBase;
+import com.github.xuse.querydsl.spring.enums.Gender;
+import com.github.xuse.querydsl.spring.enums.Status;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.spring.QueryDSLSqlExtension;
@@ -24,11 +23,11 @@ import com.querydsl.sql.SQLTemplates;
 import com.zaxxer.hikari.HikariDataSource;
 
 @Configuration
-@ComponentScan("com.github.xuse.querydsl.sql.test.beans")
+@ComponentScan("com.github.xuse.querydsl.spring")
 public class SpringConfiguration {
 	@Bean
 	public DataSource mysqlDs() {
-		DriverManagerDataSource ds = AbstractTestBase.getEffectiveDs();
+		DriverManagerDataSource ds = SpringTestBase.effectiveDs;
 		return wrapAsPool(ds);
 	}
 
@@ -43,28 +42,28 @@ public class SpringConfiguration {
 		return new DataSourceTransactionManager(ds);
 	}
 
-	private ConfigurationEx querydslConfiguration(DriverManagerDataSource ds) {
-		SQLTemplates templates = SQLQueryFactory.calcSQLTemplate(ds.getUrl());
+	private ConfigurationEx querydslConfiguration(DataSource ds) {
+		SQLTemplates templates = SQLQueryFactory.calcSQLTemplate(((DriverManagerDataSource)ds).getUrl());
 		ConfigurationEx configuration = new ConfigurationEx(templates);
 		configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
 		configuration.setSlowSqlWarnMillis(800);
 		configuration.addListener(new UpdateDeleteProtectListener());
 		configuration.register(new EnumByCodeType<>(Gender.class));
-		configuration.register(new EnumByCodeType<>(TaskStatus.class));
+		configuration.register(new EnumByCodeType<>(Status.class));
 		configuration.getScanOptions()
 			.allowDrops()
 			.setCreateMissingTable(true)
 			.setDataInitBehavior(DataInitBehavior.FOR_ALL_TABLE)
 			.detectPermissions(true)
 			.useDataInitTable(true);
-		configuration.scanPackages("com.github.xuse.querydsl.entity");
+		configuration.scanPackages("com.github.xuse.querydsl.spring.entity");
 		return configuration;
 	}
 
 	@Bean
 	public SQLQueryFactory factory(DataSource ds) {
 		try {
-			return QueryDSLSqlExtension.createSpringQueryFactory(ds, querydslConfiguration(AbstractTestBase.getEffectiveDs()));
+			return QueryDSLSqlExtension.createSpringQueryFactory(ds, querydslConfiguration(SpringTestBase.getEffectiveDs()));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw Exceptions.toRuntime(e);

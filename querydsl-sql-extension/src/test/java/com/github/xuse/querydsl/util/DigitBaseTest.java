@@ -4,7 +4,6 @@ import java.util.Calendar;
 import java.util.Date;
 
 import org.junit.Test;
-import org.springframework.util.Assert;
 
 /**
  * 10进制、62进制互转
