@@ -10,10 +10,10 @@ import javax.annotation.Generated;
 
 import com.github.xuse.querydsl.annotation.GeneratedType;
 import com.github.xuse.querydsl.annotation.UnsavedValue;
+import com.github.xuse.querydsl.datatype.JSONObjectType;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
-import com.github.xuse.querydsl.types.JSONObjectType;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.dsl.DateTimePath;

@@ -7,7 +7,6 @@ import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
-import com.github.xuse.querydsl.util.Assert;
 import com.querydsl.core.JoinExpression;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;

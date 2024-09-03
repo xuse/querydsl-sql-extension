@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.entity.type;
 
 import java.nio.charset.StandardCharsets;
 
-import com.github.xuse.querydsl.types.AbstractBase64EncryptStringType;
+import com.github.xuse.querydsl.datatype.AbstractBase64EncryptStringType;
 
 public class AESEncryptedField extends AbstractBase64EncryptStringType {
 
