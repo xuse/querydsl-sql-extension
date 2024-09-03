@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.alibaba.fastjson2.util.DoubleToDecimal;
 import com.github.xuse.querydsl.util.Exceptions;
 
 /**
@@ -43,10 +42,12 @@ public class CodecContext {
 	static final byte TYPE_1BYTE_LONG = 19;
 	static final byte TYPE_ZERO_LONG = 20;
 	
-	static final byte TYPE_DOUBLE = 22;
-	static final byte TYPE_ZERO_DOUBLE = 23;
-	
 	static final byte TYPE_DATE = 24;
+	
+	static final byte TYPE_FLOAT = 26;
+	static final byte TYPE_ZERO_FLOAT = 27;
+	static final byte TYPE_DOUBLE = 28;
+	static final byte TYPE_ZERO_DOUBLE = 29;
 	//长度255以内的byte[]
 	static final byte TYPE_SHORT_BYTEARRAY = 30;
 	//长度65535以内的byte[]
@@ -126,6 +127,8 @@ public class CodecContext {
 		decodeMap.put(TYPE_2BYTE_LONG, LongCodec.BYTE2);
 		decodeMap.put(TYPE_4BYTE_LONG, LongCodec.BYTE4);
 		
+		decodeMap.put(TYPE_FLOAT, FloatCodec.INSTANCE);
+		decodeMap.put(TYPE_ZERO_FLOAT, FloatCodec.FOR_ZERO);
 		decodeMap.put(TYPE_DOUBLE, DoubleCodec.INSTANCE);
 		decodeMap.put(TYPE_ZERO_DOUBLE, DoubleCodec.FOR_ZERO);
 		decodeMap.put(TYPE_DATE, DateCodec.INSTANCE);
