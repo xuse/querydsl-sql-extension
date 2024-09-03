@@ -14,13 +14,28 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r110</version>
+	<version>5.0.0-r111</version>
 </dependency>
 ```
 
+如需要与Spring framework集成，还需要
+
+```xml
+<dependency>
+	<groupId>io.github.xuse</groupId>
+	<artifactId>querydsl-sql-extension-spring</artifactId>
+	<version>5.0.0-r111</version>
+</dependency>
+```
+
+
+
 参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
 
+### 重要变更
 
+5.0.0-r111版本，将Spring框架支持功能移到 querydsl-sql-extension-spring 模块，相关使用说明已修改，Spring下使用需要添加该依赖包。
+Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修改为  `QueryDSLSqlExtension.createSpringQueryFactory()`
 
 ## 什么是QueryDSL
 

@@ -143,7 +143,7 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 
 
 
-## 3 用法简述
+## 3 用法简述(Spring集成)
 
 
 ### 基本
@@ -152,10 +152,12 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 
 **依赖(Maven)**
 
+本文档使用Spring集成示例，故依赖 `querydsl-sql-extension-spring` 包，如不集成Spring使用可仅依赖 `querydsl-sql-extension`。
+
 ```xml
 <dependency>
 	<groupId>io.github.xuse</groupId>
-	<artifactId>querydsl-sql-extension</artifactId>
+	<artifactId>querydsl-sql-extension-spring</artifactId>
 	<version>${querydsl-sql-extension.version}</version>
 </dependency>
 ```
@@ -165,7 +167,7 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 ```java
 	@Bean
 	public com.github.xuse.querydsl.sql.SQLQueryFactory factory(DataSource ds) {
-        return com.github.xuse.querydsl.sql.SQLQueryFactory
+        return com.github.xuse.querydsl.sql.spring.QueryDSLSqlExtension
             .createSpringQueryFactory(ds, querydslConfiguration());
 	}
 
@@ -185,6 +187,12 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 		return new DataSourceTransactionManager(ds);
 	}
 ```
+
+**非Spring下使用**
+
+参见此文档 [Without Springframework](static/without_springfrwmework.md)
+
+
 
 ### 构造自己的业务Repository
 
