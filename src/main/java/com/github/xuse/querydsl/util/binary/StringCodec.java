@@ -51,7 +51,7 @@ class StringCodec implements Codec<String> {
 	@Override
 	public void encode(ByteBuffer buffer, Object str, CodecContext context) {
 		if (str == null) {
-			buffer.put(CodecContext.TYPE_NULL_STRING);
+			buffer.put(CodecContext.TYPE_NULL);
 			return;
 		}
 		byte[] bits = ((String) str).getBytes(StandardCharsets.UTF_8);

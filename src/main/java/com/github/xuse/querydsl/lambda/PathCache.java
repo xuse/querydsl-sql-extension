@@ -2,7 +2,6 @@ package com.github.xuse.querydsl.lambda;
 
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -11,6 +10,7 @@ import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.NoReadLockHashMap;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Path;
@@ -31,7 +31,7 @@ public class PathCache {
 		private final Class<?> beanType;
 		private final RelationalPathEx<?> defaultPath;
 		private final String defaultPathVariable;
-		private final Map<String,RelationalPathEx<?>> data=new HashMap<>();
+		private final Map<String,RelationalPathEx<?>> data=new NoReadLockHashMap<>(12);
 
 		TablePathHolder(Class<?> beanType) {
 			this.beanType = beanType;

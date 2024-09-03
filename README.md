@@ -6,7 +6,7 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
 本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
 
-> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。`querydsl-sql`不是JPA的配件，是可以单个框架搞定企业级复杂项目的存在。 写这个框架的目的是轻量便捷，可以与MyBatis、Spring JDBC Template等一起用。
+> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。`querydsl-sql`不是JPA的配件，是可以单个框架搞定企业级复杂项目的存在。 写这个框架的目的是获得一个轻量便捷的数据库访问层，也可以与MyBatis、Spring JDBC Template等一起使用。
 
 **Getting started**
 
@@ -14,7 +14,7 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r104</version>
+	<version>5.0.0-r110</version>
 </dependency>
 ```
 

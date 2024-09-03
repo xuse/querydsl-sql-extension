@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.util;
 
+import static org.junit.Assert.assertEquals;
+
 import java.sql.Types;
 
 import org.junit.Test;
@@ -12,11 +14,11 @@ public class DialectTest {
 	
 	@Test
 	public void testDataType() {
-		System.out.println(template.getColumnDataType(Types.TIMESTAMP, 0, 0));
-		System.out.println(template.getColumnDataType(Types.TIMESTAMP, 2, 0));
-		System.out.println(template.getColumnDataType(Types.TIMESTAMP, 6, 0));
-		System.out.println(template.getColumnDataType(Types.TIMESTAMP, 9, 0));
-		System.out.println(template.getColumnDataType(Types.TIMESTAMP, 29, 0));
+		assertEquals("datetime",template.getColumnDataType(Types.TIMESTAMP, 0, 0).getDataType());
+		assertEquals("datetime(2)",template.getColumnDataType(Types.TIMESTAMP, 2, 0).getDataType());
+		assertEquals("datetime(6)",template.getColumnDataType(Types.TIMESTAMP, 6, 0).getDataType());
+		assertEquals("datetime(6)",template.getColumnDataType(Types.TIMESTAMP, 9, 0).getDataType());
+		assertEquals("datetime(6)",template.getColumnDataType(Types.TIMESTAMP, 29, 0).getDataType());
 	}
 
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.alibaba.fastjson2.util.DoubleToDecimal;
 import com.github.xuse.querydsl.util.Exceptions;
 
 /**
@@ -20,7 +21,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 @SuppressWarnings("rawtypes")
 public class CodecContext {
 	public static final CodecContext INSTANCE=new CodecContext();
-	
+	//数据类型，从-128~127
 	static final byte TYPE_NULL = -1;
 	static final byte TYPE_BYTE = 0;
 	static final byte TYPE_BOOLEAN_T = 1;
@@ -34,6 +35,7 @@ public class CodecContext {
 	static final byte TYPE_2BYTE_INT = 8;
 	static final byte TYPE_1BYTE_INT = 9;
 	static final byte TYPE_ZERO_INT = 10;
+	static final byte TYPE_ONE_INT = 11;
 	
 	static final byte TYPE_LONG = 16;
 	static final byte TYPE_4BYTE_LONG = 17;
@@ -41,23 +43,32 @@ public class CodecContext {
 	static final byte TYPE_1BYTE_LONG = 19;
 	static final byte TYPE_ZERO_LONG = 20;
 	
+	static final byte TYPE_DOUBLE = 22;
+	static final byte TYPE_ZERO_DOUBLE = 23;
+	
 	static final byte TYPE_DATE = 24;
+	//长度255以内的byte[]
 	static final byte TYPE_SHORT_BYTEARRAY = 30;
+	//长度65535以内的byte[]
 	static final byte TYPE_BYTEARRAY = 31;
-	
+	//长度65535以内的String
 	static final byte TYPE_STRING = 32;
+	//长度255以内的String
 	static final byte TYPE_SHORT_STRING = 33;
-	
-	
+	//长度255以内的List	
 	static final byte TYPE_SHORT_LIST = 34;
+	//长度65535以内的List
 	static final byte TYPE_LIST = 35;
-	
-	
+	//长度255以内的Map		
 	static final byte TYPE_SHORT_MAP = 36;
+	//长度65535以内的Map
 	static final byte TYPE_MAP = 37;
 	
-	//优化类型
+	//空数据类型
 	static final byte TYPE_EMPTY_BYTEARRAY = 49;
+	/**
+	 * @deprecated
+	 */
 	static final byte TYPE_NULL_STRING = 50;
 	static final byte TYPE_EMPTY_STRING = 51;
 	static final byte TYPE_EMPTY_LIST = 54;
@@ -105,7 +116,8 @@ public class CodecContext {
 		decodeMap.put(TYPE_SHORT, ShortCodec.INSTANCE);
 		decodeMap.put(TYPE_CHAR, CharCodec.INSTANCE);
 		decodeMap.put(TYPE_INT, IntCodec.INSTANCE);
-		decodeMap.put(TYPE_ZERO_INT, IntCodec.BYTE0);
+		decodeMap.put(TYPE_ZERO_INT, IntCodec.FOR_ZERO);
+		decodeMap.put(TYPE_ONE_INT, IntCodec.FOR_ONE);
 		decodeMap.put(TYPE_1BYTE_INT, IntCodec.BYTE1);
 		decodeMap.put(TYPE_2BYTE_INT, IntCodec.BYTE2);
 		decodeMap.put(TYPE_LONG, LongCodec.INSTANCE);
@@ -113,6 +125,9 @@ public class CodecContext {
 		decodeMap.put(TYPE_1BYTE_LONG, LongCodec.BYTE1);
 		decodeMap.put(TYPE_2BYTE_LONG, LongCodec.BYTE2);
 		decodeMap.put(TYPE_4BYTE_LONG, LongCodec.BYTE4);
+		
+		decodeMap.put(TYPE_DOUBLE, DoubleCodec.INSTANCE);
+		decodeMap.put(TYPE_ZERO_DOUBLE, DoubleCodec.FOR_ZERO);
 		decodeMap.put(TYPE_DATE, DateCodec.INSTANCE);
 		
 		decodeMap.put(TYPE_STRING, StringCodec.INSTANCE);
@@ -128,9 +143,9 @@ public class CodecContext {
 		decodeMap.put(TYPE_SHORT_MAP, MapCodec.SHORT_MAP);
 		decodeMap.put(TYPE_MAP, MapCodec.INSTANCE);
 		
-		decodeMap.put(TYPE_EMPTY_BYTEARRAY, ByteArrayCodec.INSTANCE_EMPTY);
 		decodeMap.put(TYPE_SHORT_BYTEARRAY, ByteArrayCodec.INSTANCE_SHORT);
 		decodeMap.put(TYPE_BYTEARRAY, ByteArrayCodec.INSTANCE);
+		decodeMap.put(TYPE_EMPTY_BYTEARRAY, ByteArrayCodec.INSTANCE_EMPTY);
 		
 		encodeMap.put(Byte.class, ByteCodec.INSTANCE);
 		encodeMap.put(Boolean.class, new BooleanCodec());
@@ -185,6 +200,8 @@ public class CodecContext {
 			c=StringCodec.EMPTY;
 		case CodecContext.TYPE_NULL_STRING:
 			c=StringCodec.NULL;
+		case CodecContext.TYPE_NULL:
+			return null;
 		default:
 			throw Exceptions.illegalArgument("buffer data is not a string type. type={}", b);
 		}

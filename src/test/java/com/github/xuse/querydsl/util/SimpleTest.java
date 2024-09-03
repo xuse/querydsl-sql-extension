@@ -10,12 +10,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class SimpleTest {
-	@Test
-	public void test123() {
-		String s = "eyJhbmRyb2lkSWQiOiJiNmNkYWJmOGFhMzQ1ZjBkIiwiYm9vdE1hcmsiOiJmYzhkMjA3OC0xNzFhLTQxNDAtYTllMS02YzJjYjY2NGM3MDUiLCJicmFuZCI6InZpdm8iLCJjYXJyaWVyIjoyLCJjb25uZWN0aW9uVHlwZSI6MywiaURGQSI6IiIsImlNRUkiOiIiLCJpcHY2Ijoie1wiY2NtbmkzXCI6W1wiMjQwOTo4OTI4OjVhMTI6MjMyMzoxOjE6NjA3NToyYjE3XCJdLFwiY2NtbmkwXCI6W1wiMjQwZTo1NzI6NWFjMDphNDM6ZjJlODpjODQ6NjI3NDpiMzkyXCJdLFwiY2NtbmkxXCI6W1wiMjQwOTo4MTJhOjVhMDY6MWIxOToxOjE6NjA3NTo3ZTY1XCJdfSIsImxhdCI6MzAuOTg2OTk0LCJsb24iOjExOS44OTI2NTcsIm1hYyI6IiIsIm1vZGVsIjoiVjIwNDhBIiwib2FpZCI6IjA1YmEzMDYwYzA1MzYxZWM0ZWExNjYyMmFjZmNhYzFhNDY1ZGFhNWNhZmFjM2RmNmViZWJkZDE4ZWU5NmQwY2UiLCJ1cGRhdGVNYXJrIjoiMTYwOTUxNjg0OC41NTYwMDAwMDAifQ==";
-		System.out.println(JefBase64.decodeUTF8(s));
-	}
-
 	private final List<String> list = new ArrayList<>();
 	public volatile Object[] data;
 
