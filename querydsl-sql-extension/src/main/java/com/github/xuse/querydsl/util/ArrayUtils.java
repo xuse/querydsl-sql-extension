@@ -19,7 +19,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,15 +28,8 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import com.github.xuse.querydsl.util.collection.BooleanList;
-import com.github.xuse.querydsl.util.collection.ByteList;
-import com.github.xuse.querydsl.util.collection.CharList;
-import com.github.xuse.querydsl.util.collection.DoubleList;
-import com.github.xuse.querydsl.util.collection.IntList;
-import com.github.xuse.querydsl.util.collection.LongList;
 
 /**
  * 数组工具
@@ -159,30 +151,68 @@ public class ArrayUtils {
 	 *  @param obj obj
 	 *  @return 将原生八类型的数组容器转换为对象八类型数组
 	 */
-	public static Object[] toObject(Object obj) {
+	public static Object[] toWrapped(Object obj) {
 		Class<?> c = obj.getClass();
 		Assert.isTrue(c.isArray());
 		Class<?> priType = c.getComponentType();
 		if (!priType.isPrimitive())
 			return (Object[]) obj;
-		if (priType == Boolean.TYPE) {
-			return toObject((boolean[]) obj);
-		} else if (priType == Byte.TYPE) {
-			return toObject((byte[]) obj);
-		} else if (priType == Character.TYPE) {
-			return toObject((char[]) obj);
-		} else if (priType == Integer.TYPE) {
-			return toObject((int[]) obj);
-		} else if (priType == Long.TYPE) {
-			return toObject((long[]) obj);
-		} else if (priType == Float.TYPE) {
-			return toObject((float[]) obj);
-		} else if (priType == Double.TYPE) {
-			return toObject((double[]) obj);
-		} else if (priType == Short.TYPE) {
-			return toObject((short[]) obj);
+		
+		String s = priType.getName();
+		int len=Array.getLength(obj);
+		//进行转换
+		Object[] result;
+		int index=0;
+		switch (s.length() + s.charAt(0)) {
+		case 108://int
+			result = new Integer[len];
+			for (int e : (int[]) obj) {
+				result[index++] = Integer.valueOf(e);
+			}
+			break;
+		case 112://long
+			result = new Long[len];
+			for (long e : (long[]) obj) {
+				result[index++] = Long.valueOf(e);
+			}
+			break;
+		case 106:
+			result = new Double[len];
+			for (double e : (double[]) obj) {
+				result[index++] = Double.valueOf(e);
+			}
+			break;
+		case 105:
+			result=new Boolean[len];
+			for(boolean e:(boolean[])obj) {
+				result[index++]=Boolean.valueOf(e);
+			}
+			break;
+		case 107:
+			result=new Float[len];
+			for(float e:(float[])obj) {
+				result[index++]=Float.valueOf(e);
+			}
+			break;
+		case 103:
+			result=new Character[len];
+			for(char e:(char[])obj) {
+				result[index++]=Character.valueOf(e);
+			}
+			break;
+		case 102:
+			result=new Byte[len];
+			for(byte e:(byte[])obj) {
+				result[index++]=Byte.valueOf(e);
+			}
+			break;
+		default:
+			result=new Short[len];
+			for(short e:(short[])obj) {
+				result[index++]=Short.valueOf(e);
+			}
 		}
-		throw new IllegalArgumentException();
+		return result;
 	}
 
 	/**
@@ -199,7 +229,7 @@ public class ArrayUtils {
 		if (priType == containerType) {
 			return (T[]) obj;
 		}
-		return cast(toObject(obj), containerType);
+		return cast(toWrapped(obj), containerType);
 	}
 
 	/**
@@ -211,25 +241,61 @@ public class ArrayUtils {
 		Class<?> c = obj.getClass();
 		Assert.isTrue(c.isArray());
 		Class<?> objType = c.getComponentType();
+		Object result;
+		int len=obj.length;
+		int index=0;
 		if (objType == Boolean.class) {
-			return toPrimitive((Boolean[]) obj);
+			boolean[] bools = new boolean[len];
+			result = bools;
+			for (Boolean b : (Boolean[]) obj) {
+				bools[index++] = Primitives.unbox(b, false);
+			}
 		} else if (objType == Byte.class) {
-			return toPrimitive((Byte[]) obj);
+			byte[] bools = new byte[len];
+			result = bools;
+			for (Byte b : (Byte[]) obj) {
+				bools[index++] = Primitives.unbox(b,(byte)0);
+			}
 		} else if (objType == Character.class) {
-			return toPrimitive((Character[]) obj);
+			char[] bools = new char[len];
+			result = bools;
+			for (Character b : (Character[]) obj) {
+				bools[index++] = Primitives.unbox(b,(char)0);
+			}
 		} else if (objType == Integer.class) {
-			return toPrimitive((Integer[]) obj);
+			int[] bools = new int[len];
+			result = bools;
+			for (Integer b : (Integer[]) obj) {
+				bools[index++] = Primitives.unbox(b,0);
+			}
 		} else if (objType == Long.class) {
-			return toPrimitive((Long[]) obj);
+			long[] bools = new long[len];
+			result = bools;
+			for (Long b : (Long[]) obj) {
+				bools[index++] = Primitives.unbox(b,0L);
+			}
 		} else if (objType == Float.class) {
-			return toPrimitive((Float[]) obj);
+			float[] bools = new float[len];
+			result = bools;
+			for (Float b : (Float[]) obj) {
+				bools[index++] = Primitives.unbox(b,0f);
+			}
 		} else if (objType == Double.class) {
-			return toPrimitive((Double[]) obj);
+			double[] bools = new double[len];
+			result = bools;
+			for (Double b : (Double[]) obj) {
+				bools[index++] = Primitives.unbox(b,0d);
+			}
 		} else if (objType == Short.class) {
-			return toPrimitive((Short[]) obj);
+			short[] bools = new short[len];
+			result = bools;
+			for (Short b : (Short[]) obj) {
+				bools[index++] = Primitives.unbox(b,(short)0);
+			}
 		} else {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException(c+" is not a primitive type.");
 		}
+		return result;
 	}
 
 	/**
@@ -250,171 +316,6 @@ public class ArrayUtils {
 			}
 		}
 		return list.toArray(array1);
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array1 array1
-	 *  @param array2 array2
-	 *  @return 合并数组，消除重复
-	 */
-	public static int[] merge(int[] array1, int[] array2) {
-		IntList list = new IntList();
-		for (int str : array1) {
-			list.add(str);
-		}
-		for (int str : array2) {
-			if (!list.contains(str)) {
-				list.add(str);
-			}
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array1 array1
-	 *  @param array2 array2
-	 *  @return 合并数组，消除重复
-	 */
-	public static char[] merge(char[] array1, char[] array2) {
-		CharList list = new CharList();
-		for (char str : array1) {
-			list.add(str);
-		}
-		for (char str : array2) {
-			if (!list.contains(str)) {
-				list.add(str);
-			}
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array1 array1
-	 *  @param array2 array2
-	 *  @return 合并数组，消除重复
-	 */
-	public static boolean[] merge(boolean[] array1, boolean[] array2) {
-		BooleanList list = new BooleanList();
-		for (boolean str : array1) {
-			list.add(str);
-		}
-		for (boolean str : array2) {
-			if (!list.contains(str)) {
-				list.add(str);
-			}
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array1 array1
-	 *  @param array2 array2
-	 *  @return 合并数组，消除重复
-	 */
-	public static long[] merge(long[] array1, long[] array2) {
-		LongList list = new LongList();
-		for (long str : array1) {
-			list.add(str);
-		}
-		for (long str : array2) {
-			if (!list.contains(str)) {
-				list.add(str);
-			}
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array1 array1
-	 *  @param array2 array2
-	 *  @return 合并数组，消除重复
-	 */
-	public static byte[] merge(byte[] array1, byte[] array2) {
-		ByteList list = new ByteList();
-		for (byte str : array1) {
-			list.add(str);
-		}
-		for (byte str : array2) {
-			if (!list.contains(str)) {
-				list.add(str);
-			}
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array array
-	 *  @return 消除重复
-	 */
-	public static int[] removeDups(int[] array) {
-		IntList list = new IntList(array.length);
-		for (int str : array) {
-			if (!list.contains(str))
-				list.add(str);
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array array
-	 *  @return 消除重复
-	 */
-	public static char[] removeDups(char[] array) {
-		CharList list = new CharList();
-		for (char str : array) {
-			if (!list.contains(str))
-				list.add(str);
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array array
-	 *  @return 消除重复
-	 */
-	public static byte[] removeDups(byte[] array) {
-		ByteList list = new ByteList();
-		for (byte str : array) {
-			if (!list.contains(str))
-				list.add(str);
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array array
-	 *  @return 消除重复
-	 */
-	public static double[] removeDups(double[] array) {
-		DoubleList list = new DoubleList();
-		for (double str : array) {
-			if (!list.contains(str))
-				list.add(str);
-		}
-		return list.toArrayUnsafe();
-	}
-
-	/**
-	 *  算法效率不高，仅限于少量元素合并。
-	 *  @param array array
-	 *  @return 消除重复
-	 */
-	public static boolean[] removeDups(boolean[] array) {
-		BooleanList list = new BooleanList();
-		for (boolean str : array) {
-			if (!list.contains(str))
-				list.add(str);
-		}
-		return list.toArrayUnsafe();
 	}
 
 	/**
@@ -462,11 +363,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj == null) {
-				if (array[i] == null) {
-					return true;
-				}
-			} else if (obj.equals(array[i])) {
+			if (Objects.equals(array[i], obj)) {
 				return true;
 			}
 		}
@@ -478,7 +375,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -490,7 +387,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -502,7 +399,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -514,7 +411,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -526,7 +423,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -538,7 +435,19 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public static boolean contains(boolean[] array, boolean obj) {
+		if (array == null) {
+			return false;
+		}
+		for (int i = 0; i < array.length; i++) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -550,7 +459,7 @@ public class ArrayUtils {
 			return false;
 		}
 		for (int i = 0; i < array.length; i++) {
-			if (obj != array[i]) {
+			if (obj == array[i]) {
 				return true;
 			}
 		}
@@ -651,7 +560,7 @@ public class ArrayUtils {
 	/**
 	 *  获取子数组
 	 *  @param array array
-	 *  @param len len
+	 *  @param len 截取前n个元素
 	 *  @return 子数组
 	 */
 	public static byte[] subArray(byte[] array, int len) {
@@ -703,20 +612,6 @@ public class ArrayUtils {
 		T[] subarray = (T[]) Array.newInstance(type, newSize);
 		System.arraycopy(array, startIndexInclusive, subarray, 0, newSize);
 		return subarray;
-	}
-
-	/**
-	 *  @param list list
-	 *  @param indexes indexes
-	 *  @return 取得数组当中的某几号元素，重新组成数组
-	 *  @param <T> The type of target object.
-	 */
-	public static <T> List<T> subByIndex(List<T> list, int[] indexes) {
-		List<T> newList = new ArrayList<T>();
-		for (int i : indexes) {
-			newList.add(list.get(i));
-		}
-		return newList;
 	}
 
 	/**
@@ -827,27 +722,6 @@ public class ArrayUtils {
 		return result;
 	}
 
-	/**
-	 *  进行数组元素过滤
-	 *  @param source source
-	 *  @param filter filter
-	 *  @return 过滤结果
-	 *  @param <T> The type of target object.
-	 */
-	public static <T> List<T> filter(T[] source, Predicate<T> filter) {
-		if (source == null)
-			return Collections.emptyList();
-		if (filter == null)
-			return Arrays.asList(source);
-		List<T> result = new ArrayList<T>(source.length);
-		for (T t : source) {
-			if (filter.test(t)) {
-				result.add(t);
-			}
-		}
-		return result;
-	}
-
 	/*
 	 * @since JDK 1.6
 	 */
@@ -932,8 +806,8 @@ public class ArrayUtils {
 	 *  @return true if equals
 	 */
 	public static boolean equalsIgnoreOrder(Object array1, Object array2) {
-		Object[] obj1 = toObject(array1);
-		Object[] obj2 = toObject(array2);
+		Object[] obj1 = toWrapped(array1);
+		Object[] obj2 = toWrapped(array2);
 		HashSet<Object> set1 = new HashSet<Object>(Arrays.asList(obj1));
 		HashSet<Object> set2 = new HashSet<Object>(Arrays.asList(obj2));
 		return set1.equals(set2);
@@ -1079,12 +953,14 @@ public class ArrayUtils {
 	 *  @param ls2 ls2
 	 *  @return 并集
 	 */
-	public static Object[] union(Object[] ls, Object[] ls2) {
-		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
+	public static <T> T[] union(T[] ls, T[] ls2) {
+		HashSet<Object> set = new HashSet<>(Arrays.asList(ls));
 		for (Object o : ls2) {
 			set.add(o);
 		}
-		return set.toArray();
+		@SuppressWarnings("unchecked")
+		T[] empty=(T[])Array.newInstance(ls.getClass().getComponentType(), 0);
+		return set.toArray(empty);
 	}
 
 	/**
@@ -1093,10 +969,15 @@ public class ArrayUtils {
 	 *  @param ls2 ls2
 	 *  @return 差集
 	 */
-	public static Object[] minus(Object[] ls, Object[] ls2) {
+	@SuppressWarnings("unchecked")
+	public static <T> T[] minus(T[] ls, T[] ls2) {
+		if(ls==null) {
+			return null;
+		}
 		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
 		set.removeAll(Arrays.asList(ls2));
-		return set.toArray();
+		Class<?> type=ls.getClass().getComponentType();
+		return set.toArray((T[]) Array.newInstance(type, 0));
 	}
 
 	/**

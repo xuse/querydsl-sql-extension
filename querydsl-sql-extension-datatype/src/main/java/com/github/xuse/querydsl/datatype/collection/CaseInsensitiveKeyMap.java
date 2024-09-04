@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.xuse.querydsl.util.collection;
+package com.github.xuse.querydsl.datatype.collection;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;

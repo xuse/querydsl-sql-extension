@@ -25,13 +25,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -64,7 +64,7 @@ public class CollectionUtils {
 				K key = keyExt.apply(value);
 				List<V> bucket = buckets.get(key);
 				if (bucket == null) {
-					buckets.put(key, bucket = new LinkedList<>());
+					buckets.put(key, bucket = new ArrayList<>());
 				}
 				bucket.add(valueExt.apply(value));
 			}
@@ -72,7 +72,7 @@ public class CollectionUtils {
 		return buckets;
 	}
 
-	public static <K, V> Map<K, List<V>> group(Collection<V> c, Function<V, K> keyExt) {
+	public static <K, V> Map<K, List<V>> bucket(Collection<V> c, Function<V, K> keyExt) {
 		if (c != null) {
 			Map<K, List<V>> buckets = new HashMap<>(c.size());
 			for (V value:c) {
@@ -88,17 +88,23 @@ public class CollectionUtils {
 		return Collections.emptyMap();
 	}
 
-	public static <K, V> Map<K, List<V>> group2(Collection<V> c, Function<V, K> keyExt) {
-		if (c != null) {
-			Map<K, List<V>> buckets = new HashMap<>(c.size());
-			for (V value:c) {
-				K key = keyExt.apply(value);
-				List<V> bucket = buckets.computeIfAbsent(key, (e)->new ArrayList<>());
-				bucket.add(value);
-			}
-			return buckets;
+	/**
+	 * 将Collection转换为Map。（Map不保证顺序）
+	 * @param collection   集合
+	 * @param keyExtractor 键值提取函数
+	 * @return 在每个元素中提取键值后，形成Map。相同键值的记录将发生叠加（仅保留最后的一个）
+	 * @param <K> The type of target object.
+	 * @param <V> The type of target object.
+	 */
+	public static <K, V> Map<K, V> group(Collection<V> collection, Function<V, K> keyExtractor) {
+		if (collection == null || collection.isEmpty())
+			return Collections.emptyMap();
+		Map<K, V> result = new HashMap<K, V>(collection.size());
+		for (V value : collection) {
+			K key = keyExtractor.apply(value);
+			result.put(key, value);
 		}
-		return Collections.emptyMap();
+		return result;
 	}
 	
 	/**
@@ -110,31 +116,12 @@ public class CollectionUtils {
 	 * @param <K> The type of target object.
 	 * @param <V> The type of target object.
 	 */
-	public static <K, V> Map<K, V> bucket(V[] array, Function<V, K> keyExtractor) {
+	public static <K, V> Map<K, V> group(V[] array, Function<V, K> keyExtractor) {
 		if (array == null || array.length == 0)
 			return Collections.emptyMap();
 		Map<K, V> result = new HashMap<K, V>(array.length);
 		for (V value : array) {
 			K key = keyExtractor.apply(value);
-			result.put(key, value);
-		}
-		return result;
-	}
-
-	/**
-	 * 将Collection转换为Map。（Map不保证顺序）
-	 * @param collection   集合
-	 * @param keyExtractor 键值提取函数
-	 * @return 在每个元素中提取键值后，形成Map。相同键值的记录将发生叠加（仅保留最后的一个）
-	 * @param <T> The type of target object.
-	 * @param <V> The type of target object.
-	 */
-	public static <T, V> Map<T, V> bucket(Collection<V> collection, Function<V, T> keyExtractor) {
-		if (collection == null || collection.isEmpty())
-			return Collections.emptyMap();
-		Map<T, V> result = new HashMap<T, V>(collection.size());
-		for (V value : collection) {
-			T key = keyExtractor.apply(value);
 			result.put(key, value);
 		}
 		return result;
@@ -293,9 +280,9 @@ public class CollectionUtils {
 	 *  @return result
 	 */
 	public static <T> List<T> filter(Collection<T> collection, Predicate<T> filter) {
-		List<T> list = new ArrayList<T>();
 		if (collection == null || collection.isEmpty())
-			return list;
+			return Collections.emptyList();
+		List<T> list = new ArrayList<T>(collection.size());
 		for (T obj : collection) {
 			if (filter.test(obj)) {
 				list.add(obj);
@@ -312,7 +299,7 @@ public class CollectionUtils {
 	 * @param <K> The type of target object.
 	 * @param <V> The type of target object.
 	 */
-	public static <K, V> Map<K, V> filter(Map<K, V> map, Predicate<Map.Entry<K, V>> filter) {
+	public static <K, V> Map<K, V> filter(Map<K, V> map, BiPredicate<K, V> filter) {
 		if (map == null) {
 			return Collections.emptyMap();
 		}
@@ -323,7 +310,7 @@ public class CollectionUtils {
 			result = new HashMap<K, V>(map.size());
 		}
 		for (Map.Entry<K, V> e : map.entrySet()) {
-			boolean applied = filter.test(e);
+			boolean applied = filter.test(e.getKey(),e.getValue());
 			if (applied) {
 				result.put(e.getKey(), e.getValue());
 			}
@@ -360,11 +347,11 @@ public class CollectionUtils {
 	 * @param <K> The type of target object.
 	 * @param <V> The type of target object.
 	 */
-	public static <K, V> void refine(Map<K, V> map, Predicate<Map.Entry<K, V>> filter) {
+	public static <K, V> void refine(Map<K, V> map, BiPredicate<K, V> filter) {
 		if (map != null) {
 			for (Iterator<Map.Entry<K, V>> iter = map.entrySet().iterator(); iter.hasNext(); ) {
 				Map.Entry<K, V> e = iter.next();
-				if (!filter.test(e)) {
+				if (!filter.test(e.getKey(),e.getValue())) {
 					iter.remove();
 				}
 			}
@@ -373,9 +360,13 @@ public class CollectionUtils {
 
 	/**
 	 * 将传入的对象转换为可遍历的对象。
+	 * Enumeration直到Java9才提供.asIterator()方法。在Java8下可用此代替。
 	 * @param data data
 	 * @return Iterator
 	 * @param <E> The type of target object.
+	 * 
+	 * 
+	 * 
 	 */
 	public static <E> Iterator<E> iterator(Enumeration<E> data) {
 		Assert.notNull(data);

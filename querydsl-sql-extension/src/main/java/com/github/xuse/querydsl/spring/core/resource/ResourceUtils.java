@@ -7,8 +7,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+
 import com.github.xuse.querydsl.util.Assert;
-import com.github.xuse.querydsl.util.StringUtils;
 
 public class ResourceUtils {
 
@@ -80,7 +80,10 @@ public class ResourceUtils {
 	}
 
 	public static URI toURI(String location) throws URISyntaxException {
-		return new URI(StringUtils.replace(location, " ", "%20"));
+		if(location==null) {
+			return null;
+		}
+		return new URI(location.replace(" ", "%20"));
 	}
 
 	public static File getFile(String resourceLocation) throws FileNotFoundException {

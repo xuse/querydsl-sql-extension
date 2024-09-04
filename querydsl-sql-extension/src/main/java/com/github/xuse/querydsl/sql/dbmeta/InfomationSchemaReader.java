@@ -113,7 +113,7 @@ public class InfomationSchemaReader implements SchemaReader {
 			c.setSeq(rs.getInt("ORDINAL_POSITION"));
 			return c;
 		});
-		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(keyColumns, KeyColumn::getKeyName, e -> e);
+		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(keyColumns, KeyColumn::getKeyName);
 		for (Constraint c : constraints) {
 			String name = c.getName();
 			List<KeyColumn> columns = map.get(name);

@@ -7,7 +7,6 @@ import java.util.Date;
  * @author Joey
  */
 public final class Primitives {
-
 	private Primitives() {
 	}
 

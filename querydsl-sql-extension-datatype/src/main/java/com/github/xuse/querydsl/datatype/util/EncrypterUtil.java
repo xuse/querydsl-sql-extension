@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.datatype.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -63,6 +63,15 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.xuse.querydsl.util.ArrayUtils;
+import com.github.xuse.querydsl.util.Assert;
+import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.IOUtils;
+import com.github.xuse.querydsl.util.JefBase64;
+import com.github.xuse.querydsl.util.ReaderInputStream;
+import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 
 public class EncrypterUtil {
 

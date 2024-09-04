@@ -509,7 +509,7 @@ public abstract class MetadataQuerySupport {
 		}
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		List<KeyColumn> indexColumns = doMetadataQuery("getIndexInfo", m -> m.getIndexInfo(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, false, false), rs -> getFromResultSet(rs, KeyColumn.class));
-		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(indexColumns, e -> e.keyName, e -> e);
+		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(indexColumns, e -> e.keyName);
 		for (Map.Entry<String, List<KeyColumn>> entry : map.entrySet()) {
 			Constraint index = new Constraint();
 			List<KeyColumn> columns = entry.getValue();

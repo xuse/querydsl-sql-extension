@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.datatype.util;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;

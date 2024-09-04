@@ -111,9 +111,9 @@
 							<goal>jar</goal>
 						</goals>
 						<configuration>
-							 <additionalJOptions>
-            					<additionalJOption>-Xdoclint:none</additionalJOption>
-          					</additionalJOptions>
+							<additionalJOptions>
+								<additionalJOption>-Xdoclint:none</additionalJOption>
+							</additionalJOptions>
 							<tags>
 								<tag>
 									<name>implSpec</name>
@@ -192,41 +192,42 @@
 					<tokenAuth>true</tokenAuth>
 				</configuration>
 			</plugin>
-        	<plugin>
-            	<groupId>org.jacoco</groupId>
-            	<artifactId>jacoco-maven-plugin</artifactId>
-            	<configuration>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<configuration>
 					<includes>
 						<include>com/github/xuse/querydsl/**</include>
 						<include>com/querydsl/core/types/SQLTemplatesEx.class</include>
 						<include>com/querydsl/sql/SQLSerializerAlter.class</include>
 						<include>com/querydsl/sql/TemplatesAccessor.class</include>
 					</includes>
-                	<excludes>
-	                    <exclude>com/github/xuse/querydsl/asm/**</exclude>
-	                    <exclude>com/github/xuse/querydsl/spring/core/resource/**</exclude>
-                	</excludes>
-            	</configuration>
-            	<executions>
-                <execution>
-                    <id>jacoco-prepare-agent</id>
-                    <goals>
-                        <goal>prepare-agent</goal>
-                    </goals>
-                </execution>
-                <execution>
-                    <id>jacoco-report</id>
-                    <phase>test</phase>
-                    <goals>
-                        <goal>report</goal>
-                    </goals>
-                    <configuration>
-                        <outputDirectory>target/test-report</outputDirectory>
-                        <footer>querydsl-sql-extension</footer>
-                    </configuration>
-                </execution>
-            	</executions>
-        	</plugin>
+					<excludes>
+						<exclude>com/github/xuse/querydsl/asm/**</exclude>
+						<exclude>
+							com/github/xuse/querydsl/spring/core/resource/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>jacoco-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>target/test-report</outputDirectory>
+							<footer>querydsl-sql-extension</footer>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>

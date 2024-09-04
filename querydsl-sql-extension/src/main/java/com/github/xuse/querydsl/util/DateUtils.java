@@ -37,22 +37,15 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-/**
- * <strong>Internal class, do not use directly.</strong>
- *
- * Standard date related utility methods.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- */
 public class DateUtils {
 
-	public static final int MILLISECONDS_IN_DAY = 86400000;
+	private static final int MILLISECONDS_IN_DAY = 86400000;
 
-	public static final int MILLISECONDS_IN_HOUR = 3600000;
+	private static final int MILLISECONDS_IN_HOUR = 3600000;
 
-	public static final int MILLISECONDS_IN_MINUTE = 60000;
+	private static final int MILLISECONDS_IN_MINUTE = 60000;
 
-	public static final int MILLISECONDS_IN_SECOND = 1000;
+	private static final int MILLISECONDS_IN_SECOND = 1000;
 
 	public static final int SECONDS_IN_DAY = 86400;
 
@@ -69,7 +62,6 @@ public class DateUtils {
      * dates in FTP format.
      */
 	private static final ThreadLocal<DateFormat> FTP_DATE_FORMAT = new ThreadLocal<DateFormat>() {
-
 		@Override
 		protected DateFormat initialValue() {
 			DateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
