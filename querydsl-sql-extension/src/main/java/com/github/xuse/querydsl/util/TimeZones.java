@@ -111,7 +111,7 @@ public class TimeZones {
 	 * </ul>
 	 * <p>
 	 * 本方法返回的时区均不支持夏令时，以免因为夏令时因素造成不期望的调用结果。
-	 * 例如{@code getByUTCOffset(10d)}不会返回澳大利亚东区时区，因为澳大利亚东部时区存在夏令时。
+	 * 例如{@code getByUTCOffset(10d)}<strong>不会</strong>返回澳大利亚东区时区，因为澳大利亚东部时区存在夏令时。
 	 * 
 	 * @param utcOffset from -12 to 14.
 	 * @return the time zone object.

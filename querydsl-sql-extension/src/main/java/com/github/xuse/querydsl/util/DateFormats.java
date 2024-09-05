@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.util;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -164,9 +165,13 @@ public abstract class DateFormats {
 		public String format(Date date) {
 			return date == null ? null : get().format(date);
 		}
+		
+		public String format(Instant date) {
+			return date == null ? null : get().format(Date.from(date));
+		}
 
 		/**
-		 * 格式化日期
+		 * 格式化日期，返回Optional对象
 		 * 
 		 * @param date 可以为null
 		 * @return Optional String result

@@ -86,6 +86,9 @@ public class StringUtilsTest {
 		assertEquals(" 000",StringUtils.rightPad(blank, 4, "00"));
 		
 		assertEquals(8, StringUtils.lastIndexOfAny(hello, new char[] { 'o' }, 3));
+		assertEquals(-1, StringUtils.lastIndexOfAny(hello, new char[] { 'x' }, 3));
+		assertEquals(-1, StringUtils.lastIndexOfAny(hello, new char[] { 'x' }, -1));
+		assertEquals(-1, StringUtils.lastIndexOfAny(null, new char[] { 'x' }, -1));
 		
 		assertEquals("a",StringUtils.lrtrim(trimString ,trims , trims));
 		assertEquals(4, StringUtils.ltrim(trimString ,trims).length());
@@ -107,15 +110,20 @@ public class StringUtilsTest {
 		
 		assertEquals("www.aaa", StringUtils.removeEnd("www.aaa.www", ".www"));
 		assertEquals("aaa.www", StringUtils.removeStart("www.aaa.www", "www."));
+		assertEquals(null,StringUtils.repeat(null, 4));
+		assertEquals("",StringUtils.repeat("a", -1));
 		assertEquals("aaaa",StringUtils.repeat('a', 4));
 		assertEquals("aaaa",StringUtils.repeat("a", 4));
+		assertEquals("aaaaaaaa",StringUtils.repeat("aa", 4));
+		assertEquals("aaaaaaaaaaaa",StringUtils.repeat("aaa", 4));
 		sb.setLength(0);
+		StringUtils.repeat(sb, "a", -1);
 		StringUtils.repeat(sb, "a", 4);
 		assertEquals("aaaa",sb.toString());
 		
 		assertEquals("?,?,?",StringUtils.repeat("?", ",", 3));
 		assertEquals("applebusclock",
-				StringUtils.replaceEach("abc",new String[] {"a","b","c"}, new String[] {"apple","bus","clock"})
+				StringUtils.replaceEach("abc",new String[] {"a","b","c", null}, new String[] {"apple","bus","clock", null})
 		);
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c"));
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c",' '));
@@ -148,12 +156,28 @@ public class StringUtilsTest {
 		assertEquals(" World",StringUtils.substringAfter("Hello, World", ","));
 		assertEquals("t",StringUtils.substringAfterLast("Hello, World,t", ","));
 		assertEquals("",StringUtils.substringAfter("Hello", ","));
+		assertEquals(null,StringUtils.substringAfter(null, ","));
+		assertEquals("Hello",StringUtils.substringAfter("Hello", ""));
+		assertEquals("Hello",StringUtils.substringAfter("Hello", null));
 		assertEquals("Hello",StringUtils.substringAfterIfExist("Hello", ","));
+		assertEquals("ello",StringUtils.substringAfterIfExist("Hello", "H"));
 		assertEquals("Hello",StringUtils.substringAfterLastIfExist("Hello", ","));
+		
+		assertEquals(null,StringUtils.substringAfterLastIfExist(null, ","));
+		assertEquals("ello",StringUtils.substringAfterLastIfExist("Hello", "H"));
+		assertEquals("",StringUtils.substringAfterLast("Hello", ""));
+		assertEquals("",StringUtils.substringAfterLastIfExist("Hello", ""));
 		assertEquals("",StringUtils.substringAfterLast("Hello", ","));
+		assertEquals(null,StringUtils.substringAfter(null, ","));
+		assertEquals(null,StringUtils.substringAfterLast(null, ","));
+		assertEquals(null,StringUtils.substringAfterIfExist(null, ","));
 		
 		assertEquals("Hello",StringUtils.substringBefore("Hello, World", ","));
 		assertEquals("Hello, World",StringUtils.substringBeforeLast("Hello, World,", ","));
+		assertEquals(null,StringUtils.substringBefore(null, ","));
+		assertEquals(null,StringUtils.substringBeforeLast(null, ","));
+		assertEquals("",StringUtils.substringBefore("Hello, World", ""));
+		assertEquals("Hello, World,",StringUtils.substringBeforeLast("Hello, World,", ""));
 		assertEquals("Hello, World,",StringUtils.substringBefore("Hello, World,", "x"));
 		assertEquals("Hello, World,",StringUtils.substringBeforeLast("Hello, World,", "x"));
 		
@@ -166,14 +190,18 @@ public class StringUtilsTest {
 		assertArrayEquals(data,china.getBytes(StandardCharsets.UTF_8));
 		
 		assertEquals(3.14159, StringUtils.toDouble("3.14159", null), 0.00001);
-		assertEquals(2.787, StringUtils.toDouble("3.1.4", 2.787), 0.00001);		
+		assertEquals(3.14159, StringUtils.toDouble("", 3.14159d), 0.00001);
+		assertEquals(2.787, StringUtils.toDouble("3.1.4", 2.787), 0.00001);
 		
 		assertEquals(3.1415, StringUtils.toFloat("3.1415", null), 0.00001);
+		assertEquals(3.1415, StringUtils.toFloat("", 3.1415f), 0.00001);
 		assertEquals(2.787, StringUtils.toFloat("3.1.4", 2.787f), 0.00001);		
 		
 		assertEquals(31415, StringUtils.toInt("31415", null));
+		assertEquals(31415, StringUtils.toInt("", 31415));
 		assertEquals(29999, StringUtils.toInt("3..2", 29999));		
 		assertEquals(31415L, StringUtils.toLong("31415", null));
+		assertEquals(31415L, StringUtils.toLong("", 31415L));
 		assertEquals(29999L, StringUtils.toLong("3..2", 29999L));		
 		
 		
@@ -186,6 +214,47 @@ public class StringUtilsTest {
 		assertEquals("true", StringUtils.toString(Boolean.TRUE));
 		
 		assertEquals("Hello, W...",StringUtils.truncate(hello, 8, "..."));
+		
+		assertEquals("http%3A%2F%2Fa%3Eb.com",StringUtils.urlEncode("http://a>b.com"));
+		assertEquals("http://a>b.com",StringUtils.urlDecode("http%3A%2F%2Fa%3Eb.com"));
+		assertEquals("a", StringUtils.concat("a"));
+	}
+	
+	@Test
+	public void testNullInput() {
+		String ret=null;
+		byte[] data=null;
+		assertEquals("",StringUtils.join(data, (char)0));
+		assertEquals("",StringUtils.join(data, (char)0, 0, 3));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testExceptionCase() {
+		StringUtils.toBoolean("s", null);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testExceptionCase2() {
+		StringUtils.toDouble("s", null);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testExceptionCase3() {
+		StringUtils.toFloat("s", null);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testExceptionCase4() {
+		StringUtils.toInt("s", null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testExceptionCase5() {
+		StringUtils.toLong("s", null);
+	}
+	
+	@Test
+	public void testTmp() {
 	}
 	
 	@Test
@@ -195,6 +264,7 @@ public class StringUtilsTest {
 		assertEquals("265b86c6",StringUtils.getCRC(hello));
 		assertEquals("82bb413746aee42f89dea2b59614f9ef",StringUtils.getMD5(new ByteArrayInputStream(hello.getBytes(StandardCharsets.UTF_8))));
 		assertEquals("82bb413746aee42f89dea2b59614f9ef",StringUtils.getMD5(hello));
+		assertEquals("grtBN0au5C+J3qK1lhT57w==",StringUtils.getMD5InBase64(hello));
 		assertEquals("907d14fb3af2b0d4f18c2d46abe8aedce17367bd",StringUtils.getSHA1(new ByteArrayInputStream(hello.getBytes(StandardCharsets.UTF_8))));
 		assertEquals("907d14fb3af2b0d4f18c2d46abe8aedce17367bd",StringUtils.getSHA1(hello));
 		assertEquals("03675ac53ff9cd1535ccc7dfcdfa2c458c5218371f418dc136f2d19ac1fbe8a5",StringUtils.getSHA256(new ByteArrayInputStream(hello.getBytes(StandardCharsets.UTF_8))));

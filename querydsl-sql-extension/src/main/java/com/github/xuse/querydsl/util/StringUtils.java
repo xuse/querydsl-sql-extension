@@ -7,7 +7,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,6 +15,8 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.zip.CRC32;
+
+import lombok.SneakyThrows;
 
 public class StringUtils {
 	private static final int INDEX_NOT_FOUND = -1;
@@ -82,14 +83,6 @@ public class StringUtils {
 	}
 
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
-
-	public static boolean isEmpty(String user) {
-		return user == null || user.length() == 0;
-	}
-
-	public static boolean isNotEmpty(String user) {
-		return user != null && user.length() > 0;
-	}
 
 	/**
 	 * @param data 数据
@@ -401,20 +394,23 @@ public class StringUtils {
 	 * @param str 要重复添加的字符串
 	 * @param n   重复次数
 	 */
+	@SneakyThrows
 	public static void repeat(Appendable sb, CharSequence str, int n) {
 		if (n <= 0)
 			return;
-		try {
-			for (int i = 0; i < n; i++) {
-				sb.append(str);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e.getMessage());
+		for (int i = 0; i < n; i++) {
+			sb.append(str);
 		}
 	}
 
 	private static final String EMPTY = "";
 
+	/**
+	 * 这个方法的返回约定与Apache commons-lang中的同名方法保持一致。
+	 * @param str
+	 * @param separator 为空时返回空字符串
+	 * @return substring after the separator.
+	 */
 	public static String substringAfterLast(final String str, final String separator) {
 		if (isEmpty(str)) {
 			return str;
@@ -496,11 +492,8 @@ public class StringUtils {
 	}
 
 	public static String substringAfter(final String str, final String separator) {
-		if (isEmpty(str)) {
+		if (isEmpty(str)||StringUtils.isEmpty(separator)) {
 			return str;
-		}
-		if (separator == null) {
-			return EMPTY;
 		}
 		final int pos = str.indexOf(separator);
 		if (pos == -1) {
@@ -2033,18 +2026,15 @@ public class StringUtils {
 	/*
 	 * 计算消息摘要
 	 */
+	@SneakyThrows
 	public final static byte[] hash(InputStream in, String algorithm) {
-		try {
-			MessageDigest mdTemp = MessageDigest.getInstance(algorithm);
-			byte[] b = new byte[4096];
-			int len;
-			while ((len = in.read(b)) != -1) {
-				mdTemp.update(b, 0, len);
-			}
-			return mdTemp.digest();
-		} catch (NoSuchAlgorithmException | IOException e) {
-			throw new RuntimeException(e);
+		MessageDigest mdTemp = MessageDigest.getInstance(algorithm);
+		byte[] b = new byte[4096];
+		int len;
+		while ((len = in.read(b)) != -1) {
+			mdTemp.update(b, 0, len);
 		}
+		return mdTemp.digest();
 	}
 
 	public static final char[] hexDigitsU = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
