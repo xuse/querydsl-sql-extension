@@ -3,9 +3,9 @@ package com.github.xuse.querydsl.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -1712,18 +1712,19 @@ public class StringUtils {
 	 */
 	public static String toFilename(String fname, String to) {
 		StringBuilder sb = new StringBuilder();
-		for (char c : fname.toCharArray()) {
+		int len = fname.length();
+		if (fname.charAt(len - 1) == '.') {
+			len--;
+		}
+		for (int index = 0; index < len; index++) {
+			char c = fname.charAt(index);
 			if (invalidCharsInFilename.indexOf(c) > -1) {
 				sb.append(to);
 			} else {
 				sb.append(c);
 			}
 		}
-		fname = sb.toString();
-		if (fname.endsWith(".")) {
-			fname = StringUtils.substringBeforeLast(fname, ".");
-		}
-		return fname;
+		return sb.toString();
 	}
 
 	/**
@@ -1731,32 +1732,27 @@ public class StringUtils {
 	 * @param charset charset
 	 * @return URL解码
 	 */
-	public static String urlDecode(String source, String charset) {
-		try {
-			return URLDecoder.decode(source, charset);
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e.getMessage());
-		}
+	@SneakyThrows
+	public static String urlDecode(String source, Charset charset) {
+		return URLDecoder.decode(source, charset.name());
 	}
 
 	/**
 	 * @param source source
 	 * @return URL解码
 	 */
+	@SneakyThrows
 	public static String urlDecode(String source) {
-		return urlDecode(source, "UTF-8");
+		return URLDecoder.decode(source, "UTF-8");
 	}
 
 	/**
 	 * @param source source
 	 * @return URL编码
 	 */
+	@SneakyThrows
 	public static String urlEncode(String source) {
-		try {
-			return URLEncoder.encode(source, "UTF-8").replace("+", "%20");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e.getMessage());
-		}
+		return URLEncoder.encode(source, "UTF-8").replace("+", "%20");
 	}
 
 	/**
@@ -1764,12 +1760,9 @@ public class StringUtils {
 	 * @param charset charset
 	 * @return URL编码
 	 */
-	public static String urlEncode(String source, String charset) {
-		try {
-			return URLEncoder.encode(source, charset).replace("+", "%20");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e.getMessage());
-		}
+	@SneakyThrows
+	public static String urlEncode(String source, Charset charset) {
+		return URLEncoder.encode(source, charset.name()).replace("+", "%20");
 	}
 
 	/**
