@@ -28,7 +28,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,51 +36,29 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Serializable;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Random;
+
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * <strong>Internal class, do not use directly.</strong>
- *
- * IO utility methods.
- *
- * <b>Note: Why not use commons-io?</b> While many of these utility methods are
- * also provided by the Apache commons-io library we prefer to our own
- * implementation to, using a external library might cause additional
- * constraints on users embedding FtpServer.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- */
+
 @Slf4j
 public class IOUtils {
-
 	/**
 	 * 将内存数据块写入文件
 	 * @param file file
 	 * @param data data
 	 * @throws IOException If encounter IOException
 	 */
-	public static void saveAsFile(File file, byte[] data) throws IOException {
+	public static void saveAsFile(File file, byte[] data){
 		saveAsFile(file, false, data);
-	}
-
-	/**
-	 * 将可序列化的对象保存到磁盘文件
-	 * @param aaa aaa
-	 * @param filePath filePath
-	 * @return true if saved.
-	 */
-	public static boolean saveObject(Serializable aaa, String filePath) {
-		return saveObject(aaa, new File(filePath));
 	}
 
 	/**
@@ -99,46 +76,8 @@ public class IOUtils {
 		}
 	}
 
-	/**
-	 *  Random number generator to make unique file name
-	 */
-	private static final Random RANDOM_GEN = new Random(System.currentTimeMillis());
-
-	/**
-	 * @return Get a <code>BufferedInputStream</code>.
-	 * @param in InputStream
-	 */
-	public static final BufferedInputStream getBufferedInputStream(InputStream in) {
-		BufferedInputStream bin = null;
-		if (in instanceof java.io.BufferedInputStream) {
-			bin = (BufferedInputStream) in;
-		} else {
-			bin = new BufferedInputStream(in);
-		}
-		return bin;
-	}
-
-	/**
-	 * @return Get a <code>BufferedOutputStream</code>.
-	 * @param out OutputStream
-	 */
-	public static final BufferedOutputStream getBufferedOutputStream(OutputStream out) {
-		BufferedOutputStream bout = null;
-		if (out instanceof java.io.BufferedOutputStream) {
-			bout = (BufferedOutputStream) out;
-		} else {
-			bout = new BufferedOutputStream(out);
-		}
-		return bout;
-	}
-
-	public static String toString(InputStream in, Charset charset) throws IOException {
-		try (Reader reader = new InputStreamReader(in, charset)) {
-			return toString(reader);
-		}
-	}
-
-	public static String toString(Reader reader) throws IOException {
+	@SneakyThrows
+	public static String toString(Reader reader){
 		if (reader == null)
 			return null;
 		StringBuilder sb = new StringBuilder(128);
@@ -158,127 +97,23 @@ public class IOUtils {
 	 *  @return 读到的文本
 	 *  @throws IOException IO操作异常
 	 */
-	public static String toString(URL url, Charset charset) throws IOException {
+	@SneakyThrows
+	public static String toString(URL url, Charset charset){
 		if (url == null)
 			return null;
-		return toString(new InputStreamReader(url.openStream(), charset));
-	}
-
-	/**
-	 * @return Get <code>BufferedReader</code>.
-	 * @param reader Reader
-	 */
-	public static final BufferedReader getBufferedReader(Reader reader) {
-		BufferedReader buffered = null;
-		if (reader instanceof java.io.BufferedReader) {
-			buffered = (BufferedReader) reader;
-		} else {
-			buffered = new BufferedReader(reader);
-		}
-		return buffered;
-	}
-
-	/**
-	 * @return Get <code>BufferedWriter</code>.
-	 * @param wr Writer
-	 */
-	public static final BufferedWriter getBufferedWriter(Writer wr) {
-		BufferedWriter bw = null;
-		if (wr instanceof java.io.BufferedWriter) {
-			bw = (BufferedWriter) wr;
-		} else {
-			bw = new BufferedWriter(wr);
-		}
-		return bw;
-	}
-
-	/**
-	 * @return Get unique file object.
-	 * @param oldFile File
-	 */
-	public static final File getUniqueFile(File oldFile) {
-		File newFile = oldFile;
-		while (true) {
-			if (!newFile.exists()) {
-				break;
-			}
-			newFile = new File(oldFile.getAbsolutePath() + '.' + Math.abs(RANDOM_GEN.nextLong()));
-		}
-		return newFile;
-	}
-
-	/**
-	 * No exception <code>InputStream</code> close method.
-	 * @param is InputStream
-	 */
-	public static final void close(InputStream is) {
-		if (is != null) {
-			try {
-				is.close();
-			} catch (Exception ex) {
-			}
+		try(Reader reader=new InputStreamReader(url.openStream(), charset)){
+			return toString(reader);
 		}
 	}
-
-	/**
-	 * No exception <code>OutputStream</code> close method.
-	 * @param os OutputStream
-	 */
-	public static final void close(OutputStream os) {
-		if (os != null) {
-			try {
-				os.close();
-			} catch (Exception ex) {
-			}
+	
+	@SneakyThrows
+	public static String toString(InputStream in, Charset charset){
+		try (Reader reader = new InputStreamReader(in, charset)) {
+			return toString(reader);
 		}
 	}
-
-	/**
-	 * No exception <code>java.io.Reader</code> close method.
-	 * @param rd Reader
-	 */
-	public static final void close(Reader rd) {
-		if (rd != null) {
-			try {
-				rd.close();
-			} catch (Exception ex) {
-			}
-		}
-	}
-
-	/**
-	 * No exception <code>java.io.Writer</code> close method.
-	 * @param wr Writer
-	 */
-	public static final void close(Writer wr) {
-		if (wr != null) {
-			try {
-				wr.close();
-			} catch (Exception ex) {
-			}
-		}
-	}
-
-	/**
-	 * @return Get exception stack trace.
-	 * @param ex Throwable
-	 */
-	public static final String getStackTrace(Throwable ex) {
-		String result = "";
-		if (ex != null) {
-			try {
-				StringWriter sw = new StringWriter();
-				PrintWriter pw = new PrintWriter(sw);
-				ex.printStackTrace(pw);
-				pw.close();
-				sw.close();
-				result = sw.toString();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		return result;
-	}
+	
+	
 
 	/**
 	 * Copy chars from a <code>Reader</code> to a <code>Writer</code>.
@@ -287,6 +122,9 @@ public class IOUtils {
 	 * @param output Writer
 	 */
 	public static final void copy(Reader input, Writer output, int bufferSize){
+		if(bufferSize<=0) {
+			bufferSize=1024;
+		}
 		char[] buffer = new char[bufferSize];
 		int n = 0;
 		try {
@@ -296,7 +134,6 @@ public class IOUtils {
 		}catch(IOException e) {
 			throw Exceptions.toRuntime(e);
 		}
-		
 	}
 
 	/**
@@ -306,42 +143,16 @@ public class IOUtils {
 	 * @param output OutputStream
 	 * @return bytes of copied.
 	 */
+	@SneakyThrows
 	public static final int copy(InputStream input, OutputStream output, int bufferSize) {
 		byte[] buffer = new byte[bufferSize];
 		int total = 0;
 		int n = 0;
-		try {
-			while ((n = input.read(buffer)) != -1) {
-				total += n;
-				output.write(buffer, 0, n);
-			}	
-		}catch(IOException e) {
-			throw Exceptions.toRuntime(e);
-		}
+		while ((n = input.read(buffer)) != -1) {
+			total += n;
+			output.write(buffer, 0, n);
+		}	
 		return total;
-		
-	}
-
-	/**
-	 * @param reader Reader
-	 * @return Read fully from reader
-	 */
-	public static final String readFully(Reader reader){
-		StringWriter writer = new StringWriter();
-		copy(reader, writer, 1024);
-		return writer.toString();
-	}
-
-	/**
-	 * Read fully from stream
-	 * @return content of stream
-	 * @param input InputStream
-	 */
-	public static final String readFully(InputStream input) {
-		StringWriter writer = new StringWriter();
-		InputStreamReader reader = new InputStreamReader(input);
-		copy(reader, writer, 1024);
-		return writer.toString();
 	}
 
 	/**
@@ -365,24 +176,13 @@ public class IOUtils {
 		return file.renameTo(target) ? target : null;
 	}
 
-	public static void createFolder(String path) {
-		createFolder(new File(path));
-	}
-
-	public static void createFolder(File file) {
-		if (file.exists() && file.isFile()) {
-			throw new RuntimeException("Duplicate name file exist. can't create directory " + file.getPath());
-		} else if (!file.exists()) {
-			file.mkdirs();
-		}
-	}
-
 	/**
 	 * @param file file
 	 * @param iss iss
 	 * @throws IOException If encounter IOException
 	 */
-	public static void saveAsFile(File file, InputStream... iss) throws IOException {
+	@SneakyThrows
+	public static void saveAsFile(File file, InputStream... iss) {
 		ensureParentFolder(file);
 		try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
 			for (InputStream is : iss) {
@@ -397,35 +197,31 @@ public class IOUtils {
 	 * @param file file
 	 * @throws IOException If encounter IOException
 	 */
-	public static void saveAsFile(File file, String... texts) throws IOException {
-		saveAsFile(file, null, texts);
+	public static void saveAsFile(File file, String... texts){
+		saveAsFile(file, Charset.defaultCharset(), texts);
 	}
 
-	public static void saveAsFile(File file, Charset charset, String... texts) throws IOException {
-		BufferedWriter os = getWriter(file, charset == null ? null : charset, false);
-		try {
+	@SneakyThrows
+	public static void saveAsFile(File file, Charset charset, String[] texts){
+		try(BufferedWriter os = getWriter(file, charset == null ? null : charset, false)) {
 			for (String text : texts) {
 				os.write(text);
 			}
-		} finally {
-			if (os != null) {
-				os.flush();
-				os.close();
-			}
 		}
 	}
+	
+	public static BufferedWriter getUTF8Writer(File target,boolean append) {
+		return getWriter(target, StandardCharsets.UTF_8, append);
+	}
 
+	@SneakyThrows
 	public static BufferedWriter getWriter(File target, Charset charSet, boolean append) {
 		ensureParentFolder(target);
-		try {
-			OutputStream os = new FileOutputStream(target, append);
-			if (charSet == null)
-				charSet = Charset.defaultCharset();
-			OutputStreamWriter osw = new OutputStreamWriter(os, charSet);
-			return new BufferedWriter(osw);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		OutputStream os = new FileOutputStream(target, append);
+		if (charSet == null)
+			charSet = Charset.defaultCharset();
+		OutputStreamWriter osw = new OutputStreamWriter(os, charSet);
+		return new BufferedWriter(osw);
 	}
 
 	/**
@@ -457,6 +253,9 @@ public class IOUtils {
 		int pos = file.getName().lastIndexOf(".");
 		String path = file.getParent();
 		if (StringUtils.isEmpty(path)) {
+			path=file.getAbsoluteFile().getParent();
+		}
+		if (StringUtils.isEmpty(path)) {
 			throw new IllegalArgumentException(file.getAbsolutePath() + " has no valid parent folder.");
 		}
 		String baseFilename = null;
@@ -481,44 +280,30 @@ public class IOUtils {
 	 * @return Object
 	 */
 	public static Object deserialize(byte[] data) {
+		if(data==null) {
+			return null;
+		}
 		return loadObject(new ByteArrayInputStream(data));
 	}
-
+	
+	@SneakyThrows
+	public static byte[] serialize(Serializable obj) {
+		try(ByteArrayOutputStream out=new ByteArrayOutputStream()){
+			saveObject(obj,out);
+			return out.toByteArray();
+		}
+	}
+	
 	/**
 	 * 将可序列化的对象存储到流中
 	 * @param obj obj
 	 * @param output output
 	 * @return boolean
 	 */
-	public static boolean saveObject(Serializable obj, OutputStream output) {
-		ObjectOutputStream out = null;
-		try {
-			out = new ObjectOutputStream(output);
-			out.writeObject(obj);
-			return true;
-		} catch (IOException ex) {
-			log.error("error", ex);
-			return false;
-		} finally {
-			closeQuietly(out);
-		}
-	}
-
-	/**
-	 * 将可序列化的对象转换到字节数组
-	 * @param obj obj
-	 * @return byte[]
-	 */
-	public static byte[] saveObject(Serializable obj) {
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream(2048);
-		try {
-			ObjectOutputStream out = new ObjectOutputStream(bytes);
-			out.writeObject(obj);
-			closeQuietly(out);
-			return bytes.toByteArray();
-		} catch (IOException e) {
-			throw Exceptions.illegalState("IO error", e);
-		}
+	@SneakyThrows
+	public static void saveObject(Serializable obj, OutputStream output) {
+		ObjectOutputStream out =new ObjectOutputStream(output);
+		out.writeObject(obj);
 	}
 
 	/**
@@ -527,13 +312,11 @@ public class IOUtils {
 	 * @param file file
 	 * @return boolean
 	 */
-	public static boolean saveObject(Serializable obj, File file) {
-		try {
-			ensureParentFolder(file);
-			return saveObject(obj, new FileOutputStream(file));
-		} catch (FileNotFoundException e) {
-			log.error("IO error", e);
-			return false;
+	@SneakyThrows
+	public static void saveObject(Serializable obj, File file) {
+		ensureParentFolder(file);
+		try (OutputStream os=new FileOutputStream(file)){
+			saveObject(obj, os);
 		}
 	}
 
@@ -542,22 +325,14 @@ public class IOUtils {
 	 * @param inn inn
 	 * @return Object
 	 */
+	@SneakyThrows
 	public static Object loadObject(InputStream inn) {
-		try {
-			ObjectInputStream in = (inn instanceof ObjectInputStream) ? (ObjectInputStream) inn : new ObjectInputStream(inn);
-			Object obj = in.readObject();
-			return obj;
-		} catch (ClassNotFoundException | IOException e) {
-			log.error("IO error", e);
-		} finally {
-			closeQuietly(inn);
-		}
-		return null;
+		ObjectInputStream in = (inn instanceof ObjectInputStream) ? (ObjectInputStream) inn
+				: new ObjectInputStream(inn);
+		Object obj = in.readObject();
+		return obj;
 	}
 
-	public static Object loadObject(byte[] objFile) {
-		return loadObject(new ByteArrayInputStream(objFile));
-	}
 
 	/**
 	 * 得到文件的扩展名（小写如果没有则返回空字符串）。如果传入的文件名包含路径，分析时会考虑最后一个\或/字符后满的部分才作为文件名。
@@ -594,34 +369,20 @@ public class IOUtils {
 		return fileName;
 	}
 
+	@SneakyThrows
 	public static byte[] toByteArray(URL url) {
 		try (InputStream in = url.openStream()) {
 			return toByteArray(in, -1);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
 	}
 
-	public static byte[] toByteArray(File file) throws IOException {
+	@SneakyThrows
+	public static byte[] toByteArray(File file){
 		try (InputStream in = new FileInputStream(file)) {
 			return toByteArray(in, -1);
 		}
 	}
 
-	// /**
-	// * 读取流数据到内存。注意这个方法会将数据流全部读入到内存中，因此不适用于很大的数据对象
-	// *
-	// * @param in
-	// * @throws IOException
-	// */
-	// public static byte[] toByteArray(InputStream in) throws IOException {
-	// try {
-	// byte[] msg = toByteArray(in, -1);
-	// return msg;
-	// } finally {
-	// in.close();
-	// }
-	// }
 	/**
 	 * 读取流数据到内存。注意这个方法会将数据流全部读入到内存中，因此不适用于很大的数据对象
 	 * @param in in
@@ -716,33 +477,6 @@ public class IOUtils {
 	}
 
 	/**
-	 * 将文件移动到指定目录下
-	 * @param file       文件
-	 * @param folder     目标文件夹
-	 * @param autoEscape 如果存在同名文件，则自动改名
-	 * @return boolean
-	 */
-	public static boolean moveToFolder(File file, File folder, boolean autoEscape) {
-		if (folder.exists() && folder.isFile()) {
-			throw new IllegalArgumentException("Target is a file.(" + folder.getAbsolutePath() + ")");
-		}
-		if (!folder.exists())
-			folder.mkdirs();
-		File target = new File(folder, file.getName());
-		if (target.exists()) {
-			if (autoEscape) {
-				target = escapeExistFile(target);
-			} else {
-				return false;
-			}
-		}
-		if (file.equals(target)) {
-			return true;
-		}
-		return move(file, target);
-	}
-
-	/**
 	 * 将文件移动为指定的新文件
 	 * @param oldFile oldFile
 	 * @param newFile newFile
@@ -786,18 +520,12 @@ public class IOUtils {
 	 * @param data data
 	 * @param file file
 	 * @param append boolean
-	 * @throws IOException If encounter IOException
 	 */
-	public static void saveAsFile(File file, boolean append, byte[] data) throws IOException {
+	@SneakyThrows
+	public static void saveAsFile(File file, boolean append, byte[] data) {
 		ensureParentFolder(file);
-		OutputStream out = new FileOutputStream(file, append);
-		try {
+		try(OutputStream out = new FileOutputStream(file, append)) {
 			out.write(data);
-		} finally {
-			if (out != null) {
-				out.flush();
-				out.close();
-			}
 		}
 	}
 
@@ -807,18 +535,11 @@ public class IOUtils {
 	 * @throws IOException If encounter IOException
 	 * @return File
 	 */
-	public static File saveAsTempFile(InputStream is) throws IOException {
+	@SneakyThrows
+	public static File saveAsTempFile(InputStream is) {
 		File f = File.createTempFile("~tmp", ".io");
 		saveAsFile(f, is);
 		return f;
-	}
-
-	public static InputStream getInputStream(File file) throws FileNotFoundException {
-		return new FileInputStream(file);
-	}
-
-	public static OutputStream getOutputStream(File output) throws FileNotFoundException {
-		return new FileOutputStream(output);
 	}
 
 	/**
@@ -853,7 +574,7 @@ public class IOUtils {
 		}
 	}
 
-	private static void load0(LineReader lr, Map<String, String> map, Boolean supportSection) throws IOException {
+	private static void load0(LineReader lr, Map<String, String> map, Boolean supportSection) throws IOException{
 		char[] convtBuf = new char[1024];
 		int limit;
 		int keyLen;
@@ -915,7 +636,6 @@ public class IOUtils {
 	}
 
 	static final class LineReader {
-
 		private char[] inCharBuf;
 
 		private char[] lineBuf = new char[1024];
@@ -1108,5 +828,10 @@ public class IOUtils {
 			}
 		}
 		return new String(out, 0, outLen);
+	}
+
+	@SneakyThrows
+	public static BufferedInputStream getInputStream(File file) {
+		return new BufferedInputStream(new FileInputStream(file));
 	}
 }

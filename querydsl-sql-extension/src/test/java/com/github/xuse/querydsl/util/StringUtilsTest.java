@@ -98,6 +98,7 @@ public class StringUtilsTest {
 		assertEquals("00 ",StringUtils.leftPad(blank, 3, "00"));
 		assertEquals("000 ",StringUtils.leftPad(blank, 4, "00"));
 		assertEquals(hello,StringUtils.leftPad(hello, 3, "00"));
+		assertEquals(hello,StringUtils.leftPad(hello, 3, '0'));
 		
 		assertEquals(null,StringUtils.rightPad(null, 3));
 		assertEquals("   ",StringUtils.rightPad(blank, 3));
@@ -106,6 +107,7 @@ public class StringUtilsTest {
 		assertEquals(" 00",StringUtils.rightPad(blank, 3, "00"));
 		assertEquals(" 000",StringUtils.rightPad(blank, 4, "00"));
 		assertEquals(hello,StringUtils.rightPad(hello, 3, "00"));
+		assertEquals(hello,StringUtils.rightPad(hello, 3, '0'));
 		
 		assertEquals(8, StringUtils.lastIndexOfAny(hello, new char[] { 'o' }, 3));
 		assertEquals(-1, StringUtils.lastIndexOfAny(hello, new char[] { 'x' }, 3));
@@ -219,6 +221,7 @@ public class StringUtilsTest {
 		
 		
 		assertEquals(true,StringUtils.toBoolean("true", Boolean.TRUE));
+		assertEquals(true,StringUtils.toBoolean("1", Boolean.TRUE));
 		assertEquals(true,StringUtils.toBoolean("y", Boolean.TRUE));
 		assertEquals(true,StringUtils.toBoolean("on", Boolean.TRUE));
 		assertEquals(true,StringUtils.toBoolean("T", Boolean.TRUE));
@@ -271,7 +274,6 @@ public class StringUtilsTest {
 	
 	@Test
 	public void testNullInput() {
-		String ret=null;
 		byte[] data=null;
 		assertEquals("",StringUtils.join(data, (char)0));
 		assertEquals("",StringUtils.join(data, (char)0, 0, 3));

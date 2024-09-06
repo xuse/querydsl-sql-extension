@@ -409,13 +409,9 @@ public class EncrypterUtil {
 	 *  @return File,实际保存的文件，不会覆盖已有的文件，会自动改名。
 	 */
 	public static File saveKey(SecretKey key, File file) {
-		try {
-			File f = IOUtils.escapeExistFile(file);
-			IOUtils.saveAsFile(f, false, key.getEncoded());
-			return f;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		File f = IOUtils.escapeExistFile(file);
+		IOUtils.saveAsFile(f, false, key.getEncoded());
+		return f;
 	}
 
 	/**
@@ -433,8 +429,6 @@ public class EncrypterUtil {
 			KeyFactory keyFactory = KeyFactory.getInstance(algom);
 			Key result = (isPublic) ? keyFactory.generatePublic(keySpec) : keyFactory.generatePrivate(keySpec);
 			return result;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
 		}
@@ -455,8 +449,6 @@ public class EncrypterUtil {
 			KeyFactory keyFactory = KeyFactory.getInstance(algom);
 			Key result = (isPublic) ? keyFactory.generatePublic(keySpec) : keyFactory.generatePrivate(keySpec);
 			return result;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
 		}

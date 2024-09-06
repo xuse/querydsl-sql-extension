@@ -205,15 +205,16 @@ public class Codecs {
             return JefBase64.decode(s);
         }
     };
+    
     private static final CsvCodec<Serializable> OTHER = new CsvCodec<Serializable>() {
         public String toString(Serializable t) {
-            return JefBase64.encode(IOUtils.saveObject(t));
+            return JefBase64.encode(IOUtils.serialize(t));
         }
 
         public Serializable fromString(String s) {
             if (s == null || s.length() == 0)
                 return null;
-            return (Serializable) IOUtils.loadObject(JefBase64.decode(s));
+            return (Serializable) IOUtils.deserialize(JefBase64.decode(s));
         }
     };
 
