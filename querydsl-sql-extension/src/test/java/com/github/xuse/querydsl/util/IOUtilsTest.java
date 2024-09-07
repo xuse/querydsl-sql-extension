@@ -14,8 +14,10 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.derby.iapi.services.io.ArrayInputStream;
 import org.junit.Test;
 
 import lombok.SneakyThrows;
@@ -61,15 +63,30 @@ public class IOUtilsTest {
 		File file=IOUtils.rename(temp,"test1.txt",true);
 		assertEquals("test1.txt",file.getName());
 		
+		byte[] data;
 		try(InputStream in=url.openStream()){
-			IOUtils.saveAsFile(temp, in);
+			assertTrue(IOUtils.toByteArray(in,6).length == 6);
+		}
+		try(InputStream in=url.openStream()){
+			data=IOUtils.toByteArray(in);
+			IOUtils.saveAsFile(temp, data);
 		}
 		file=IOUtils.rename(file,temp.getName(),false);
 		assertEquals(null, file);
 		
-		file=new File(temp.getParent(),"test1.txt");
-		file.delete();
 		
+		File tmp=IOUtils.saveAsTempFile(new ArrayInputStream(data));
+		assertTrue(tmp.exists());
+		tmp.delete();
+		
+		{
+			file=new File(temp.getParent(),"test1.txt");
+			File t=new File(temp.getParent(),"test2.txt");
+			boolean b = IOUtils.move(file, t);
+			if(b) {
+				t.delete();	
+			}
+		}
 		
 		assertTrue(IOUtils.toString(url, StandardCharsets.UTF_8).length()>0);
 		assertTrue(IOUtils.toString((URL)null, StandardCharsets.UTF_8)==null);
@@ -87,9 +104,21 @@ public class IOUtilsTest {
 		if(!dir.exists()){
 			dir.mkdirs();	
 		}
+		IOUtils.saveAsFile(new File("asb/t1.txt"), a);
+		IOUtils.saveAsFile(new File("asb/asv/t1.txt"), a);
+		for(File f:IOUtils.listFiles(new File("asb"), "txt")) {
+			assertEquals("txt", IOUtils.getExtName(f.getName()));
+		};
+		for(File f:IOUtils.listFiles(new File("asb"))) {
+			assertEquals("txt", IOUtils.getExtName(f.getName()));
+		};
+		for(File f:IOUtils.listFolders(new File("asb"))) {
+			assertTrue(f.isDirectory());
+		};
 		IOUtils.deleteTree(dir, false);
 		
 		byte[] ret=IOUtils.serialize(a);
+		assertEquals(null, IOUtils.deserialize(null));
 		assertEquals(a, IOUtils.deserialize(ret));
 		
 		IOUtils.ensureParentFolder(path);
@@ -99,21 +128,14 @@ public class IOUtilsTest {
 		assertEquals("test(1).txt",file.getName());
 		
 		assertEquals("txt",IOUtils.getExtName(temp.getName()));
+		assertEquals("",IOUtils.getExtName("ssss"));
 		assertEquals("test",IOUtils.removeExt(temp.getName()));
+		assertEquals("test",IOUtils.removeExt("test"));
 		
 		try(BufferedWriter w = IOUtils.getUTF8Writer(temp, true)){
 			w.write(a);
 			w.newLine();
 		};
-		
-		for(File f:IOUtils.listFiles(path, "txt")) {
-			assertEquals("txt", IOUtils.getExtName(f.getName()));
-		};
-		
-		for(File f:IOUtils.listFolders(path)) {
-			assertTrue(f.isDirectory());
-		};
-		
 		Object obj;
 		IOUtils.saveObject(a, temp);
 		try(InputStream in=IOUtils.getInputStream(temp)){
@@ -123,7 +145,26 @@ public class IOUtilsTest {
 		
 	}
 	
+	@Test
+	public void testProperties() {
+		URL url=this.getClass().getResource("/test.properties");
+		Map<String,String> map=IOUtils.loadProperties(url);
+		assertEquals(5,map.size());
+		
+		url=this.getClass().getResource("/test.ini");
+		map=IOUtils.loadProperties(url);
+		assertEquals(65,map.size());
+		
+		map=IOUtils.loadProperties(url,true);
+		map.forEach((k,v)->System.out.println(k+": "+v));
+		assertEquals(116,map.size());
+	}
 	
+	@Test(expected = IllegalArgumentException.class)
+	public void testPropertiesException() {
+		URL url=this.getClass().getResource("/testerror.properties");
+		IOUtils.loadProperties(url);
+	}
 	
 	@Test
 	public void testCloseException() {

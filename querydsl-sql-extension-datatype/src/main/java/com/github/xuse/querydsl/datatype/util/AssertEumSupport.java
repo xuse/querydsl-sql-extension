@@ -1,12 +1,16 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.datatype.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
+
+import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.StringUtils;
 
 public interface AssertEumSupport {
 

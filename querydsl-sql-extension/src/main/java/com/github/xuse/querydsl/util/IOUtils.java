@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.CharArrayWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
@@ -121,18 +122,15 @@ public class IOUtils {
 	 * @param input Reader
 	 * @param output Writer
 	 */
+	@SneakyThrows
 	public static final void copy(Reader input, Writer output, int bufferSize){
 		if(bufferSize<=0) {
 			bufferSize=1024;
 		}
 		char[] buffer = new char[bufferSize];
 		int n = 0;
-		try {
-			while ((n = input.read(buffer)) != -1) {
-				output.write(buffer, 0, n);
-			}	
-		}catch(IOException e) {
-			throw Exceptions.toRuntime(e);
+		while ((n = input.read(buffer)) != -1) {
+			output.write(buffer, 0, n);
 		}
 	}
 
@@ -399,6 +397,7 @@ public class IOUtils {
 	 * @param length 要读取的字节数，-1表示不限制。
 	 * @return byte[]
 	 */
+	@SneakyThrows
 	public static byte[] toByteArray(InputStream in, int length) {
 		byte[] message;
 		int buf = 2048;
@@ -413,8 +412,7 @@ public class IOUtils {
 				int left = length;
 				while (left >= buf) {
 					if ((n = in.read(pBuffer)) == -1) {
-						left = 0;
-						break;
+						left = 0;break;
 					}
 					left -= n;
 					out.write(pBuffer, 0, n);
@@ -428,8 +426,6 @@ public class IOUtils {
 				}
 			}
 			message = out.toByteArray();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
 		return message;
 	}
@@ -553,25 +549,21 @@ public class IOUtils {
 		return loadProperties(in, false);
 	}
 
-	public static Map<String, String> loadProperties(URL in, Boolean supportSection) {
+	/**
+	 * @implSpec
+	 * 开启section支持后可以支持ini格式文件，ini文件中通过[section name]方式将文件分成多段，每段的下可以有重复的配置项名称。
+	 * 为了区分不同section下的相同配置，开启section支持后key的格式为 {@code section|key}。
+	 * @param in URL
+	 * @param supportSection true可以开启section支持。
+	 * @return 配置项内容
+	 */
+	@SneakyThrows public static Map<String, String> loadProperties(URL in, Boolean supportSection) {
 		Assert.notNull(in);
 		Map<String, String> result = new LinkedHashMap<String, String>();
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(in.openStream()))) {
-			loadProperties(reader, result, supportSection);
-		} catch (IOException e) {
-			throw Exceptions.toRuntime(e);
+		try (LineReader reader = new LineReader(new BufferedReader(new InputStreamReader(in.openStream())))) {
+			load0(reader, result, supportSection);
 		}
 		return result;
-	}
-
-	private static final void loadProperties(BufferedReader in, Map<String, String> map, Boolean supportSecion) {
-		try {
-			load0(new LineReader(in), map, supportSecion);
-		} catch (Exception e) {
-			log.error("load error", e);
-		} finally {
-			closeQuietly(in);
-		}
 	}
 
 	private static void load0(LineReader lr, Map<String, String> map, Boolean supportSection) throws IOException{
@@ -635,7 +627,7 @@ public class IOUtils {
 		}
 	}
 
-	static final class LineReader {
+	static final class LineReader implements AutoCloseable{
 		private char[] inCharBuf;
 
 		private char[] lineBuf = new char[1024];
@@ -744,6 +736,11 @@ public class IOUtils {
 				}
 			}
 		}
+
+		@Override
+		public void close(){
+			closeQuietly(reader);
+		}
 	}
 
 	private static boolean isSection(String key) {
@@ -833,5 +830,85 @@ public class IOUtils {
 	@SneakyThrows
 	public static BufferedInputStream getInputStream(File file) {
 		return new BufferedInputStream(new FileInputStream(file));
+	}
+	
+	
+	/**
+	 * 将输入流中所有非[0-9a-fA-F]以外的字符全部丢弃，然后作为16进制文本，转换为原始的字节数组
+	 * @param input input
+	 * @throws IOException If encounter IOException
+	 * @return byte[] value
+	 */
+	public static byte[] hexReader2byte(Reader input) throws IOException {
+		CharArrayWriter cw = new CharArrayWriter(512);
+		int c;
+		while ((c = input.read()) > -1) {
+			if (c < 48 || (c > 57 && c < 65) || (c > 70 && c < 97) || c > 102) {
+				continue;
+			}
+			cw.append((char) c);
+		}
+		return hex2byte(cw.toCharArray(), false);
+	}
+
+	/**
+	 * 将二进制文本列表转换为字节数组
+	 * @param hexString hexString
+	 * @param hasSpace hasSpace
+	 * @throws IOException If encounter IOException
+	 * @return byte[] value
+	 */
+	public static byte[] hex2byte(char[] hexString, boolean hasSpace) throws IOException {
+		int len = hexString.length;
+		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
+		int count = 0;
+		for (int i = 0; i < len; i++) {
+			char c1 = hexString[i];
+			char c2 = hexString[++i];
+			int i1 = hexChar2dec(c1);
+			int i2 = hexChar2dec(c2);
+			result[count++] = (byte) ((i1 << 4) + i2);
+			if (hasSpace)
+				++i;
+		}
+		return result;
+	}
+
+	/**
+	 * byte2hex的逆运算（有实际用处吗？） 实际使用可以用Byte Byte.parseByte("dd", 16);
+	 * @param hexString hexString
+	 * @param hasSpace hasSpace
+	 * @return 二进制数据
+	 */
+	public static byte[] hex2byte(CharSequence hexString, boolean hasSpace) {
+		int len = hexString.length();
+		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
+		int count = 0;
+		for (int i = 0; i < len; i++) {
+			char c1 = hexString.charAt(i);
+			char c2 = hexString.charAt(++i);
+			int i1 = hexChar2dec(c1);
+			int i2 = hexChar2dec(c2);
+			result[count++] = (byte) ((i1 << 4) + i2);
+			if (hasSpace)
+				++i;
+		}
+		return result;
+	}
+
+	/*
+	 * 将输入的十六进制字符转换为十进制数字
+	 */
+	private static int hexChar2dec(char hex) {
+		if (hex > 47 && hex < 58) {
+			hex -= 48;
+		} else if (hex > 64 && hex < 71) {
+			hex -= 55;
+		} else if (hex > 96 && hex < 103) {
+			hex -= 87;
+		} else {
+			throw new RuntimeException(hex + "is not a valid hex char.");
+		}
+		return hex;
 	}
 }

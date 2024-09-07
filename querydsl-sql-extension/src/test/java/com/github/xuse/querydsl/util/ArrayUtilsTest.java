@@ -214,9 +214,9 @@ public class ArrayUtilsTest {
 		arrs=ArrayUtils.setValueAndExpandArray(INT_ARRAY, -4, 10);
 		assertEquals(4, Array.getLength(arrs));
 		
-		assertEquals(3,ArrayUtils.stream(DOUBLE_ARRAY).toList().size());
-		assertEquals(3,ArrayUtils.stream(LONG_ARRAY).toList().size());
-		assertEquals(3,ArrayUtils.stream(INT_ARRAY).toList().size());
+		assertEquals(3,ArrayUtils.stream(DOUBLE_ARRAY).toArray().clone().length);
+		assertEquals(3,ArrayUtils.stream(LONG_ARRAY).toArray().length);
+		assertEquals(3,ArrayUtils.stream(INT_ARRAY).toArray().length);
 
 		bytes=ArrayUtils.subArray(BYTE_ARRAY, 2);
 		assertEquals(2,bytes.length);
