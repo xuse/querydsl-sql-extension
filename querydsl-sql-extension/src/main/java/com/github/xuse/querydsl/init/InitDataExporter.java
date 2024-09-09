@@ -11,16 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
+import com.github.xuse.querydsl.asm.ASMUtils;
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.Opcodes;
+import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.init.csv.Codecs;
 import com.github.xuse.querydsl.init.csv.CsvFileWriter;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
-import com.github.xuse.querydsl.util.ASMUtils;
-import com.github.xuse.querydsl.util.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;

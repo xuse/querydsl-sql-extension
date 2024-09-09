@@ -33,7 +33,7 @@ public class Assert {
 	 */
 	public static void notNull(Object obj) {
 		if (obj == null)
-			throw new NullPointerException("The input parameter must not be null!");
+			throw new IllegalArgumentException("The input parameter must not be null!");
 	}
 
 	/**
@@ -43,19 +43,7 @@ public class Assert {
 	 */
 	public static void notNull(Object obj, String msg) {
 		if (obj == null)
-			throw new NullPointerException(msg);
-	}
-
-	/**
-	 *  仅为向下兼容保留
-	 *  @param obj obj
-	 *  @param msg msg
-	 */
-	@Deprecated
-	public static void notNull(Object obj, String... msg) {
-		if (msg.length == 0)
-			notNull(obj);
-		notNull(obj, msg[0]);
+			throw new IllegalArgumentException(msg);
 	}
 
 	/**
@@ -65,7 +53,7 @@ public class Assert {
 	 */
 	public static void isNull(Object obj, String msg) {
 		if (obj != null)
-			throw new NullPointerException(msg);
+			throw new IllegalArgumentException(msg);
 	}
 
 	/**
@@ -153,7 +141,7 @@ public class Assert {
 	 */
 	public static void equals(Object obj1, Object obj2) {
 		if (!Objects.equals(obj1, obj2))
-			throw new RuntimeException("Expect " + obj1 + " but get " + obj2);
+			throw new IllegalArgumentException("Expect " + obj1 + " but get " + obj2);
 	}
 
 	/**
@@ -164,7 +152,7 @@ public class Assert {
 	 */
 	public static void equals(Object obj1, Object obj2, String string) {
 		if (!Objects.equals(obj1, obj2))
-			throw new RuntimeException(string);
+			throw new IllegalArgumentException(string);
 	}
 
 	/**
@@ -201,14 +189,14 @@ public class Assert {
 
 	/**
 	 *  断言数值在指定的范围之内
-	 *  @param length length
+	 *  @param value length
 	 *  @param i i
 	 *  @param j j
 	 *  @param string string
 	 */
-	public static void between(int length, int i, int j, String string) {
-		if (length < i || length > j) {
-			throw new RuntimeException(string);
+	public static void between(int value, int i, int j, String string) {
+		if (value < i || value > j) {
+			throw new IllegalArgumentException(string);
 		}
 	}
 
@@ -267,9 +255,9 @@ public class Assert {
 	 *  @param value value
 	 *  @param array array
 	 */
-	public static void isInArray(int value, int[] array) {
+	public static void isInArray(int value, int[] array, String message) {
 		if (!ArrayUtils.contains(array, value)) {
-			throw new NoSuchElementException("Not Found: " + value);
+			throw new NoSuchElementException(message+" Not Found: " + value);
 		}
 	}
 
@@ -279,9 +267,9 @@ public class Assert {
 	 */
 	public static void fileExist(File file) {
 		if (!file.exists()) {
-			throw new RuntimeException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
+			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
 		} else if (file.isDirectory()) {
-			throw new RuntimeException(new FileNotFoundException(file.getAbsolutePath() + " is a Directory."));
+			throw new IllegalArgumentException(new FileNotFoundException(file.getAbsolutePath() + " is a Directory."));
 		}
 	}
 
@@ -301,9 +289,9 @@ public class Assert {
 	 */
 	public static void folderExist(File file) {
 		if (!file.exists()) {
-			throw new RuntimeException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
+			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
 		} else if (file.isFile()) {
-			throw new RuntimeException(new FileNotFoundException(file.getAbsolutePath() + " is a File."));
+			throw new IllegalArgumentException(new FileNotFoundException(file.getAbsolutePath() + " is a File."));
 		}
 	}
 
@@ -324,7 +312,7 @@ public class Assert {
 	 */
 	public static void isNotEmpty(String text, String msg) {
 		if (text == null || text.length() == 0) {
-			throw new RuntimeException(msg);
+			throw new IllegalArgumentException(msg);
 		}
 	}
 

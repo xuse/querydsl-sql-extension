@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.asm;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -7,11 +7,7 @@ import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.github.xuse.querydsl.asm.AnnotationVisitor;
-import com.github.xuse.querydsl.asm.ClassReader;
-import com.github.xuse.querydsl.asm.ClassVisitor;
-import com.github.xuse.querydsl.asm.MethodVisitor;
-import com.github.xuse.querydsl.asm.Opcodes;
+import com.github.xuse.querydsl.util.Primitives;
 
 public class ASMUtils {
 

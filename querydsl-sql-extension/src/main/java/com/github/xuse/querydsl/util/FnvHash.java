@@ -90,8 +90,11 @@ public final class FnvHash {
 		return hash;
 	}
 
-	// 按小写字母进行hash计算
+	// 如果出现字母，按小写字母进行hash计算
 	public static long fnv1a64Lower(CharSequence key) {
+		if(key==null) {
+			return 0;
+		}
 		long hashCode = BASIC_64;
 		for (int i = 0; i < key.length(); ++i) {
 			char ch = key.charAt(i);
@@ -107,7 +110,11 @@ public final class FnvHash {
 		return hashCode;
 	}
 
+	// 如果出现字母，按小写字母进行hash计算
 	public static int fnv1a32Lower(CharSequence key) {
+		if(key==null) {
+			return 0;
+		}
 		int hashCode = BASIC_32;
 		for (int i = 0; i < key.length(); ++i) {
 			char ch = key.charAt(i);

@@ -1,10 +1,10 @@
 package com.github.xuse.querydsl.sql.expression;
 
-import static com.github.xuse.querydsl.util.ASMUtils.doUnwrap;
-import static com.github.xuse.querydsl.util.ASMUtils.getDesc;
-import static com.github.xuse.querydsl.util.ASMUtils.getMethodDesc;
-import static com.github.xuse.querydsl.util.ASMUtils.getType;
-import static com.github.xuse.querydsl.util.ASMUtils.iconst;
+import static com.github.xuse.querydsl.asm.ASMUtils.doUnwrap;
+import static com.github.xuse.querydsl.asm.ASMUtils.getDesc;
+import static com.github.xuse.querydsl.asm.ASMUtils.getMethodDesc;
+import static com.github.xuse.querydsl.asm.ASMUtils.getType;
+import static com.github.xuse.querydsl.asm.ASMUtils.iconst;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -17,10 +17,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuse.querydsl.asm.ASMUtils;
 import com.github.xuse.querydsl.asm.ClassWriter;
 import com.github.xuse.querydsl.asm.MethodVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
-import com.github.xuse.querydsl.util.ASMUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.Primitives;

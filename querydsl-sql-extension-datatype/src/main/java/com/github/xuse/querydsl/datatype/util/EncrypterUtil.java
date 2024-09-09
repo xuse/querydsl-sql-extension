@@ -714,16 +714,6 @@ public class EncrypterUtil {
 		return JefBase64.decode(in);
 	}
 
-	/**
-	 *  字节组编码为可见字符（base64）
-	 *
-	 *  @param data data
-	 *  @return 密文
-	 */
-	public static byte[] base64Decode(byte[] data) {
-		return JefBase64.decodeFast(data, 0, data.length, JefBase64.STANDARD);
-	}
-
 	private EncrypterUtil() {
 	}
 

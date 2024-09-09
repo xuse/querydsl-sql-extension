@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.util;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
@@ -11,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.UUID;
@@ -20,7 +20,7 @@ import lombok.SneakyThrows;
 
 public class StringUtils {
 	private static final int INDEX_NOT_FOUND = -1;
-	
+
 	public static final String SPACE = " ";
 
 	private static final String invalidCharsInFilename = "\t\\/|\"*?:<>\t\n\r";// 文件名中禁用的字符
@@ -91,7 +91,7 @@ public class StringUtils {
 	 */
 	public static String join(List<String> data, char sep) {
 		if (data == null || data.isEmpty())
-			return "";
+			return EMPTY;
 		StringBuilder sb = new StringBuilder(32);
 		sb.append(data.get(0));
 		int max = data.size();
@@ -103,25 +103,27 @@ public class StringUtils {
 
 	////////////
 	/**
+	 * @param has   space character between bytes.
 	 * @param bytes bytes
 	 * @return Get hex string from byte array(lower cases).
 	 */
-	public static String toHexString(byte[] bytes) {
+	public static String toHexString(byte[] bytes, boolean hasSpace) {
 		if (bytes == null || bytes.length == 0) {
 			return EMPTY;
 		}
-		return toHex0(bytes, 0, bytes.length, hexDigitsL);
+		return hasSpace ? toHex1(bytes, 0, bytes.length, ' ', hexDigitsL) : toHex0(bytes, 0, bytes.length, hexDigitsL);
 	}
 
 	/**
+	 * @param has   space character between bytes.
 	 * @param bytes bytes
 	 * @return Get hex string from byte array(upper cases).
 	 */
-	public final static String toHexStringUppercase(byte[] bytes) {
+	public final static String toHexStringUppercase(byte[] bytes, boolean hasSpace) {
 		if (bytes == null || bytes.length == 0) {
 			return EMPTY;
 		}
-		return toHex0(bytes, 0, bytes.length, hexDigitsU);
+		return hasSpace ? toHex1(bytes, 0, bytes.length, ' ', hexDigitsU) : toHex0(bytes, 0, bytes.length, hexDigitsU);
 	}
 
 	/**
@@ -350,7 +352,7 @@ public class StringUtils {
 
 	public static String toString(Object obj) {
 		if (obj == null)
-			return "";
+			return EMPTY;
 		return obj.toString();
 	}
 
@@ -395,7 +397,7 @@ public class StringUtils {
 	 * @param n   重复次数
 	 */
 	@SneakyThrows
-	public static void repeat(Appendable sb, CharSequence str, int n) {
+	public static void repeatTo(Appendable sb, CharSequence str, int n) {
 		if (n <= 0)
 			return;
 		for (int i = 0; i < n; i++) {
@@ -407,6 +409,7 @@ public class StringUtils {
 
 	/**
 	 * 这个方法的返回约定与Apache commons-lang中的同名方法保持一致。
+	 * 
 	 * @param str
 	 * @param separator 为空时返回空字符串
 	 * @return substring after the separator.
@@ -492,7 +495,7 @@ public class StringUtils {
 	}
 
 	public static String substringAfter(final String str, final String separator) {
-		if (isEmpty(str)||StringUtils.isEmpty(separator)) {
+		if (isEmpty(str) || StringUtils.isEmpty(separator)) {
 			return str;
 		}
 		final int pos = str.indexOf(separator);
@@ -626,13 +629,6 @@ public class StringUtils {
 
 	/**
 	 * <p>
-	 * The maximum size to which the padding constant(s) can expand.
-	 * </p>
-	 */
-	private static final int PAD_LIMIT = 8192;
-
-	/**
-	 * <p>
 	 * Right pad a String with a specified character.
 	 * </p>
 	 *
@@ -663,9 +659,6 @@ public class StringUtils {
 		final int pads = size - str.length();
 		if (pads <= 0) {
 			return str; // returns original String when possible
-		}
-		if (pads > PAD_LIMIT) {
-			return rightPad(str, size, String.valueOf(padChar));
 		}
 		return str.concat(repeat(padChar, pads));
 	}
@@ -710,10 +703,9 @@ public class StringUtils {
 		if (pads <= 0) {
 			return str; // returns original String when possible
 		}
-		if (padLen == 1 && pads <= PAD_LIMIT) {
+		if (padLen == 1) {
 			return rightPad(str, size, padStr.charAt(0));
 		}
-
 		if (pads == padLen) {
 			return str.concat(padStr);
 		} else if (pads < padLen) {
@@ -788,9 +780,6 @@ public class StringUtils {
 		if (pads <= 0) {
 			return str; // returns original String when possible
 		}
-		if (pads > PAD_LIMIT) {
-			return leftPad(str, size, String.valueOf(padChar));
-		}
 		return repeat(padChar, pads).concat(str);
 	}
 
@@ -834,7 +823,7 @@ public class StringUtils {
 		if (pads <= 0) {
 			return str; // returns original String when possible
 		}
-		if (padLen == 1 && pads <= PAD_LIMIT) {
+		if (padLen == 1) {
 			return leftPad(str, size, padStr.charAt(0));
 		}
 
@@ -872,8 +861,6 @@ public class StringUtils {
 	 *         if null String input
 	 */
 	public static String repeat(final String str, final int repeat) {
-		// Performance tuned for 2.0 (JDK1.4)
-
 		if (str == null) {
 			return null;
 		}
@@ -884,10 +871,6 @@ public class StringUtils {
 		if (repeat == 1 || inputLength == 0) {
 			return str;
 		}
-		if (inputLength == 1 && repeat <= PAD_LIMIT) {
-			return repeat(str.charAt(0), repeat);
-		}
-
 		final int outputLength = inputLength * repeat;
 		switch (inputLength) {
 		case 1:
@@ -1112,7 +1095,7 @@ public class StringUtils {
 	 * @return an array of parsed Strings, {@code null} if null String input
 	 */
 	public static String[] split(final String str, final String separatorChars) {
-		return splitWorker(str, separatorChars, -1, false);
+		return splitWorker(str, separatorChars, -1);
 	}
 
 	/**
@@ -1154,7 +1137,7 @@ public class StringUtils {
 	 * @return an array of parsed Strings, {@code null} if null String input
 	 */
 	public static String[] split(final String str, final String separatorChars, final int max) {
-		return splitWorker(str, separatorChars, max, false);
+		return splitWorker(str, separatorChars, max);
 	}
 
 	/**
@@ -1187,7 +1170,7 @@ public class StringUtils {
 	 * @return an array of parsed Strings, {@code null} if null String was input
 	 */
 	public static String[] splitByWholeSeparator(final String str, final String separator) {
-		return splitByWholeSeparatorWorker(str, separator, -1, false);
+		return splitByWholeSeparatorWorker(str, separator, -1);
 	}
 
 	/**
@@ -1224,82 +1207,7 @@ public class StringUtils {
 	 * @return an array of parsed Strings, {@code null} if null String was input
 	 */
 	public static String[] splitByWholeSeparator(final String str, final String separator, final int max) {
-		return splitByWholeSeparatorWorker(str, separator, max, false);
-	}
-
-	/**
-	 * <p>
-	 * Splits the provided text into an array, separator string specified.
-	 * </p>
-	 *
-	 * <p>
-	 * The separator is not included in the returned String array. Adjacent
-	 * separators are treated as separators for empty tokens. For more control over
-	 * the split use the StrTokenizer class.
-	 * </p>
-	 *
-	 * <p>
-	 * A {@code null} input String returns {@code null}. A {@code null} separator
-	 * splits on whitespace.
-	 * </p>
-	 *
-	 * <pre>
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens(null, *)               = null
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("", *)                 = []
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab de fg", null)      = ["ab", "de", "fg"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab   de fg", null)    = ["ab", "", "", "de", "fg"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab:cd:ef", ":")       = ["ab", "cd", "ef"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab-!-cd-!-ef", "-!-") = ["ab", "cd", "ef"]
-	 * </pre>
-	 *
-	 * @param str       the String to parse, may be null
-	 * @param separator String containing the String to be used as a delimiter,
-	 *                  {@code null} splits on whitespace
-	 * @return an array of parsed Strings, {@code null} if null String was input
-	 * @since 2.4
-	 */
-	public static String[] splitByWholeSeparatorPreserveAllTokens(final String str, final String separator) {
-		return splitByWholeSeparatorWorker(str, separator, -1, true);
-	}
-
-	/**
-	 * <p>
-	 * Splits the provided text into an array, separator string specified. Returns a
-	 * maximum of {@code max} substrings.
-	 * </p>
-	 *
-	 * <p>
-	 * The separator is not included in the returned String array. Adjacent
-	 * separators are treated as separators for empty tokens. For more control over
-	 * the split use the StrTokenizer class.
-	 * </p>
-	 *
-	 * <p>
-	 * A {@code null} input String returns {@code null}. A {@code null} separator
-	 * splits on whitespace.
-	 * </p>
-	 *
-	 * <pre>
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens(null, *, *)               = null
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("", *, *)                 = []
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab de fg", null, 0)      = ["ab", "de", "fg"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab   de fg", null, 0)    = ["ab", "", "", "de", "fg"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab:cd:ef", ":", 2)       = ["ab", "cd:ef"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab-!-cd-!-ef", "-!-", 5) = ["ab", "cd", "ef"]
-	 * StringUtils.splitByWholeSeparatorPreserveAllTokens("ab-!-cd-!-ef", "-!-", 2) = ["ab", "cd-!-ef"]
-	 * </pre>
-	 *
-	 * @param str       the String to parse, may be null
-	 * @param separator String containing the String to be used as a delimiter,
-	 *                  {@code null} splits on whitespace
-	 * @param max       the maximum number of elements to include in the returned
-	 *                  array. A zero or negative value implies no limit.
-	 * @return an array of parsed Strings, {@code null} if null String was input
-	 * @since 2.4
-	 */
-	public static String[] splitByWholeSeparatorPreserveAllTokens(final String str, final String separator,
-			final int max) {
-		return splitByWholeSeparatorWorker(str, separator, max, true);
+		return splitByWholeSeparatorWorker(str, separator, max);
 	}
 
 	/**
@@ -1318,8 +1226,7 @@ public class StringUtils {
 	 * @return an array of parsed Strings, {@code null} if null String input
 	 * @since 2.4
 	 */
-	private static String[] splitByWholeSeparatorWorker(final String str, final String separator, final int max,
-			final boolean preserveAllTokens) {
+	private static String[] splitByWholeSeparatorWorker(final String str, final String separator, final int max) {
 		if (str == null) {
 			return null;
 		}
@@ -1332,7 +1239,7 @@ public class StringUtils {
 
 		if (separator == null || EMPTY.equals(separator)) {
 			// Split on whitespace.
-			return splitWorker(str, null, max, preserveAllTokens);
+			return splitWorker(str, null, max);
 		}
 
 		final int separatorLength = separator.length();
@@ -1362,16 +1269,6 @@ public class StringUtils {
 						beg = end + separatorLength;
 					}
 				} else {
-					// We found a consecutive occurrence of the separator, so skip it.
-					if (preserveAllTokens) {
-						numberOfSubstrings += 1;
-						if (numberOfSubstrings == max) {
-							end = len;
-							substrings.add(str.substring(beg));
-						} else {
-							substrings.add(EMPTY);
-						}
-					}
 					beg = end + separatorLength;
 				}
 			} else {
@@ -1382,83 +1279,6 @@ public class StringUtils {
 		}
 
 		return substrings.toArray(EMPTY_STRING_ARRAY);
-	}
-
-	// -----------------------------------------------------------------------
-	/**
-	 * <p>
-	 * Splits the provided text into an array, using whitespace as the separator,
-	 * preserving all tokens, including empty tokens created by adjacent separators.
-	 * This is an alternative to using StringTokenizer. Whitespace is defined by
-	 * {@link Character#isWhitespace(char)}.
-	 * </p>
-	 *
-	 * <p>
-	 * The separator is not included in the returned String array. Adjacent
-	 * separators are treated as separators for empty tokens. For more control over
-	 * the split use the StrTokenizer class.
-	 * </p>
-	 *
-	 * <p>
-	 * A {@code null} input String returns {@code null}.
-	 * </p>
-	 *
-	 * <pre>
-	 * StringUtils.splitPreserveAllTokens(null)       = null
-	 * StringUtils.splitPreserveAllTokens("")         = []
-	 * StringUtils.splitPreserveAllTokens("abc def")  = ["abc", "def"]
-	 * StringUtils.splitPreserveAllTokens("abc  def") = ["abc", "", "def"]
-	 * StringUtils.splitPreserveAllTokens(" abc ")    = ["", "abc", ""]
-	 * </pre>
-	 *
-	 * @param str the String to parse, may be {@code null}
-	 * @return an array of parsed Strings, {@code null} if null String input
-	 * @since 2.1
-	 */
-	public static String[] splitPreserveAllTokens(final String str) {
-		return splitWorker(str, null, -1, true);
-	}
-
-	/**
-	 * <p>
-	 * Splits the provided text into an array, separator specified, preserving all
-	 * tokens, including empty tokens created by adjacent separators. This is an
-	 * alternative to using StringTokenizer.
-	 * </p>
-	 *
-	 * <p>
-	 * The separator is not included in the returned String array. Adjacent
-	 * separators are treated as separators for empty tokens. For more control over
-	 * the split use the StrTokenizer class.
-	 * </p>
-	 *
-	 * <p>
-	 * A {@code null} input String returns {@code null}.
-	 * </p>
-	 *
-	 * <pre>
-	 * StringUtils.splitPreserveAllTokens(null, *)         = null
-	 * StringUtils.splitPreserveAllTokens("", *)           = []
-	 * StringUtils.splitPreserveAllTokens("a.b.c", '.')    = ["a", "b", "c"]
-	 * StringUtils.splitPreserveAllTokens("a..b.c", '.')   = ["a", "", "b", "c"]
-	 * StringUtils.splitPreserveAllTokens("a:b:c", '.')    = ["a:b:c"]
-	 * StringUtils.splitPreserveAllTokens("a\tb\nc", null) = ["a", "b", "c"]
-	 * StringUtils.splitPreserveAllTokens("a b c", ' ')    = ["a", "b", "c"]
-	 * StringUtils.splitPreserveAllTokens("a b c ", ' ')   = ["a", "b", "c", ""]
-	 * StringUtils.splitPreserveAllTokens("a b c  ", ' ')   = ["a", "b", "c", "", ""]
-	 * StringUtils.splitPreserveAllTokens(" a b c", ' ')   = ["", a", "b", "c"]
-	 * StringUtils.splitPreserveAllTokens("  a b c", ' ')  = ["", "", a", "b", "c"]
-	 * StringUtils.splitPreserveAllTokens(" a b c ", ' ')  = ["", a", "b", "c", ""]
-	 * </pre>
-	 *
-	 * @param str           the String to parse, may be {@code null}
-	 * @param separatorChar the character used as the delimiter, {@code null} splits
-	 *                      on whitespace
-	 * @return an array of parsed Strings, {@code null} if null String input
-	 * @since 2.1
-	 */
-	public static String[] splitPreserveAllTokens(final String str, final char separatorChar) {
-		return splitWorker(str, separatorChar, true);
 	}
 
 	/**
@@ -1506,8 +1326,7 @@ public class StringUtils {
 		return list.toArray(new String[list.size()]);
 	}
 
-	private static String[] splitWorker(final String str, final String separatorChars, final int max,
-			final boolean preserveAllTokens) {
+	private static String[] splitWorker(final String str, final String separatorChars, final int max) {
 		// Performance tuned for 2.0 (JDK1.4)
 		// Direct code is quicker than StringTokenizer.
 		// Also, StringTokenizer uses isSpace() not isWhitespace()
@@ -1528,7 +1347,7 @@ public class StringUtils {
 			// Null separator means use whitespace
 			while (i < len) {
 				if (Character.isWhitespace(str.charAt(i))) {
-					if (match || preserveAllTokens) {
+					if (match) {
 						lastMatch = true;
 						if (sizePlus1++ == max) {
 							i = len;
@@ -1549,7 +1368,7 @@ public class StringUtils {
 			final char sep = separatorChars.charAt(0);
 			while (i < len) {
 				if (str.charAt(i) == sep) {
-					if (match || preserveAllTokens) {
+					if (match) {
 						lastMatch = true;
 						if (sizePlus1++ == max) {
 							i = len;
@@ -1569,7 +1388,7 @@ public class StringUtils {
 			// standard case
 			while (i < len) {
 				if (separatorChars.indexOf(str.charAt(i)) >= 0) {
-					if (match || preserveAllTokens) {
+					if (match) {
 						lastMatch = true;
 						if (sizePlus1++ == max) {
 							i = len;
@@ -1586,7 +1405,7 @@ public class StringUtils {
 				i++;
 			}
 		}
-		if (match || preserveAllTokens && lastMatch) {
+		if (match || lastMatch) {
 			list.add(str.substring(start, i));
 		}
 		return list.toArray(new String[list.size()]);
@@ -1913,18 +1732,15 @@ public class StringUtils {
 	 * @param in input stream.
 	 * @return CRC
 	 */
+	@SneakyThrows
 	public static String getCRC(InputStream in) {
 		CRC32 crc32 = new CRC32();
-		byte[] b = new byte[65536];
+		byte[] buffer = new byte[65536];
 		int len;
-		try {
-			while ((len = in.read(b)) != -1) {
-				crc32.update(b, 0, len);
-			}
-			return Long.toHexString(crc32.getValue());
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		while ((len = in.read(buffer)) != -1) {
+			crc32.update(buffer, 0, len);
 		}
+		return Long.toHexString(crc32.getValue());
 	}
 
 	/**
@@ -1936,8 +1752,6 @@ public class StringUtils {
 	public static String getCRC(String s) {
 		try (ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes())) {
 			return getCRC(in);
-		} catch (IOException e) {
-			throw Exceptions.illegalState(e);
 		}
 	}
 
@@ -1951,8 +1765,6 @@ public class StringUtils {
 		try (ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes())) {
 			byte[] md = hash(in, "MD5");
 			return join(md, (char) 0, 0, md.length);
-		} catch (IOException e) {
-			throw Exceptions.illegalState(e);
 		}
 	}
 
@@ -1966,8 +1778,38 @@ public class StringUtils {
 		try (ByteArrayInputStream in = new ByteArrayInputStream(string.getBytes())) {
 			byte[] md = hash(in, "MD5");
 			return JefBase64.encode(md);
-		} catch (IOException e) {
-			throw Exceptions.illegalState(e);
+		}
+	}
+
+	public static class ByteArrayInputStream extends InputStream{
+		protected byte buf[];
+		protected int pos;
+		protected int count;
+		public ByteArrayInputStream(byte buf[]) {
+			this.buf = buf;
+			this.pos = 0;
+			this.count = buf.length;
+		}
+		public int read() {
+			return (pos < count) ? (buf[pos++] & 0xff) : -1;
+		}
+		public int read(byte b[], int off, int len) {
+			Objects.checkFromIndexSize(off, len, b.length);
+			if (pos >= count) {
+				return -1;
+			}
+			int avail = count - pos;
+			if (len > avail) {
+				len = avail;
+			}
+			if (len <= 0) {
+				return 0;
+			}
+			System.arraycopy(buf, pos, b, off, len);
+			pos += len;
+			return len;
+		}
+		public void close() {
 		}
 	}
 
@@ -1993,7 +1835,7 @@ public class StringUtils {
 		byte[] md = hash(in, "SHA-1");
 		return join(md, (char) 0, 0, md.length);
 	}
-	
+
 	public final static String getSHA1(InputStream in) {
 		byte[] md = hash(in, "SHA-1");
 		return join(md, (char) 0, 0, md.length);
@@ -2010,7 +1852,7 @@ public class StringUtils {
 		byte[] md = hash(in, "SHA-256");
 		return join(md, (char) 0, 0, md.length);
 	}
-	
+
 	public final static String getSHA256(InputStream in) {
 		byte[] md = hash(in, "SHA-256");
 		return join(md, (char) 0, 0, md.length);
@@ -2044,7 +1886,7 @@ public class StringUtils {
 	 */
 	public static String join(byte[] bytes, char c) {
 		if (bytes == null)
-			return "";
+			return EMPTY;
 		return join(bytes, c, 0, bytes.length);
 	}
 
@@ -2058,17 +1900,17 @@ public class StringUtils {
 	 * @return 拼接文本
 	 */
 	public static String join(byte[] bytes, char dchar, int offset, int len) {
-		if (bytes == null || bytes.length == 0)
-			return "";
+		if (bytes == null || bytes.length == 0 || len == 0)
+			return EMPTY;
 		return dchar == NULL_CHAR ? toHex0(bytes, offset, len, hexDigitsL)
-				: toHex0(bytes, offset, len, dchar, hexDigitsL);
+				: toHex1(bytes, offset, len, dchar, hexDigitsL);
 	}
 
 	public static String joinUpper(byte[] bytes, char dchar, int offset, int len) {
-		if (bytes == null || bytes.length == 0)
-			return "";
+		if (bytes == null || bytes.length == 0 || len == 0)
+			return EMPTY;
 		return dchar == NULL_CHAR ? toHex0(bytes, offset, len, hexDigitsU)
-				: toHex0(bytes, offset, len, dchar, hexDigitsU);
+				: toHex1(bytes, offset, len, dchar, hexDigitsU);
 	}
 
 	/**
@@ -2141,10 +1983,12 @@ public class StringUtils {
 		if (data == null)
 			return;
 		Iterator<?> iterator = data.iterator();
-		sb.append(String.valueOf(iterator.next()));
-		while (iterator.hasNext()) {
-			Object obj = iterator.next();
-			sb.append(sep).append(String.valueOf(obj));
+		if (iterator.hasNext()) {
+			sb.append(String.valueOf(iterator.next()));
+			while (iterator.hasNext()) {
+				Object obj = iterator.next();
+				sb.append(sep).append(toString(obj));
+			}
 		}
 	}
 
@@ -2153,7 +1997,7 @@ public class StringUtils {
 	 * 
 	 * @return
 	 */
-	private static String toHex0(byte[] b, int offset, int len, char dchar, char[] hexDigits) {
+	private static String toHex1(byte[] b, int offset, int len, char dchar, char[] hexDigits) {
 		int j = offset + len;
 		if (j > b.length)
 			j = b.length; // 上限
@@ -2183,6 +2027,66 @@ public class StringUtils {
 			str[k++] = hexDigits[byte0 & 0xf];
 		}
 		return new String(str);
+	}
+
+	/**
+	 * 将二进制文本列表转换为字节数组
+	 * 
+	 * @param hexString hexString
+	 * @param hasSpace  hasSpace
+	 * @throws IOException If encounter IOException
+	 * @return byte[] value
+	 */
+	public static byte[] fromHex(char[] hexString, boolean hasSpace){
+		int len = hexString.length;
+		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
+		int count = 0;
+		for (int i = 0; i < len; i++) {
+			char c1 = hexString[i];
+			char c2 = hexString[++i];
+			int i1 = hexChar2Dec(c1);
+			int i2 = hexChar2Dec(c2);
+			result[count++] = (byte) ((i1 << 4) + i2);
+			if (hasSpace)
+				++i;
+		}
+		return result;
+	}
+
+	/**
+	 * byte2hex的逆运算（有实际用处吗？） 实际使用可以用Byte Byte.parseByte("dd", 16);
+	 * 
+	 * @param hexString hexString
+	 * @param hasSpace  hasSpace
+	 * @return 二进制数据
+	 */
+	public static byte[] fromHex(CharSequence hexString, boolean hasSpace) {
+		int len = hexString.length();
+		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
+		int count = 0;
+		for (int i = 0; i < len; i++) {
+			char c1 = hexString.charAt(i);
+			char c2 = hexString.charAt(++i);
+			int i1 = hexChar2Dec(c1);
+			int i2 = hexChar2Dec(c2);
+			result[count++] = (byte) ((i1 << 4) + i2);
+			if (hasSpace)
+				++i;
+		}
+		return result;
+	}
+
+	private static int hexChar2Dec(char hex) {
+		if (hex > 47 && hex < 58) {
+			hex -= 48;
+		} else if (hex > 64 && hex < 71) {
+			hex -= 55;
+		} else if (hex > 96 && hex < 103) {
+			hex -= 87;
+		} else {
+			throw new IllegalArgumentException(hex + "is not a valid hex char.");
+		}
+		return hex;
 	}
 
 	/**
@@ -2234,11 +2138,11 @@ public class StringUtils {
 		int a = arg1.indexOf(arg2);
 		int b = arg1.lastIndexOf(arg3);
 		if (a == -1 || b == -1)
-			return "";
+			return EMPTY;
 		if (a == b)
-			return "";
+			return EMPTY;
 		if (a > b)
-			return "";
+			return EMPTY;
 		return arg1.substring(a + arg2.length(), b);
 	}
 

@@ -3,10 +3,10 @@ package com.github.xuse.querydsl.util;
 import java.lang.reflect.InvocationTargetException;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
@@ -18,48 +18,6 @@ import org.slf4j.helpers.MessageFormatter;
  * @author Joey
  */
 public class Exceptions {
-
-	/**
-	 * 重试执行指定的函数（出现异常后继续重试）
-	 * @param invokeCount 重试次数
-	 * @param input       入参
-	 * @param retryInvoke 重试函数
-	 * @return 成功与否
-	 * @param <T> The type of target object.
-	 */
-	public static <T> boolean retryIgnoreException(int invokeCount, T input, Predicate<T> retryInvoke) {
-		for (int i = 0; i < invokeCount; i++) {
-			try {
-				if (retryInvoke.test(input)) {
-					return true;
-				}
-			} catch (Exception e) {
-				log.error("Retrys {} error,", retryInvoke, e);
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * 重试执行指定的函数（出现异常后继续重试）
-	 * @param invokeCount 重试次数
-	 * @param retryInvoke 重试函数
-	 * @return 成功与否
-	 * @param <T> The type of target object.
-	 */
-	public static <T> boolean retryIgnoreException(int invokeCount, BooleanSupplier retryInvoke) {
-		for (int i = 0; i < invokeCount; i++) {
-			try {
-				if (retryInvoke.getAsBoolean()) {
-					return true;
-				}
-			} catch (Exception e) {
-				log.error("Retrys {} error,", retryInvoke, e);
-			}
-		}
-		return false;
-	}
-
 	/**
 	 * 重试执行指定的函数（会被异常所打断并抛出异常）
 	 * @param invokeCount 重试次数
@@ -71,22 +29,6 @@ public class Exceptions {
 	public static <T> boolean retry(int invokeCount, T input, Predicate<T> retryInvoke) {
 		for (int i = 0; i < invokeCount; i++) {
 			if (retryInvoke.test(input)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * 重试执行指定的函数（会被异常所打断并抛出异常）
-	 * @param invokeCount 重试次数
-	 * @param retryInvoke 重试函数
-	 * @return 成功与否
-	 * @param <T> The type of target object.
-	 */
-	public static <T> boolean retry(int invokeCount, BooleanSupplier retryInvoke) {
-		for (int i = 0; i < invokeCount; i++) {
-			if (retryInvoke.getAsBoolean()) {
 				return true;
 			}
 		}
@@ -342,7 +284,7 @@ public class Exceptions {
 	 */
 	public static UnsupportedOperationException unsupportedOperation(String message, Object... objects) {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
-		return new UnsupportedOperationException(f.getMessage());
+		return f.getThrowable() == null ? new UnsupportedOperationException(f.getMessage()):new UnsupportedOperationException(f.getMessage(),f.getThrowable());
 	}
 
 	/**

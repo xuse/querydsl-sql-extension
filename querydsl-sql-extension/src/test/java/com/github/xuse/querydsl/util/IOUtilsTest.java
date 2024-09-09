@@ -1,12 +1,16 @@
 package com.github.xuse.querydsl.util;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -57,13 +61,30 @@ public class IOUtilsTest {
 		}
 		assertTrue(temp.exists());
 		
+		byte[] data = a.getBytes();
+		IOUtils.saveAsFile(temp, StringUtils.toHexString(data,true));
+		{
+			try(Reader reader=IOUtils.getUTF8Reader(temp)){
+				assertArrayEquals(data,IOUtils.readHexString(reader));
+			}
+		}
+		{
+			File invalid = new File(temp, "flow");
+			RuntimeException e = null;
+			try {
+				IOUtils.ensureParentFolder(invalid);
+			} catch (RuntimeException ex) {
+				e = ex;
+			}
+			assertNotNull(e);
+		}
+		
 		assertTrue(IOUtils.toByteArray(temp).length > 0);
 		assertTrue(IOUtils.toByteArray(url).length > 0);
 		
 		File file=IOUtils.rename(temp,"test1.txt",true);
 		assertEquals("test1.txt",file.getName());
 		
-		byte[] data;
 		try(InputStream in=url.openStream()){
 			assertTrue(IOUtils.toByteArray(in,6).length == 6);
 		}
@@ -101,9 +122,8 @@ public class IOUtilsTest {
 		
 		
 		File dir=new File("asb/asv/vfvf");
-		if(!dir.exists()){
-			dir.mkdirs();	
-		}
+		IOUtils.ensureParentFolder(dir);
+		
 		IOUtils.saveAsFile(new File("asb/t1.txt"), a);
 		IOUtils.saveAsFile(new File("asb/asv/t1.txt"), a);
 		for(File f:IOUtils.listFiles(new File("asb"), "txt")) {
@@ -115,7 +135,11 @@ public class IOUtilsTest {
 		for(File f:IOUtils.listFolders(new File("asb"))) {
 			assertTrue(f.isDirectory());
 		};
-		IOUtils.deleteTree(dir, false);
+		File root=new File("asb");
+		IOUtils.deleteTree(root, false);
+		assertTrue(root.exists());
+		IOUtils.deleteTree(root, true);
+		assertFalse(root.exists());
 		
 		byte[] ret=IOUtils.serialize(a);
 		assertEquals(null, IOUtils.deserialize(null));
@@ -124,9 +148,12 @@ public class IOUtilsTest {
 		IOUtils.ensureParentFolder(path);
 		IOUtils.saveAsFile(temp, a);
 		
+
+		file=IOUtils.escapeExistFile(new File("newFile.txt"));
+		assertEquals("newFile.txt", file.getName());
+		
 		file=IOUtils.escapeExistFile(temp);
 		assertEquals("test(1).txt",file.getName());
-		
 		assertEquals("txt",IOUtils.getExtName(temp.getName()));
 		assertEquals("",IOUtils.getExtName("ssss"));
 		assertEquals("test",IOUtils.removeExt(temp.getName()));
@@ -136,13 +163,17 @@ public class IOUtilsTest {
 			w.write(a);
 			w.newLine();
 		};
+		try(BufferedWriter w = IOUtils.getWriter(temp, null, true)){
+			w.write(a);
+			w.newLine();
+		};
+		
 		Object obj;
 		IOUtils.saveObject(a, temp);
 		try(InputStream in=IOUtils.getInputStream(temp)){
 			obj=IOUtils.loadObject(in);
 		}
 		assertEquals(obj, a);
-		
 	}
 	
 	@Test
@@ -164,6 +195,30 @@ public class IOUtilsTest {
 	public void testPropertiesException() {
 		URL url=this.getClass().getResource("/testerror.properties");
 		IOUtils.loadProperties(url);
+	}
+	
+	@Test
+	public void testFileReader() throws IOException {
+		URL url=this.getClass().getResource("/");
+		File file=new File(url.getPath(),"com.github.xuse.querydsl.entity.SeataStateMachineInst.csv");
+		try(InputStream in=new FileInputStream(file)){
+			byte[] data=IOUtils.toByteArray(in, 2049);
+			assertEquals(2049,data.length);
+		}
+		
+		try(InputStream in=new FileInputStream(file)){
+			byte[] data=IOUtils.toByteArray(in, 4099);
+			assertEquals(4099,data.length);
+		}
+		
+		try(InputStream in=new FileInputStream(file)){
+			byte[] data=IOUtils.toByteArray(in, 5096);
+			if(file.length()<5096) {
+				assertEquals(file.length(),data.length);
+			}else {
+				assertEquals(5096,data.length);
+			}
+		}
 	}
 	
 	@Test

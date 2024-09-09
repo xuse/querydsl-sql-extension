@@ -93,18 +93,6 @@ public final class JefBase64 {
 	}
 
 	/**
-	 *  对二进制数据进行编码，
-	 *  {@code encodeToString(byte[])}和{@code encode(byte[])}两个方法是完全相同的，为了兼容某些其他库的API而设计。
-	 *  @param data 二进制数据
-	 *  @return String
-	 */
-	public static String encodeToString(byte[] data) {
-		if (data == null)
-			return null;
-		return encode(data, data.length, STANDARD);
-	}
-
-	/**
 	 *   对二进制数据进行编码。
 	 *   {@code encodeToString(byte[])}和{@code encode(byte[])}两个方法是完全相同的，为了兼容某些其他库的API而设计。
 	 *
@@ -114,28 +102,23 @@ public final class JefBase64 {
 	public static String encode(byte[] data) {
 		if (data == null)
 			return null;
-		return encode(data, data.length, STANDARD);
+		return encode(data,0, data.length, STANDARD);
 	}
 
 	public static String encode(ByteBuffer s, Base64Context context) {
-		int offset = s.arrayOffset();
-		if (offset == 0) {
-			return encode(s.array(), s.limit(), context);
-		} else {
-			// 暂未支持
-			throw new UnsupportedOperationException();
-		}
+		return encode(s.array(), s.arrayOffset(),s.limit(), context);
 	}
 
 	/**
 	 *  不带换行的Base64编码
 	 *  @param data bytes to encode.
 	 *  @return 编码后文本
+	 *  @param offset 从第几个字节开始编码
 	 *  @param length int
 	 *  @param context Base64Context
 	 */
-	public static String encode(byte[] data, int length, Base64Context context) {
-		if (data == null || data.length < length) {
+	public static String encode(byte[] data, int offset, int length, Base64Context context) {
+		if (data == null || data.length < (offset+length)) {
 			throw new IllegalArgumentException();
 		}
 		byte[] ENCODE_TABLE = context.ENCODE_TABLE;
@@ -144,12 +127,10 @@ public final class JefBase64 {
 		if (context.wrap) {
 			resultBytes = resultBytes * 78 / 76 + 1;
 		}
-		// int resultBytes = fullGroups * 4;
-		// if (length % 3 != 0)
-		// resultBytes += 4;
+		
 		byte[] result = new byte[resultBytes];
 		int resultIndex = 0;
-		int dataIndex = 0;
+		int dataIndex = offset;
 		int temp;
 		int wrapIndex = 0;
 		for (int i = 0; i < fullGroups; i++) {
@@ -168,7 +149,8 @@ public final class JefBase64 {
 			}
 		}
 		temp = 0;
-		while (dataIndex < length) {
+		int max = length + offset;
+		while (dataIndex < max) {
 			temp <<= 8;
 			temp |= data[dataIndex++] & 0xff;
 		}
@@ -196,73 +178,6 @@ public final class JefBase64 {
 	}
 
 	/**
-	 *  Decodes a BASE64 encoded char array that is known to be resonably well
-	 *  formatted. The
-	 *  preconditions are:<br>
-	 *  + The array must have a line length of 76 chars OR no line separators at all
-	 *  (one line).<br>
-	 *  + Line separator must be "\r\n", as specified in RFC 2045 + The array must
-	 *  not contain illegal characters within the encoded string<br>
-	 *  + The array CAN have illegal characters at the beginning and end, those will
-	 *  be dealt with appropriately.<br>
-	 *  @param offset offset
-	 *  @param charsLen charsLen
-	 *  @param context context
-	 *  @param chars The source array. Length 0 will return an empty array.
-	 *               <code>null</code> will throw an exception.
-	 *  @return The decoded array of bytes. May be of length 0.
-	 */
-	public static final byte[] decodeFast(char[] chars, int offset, int charsLen, Base64Context context) {
-		// Check special case
-		if (charsLen == 0) {
-			return new byte[0];
-		}
-		int[] IA = context.IA;
-		// Start and end index
-		int sIx = offset, eIx = offset + charsLen - 1;
-		// Trim illegal chars from start
-		while (sIx < eIx && IA[chars[sIx]] < 0) sIx++;
-		// Trim illegal chars from end
-		while (eIx > 0 && IA[chars[eIx]] < 0) eIx--;
-		// get the padding count (=) (0, 1 or 2)
-		// Count
-		int pad = chars[eIx] == context.PAD ? (chars[eIx - 1] == context.PAD ? 2 : 1) : 0;
-		// '='
-		// at
-		// end.
-		// Content count including possible separators
-		int cCnt = eIx - sIx + 1;
-		int sepCnt = charsLen > 76 ? (chars[76] == '\r' ? cCnt / 78 : 0) << 1 : 0;
-		// The number of decoded
-		int len = ((cCnt - sepCnt) * 6 >> 3) - pad;
-		// bytes
-		// Preallocate byte[] of exact length
-		byte[] bytes = new byte[len];
-		// Decode all but the last 0 - 2 bytes.
-		int d = 0;
-		for (int cc = 0, eLen = (len / 3) * 3; d < eLen; ) {
-			// Assemble three bytes into an int from four "valid" characters.
-			int i = IA[chars[sIx++]] << 18 | IA[chars[sIx++]] << 12 | IA[chars[sIx++]] << 6 | IA[chars[sIx++]];
-			// Add the bytes
-			bytes[d++] = (byte) (i >> 16);
-			bytes[d++] = (byte) (i >> 8);
-			bytes[d++] = (byte) i;
-			// If line separator, jump over it.
-			if (sepCnt > 0 && ++cc == 19) {
-				sIx += 2;
-				cc = 0;
-			}
-		}
-		if (d < len) {
-			// Decode last 1-3 bytes (incl '=') into 1-3 bytes
-			int i = 0;
-			for (int j = 0; sIx <= eIx - pad; j++) i |= IA[chars[sIx++]] << (18 - j * 6);
-			for (int r = 16; d < len; r -= 8) bytes[d++] = (byte) (i >> r);
-		}
-		return bytes;
-	}
-
-	/**
 	 *   Base64解码
 	 *
 	 *   @param bytes 要解码的字节数据。如果已经得到字符串格式的Base64编码，请直接用 {@link #decodeFast(CharSequence, Base64Context)}方法
@@ -286,7 +201,7 @@ public final class JefBase64 {
 		while (eIx > 0 && IA[chars[eIx]] < 0) eIx--;
 		// get the padding count (=) (0, 1 or 2)
 		// Count
-		int pad = chars[eIx] == '=' ? (chars[eIx - 1] == '=' ? 2 : 1) : 0;
+		int pad = chars[eIx] == context.PAD ? (chars[eIx - 1] == context.PAD ? 2 : 1) : 0;
 		// '='
 		// at
 		// end.
@@ -424,17 +339,28 @@ public final class JefBase64 {
 	}
 
 	/**
+	 *   字符串按UTF8进行base64编码
+	 *   @param s 字符串
+	 *   @param　wrap 输出是否换行
+	 *   @return base64编码
+	 */
+	public static String encodeUTF8(String s, boolean wrap) {
+		byte[] data=s.getBytes(StandardCharsets.UTF_8);
+		return encode(data, 0, data.length, wrap ? STANDARD_WITH_WRAP : STANDARD);
+	}
+	
+	/**
 	 *  特别的功能，解出Base64串的第一个字节
 	 *  @param s s
-	 *  @param index index
+	 *  @param offset index
 	 *  @param context context
 	 *  @return 第一个字节
 	 */
-	public static final byte decodeFirstByte(CharSequence s, int index, Base64Context context) {
-		if (s.length() < index)
+	public static final byte decodeFirstByte(CharSequence s, int offset, Base64Context context) {
+		if (s.length() < offset)
 			throw new IllegalArgumentException("Length not enough");
 		int[] IA = context.IA;
-		int sIx = index;
+		int sIx = offset;
 		int i = IA[s.charAt(sIx++)] << 18 | IA[s.charAt(sIx++)] << 12 | IA[s.charAt(sIx++)] << 6 | IA[s.charAt(sIx++)];
 		return (byte) (i >> 16);
 	}

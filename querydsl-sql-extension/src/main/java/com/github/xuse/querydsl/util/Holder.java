@@ -7,4 +7,10 @@ public class Holder<T> {
 		return value;
 	}
 
+	public Holder(){
+	}
+	
+	public Holder(T t){
+		value=t;
+	}
 }

@@ -1,27 +1,23 @@
 package com.github.xuse.querydsl.util;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * 跟进程相关的以及环境相关的若干工具方法
  * 
  * 这个工具类中还有若干和网络地址相关方法，比如获取本机的网络信息，空闲端口等
- * 
- * @author Administrator 部分功能使用了JDK 1.6中的方法，因此本类的使用范围要求JDK 1.6
- * @since 1.6
  */
 @Slf4j
 public class ProcessUtil {
@@ -114,23 +110,16 @@ public class ProcessUtil {
 		 * 
 		 * @return 获得Mac地址
 		 */
-		public String getMac() {
-			try {
-				return StringUtils.join(net.getHardwareAddress(), '-');
-			} catch (SocketException e) {
-				throw Exceptions.toRuntime(e);
-			}
+		@SneakyThrows public String getMac() {
+			return StringUtils.join(getMac0(net), '-');
 		}
 
 		/**
 		 * @return 获得最大传输单元
 		 */
-		public int getMTU() {
-			try {
-				return net.getMTU();
-			} catch (SocketException e) {
-				throw Exceptions.toRuntime(e);
-			}
+		
+		@SneakyThrows public int getMTU() {
+			return net.getMTU();
 		}
 
 		/**
@@ -161,32 +150,29 @@ public class ProcessUtil {
 	 * 
 	 * @return 获得现有活动的网络连接信息。未连接的不会在这里出现
 	 */
+	@SneakyThrows
 	public static NetworkInfo[] getActiveNetwork() {
-		Enumeration<NetworkInterface> nets;
-		try {
-			nets = NetworkInterface.getNetworkInterfaces();
-		} catch (IOException e) {
-			throw Exceptions.toRuntime(e);
-		}
+		Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
 		List<NetworkInfo> n = new ArrayList<NetworkInfo>();
 		while (nets.hasMoreElements()) {
 			NetworkInterface t = nets.nextElement();
-			try {
-				byte[] mac = t.getHardwareAddress();
-				if (mac != null && mac.length == 6 && t.getInetAddresses().hasMoreElements()) {
-					n.add(new NetworkInfo(t));
-				}
-			} catch (IOException e) {
-				throw Exceptions.toRuntime(e);
+			byte[] mac = getMac0(t);
+			if (mac != null && mac.length == 6 && t.getInetAddresses().hasMoreElements()) {
+				n.add(new NetworkInfo(t));
 			}
 		}
 		return n.toArray(new NetworkInfo[n.size()]);
+	}
+	
+	@SneakyThrows
+	private static byte[] getMac0(NetworkInterface i) {
+		return i.getHardwareAddress();
 	}
 
 	/**
 	 * @return 获取JVM启动时间。（毫秒数）
 	 */
-	public static long getStarttime() {
+	public static long getStartPeriod() {
 		return startTime;
 	}
 
@@ -194,20 +180,11 @@ public class ProcessUtil {
 	 * @return 获取一个空闲端口
 	 */
 	public static int getFreePort() {
-		ServerSocket serverSocket = null;
-		try {
-			serverSocket = new ServerSocket(0); // 读取空闲的可用端口
+		try (ServerSocket serverSocket = new ServerSocket(0)){
 			int port = serverSocket.getLocalPort();
 			return port;
 		} catch (Exception e) {
 			return 0;
-		} finally {
-			if (serverSocket != null) {
-				try {
-					serverSocket.close();
-				} catch (Exception e) {
-				}
-			}
 		}
 	}
 

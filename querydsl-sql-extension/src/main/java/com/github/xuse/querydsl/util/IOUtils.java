@@ -208,6 +208,14 @@ public class IOUtils {
 		}
 	}
 	
+	@SneakyThrows
+	public static BufferedReader getUTF8Reader(File target) {
+		return new BufferedReader(
+				new InputStreamReader(
+						new FileInputStream(target),
+						StandardCharsets.UTF_8));
+	}
+	
 	public static BufferedWriter getUTF8Writer(File target,boolean append) {
 		return getWriter(target, StandardCharsets.UTF_8, append);
 	}
@@ -839,7 +847,7 @@ public class IOUtils {
 	 * @throws IOException If encounter IOException
 	 * @return byte[] value
 	 */
-	public static byte[] hexReader2byte(Reader input) throws IOException {
+	public static byte[] readHexString(Reader input) throws IOException {
 		CharArrayWriter cw = new CharArrayWriter(512);
 		int c;
 		while ((c = input.read()) > -1) {
@@ -848,67 +856,6 @@ public class IOUtils {
 			}
 			cw.append((char) c);
 		}
-		return hex2byte(cw.toCharArray(), false);
-	}
-
-	/**
-	 * 将二进制文本列表转换为字节数组
-	 * @param hexString hexString
-	 * @param hasSpace hasSpace
-	 * @throws IOException If encounter IOException
-	 * @return byte[] value
-	 */
-	public static byte[] hex2byte(char[] hexString, boolean hasSpace) throws IOException {
-		int len = hexString.length;
-		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
-		int count = 0;
-		for (int i = 0; i < len; i++) {
-			char c1 = hexString[i];
-			char c2 = hexString[++i];
-			int i1 = hexChar2dec(c1);
-			int i2 = hexChar2dec(c2);
-			result[count++] = (byte) ((i1 << 4) + i2);
-			if (hasSpace)
-				++i;
-		}
-		return result;
-	}
-
-	/**
-	 * byte2hex的逆运算（有实际用处吗？） 实际使用可以用Byte Byte.parseByte("dd", 16);
-	 * @param hexString hexString
-	 * @param hasSpace hasSpace
-	 * @return 二进制数据
-	 */
-	public static byte[] hex2byte(CharSequence hexString, boolean hasSpace) {
-		int len = hexString.length();
-		byte[] result = new byte[hasSpace ? (len + 1) / 3 : len / 2];
-		int count = 0;
-		for (int i = 0; i < len; i++) {
-			char c1 = hexString.charAt(i);
-			char c2 = hexString.charAt(++i);
-			int i1 = hexChar2dec(c1);
-			int i2 = hexChar2dec(c2);
-			result[count++] = (byte) ((i1 << 4) + i2);
-			if (hasSpace)
-				++i;
-		}
-		return result;
-	}
-
-	/*
-	 * 将输入的十六进制字符转换为十进制数字
-	 */
-	private static int hexChar2dec(char hex) {
-		if (hex > 47 && hex < 58) {
-			hex -= 48;
-		} else if (hex > 64 && hex < 71) {
-			hex -= 55;
-		} else if (hex > 96 && hex < 103) {
-			hex -= 87;
-		} else {
-			throw new RuntimeException(hex + "is not a valid hex char.");
-		}
-		return hex;
+		return StringUtils.fromHex(cw.toCharArray(), false);
 	}
 }
