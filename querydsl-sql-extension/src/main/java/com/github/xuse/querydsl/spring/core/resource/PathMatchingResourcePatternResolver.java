@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.github.xuse.querydsl.util.Assert;
 
+import lombok.SneakyThrows;
+
 public class PathMatchingResourcePatternResolver implements ResourcePatternResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(PathMatchingResourcePatternResolver.class);
@@ -65,7 +67,8 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 		return this.pathMatcher;
 	}
 
-	public Resource[] getResources(String locationPattern) throws IOException {
+	@SneakyThrows
+	public Resource[] getResources(String locationPattern){
 		Assert.notNull(locationPattern, "Location pattern must not be null");
 		if (locationPattern.startsWith(CLASSPATH_ALL_URL_PREFIX)) {
 			// a class path resource (multiple resources for same name possible)

@@ -623,11 +623,11 @@ public class ArrayUtils {
 	 *  @return is contains
 	 */
 	public static <T> boolean fastContains(T[] list, T obj) {
-		if (list == null)
-			return false;
-		for (T e : list) {
-			if (e == obj)
-				return true;
+		if (list != null){
+			for (T e : list) {
+				if (e == obj)
+					return true;
+			}			
 		}
 		return false;
 	}
@@ -641,9 +641,11 @@ public class ArrayUtils {
 	 *  @return true if contains
 	 */
 	public static <T> boolean fastContains(Collection<T> list, T obj) {
-		for (T e : list) {
-			if (e == obj)
-				return true;
+		if(list!= null) {
+			for (T e : list) {
+				if (e == obj)
+					return true;
+			}	
 		}
 		return false;
 	}
@@ -657,11 +659,13 @@ public class ArrayUtils {
 	 *  @param <T> The type of target object.
 	 */
 	public static <T> boolean fastContainsAny(Collection<T> list, T[] keys) {
-		for (T e : list) {
-			for (T obj : keys) {
-				if (e == obj)
-					return true;
-			}
+		if (list != null) {
+			for (T e : list) {
+				for (T obj : keys) {
+					if (e == obj)
+						return true;
+				}
+			}	
 		}
 		return false;
 	}
@@ -675,13 +679,13 @@ public class ArrayUtils {
 	 *  @param <T> The type of target object.
 	 */
 	public static <T> boolean fastContainsAny(T[] list, T[] keys) {
-		if (list == null)
-			return false;
-		for (T e : list) {
-			for (T obj : keys) {
-				if (e == obj)
-					return true;
-			}
+		if (list != null) {
+			for (T e : list) {
+				for (T obj : keys) {
+					if (e == obj)
+						return true;
+				}
+			}			
 		}
 		return false;
 	}
@@ -693,17 +697,19 @@ public class ArrayUtils {
 	 *  @return true if contains.
 	 */
 	public static boolean containsIgnoreCase(String[] values, String str) {
-		for (String v : values) {
-			if (v == null) {
-				if (str == null) {
-					return true;
-				} else {
-					continue;
+		if(values!=null) {
+			for (String v : values) {
+				if (v == null) {
+					if (str == null) {
+						return true;
+					} else {
+						continue;
+					}
 				}
-			}
-			if (v.equalsIgnoreCase(str)) {
-				return true;
-			}
+				if (v.equalsIgnoreCase(str)) {
+					return true;
+				}
+			}	
 		}
 		return false;
 	}
@@ -758,24 +764,6 @@ public class ArrayUtils {
 		return copy;
 	}
 
-	/*
-	 * 两个对象数组的比较
-	 */
-	public static boolean equals(Object[] a1, Object[] a2) {
-		if (a1 == null && a2 == null)
-			return true;
-		if (a1 == null || a2 == null)
-			return false;
-		if (a1.length != a2.length)
-			return false;
-		for (int n = 0; n < a1.length; n++) {
-			if (!Objects.equals(a1[n], a2[n])) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	/**
 	 *  判断两个数组，忽略其顺序
 	 *  @param a1 a1
@@ -813,6 +801,25 @@ public class ArrayUtils {
 		return set1.equals(set2);
 	}
 
+
+	/*
+	 * 两个对象数组的比较
+	 */
+	public static boolean equals(Object[] a1, Object[] a2) {
+		if (a1 == null && a2 == null)
+			return true;
+		if (a1 == null || a2 == null)
+			return false;
+		if (a1.length != a2.length)
+			return false;
+		for (int n = 0; n < a1.length; n++) {
+			if (!Objects.equals(a1[n], a2[n])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	/**
 	 *  判断两个数组的元素和顺序是否相等。
 	 *  由于java.util.Arrays中提供的数组元素比较都是在已知数组类型的前提下的，而数组可以归结为9种类型，当不确定数组类型时，可以用此方法。

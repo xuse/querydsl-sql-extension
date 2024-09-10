@@ -66,9 +66,15 @@ public class StringUtilsTest {
 		assertTrue(StringUtils.indexOfAny("")==-1);
 		assertTrue(StringUtils.indexOfAny(hello, "wo")>-1);
 		assertTrue(StringUtils.indexOfAny(hello, "xs")==-1);
-		assertTrue(StringUtils.indexOfAny("", new char[0],0)==-1);
 		assertTrue(StringUtils.indexOfAny("", "")==-1);
+		assertTrue(StringUtils.indexOfAny("", new char[0],0)==-1);
+		assertTrue(StringUtils.indexOfAny("a", "")==-1);
 		assertTrue(StringUtils.indexOfAny(" ", ' ')==0);
+		assertTrue(StringUtils.indexOfAny(" ",  new char[0])==-1);
+		
+		assertTrue(StringUtils.indexOfAny("a\uD801\uA001123", '\uD801','\uA001')>0);
+		assertTrue(StringUtils.indexOfAny("a\uD801\uA001123", '\uD801','\uA002')==-1);
+		
 		
 		assertTrue(StringUtils.indexOfAny(hello, "wo".toCharArray(),1)>-1);
 		assertTrue(StringUtils.indexOfAny(hello, "xs".toCharArray(),2)==-1);
@@ -138,6 +144,19 @@ public class StringUtilsTest {
 		
 		assertEquals(4, StringUtils.ltrim(trimString).length());
 		assertEquals(4, StringUtils.rtrim(trimString).length());
+		assertEquals(null, StringUtils.ltrim(null));
+		assertEquals(null, StringUtils.rtrim(null));
+		assertEquals(null, StringUtils.ltrim(null,' '));
+		assertEquals(null, StringUtils.rtrim(null,' '));
+		assertEquals("", StringUtils.ltrim(" "));
+		assertEquals("", StringUtils.rtrim(" "));
+		assertEquals("", StringUtils.ltrim(" ",' '));
+		assertEquals("", StringUtils.rtrim(" ",' '));
+		assertEquals("a", StringUtils.ltrim("a"));
+		assertEquals("a", StringUtils.rtrim("a"));
+		assertEquals("a", StringUtils.ltrim("a",' '));
+		assertEquals("a", StringUtils.rtrim("a",' '));
+		
 		
 		assertEquals("a", StringUtils.trim(trimString));
 		assertEquals("", StringUtils.trimToEmpty(null));
@@ -155,6 +174,10 @@ public class StringUtilsTest {
 		
 		assertEquals("www.aaa", StringUtils.removeEnd("www.aaa.www", ".www"));
 		assertEquals("aaa.www", StringUtils.removeStart("www.aaa.www", "www."));
+		assertEquals(null, StringUtils.removeStart(null, ".www"));
+		assertEquals("a", StringUtils.removeStart("a", ""));
+		assertEquals("a", StringUtils.removeStart("a", "b"));
+		
 		assertEquals(null, StringUtils.removeEnd(null, ".www"));
 		assertEquals("aaa", StringUtils.removeEnd("aaa", null));
 		assertEquals("aaa", StringUtils.removeEnd("aaa", "bbb"));
@@ -196,6 +219,9 @@ public class StringUtilsTest {
 		assertArrayEquals(null,	StringUtils.split(null));
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c"));
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c",' '));
+		assertArrayEquals(null,	StringUtils.split(null,' '));
+		assertArrayEquals(new String[0],	StringUtils.split("",' '));
+		
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c"," "));
 		assertArrayEquals(new String[] {"a","b c"},		StringUtils.split("a b c"," ",2));
 		assertArrayEquals(new String[] {" "," c"},		StringUtils.split("a b c","ab",2));
@@ -204,9 +230,13 @@ public class StringUtilsTest {
 		assertArrayEquals(new String[] {"a","c"},		StringUtils.splitByWholeSeparator("a b c", " b "));
 		assertArrayEquals(new String[] {"a","c d"},		StringUtils.splitByWholeSeparator("a b c d", " b ",2));
 		assertArrayEquals(null,		StringUtils.splitByWholeSeparator(null, " b ",2));
-		assertArrayEquals(new String[0],		StringUtils.splitByWholeSeparator("", " b ",2));
-		
 		assertArrayEquals(new String[] {" a","c d"},		StringUtils.splitByWholeSeparator(" a b c d", " b ",2));
+		assertArrayEquals(new String[0],		StringUtils.splitByWholeSeparator("", " b ",2));
+		assertArrayEquals(new String[] {"a","b"},		StringUtils.splitByWholeSeparator("a b", null));
+		assertArrayEquals(new String[] {"a","b"},		StringUtils.splitByWholeSeparator("a b", ""));
+		assertArrayEquals(new String[] {"a","b",""},		StringUtils.splitByWholeSeparator("a b ", ""));
+		assertArrayEquals(new String[] {"a","b",""},		StringUtils.splitByWholeSeparator(" a b ", ""));
+		
 		assertArrayEquals(new String[] {"a","b","c"},		StringUtils.tokenizeToStringArray("a b c", " "));
 		assertArrayEquals(new String[] {"a","b","c"},		StringUtils.tokenizeToStringArray(" a b c ", " ", true,true));
 		assertArrayEquals(new String[] {"a","b","c"},		StringUtils.tokenizeToStringArray(" a b  c", " ", false, true));
@@ -223,6 +253,8 @@ public class StringUtilsTest {
 		
 		assertEquals(" World",StringUtils.substringAfter("Hello, World", ","));
 		assertEquals("t",StringUtils.substringAfterLast("Hello, World,t", ","));
+		assertEquals("",StringUtils.substringAfterLast("Hello, World,t", "Hello, World,t"));
+		
 		assertEquals("",StringUtils.substringAfter("Hello", ","));
 		assertEquals(null,StringUtils.substringAfter(null, ","));
 		assertEquals("Hello",StringUtils.substringAfter("Hello", ""));

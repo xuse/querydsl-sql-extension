@@ -85,9 +85,7 @@ public class ReaderInputStream extends InputStream {
 	}
 
 	public void close() {
-		if(closeable) {
-			IOUtils.closeQuietly(reader);
-		}
+		IOUtils.closeQuietly(reader);
 	}
 
 	protected Reader reader;
@@ -97,12 +95,4 @@ public class ReaderInputStream extends InputStream {
 	protected byte buffer[];
 	protected int index;
 	protected int length;
-	public boolean closeable;
 }
-
-/*
- * DECOMPILATION REPORT
- * 
- * Decompiled from: D:\MyWork\workspace\JEF\lib\ibatis-common-2.jar Total time:
- * 31 ms Jad reported messages/errors: Exit status: 0 Caught exceptions:
- */

@@ -201,11 +201,12 @@
 						<include>com/querydsl/core/types/SQLTemplatesEx.class</include>
 						<include>com/querydsl/sql/SQLSerializerAlter.class</include>
 						<include>com/querydsl/sql/TemplatesAccessor.class</include>
+						
 					</includes>
 					<excludes>
+						<include>com/github/xuse/querydsl/util/JDKEnvironment.class</include>
 						<exclude>com/github/xuse/querydsl/asm/**</exclude>
-						<exclude>
-							com/github/xuse/querydsl/spring/core/resource/**</exclude>
+						<exclude>com/github/xuse/querydsl/spring/core/resource/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>

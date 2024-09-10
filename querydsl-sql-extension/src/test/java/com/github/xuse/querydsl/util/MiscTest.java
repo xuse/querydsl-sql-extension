@@ -1,31 +1,21 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
 
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.spring.core.resource.Resource;
 
 public class MiscTest {
-	@Test
-	public void testHolder() {
-		Holder<Boolean> holder=new Holder<>(Boolean.FALSE);
-		assertEquals(Boolean.FALSE,holder.get());
-		
-		holder=new Holder<>();
-		assertEquals(null,holder.get());
-		
-		holder.value=Boolean.TRUE;
-		assertEquals(Boolean.TRUE,holder.get());
-	}
-	
 	private String hello="Hello";
 	
 	@Test
@@ -93,15 +83,94 @@ public class MiscTest {
 		assertEquals(Gender.MALE, g);
 	}
 	
-	
 	@Test
-	public void testReader() throws IOException {
-		try(StringReader reader=new StringReader(hello)){
-			try(InputStream in=new ReaderInputStream(reader,StandardCharsets.UTF_8)){
-				byte[] data=IOUtils.toByteArray(in);
-				assertArrayEquals(hello.getBytes(StandardCharsets.UTF_8),data);
-			}
-		};
+	public void testSnowFlake() throws NoSuchFieldException, SecurityException, IllegalAccessException {
+		SnowflakeIdWorker w= new SnowflakeIdWorker(10);
+		assertTrue(w.nextId()!=0L);
+		
+		w= new SnowflakeIdWorker(2,2);
+		assertTrue(w.nextId()!=0L);
+		
+		w.nextId();
+		w.nextId();
+		w.nextId();
+		
+		Field field=SnowflakeIdWorker.class.getDeclaredField("lastTimestamp");
+		field.setAccessible(true);
+		field.set(w, System.currentTimeMillis()+1000000L);
+		
+		try {
+			w.nextId();
+		}catch(Exception e) {
+			assertTrue(e.getMessage().startsWith("Clock moved backwards"));
+		}
 	}
 
+	@Test
+	public void snowFlake() {
+		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) {
+			@Override
+			protected long timeGen() {
+				return get(2050,1,10,12,0,0).getTime();
+			}
+		};
+		System.out.println(worker.nextId());
+	}
+	
+	public static final Date get(int year, int month, int date, int hour, int minute, int second) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(year, month - 1, date, hour, minute, second);
+		calendar.set(Calendar.MILLISECOND, 0);
+		return calendar.getTime();
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSnowFlakeError1() {
+		new SnowflakeIdWorker(-1);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSnowFlakeError2() {
+		new SnowflakeIdWorker(260);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSnowFlakeError3() {
+		new SnowflakeIdWorker(10, 101);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSnowFlakeError4() {
+		new SnowflakeIdWorker(10, -1);
+	}
+	
+	@Test
+	public void testClassScanner() {
+		ClassScanner c=new ClassScanner();
+		c.excludeInnerClass(true);
+		assertTrue(c.isExcludeInnerClass());
+		c.filterWith(e->true);
+		List<Resource> ress=c.scan(new String[] {"com.github.xuse.querydsl.entity.partition"});
+		assertTrue(ress.size()>0);
+		
+		ress=c.scan(new String[0]);
+		assertTrue(ress.size()>0);
+		
+		
+		
+		URL url=this.getClass().getResource("/");
+		c.rootClasspath(url);
+		c.excludeInnerClass(false);
+		c.filterWith(e->false);
+		ress=c.scan(new String[] {" ","com.github.xuse.querydsl.util"});
+		assertTrue(ress.size()==0);
+		
+		
+		c.filterWith(null);
+		ress=c.scan(new String[] {" "});
+		assertTrue(ress.size()==0);
+		
+		ress=c.scan(new String[] {"com.github.xuse.querydsl.util"});
+		assertTrue(ress.size()>0);
+	}
 }

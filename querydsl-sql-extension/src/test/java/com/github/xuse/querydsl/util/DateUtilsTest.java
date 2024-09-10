@@ -264,4 +264,55 @@ public class DateUtilsTest {
 	public void exceptionCase() {
 		DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(today, Calendar.WEEK_OF_YEAR));
 	}
+	
+	@Test
+	public void testDataFormats() {
+		Date d=new Date();
+		assertNull(DateFormats.DATE_CS.format((Date)null));
+		assertNull(DateFormats.DATE_CS.format((Instant)null));
+	
+		assertNull(DateFormats.DATE_CS.parse(""));
+		assertEquals(d,DateFormats.DATE_CS.parse("",d));
+		assertEquals(d,DateFormats.DATE_CS.parse("aaa",d));
+		assertEquals(today,DateFormats.DATE_CS.parse("2024-01-01"));
+		
+		
+		assertEquals("2024-01-01",DateFormats.DATE_CS.format(today,TimeZones.UTC_8));
+		assertEquals("2023-12-31",DateFormats.DATE_CS.format(today,7.5));
+		assertNull(DateFormats.DATE_CS.format((Date)null,TimeZones.UTC_8));
+		assertNull(DateFormats.DATE_CS.format((Date)null,8d));
+		
+		
+		assertEquals(today,DateFormats.DATE_CS.parse("2024-01-01"));
+		assertEquals(today,DateFormats.DATE_CS.parse("2024-01-01",d));
+		assertEquals(today,DateFormats.DATE_CS.parse("2024-01-01",8d));
+		assertEquals(today,DateFormats.DATE_CS.parse("2024-01-01",TimeZones.UTC_8));
+		assertEquals(null,DateFormats.DATE_CS.parse("",TimeZones.UTC_8));
+		assertEquals(null,DateFormats.DATE_CS.parse("",8d));
+		assertEquals(d,
+		DateFormats.DATE_CS.parse("2024.01.01",d,TimeZones.UTC_8));
+		assertEquals(d,
+				DateFormats.DATE_CS.parse("",d,TimeZones.UTC_8));
+		assertEquals(today,
+				DateFormats.DATE_CS.parse("2024-01-01",d,TimeZones.UTC_8));
+		assertEquals("2024-01-01",DateFormats.create("yyyy-MM-dd").format(today));
+		
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDataParseException() {
+		DateFormats.DATE_CS.parse("asadsada");
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDataParseException2() {
+		DateFormats.DATE_CS.parse("2024.01.01",TimeZones.UTC_8);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDataParseException3() {
+		DateFormats.DATE_CS.parse("2024.01.01",8d);
+	}
+	
+	
 }

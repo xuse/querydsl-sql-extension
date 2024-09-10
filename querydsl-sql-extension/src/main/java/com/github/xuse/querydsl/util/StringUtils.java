@@ -1060,7 +1060,7 @@ public class StringUtils {
 	 * @since 2.0
 	 */
 	public static String[] split(final String str, final char separatorChar) {
-		return splitWorker(str, separatorChar, false);
+		return splitWorker(str, separatorChar);
 	}
 
 	/**
@@ -1292,7 +1292,7 @@ public class StringUtils {
 	 *                          separators are treated as one separator.
 	 * @return an array of parsed Strings, {@code null} if null String input
 	 */
-	private static String[] splitWorker(final String str, final char separatorChar, final boolean preserveAllTokens) {
+	private static String[] splitWorker(final String str, final char separatorChar) {
 		// Performance tuned for 2.0 (JDK1.4)
 
 		if (str == null) {
@@ -1308,7 +1308,7 @@ public class StringUtils {
 		boolean lastMatch = false;
 		while (i < len) {
 			if (str.charAt(i) == separatorChar) {
-				if (match || preserveAllTokens) {
+				if (match) {
 					list.add(str.substring(start, i));
 					match = false;
 					lastMatch = true;
@@ -1320,17 +1320,13 @@ public class StringUtils {
 			match = true;
 			i++;
 		}
-		if (match || preserveAllTokens && lastMatch) {
+		if (match || lastMatch) {
 			list.add(str.substring(start, i));
 		}
 		return list.toArray(new String[list.size()]);
 	}
 
 	private static String[] splitWorker(final String str, final String separatorChars, final int max) {
-		// Performance tuned for 2.0 (JDK1.4)
-		// Direct code is quicker than StringTokenizer.
-		// Also, StringTokenizer uses isSpace() not isWhitespace()
-
 		if (str == null) {
 			return null;
 		}

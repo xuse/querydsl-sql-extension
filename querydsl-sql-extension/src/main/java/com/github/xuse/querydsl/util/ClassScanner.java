@@ -1,11 +1,9 @@
 package com.github.xuse.querydsl.util;
 
-import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -93,46 +91,30 @@ public class ClassScanner {
 		String locationPattern = prifix
 				+ (StringUtils.isBlank(packageName) ? "**/*.class" : packageName.replace('.', '/') + "/**/*.class");
 		ResourcePatternResolver rl = new PathMatchingResourcePatternResolver(cl);
-		try {
-			Resource[] res = rl.getResources(locationPattern);
-			if (excludeInnerClass) {
-				List<Resource> list = filter(res, new Predicate<Resource>() {
-					public boolean test(Resource o) {
-						String s = o.getFilename();
-						int dollor = s.indexOf('$');
-						// 当$位于第一个字符时，不认为是内部类
-						return dollor <= 0;
-					}
-				});
-				if (list.size() < res.length) {
-					res = list.toArray(new Resource[list.size()]);	
+		Resource[] res = rl.getResources(locationPattern);
+		if (excludeInnerClass) {
+			List<Resource> list = filter(res, new Predicate<Resource>() {
+				public boolean test(Resource o) {
+					String s = o.getFilename();
+					int dollor = s.indexOf('$');
+					// 当$位于第一个字符时，不认为是内部类
+					return dollor <= 0;
 				}
+			});
+			if (list.size() < res.length) {
+				res = list.toArray(new Resource[list.size()]);
 			}
-			if(filter!=null) {
-				List<Resource> list = filter(res, filter);
-				if (list.size() < res.length) {
-					res = list.toArray(new Resource[list.size()]);
-				}
-			}
-			return Arrays.asList(res);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
+		if (filter != null) {
+			List<Resource> list = filter(res, filter);
+			if (list.size() < res.length) {
+				res = list.toArray(new Resource[list.size()]);
+			}
+		}
+		return Arrays.asList(res);
 	}
 
-	/**
-	 * 进行数组元素过滤
-	 * 
-	 * @param <S>    the type of target.
-	 * @param source source
-	 * @param filter filter
-	 * @return filtered elements.
-	 */
-	public <S> List<S> filter(S[] source, Predicate<S> filter) {
-		if (source == null)
-			return Collections.emptyList();
-		if (filter == null)
-			return Arrays.asList(source);
+	private <S> List<S> filter(S[] source, Predicate<S> filter) {
 		List<S> result = new ArrayList<>(source.length);
 		for (S t : source) {
 			if (filter.test(t)) {

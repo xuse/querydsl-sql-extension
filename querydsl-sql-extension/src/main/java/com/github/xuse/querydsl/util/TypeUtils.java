@@ -4,6 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,6 +53,9 @@ public class TypeUtils {
 		PathCreators.put(Integer.class, NumberCreator);
 		PathCreators.put(Float.class, NumberCreator);
 		PathCreators.put(Double.class, NumberCreator);
+		
+		PathCreators.put(BigInteger.class, NumberCreator);
+		PathCreators.put(BigDecimal.class, NumberCreator);
 
 		PathCreators.put(Long.TYPE, PrimitiveNumberCreator);
 		PathCreators.put(Short.TYPE, PrimitiveNumberCreator);
@@ -64,8 +69,10 @@ public class TypeUtils {
 		PathCreators.put(java.sql.Time.class, TimeCreator);
 		PathCreators.put(LocalTime.class, (a, b) ->Expressions.timePath(a.asSubclass(LocalTime.class), b));
 
+		
 		PathCreators.put(Instant.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(Instant.class), b));
 		PathCreators.put(java.util.Date.class, DateTimeCreator);
+		PathCreators.put(java.sql.Timestamp.class, DateTimeCreator);
 		PathCreators.put(LocalDateTime.class,  (a, b) ->Expressions.dateTimePath(a.asSubclass(LocalDateTime.class), b));
 
 		PathCreators.put(Boolean.class, BooleanCreator);
@@ -101,7 +108,7 @@ public class TypeUtils {
 
 	public static boolean isRecord(Class objectClass) {
 		Class superclass = objectClass.getSuperclass();
-		if (superclass == null) {
+		if (superclass == Object.class) {
 			return false;
 		}
 		if (RECORD_CLASS == null) {
@@ -168,7 +175,7 @@ public class TypeUtils {
 		}
 	}
 
-	public static Constructor<?> getDeclaredConstructor(Class<?> clz) {
+	public static <T> Constructor<T> getDeclaredConstructor(Class<T> clz) {
 		try {
 			return clz.getDeclaredConstructor();
 		} catch (NoSuchMethodException | SecurityException e) {
@@ -196,7 +203,7 @@ public class TypeUtils {
 		if (creator != null) {
 			return creator.apply(type, metadata);
 		}
-		if (type.isAssignableFrom(Enum.class)) {
+		if (Enum.class.isAssignableFrom(type)) {
 			return Expressions.enumPath((Class<? extends Enum>) type, metadata);
 		}
 		return SimpleCreator.apply(type, metadata);

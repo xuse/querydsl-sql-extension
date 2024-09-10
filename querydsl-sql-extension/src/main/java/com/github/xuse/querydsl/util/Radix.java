@@ -52,6 +52,10 @@ public enum Radix {
 	 */
 	D10C("零一二三四五六七八九".toCharArray(), 19),
 	/**
+	 *  十进制中文2
+	 */
+	D10CT("零壹贰叁肆伍陆柒捌玖".toCharArray(), 19),
+	/**
 	 *  16进制
 	 */
 	D16("0123456789ABCDEF".toCharArray(), 16) {
@@ -330,7 +334,7 @@ public enum Radix {
 				return i;
 			}
 		}
-		return -1;
+		throw new IllegalArgumentException("Invalid char:"+charAt);
 	}
 
 	/**
@@ -353,6 +357,6 @@ public enum Radix {
 				max = middle - 1;
 			}
 		}
-		return -1;
+		throw new IllegalArgumentException("Invalid char:"+charAt);
 	}
 }
