@@ -16,7 +16,7 @@ public enum DbType {
 	dm("达梦"), 
 	xugu("虚谷"), 
 	phoenix("Phoenix HBase"),
-	zenith("Gauss "), 
+	zenith("Gauss"), 
 	clickhouse,
 	gbase8s("南大通用/Gbase8S","gbasedbt","gbasedbt_sqli"),
 	gbase8c("南大通用 GBase 8c"),

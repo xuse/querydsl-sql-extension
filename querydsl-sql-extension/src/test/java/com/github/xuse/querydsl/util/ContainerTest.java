@@ -34,7 +34,8 @@ public class ContainerTest {
 	
 	@Test
 	public void testNoLockHashMap() {
-		NoReadLockHashMap<String,String> map=new NoReadLockHashMap<>(5);
+		NoReadLockHashMap<String,String> map=new NoReadLockHashMap<>();
+		map=new NoReadLockHashMap<>(5);
 		System.out.println("Actually size:"+map.getThreshold());
 		map.put("a", "a");
 		map.put("b", "c");
@@ -54,7 +55,7 @@ public class ContainerTest {
 		}catch(RuntimeException e) {
 		}
 		try {
-			map.put("5", "b");
+			map.putIfAbsent("5", "b");
 		}catch(RuntimeException e) {
 		}
 		assertFalse(map.containsKey("5"));

@@ -3,7 +3,9 @@ package com.github.xuse.querydsl.sql.dbmeta;
 import com.querydsl.sql.Column;
 
 import lombok.Data;
+import lombok.Generated;
 
+@Generated
 @Data
 public final class KeyColumn{
 	@Column("TABLE_CAT")

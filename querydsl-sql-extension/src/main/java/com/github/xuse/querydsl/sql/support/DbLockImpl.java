@@ -49,10 +49,15 @@ public class DbLockImpl implements DistributedLock{
 		if(result) {
 			log.info("[LOCK Obtained] {}",lockName);
 		}else {
-			if(lockedByOther==null) {
-				lockedByOther=factory.selectFrom(t).where(t.tableName.eq(lockName)).fetchFirst();
+			if (lockedByOther == null) {
+				lockedByOther = factory.selectFrom(t).where(t.tableName.eq(lockName)).fetchFirst();
 			}
-			log.info("[LOCK Failure] {}, {}",lockName,lockedByOther);
+			if (lockedByOther == null) {
+				log.warn("the lock record is missed.");
+				return true;
+			}else {
+				log.info("[LOCK Failure] {}, {}",lockName,lockedByOther);
+			}
 		}
 		return result;
 	}

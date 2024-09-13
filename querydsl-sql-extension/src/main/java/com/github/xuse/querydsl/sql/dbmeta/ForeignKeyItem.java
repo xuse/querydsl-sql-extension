@@ -3,12 +3,15 @@ package com.github.xuse.querydsl.sql.dbmeta;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.Column;
 
+import lombok.Generated;
+
 /**
  * 描述外键信息
  * 
  * @author Administrator
  * 
  */
+@Generated
 public class ForeignKeyItem {
 	// 删除被引用的记录引发的策略，默认为禁止删除，不同数据库的返回值常量不同
 	@Column("FKTABLE_SCHEM")

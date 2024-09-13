@@ -5,12 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 import com.github.xuse.querydsl.util.StringUtils;
 
+import lombok.Generated;
+
 /**
  * 一张数据库表或视图。<p>
  * Indicates a table/view in database.
  *
  * @author xuse
  */
+@Generated
 public class TableInfo {
 
 	private String catalog;

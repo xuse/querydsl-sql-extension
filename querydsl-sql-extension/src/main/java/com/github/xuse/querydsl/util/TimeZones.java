@@ -127,7 +127,7 @@ public class TimeZones {
 		int rawOffset = (int) (offset * 3600_000);
 		String[] ss = TimeZone.getAvailableIDs(rawOffset);
 		TimeZone tz = null;
-		for (int i=ss.length-1;i>=0;i--) {
+		for (int i = ss.length - 1; i >= 0; i--) {
 			String s=ss[i];
 			tz = TimeZone.getTimeZone(s);
 			if (!tz.useDaylightTime()) {

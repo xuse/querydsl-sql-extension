@@ -346,7 +346,7 @@ public interface SQLMetadataQueryFactory {
 
 	List<ColumnDef> getColumns(SchemaAndTable schemaAndTable);
 
-	List<SequenceInfo> getSequenceInfo(String schema, String seqName);
+	List<SequenceInfo> getSequenceInfo(String namespace, String seqName);
 
 	List<ForeignKeyItem> getForeignKey(SchemaAndTable st);
 }

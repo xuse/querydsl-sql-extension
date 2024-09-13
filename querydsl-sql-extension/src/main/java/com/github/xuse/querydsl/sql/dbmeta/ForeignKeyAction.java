@@ -1,11 +1,11 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
+import lombok.Generated;
+
 /**
  * 外键的动作类型
- * 
- * @author qihongfei
- *
  */
+@Generated
 public enum ForeignKeyAction {
 
 	/**

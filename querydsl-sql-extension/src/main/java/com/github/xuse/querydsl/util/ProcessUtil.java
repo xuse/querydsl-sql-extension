@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+import lombok.Generated;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,6 +70,7 @@ public class ProcessUtil {
 		 * 
 		 * @return 获得子网掩码
 		 */
+		@Generated
 		public String getMaskAddress() {
 			InterfaceAddress addr = net.getInterfaceAddresses().get(0);
 			int add = addr.getNetworkPrefixLength();

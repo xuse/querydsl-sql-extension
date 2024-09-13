@@ -2,11 +2,14 @@ package com.github.xuse.querydsl.sql.dbmeta;
 
 import com.querydsl.sql.Column;
 
+import lombok.Generated;
+
 /**
  * 描述数据库中的Function（函数) / procedure(存储过程)对象
  *
  * @author Joey
  */
+@Generated
 public class DbFunction {
 
 	private final ObjectType objectType;

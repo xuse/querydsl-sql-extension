@@ -80,6 +80,8 @@ public class ProcessUtilsTest {
 		int pid=ProcessUtil.getPid();
 		assertTrue(pid>0);
 		
+		assertTrue(ProcessUtil.is64BitOs());
+		
 		String testHost="www.baidu.com";
 		try {
 			String remote=ProcessUtil.getRemoteIp(testHost);

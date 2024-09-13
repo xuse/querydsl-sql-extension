@@ -46,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import lombok.Generated;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -161,6 +162,7 @@ public class IOUtils {
 	 *  @param overwrite 覆盖模式，如果目标文件已经存在，则删除目标文件后再改名
 	 *  @return 如果成功改名，返回改名后的file对象，否则返回null。
 	 */
+	@Generated
 	public static File rename(File file, String newName, boolean overwrite) {
 		File target = new File(file.getParentFile(), newName);
 		if (target.exists()) {
@@ -574,6 +576,7 @@ public class IOUtils {
 		return result;
 	}
 
+	@Generated
 	private static void load0(LineReader lr, Map<String, String> map, Boolean supportSection) throws IOException{
 		char[] convtBuf = new char[1024];
 		int limit;
@@ -635,6 +638,10 @@ public class IOUtils {
 		}
 	}
 
+	/*
+	 * the code was copied from JDK class Properties.
+	 */
+	@Generated
 	static final class LineReader implements AutoCloseable{
 		private char[] inCharBuf;
 

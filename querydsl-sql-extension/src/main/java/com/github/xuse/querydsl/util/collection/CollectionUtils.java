@@ -223,6 +223,18 @@ public class CollectionUtils {
 		return result;
 	}
 
+	public static <T> boolean removeFirst(Collection<T> collection, Predicate<T> filter) {
+		if (collection == null || collection.isEmpty())
+			return false;
+		for(Iterator<T> iter=collection.iterator();iter.hasNext();) {
+			if (filter.test(iter.next())) {
+				iter.remove();
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	/**
 	 * 在集合中查找符合条件的首个元素
 	 * @param collection 集合
@@ -614,7 +626,7 @@ public class CollectionUtils {
 		}
 		return collection.get(collection.size() - 1);
 	}
-
+	
 	/**
 	 * 在List中的指定位置插入元素。如果超出当前长度，则将list扩展到指定长度。
 	 * @param list  List

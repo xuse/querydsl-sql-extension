@@ -98,13 +98,17 @@ public class ConnectionWrapper {
 				Object param = nullFriendlyBindings.get(i);
 				st.setObject(i + 1, param);
 			}
-			if(func!=null) {
-				try (ResultSet resultSet = st.executeQuery()) {
-					func.accept(resultSet);
+			if(st.execute()) {
+				if(func!=null) {
+					try (ResultSet resultSet = st.executeQuery()) {
+						func.accept(resultSet);
+					}	
+				}else {
+					count = 1;
 				}	
-			}else {
-				count = st.executeUpdate();
-			}
+			}else{
+				count = st.getUpdateCount();
+			};
 		} catch (SQLException e) {
 			throw configuration.get().translate(e);
 		}

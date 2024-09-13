@@ -24,6 +24,10 @@ public interface PartitionBy {
 	List<Partition> partitions();
 	
 	Expression<?> getExpr();
+	
+	default int count() {
+		return partitions().size();
+	};
 
 	default List<Path<?>> exprPath() {
 		List<Path<?>> result=new ArrayList<>();

@@ -4,11 +4,13 @@ import java.util.Date;
 
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 
+import lombok.Generated;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Generated
 public class PartitionInfo {
 	private String tableCat;
 	private String tableSchema;

@@ -4,6 +4,7 @@ import static com.github.xuse.querydsl.util.DateUtils.today;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -314,5 +315,57 @@ public class DateUtilsTest {
 		DateFormats.DATE_CS.parse("2024.01.01",8d);
 	}
 	
+	@Test
+	public void testTimeZones() {
+		TimeZone t=null;
+		
+		try {
+			t=TimeZones.getByUTCOffset(-13);
+		}catch(IllegalArgumentException e) {
+		}
+		assertNull(t);
+		
+		try {
+			t=TimeZones.getByUTCOffset(15);
+		}catch(IllegalArgumentException e) {
+		}
+		assertNull(t);
+		
+		try {
+			t=TimeZones.getByUTCOffset(-13d);
+		}catch(IllegalArgumentException e) {
+		}
+		assertNull(t);
+		
+		try {
+			t=TimeZones.getByUTCOffset(15d);
+		}catch(IllegalArgumentException e) {
+		}
+		assertNull(t);
+		
+		t = TimeZones.getByUTCOffset(8);
+		assertNotNull(t);
+		
+		TimeZone t2 = TimeZones.getByUTCOffset(8d);
+		assertNotNull(t);
+		assertEquals(t.getRawOffset(),t2.getRawOffset());
+		
+		t=null;
+		t=TimeZones.getByUTCOffset(2.5);
+		assertNotNull(t);
+		
+		t=null;
+		t=TimeZones.getByUTCOffset(10d);
+		assertNotNull(t);
+		
+		t=null;
+		t=TimeZones.getByUTCOffset(1.05d);
+		assertNotNull(t);
+		
+		t=null;
+		t=TimeZones.getByUTCOffset(-5.5d);
+		assertNotNull(t);
+		
+	}
 	
 }
