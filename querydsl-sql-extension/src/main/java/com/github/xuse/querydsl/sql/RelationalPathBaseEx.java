@@ -289,8 +289,11 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	protected <P extends Path<?>> P addMetadata(P path, ColumnMapping metadata) {
 		columnMetadata.put(path, metadata);
 		bindingsMap.put(path.getMetadata().getName(), path);
-		//pathUpdate(path, metadata.getColumn());
 		return path;
+	}
+	
+	protected void clearColumnsCache() {
+		this.columns=null;
 	}
 
 	@Override

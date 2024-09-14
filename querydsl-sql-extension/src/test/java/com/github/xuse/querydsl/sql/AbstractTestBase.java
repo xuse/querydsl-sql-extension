@@ -70,13 +70,6 @@ public abstract class AbstractTestBase {
 	 */
 	@AfterClass 
 	public static void closeDerby() {
-//		// Derby数据库在嵌入模式运行时，最后一定要关闭。
-//		try {
-//			DriverManager.getConnection("jdbc:derby:;shutdown=true");
-//			DriverManager.registerDriver(new org.apache.derby.jdbc.AutoloadedDriver());
-//		} catch (SQLException e) {
-//			e.printStackTrace();
-//		}
 	}
 	
 	@BeforeClass
@@ -100,8 +93,9 @@ public abstract class AbstractTestBase {
 		// 如果使用了自定义映射，需要提前注册，或者扫描指定包
 		configuration.allowTableDropAndCreate();
 		configuration.getScanOptions()
-		.setAlterExistTable(false)
-		.setDataInitBehavior(DataInitBehavior.NONE);
+			.setAlterExistTable(true)
+			.allowDrops()
+			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
 	}

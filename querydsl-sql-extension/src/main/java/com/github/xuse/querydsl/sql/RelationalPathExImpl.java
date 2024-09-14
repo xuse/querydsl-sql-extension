@@ -94,15 +94,21 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		return super.createCheck(name, checkExpression);
 	}
 
-	public <P extends Path<?>> P addMetadata(P path, ColumnMapping metadata) {
-		return super.addMetadata(path, metadata);
+	public <P> PathMapping addMetadataDynamic(Path<P> path, ColumnMetadata cMetadata) {
+		PathMapping metadata = new PathMapping(path, new DynamicField(path), cMetadata);
+		addMetadata(path, metadata);
+		clearColumnsCache();
+		return metadata;
 	}
-
-	public <P> PathMapping addMetadataDynamic(Path<P> expr, ColumnMetadata metadata) {
-		PathMapping metadataExt = new PathMapping(expr, new DynamicField(expr), metadata);
-		super.columnMetadata.put(expr, metadataExt);
-		super.bindingsMap.put(expr.getMetadata().getName(), expr);
-		return metadataExt;
+	
+	public boolean removeColumn(Path<?> path){
+		ColumnMapping mapping=columnMetadata.remove(path);
+		if(mapping==null) {
+			return false;
+		}
+		bindingsMap.remove(path.getMetadata().getName());
+		clearColumnsCache();
+		return true;
 	}
 
 	static class DynamicField implements AccessibleElement {

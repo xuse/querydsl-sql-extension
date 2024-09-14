@@ -163,7 +163,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	}
 
 	/**
-	 * 增加一个列
+	 * adding a column / 增加一个列
 	 * @param <A> type of the column
 	 * @param column 列定义，参见 {@link ColumnMetadata}
 	 * @param type Java数据类型
@@ -175,6 +175,30 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		PathMapping cb = table.addMetadataDynamic(path, column);
 		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
 	}
+	
+	/**
+	 * drop one column by the path name.
+	 * @param pathName
+	 * @return
+	 */
+	public AlterTableQuery removeColumn(String pathName) {
+		Path<?> p=table.getColumn(pathName);
+		if(p==null) {
+			throw new IllegalArgumentException("There's no column path named '"+pathName+"'.");
+		}
+		table.removeColumn(p);
+		return this;
+	}
+	
+	public AlterTableQuery removeColumn(Path<?> column) {
+		Path<?> thisPath=table.getColumn(column.getMetadata().getName());
+		if (thisPath != column) {
+			throw new IllegalArgumentException("The path '"+column+"' is not belong to current table.");
+		}
+		table.removeColumn(column);
+		return this;
+	}
+	
 
 	/**
 	 *  为表增加索引或约束

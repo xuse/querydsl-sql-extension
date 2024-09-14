@@ -88,6 +88,7 @@ public class DDLTest extends AbstractTestBase {
 	public void testTableRefresh() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 		RelationalPathExImpl<Aaa> table=QAaa.aaa.clone();
+		//修改列备注
 		PathMapping pathex = (PathMapping) table.getColumnMetadata(table.getColumn("version"));
 		pathex.setComment("新的版本列注解");
 		metadata.refreshTable(table)
@@ -102,22 +103,33 @@ public class DDLTest extends AbstractTestBase {
 	public void testTableRefresh2() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 		QAvsUserAuthority t=QAvsUserAuthority.avsUserAuthority;
-		System.err.println("==========================");
+		
+		//读取查看现有约束
 		Collection<Constraint> cs=metadata.getConstraints(t.getSchemaAndTable());
-		System.err.println(cs.size());
+		assertEquals(1,cs.size());
 		for(Constraint c:cs) {
 			log.info("constraint:{}",c);
 		}
+		//读取查看现有索引
 		Collection<Constraint> is = metadata.getIndices(QAaa.aaa.getSchemaAndTable());
-		System.out.println(is.size());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
 		}
+		assertEquals(1,cs.size());
+		
+		//更新表
 		metadata.refreshTable(t)
+			.removeColumn(t.gender)
+			.removeColumn("authType")
 			.dropColumns(true)
 			.dropConstraint(true)
 			.dropIndexes(true)
 			.execute();
+		assertEquals(9,metadata.getColumns(t.getSchemaAndTable()).size());
+		
+		//再次更新表，把字段加回去
+		metadata.refreshTable(t).execute();
+		assertEquals(11,metadata.getColumns(t.getSchemaAndTable()).size());
 	}
 	
 	

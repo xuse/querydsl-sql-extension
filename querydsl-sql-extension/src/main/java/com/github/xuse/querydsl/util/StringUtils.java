@@ -1789,7 +1789,7 @@ public class StringUtils {
 			return (pos < count) ? (buf[pos++] & 0xff) : -1;
 		}
 		public int read(byte b[], int off, int len) {
-			if ((off | len) < 0 || b.length - off > len) {
+			if ((off | len) < 0 || len > b.length - off) {
 				throw new IndexOutOfBoundsException();
 			}
 			if (pos >= count) {
