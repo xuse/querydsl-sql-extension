@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.UUID;
@@ -1790,7 +1789,9 @@ public class StringUtils {
 			return (pos < count) ? (buf[pos++] & 0xff) : -1;
 		}
 		public int read(byte b[], int off, int len) {
-			Objects.checkFromIndexSize(off, len, b.length);
+			if ((off | len) < 0 || b.length - off > len) {
+				throw new IndexOutOfBoundsException();
+			}
 			if (pos >= count) {
 				return -1;
 			}
