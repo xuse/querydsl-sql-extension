@@ -101,14 +101,13 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		return metadata;
 	}
 	
-	public boolean removeColumn(Path<?> path){
+	public ColumnMapping removeColumn(Path<?> path){
 		ColumnMapping mapping=columnMetadata.remove(path);
-		if(mapping==null) {
-			return false;
+		if (mapping != null) {
+			bindingsMap.remove(path.getMetadata().getName());
+			clearColumnsCache();
 		}
-		bindingsMap.remove(path.getMetadata().getName());
-		clearColumnsCache();
-		return true;
+		return mapping;
 	}
 
 	static class DynamicField implements AccessibleElement {

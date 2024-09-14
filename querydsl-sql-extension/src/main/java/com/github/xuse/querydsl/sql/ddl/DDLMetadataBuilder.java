@@ -20,6 +20,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.DropStatement;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.OtherStatement;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
@@ -132,7 +133,7 @@ public class DDLMetadataBuilder {
 			if (StringUtils.isNotEmpty(tableEx.getComment())) {
 				Expression<String> content = ConstantImpl.create(tableEx.getComment());
 				if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
-					createCommentClause(content, null);
+					createCommentStatement(content, null);
 				} else {
 					tableCreateExpression = DDLExpressions.simple(DDLOps.COMMENT_ON_TABLE, tableCreateExpression,
 							content);
@@ -308,7 +309,7 @@ public class DDLMetadataBuilder {
 			Expression<String> content = ConstantImpl.create(cx.getComment());
 			if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
 				// generate a independent statement of comment.
-				createCommentClause(content, p);
+				createCommentStatement(content, p);
 			} else {
 				columnSpec = DDLExpressions.simple(DDLOps.COMMENT_ON_COLUMN, columnSpec, content);
 			}
@@ -338,13 +339,18 @@ public class DDLMetadataBuilder {
 			for (String cp : difference.getDropColumns()) {
 				serializeAlterTable0(difference.ofDropSingleColumn(cp));
 			}
+			//每条SQL只能执行一个CHANGE
 			for (ColumnModification cp : difference.getChangeColumns()) {
+				//如果有列改名，就先改名
+				ColumnModification isRenamed= cp.ofRenameOnly();
+				if(isRenamed!=null) {
+					serializeAlterTable0(difference.ofSingleChangeColumn(isRenamed));
+				}
 				if (cp.getChanges().size() == 1) {
 					serializeAlterTable0(difference.ofSingleChangeColumn(cp));
 				} else {
 					for (ColumnChange cg : cp.getChanges()) {
-						ColumnModification param = cp.ofSingleChange(cg);
-						serializeAlterTable0(difference.ofSingleChangeColumn(param));
+						serializeAlterTable0(difference.ofSingleChangeColumn(cp.ofSingleChange(cg)));
 					}
 				}
 			}
@@ -380,12 +386,24 @@ public class DDLMetadataBuilder {
 		// change columns
 		for (ColumnModification change : compareResults.getChangeColumns()) {
 			if (configuration.getTemplates().notSupports(AlterTableOps.CHANGE_COLUMN)) {
+				if(change.hasRename()) {
+					Expression<?> old=DDLExpressions.text(change.getOriginalName());
+					if(configuration.getTemplates().supports(AlterTableOps.RENAME_COLUMN)) {
+						tableDefExpressions.add(DDLExpressions.simple(AlterTableOps.RENAME_COLUMN, old,change.getPath()));
+					}else if(configuration.getTemplates().supports(OtherStatement.RENAME_COLUMN)) {
+						DDLMetadata renameStatement = new DDLMetadata(true, true);
+						renameStatement.addExpression(DDLExpressions.simple(OtherStatement.RENAME_COLUMN, old, change.getPath(), change.getPath().getMetadata().getParent()));
+						result.add(renameStatement);
+					}else {
+						throw new UnsupportedOperationException("Unable to rename the column due to the absence of an appropriate statement in SQLTemplates.");
+					}
+				}
 				// 标准SQL，必须逐个修改列特性
 				for (ColumnChange cg : change.getChanges()) {
 					Operator op = cg.getType();
 					if (cg.getType() == AlterColumnOps.SET_COMMENT) {
 						if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
-							createCommentClause(cg.getTo(),  change.getPath());
+							createCommentStatement(cg.getTo(),  change.getPath());
 							continue;
 						} else {
 							op = DDLOps.COMMENT_ON_COLUMN;
@@ -404,17 +422,20 @@ public class DDLMetadataBuilder {
 			} else {
 				// MySQL或Oracle，可以重定义列的多项特性，此时对比的具体修改内容已不重要，只要重新定义新列规格即可。
 				Expression<?> columnSpec = generateColumnDefinition(change.getPath(), change.getNewColumn(), false);
+				Expression<?> oldPath = change.getPath();
+				if(change.hasRename()) {
+					oldPath = DDLExpressions.text(change.getOriginalName());
+				}
 				tableDefExpressions
-						.add(DDLExpressions.simple(AlterTableOps.CHANGE_COLUMN, change.getPath(), columnSpec));
+						.add(DDLExpressions.simple(AlterTableOps.CHANGE_COLUMN, oldPath, columnSpec));
 			}
 		}
 
-		// drop constraints
 		boolean ignoreKeysOnPartitionedTable = false;
 		if(table instanceof RelationalPathEx) {
 			ignoreKeysOnPartitionedTable = ((RelationalPathEx<?>) table).getPartitionBy()!=null && configuration.has(SpecialFeature.NO_KEYS_ON_PARTITION_TABLE); 
 		}
-		
+		//Drop constraints
 		for (Constraint constraint : compareResults.getDropConstraints()) {
 			ConstraintType type = constraint.getConstraintType();
 			AlterTableConstraintOps ops = type.getDropOpsInAlterTable();
@@ -427,7 +448,7 @@ public class DDLMetadataBuilder {
 				tableDefExpressions.add(dropClause);
 			}
 		}
-		// add constraints
+		//Add constraints
 		if(!ignoreKeysOnPartitionedTable) {
 			for (Constraint constraint : compareResults.getAddConstraints()) {
 				ConstraintType type = constraint.getConstraintType();
@@ -440,13 +461,13 @@ public class DDLMetadataBuilder {
 				}
 			}	
 		}
-
+		//Other table options
 		for (Map.Entry<Operator, String> e : compareResults.getOtherChange().entrySet()) {
 			Operator op = e.getKey();
 			String value = e.getValue();
 			if (op == DDLOps.COMMENT_ON_TABLE) {
 				if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
-					createCommentClause(ConstantImpl.create(value), null);
+					createCommentStatement(ConstantImpl.create(value), null);
 				} else {
 					tableDefExpressions.add(DDLExpressions.simple(DDLOps.COMMENT_ON_COLUMN, DDLExpressions.empty(),
 							ConstantImpl.create(value)));
@@ -463,7 +484,7 @@ public class DDLMetadataBuilder {
 		}
 	}
 
-	private void createCommentClause(Expression<?> content, Path<?> columnPath) {
+	private void createCommentStatement(Expression<?> content, Path<?> columnPath) {
 		DDLMetadata comment = new DDLMetadata(true, false);
 		if(columnPath==null) {
 			comment.addExpression(DDLExpressions.simple(DDLOps.COMMENT_ON_TABLE, table, content));

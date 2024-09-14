@@ -82,7 +82,7 @@ public final class DriverInfo implements DatabaseInfo{
 				return dbType;
 			}
 		}
-		log.warn("Can not determine dbtype for {}",url);
+		log.warn("Unable to determine dbtype for {}",url);
 		return DbType.other;
 	}
 

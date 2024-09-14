@@ -88,7 +88,7 @@ public class ProcessUtilsTest {
 			System.out.println(testHost + " -> " + remote);
 			assertTrue(remote.length()>0);
 		}catch(UnknownHostException e) {
-			System.out.println("Can not analysis DNS "+testHost);
+			System.out.println("Unable to analysis DNS "+testHost);
 		}
 	}
 }

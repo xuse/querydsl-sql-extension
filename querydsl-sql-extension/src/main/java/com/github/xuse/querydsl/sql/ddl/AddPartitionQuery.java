@@ -149,7 +149,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 		//Prepare Reorganization
 		Reorganize reorgnize = null;
 		SQLTemplatesEx templates=configuration.getTemplates();
-		if(templates.supports(PartitionDefineOps.PARTITION_LESS_THAN)
+		if(templates.supports(PartitionDefineOps.VALUES_LESS_THAN)
 				&& templates.supports(AlterTablePartitionOps.REORGANIZE_PARTITION)
 				) {
 			if (partitionBy instanceof RangePartitionBy) {

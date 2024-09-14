@@ -19,6 +19,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.OtherStatement;
 import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -64,6 +65,10 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 		add(templates, DDLOps.COLLATE, "{0}");
 		add(templates, DDLOps.UNSIGNED, "{0}");
 		add(templates, Basic.SELECT_VALUES, "values {0}");
+		
+		add(templates, OtherStatement.RENAME_COLUMN, "RENAME COLUMN {2}.{0} TO {1}");
+		add(templates, OtherStatement.RENAME_INDEX, "RENAME INDEX {0} TO {1}");
+		add(templates, OtherStatement.RENAME_TABLE, "RENAME TABLE {0} TO {1}");
 
 		add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
 		add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP UNIQUE {0}");

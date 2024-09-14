@@ -13,16 +13,6 @@ import com.querydsl.sql.SQLTemplates;
  */
 public enum DDLOps implements Operator {
 	/**
-	 * ALTER TABLE {0:path} {1:actions}
-	 */
-	ALTER_TABLE,
-
-	/**
-	 * TRUNCATE TABLE {0}
-	 */
-	TRUNCATE_TABLE,
-
-	/**
 	 * {0}=Column_NAME(Path) {1}=DataType {2}=ColumnLevel Constraint
 	 * 
 	 * {0} {1} {2}
@@ -93,7 +83,6 @@ public enum DDLOps implements Operator {
 	}
 
 	public enum Basic implements Operator {
-
 		/**
 		 * 无表查询。
 		 * 这个本不属于DDL语法，但是不同数据库的无表查询差异较大，难以通过{@link SQLTemplates#getDummyTable()}完成。
@@ -122,9 +111,8 @@ public enum DDLOps implements Operator {
 	}
 
 	public enum AlterTableOps implements Operator {
-		
 		/**
-		 * ADD
+		 * ADD {0:constraint_definition}
 		 */
 		ALTER_TABLE_ADD,
 		
@@ -141,14 +129,15 @@ public enum DDLOps implements Operator {
 		/**
 		 * CHANGE {0:old_path} {1:columnSpec}
 		 * 
-		 * [MySQL] CHANGE {0:path} {1:column name and definition}
+		 * [MySQL]<br>
+		 * CHANGE {0:path} {1:column name and definition}
 		 */
 		CHANGE_COLUMN,
 
 		/**
-		 * [Derby, once on action] ALTER COLUMN {0:path} {1:action} Alter column 是标准语法
-		 * change [column]是Oracle扩展，MYSQL也兼容。 There should be another option to generate
-		 * expressions in two formats for those various RDBMS.
+		 * [Derby, once on action] 
+		 * ALTER COLUMN {0:path} {1:action} Alter column 是标准语法
+		 * change [column]是Oracle扩展，MYSQL也兼容。 
 		 */
 		ALTER_COLUMN,
 
@@ -192,7 +181,6 @@ public enum DDLOps implements Operator {
 	}
 	
 	public enum AlterTablePartitionOps implements Operator{
-		
 		/**
 		 * 去除表的分区设置，不影响数据
 		 * REMOVE PARTITIONING
@@ -215,7 +203,6 @@ public enum DDLOps implements Operator {
 		 * DROP PARTITION {0:names}
 		 */
 		DROP_PARTITION,
-		
 		/**
 		 * 对于Hash类分区，收缩分区，会造成数据重新分布
 		 * COALESCE PARTITION {0:count}
@@ -228,6 +215,7 @@ public enum DDLOps implements Operator {
 		ADD_PARTITION_COUNT,
 
 		TRUNCATE_PARTITION,
+		
 		EXCHANGE_PARTITION,
 		
 		/**
@@ -235,9 +223,8 @@ public enum DDLOps implements Operator {
 		 * REORGANIZE PARTITION {0} INTO {1}
 		 */
 		REORGANIZE_PARTITION,
+		
 		OPTMIZE_PARTITION,
-		
-		
 
 		//以下是维护分区（包括迁移）等操作
 		/**
@@ -270,7 +257,6 @@ public enum DDLOps implements Operator {
 		 */
 		ANALYZE_PARTITION,
 		;
-
 		@Override
 		public Class<?> getType() {
 			return Object.class;
@@ -345,7 +331,7 @@ public enum DDLOps implements Operator {
 		 */
 		DROP_DEFAULT,
 		
-		SET_COMMENT
+		SET_COMMENT,
 		;
 		
 		@Override
@@ -377,6 +363,20 @@ public enum DDLOps implements Operator {
 			return Void.class;
 		}
 	}
+	public enum OtherStatement implements Statement{
+		/**
+		 *  RENAME COLUMN {2:table}.{0:from} TO {1:to}
+		 */
+		RENAME_COLUMN,
+		/**
+		 * RENAME INDEX {0:from} TO {1:to}
+		 */
+		RENAME_INDEX,
+		/**
+		 * RENAME TABLE {0:from} TO {1:to}
+		 */
+		RENAME_TABLE
+	}
 	public enum CreateStatement implements Statement{
 		/**
 		 * Index definition of creation.
@@ -407,7 +407,6 @@ public enum DDLOps implements Operator {
 		 */
 		CREATE_BITMAP,
 	}
-
 	public enum PartitionMethod implements Operator{
 		/**
 		 * HASH({0:expr}) PARTITIONS {1:count}
@@ -467,7 +466,6 @@ public enum DDLOps implements Operator {
 		 * PARTITION BY {0:DEFINE}
 		 */
 		PARTITION_BY,
-		
 		/**
 		 * on MySQL
 		 * PARTITION {0:name} VALUES IN ({2:list})
@@ -476,20 +474,20 @@ public enum DDLOps implements Operator {
 		 * on PG:
 		 * CREATE TABLE {0:name} PARTITION OF {1:table} FOR VALUES IN ({2:list})
 		 */
-		PARTITION_IN_LIST,
+		VALUES_IN_LIST,
 		
 		/**
 		 * on MySQL
 		 * PARTITION {0:name} VALUE LESS THAN ({2:value}) 
 		 * {1.table}
 		 */
-		PARTITION_LESS_THAN,
+		VALUES_LESS_THAN,
 		
 		/**
 		 * on PG
 		 * CREATE TABLE {0:name} PARTITION OF {1:table} FOR VALUES FROM {2:from} TO {3:to})
 		 */
-		PARTITION_FROM_TO
+		VALUES_FROM_TO
 		;
 		@Override
 		public Class<?> getType() {

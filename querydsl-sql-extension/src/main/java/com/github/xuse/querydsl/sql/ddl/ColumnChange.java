@@ -15,7 +15,7 @@ public class ColumnChange {
 	private Expression<?> from;
 
 	private Expression<?> to;
-
+	
 	public static ColumnChange dataType(Expression<?> from, Expression<?> to) {
 		ColumnChange c = new ColumnChange(AlterColumnOps.SET_DATATYPE);
 		c.setFrom(from);

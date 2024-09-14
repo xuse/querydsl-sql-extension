@@ -14,8 +14,8 @@ import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
-import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
+import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTablePartitionOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionDefineOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
@@ -101,18 +101,11 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 		add(templates, DDLOps.UNSIGNED, "{0}");
 		add(templates, DDLOps.COMMENT_ON_COLUMN, "COMMENT ON COLUMN {0} IS {1}");
 		add(templates, DDLOps.COMMENT_ON_TABLE, "COMMENT ON TABLE {0} IS {1}");
-		add(templates, AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0}");
-		// add(templates, AlterColumnOps.SET_DATATYPE, "{0}");
+		add(templates, AlterTableOps.RENAME_COLUMN, "RENAME COLUMN {0} TO {1}");
 
 		add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE{2}");
-		// add(templates, Basic.SELECT_VALUES, "values {0}");
-		// add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
-//		add(templates, SpecialFeature.ONE_COLUMN_IN_SINGLE_DDL, "");
-//				AlterTableOps.CHANGE_COLUMN,DDLOps.COLLATE, AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP,
-//				AlterTableConstraintOps.ALTER_TABLE_DROP_KEY
 
 		add(templates, SpecialFeature.INDEPENDENT_COMMENT_STATEMENT, "");
-		//add(templates, SpecialFeature.PARTITION_SUPPORT, "");
 		add(templates, SpecialFeature.INDEPENDENT_PARTITION_CREATION, "");
 		add(templates, SpecialFeature.NO_KEYS_ON_PARTITION_TABLE, "");
 		
@@ -130,8 +123,8 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 //		add(templates,PartitionMethod.HASH,"HASH({0}) PARTITIONS {1}");
 		//创建语句不是通过修改表实现的
 		add(templates,AlterTablePartitionOps.ADD_PARTITION,"{0}");
-		add(templates,PartitionDefineOps.PARTITION_IN_LIST,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES IN ({2})");
-		add(templates,PartitionDefineOps.PARTITION_FROM_TO,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES FROM ({2}) TO ({3})");
+		add(templates,PartitionDefineOps.VALUES_IN_LIST,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES IN ({2})");
+		add(templates,PartitionDefineOps.VALUES_FROM_TO,"CREATE TABLE {1}_{0} PARTITION OF {1} FOR VALUES FROM ({2}) TO ({3})");
 		add(templates, AlterTablePartitionOps.DROP_PARTITION,"DETACH PARTITION {1}_{0} CONCURRENTLY");
 		
 		//不支持去除和添加分区，每张表初始时就已经确认是否为分区表

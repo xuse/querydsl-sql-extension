@@ -1,17 +1,19 @@
 package com.github.xuse.querydsl.sql.ddl;
 
+import java.util.Collections;
+import java.util.List;
+
 import com.github.xuse.querydsl.sql.column.AbstractColumnMetadataEx;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataEx;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.querydsl.core.types.Path;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * 描述在一个数据库列上，实际的模型和框架中的模型之间的差异
  */
 public final class ColumnModification {
+	//如果发生了列改名，此字段不为null
+	private final String originalName;
 
 	private final ColumnMetadataEx from;
 
@@ -23,28 +25,43 @@ public final class ColumnModification {
 
 	/**
 	 * 构造
+	 * @param path Path
 	 * @param beforeChange beforeChange
 	 *            变更前的列定义
 	 * @param changes changes
 	 *            对比出来的变化
 	 * @param changeTo changeTo
 	 *            变更后的列类型
-	 * @param path Path
+	 * @param originalName 列旧名
 	 */
-	public ColumnModification(Path<?> path, ColumnMetadataEx beforeChange, List<ColumnChange> changes, ColumnMetadataEx changeTo) {
+	public ColumnModification(Path<?> path, ColumnMetadataEx beforeChange, List<ColumnChange> changes, ColumnMetadataEx changeTo, String originalName) {
 		this.path = path;
 		this.from = beforeChange;
 		this.changes = changes;
 		this.newColumn = changeTo;
+		this.originalName=originalName;
 	}
 
 	public ColumnModification ofSingleChange(ColumnChange change) {
-		return new ColumnModification(path, from, Collections.singletonList(change), newColumn);
+		return new ColumnModification(path, from, Collections.singletonList(change), newColumn, null);
 	}
+
+	public ColumnModification ofRenameOnly() {
+		if(originalName!=null) {
+			return new ColumnModification(path, from, Collections.emptyList(), newColumn, originalName);
+		}else {
+			return null;
+		}
+	}
+	
 
 	@Override
 	public String toString() {
 		return from.toString();
+	}
+	
+	public boolean hasRename() {
+		return originalName!=null;
 	}
 
 	/**
@@ -98,5 +115,9 @@ public final class ColumnModification {
 
 	public Path<?> getPath() {
 		return path;
+	}
+
+	public String getOriginalName() {
+		return originalName;
 	}
 }

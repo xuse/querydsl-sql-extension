@@ -78,14 +78,11 @@ public interface SQLTemplatesEx {
 	static void initDefaultDDLTemplate(SQLTemplates templates) {
 		templates.add(Basic.SELECT_VALUES, "select {0}");
 		templates.add(Basic.TIME_EQ, "{0} = {1}");
-		templates.add(DDLOps.ALTER_TABLE, "ALTER TABLE {0} {1}");
 		templates.add(AlterTableOps.ADD_COLUMN, "ADD COLUMN {0}");
 		templates.add(AlterTableOps.DROP_COLUMN, "DROP COLUMN {0} {1}");
 		templates.add(AlterTableOps.ALTER_COLUMN, "ALTER COLUMN {0} {1}");
-		templates.add(AlterTableOps.RENAME_COLUMN, "RENAME COLUMN {0} TO {1}");
 		templates.add(AlterTableOps.RENAME_KEY, "RENAME KEY {0} TO {1}");
 		templates.add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}");
-		templates.add(DDLOps.TRUNCATE_TABLE, "TRUNCATE TABLE {0}");
 		templates.add(DDLOps.COLUMN_SPEC, "{0} {1} {2}");
 		templates.add(DDLOps.DATA_TYPE, "{0} {1} {2}");
 		templates.add(DDLOps.UNSIGNED, "{0} UNSIGNED");
@@ -124,7 +121,7 @@ public interface SQLTemplatesEx {
 		templates.add(AlterColumnOps.SET_INCREMENT_BY, "SET INCREMENT BY {0}");
 		templates.add(AlterColumnOps.SET_DEFAULT, "SET DEFAULT {0}");
 		templates.add(AlterColumnOps.DROP_DEFAULT, "DROP DEFAULT");
-		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0} {1}");
+		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0}");
 		templates.add(AlterColumnOps.SET_GENERATED, "SET GENERATED {0}");
 		templates.add(AlterColumnOps.SET_NOTNULL, "SET NOT NULL");
 		templates.add(AlterColumnOps.SET_NULL, "SET NULL");

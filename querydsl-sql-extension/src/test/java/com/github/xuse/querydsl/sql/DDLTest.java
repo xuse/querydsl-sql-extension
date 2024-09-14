@@ -117,7 +117,21 @@ public class DDLTest extends AbstractTestBase {
 		}
 		assertEquals(1,cs.size());
 		
-		//更新表
+		//清除数据，防止后面DDL失败
+		metadata.truncate(t).execute();
+		
+		//更新表1
+		metadata.refreshTable(t)
+			.changeColumn(t.authContent, String.class, ColumnMetadata.named("auth_content_new")
+					.ofType(Types.VARCHAR).withSize(512).notNull())
+					.defaultValue("")
+			.build()
+		.dropColumns(true)
+		.dropConstraint(true)
+		.dropIndexes(true)
+		.execute();
+		
+		//更新表2
 		metadata.refreshTable(t)
 			.removeColumn(t.gender)
 			.removeColumn("authType")
@@ -131,8 +145,6 @@ public class DDLTest extends AbstractTestBase {
 		metadata.refreshTable(t).execute();
 		assertEquals(11,metadata.getColumns(t.getSchemaAndTable()).size());
 	}
-	
-	
 	
 	@Test
 	public void testTableAlter() {

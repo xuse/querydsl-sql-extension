@@ -212,8 +212,8 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(PartitionMethod.RANGE_COLUMNS,"RANGE COLUMNS({0}) {1}");
 		add(PartitionMethod.LIST,"LIST ({0}) {1}");
 		add(PartitionMethod.LIST_COLUMNS,"LIST COLUMNS({0}) {1}");
-		add(PartitionDefineOps.PARTITION_IN_LIST," PARTITION {0} VALUES IN ({2})");
-		add(PartitionDefineOps.PARTITION_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({2})");
+		add(PartitionDefineOps.VALUES_IN_LIST," PARTITION {0} VALUES IN ({2})");
+		add(PartitionDefineOps.VALUES_LESS_THAN,"PARTITION {0} VALUES LESS THAN ({2})");
 		
 		add(AlterTablePartitionOps.ADD_PARTITION,"ALTER TABLE {1} ADD PARTITION ({0})");
 		add(AlterTablePartitionOps.DROP_PARTITION,"ALTER TABLE {1} DROP PARTITION {0}");

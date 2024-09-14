@@ -242,7 +242,7 @@ public class IOUtils {
 		if (f != null && !f.exists()) {
 			f.mkdirs();
 		} else if (f != null && f.isFile()) {
-			throw new RuntimeException(f.getAbsolutePath() + " is a exist file, can't create directory.");
+			throw new RuntimeException(f.getAbsolutePath() + " is a exist file, unable to create directory.");
 		}
 	}
 

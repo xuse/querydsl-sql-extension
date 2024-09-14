@@ -267,7 +267,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 			Connection conn = connection.get();
 			if (level > 0) {
 //				if (isInSpringTransaction()) {
-//					log.warn("Can not set transaction isolation because current session is Spring managed transaction.");
+//					log.warn("Unable to set transaction isolation because current session is Spring managed transaction.");
 //				} else {
 					conn.setTransactionIsolation(level);
 //				}

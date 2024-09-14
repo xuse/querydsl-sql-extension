@@ -36,7 +36,7 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 
 	private void setToSize(int size) {
 		if (size <= 0) {
-			throw Exceptions.illegalArgument("can not adjust table {}'s partition size to {}, current is {}",
+			throw Exceptions.illegalArgument("Unable to adjust table {}'s partition size to {}, current is {}",
 					table.getSchemaAndTable(), size, currentSize);
 		}
 		this.toSize = size;
@@ -98,13 +98,13 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 	protected String generateSQL() {
 		if (toSize <= 0) {
 			log.warn(
-					"Can't adjust table {}'s partition to 0. please using REMOVE PARTITIONING to remove all partitions",
+					"Unable to adjust table {}'s partition to 0. please using REMOVE PARTITIONING to remove all partitions",
 					table.getSchemaAndTable());
 			return null;
 		}
 		int current = getCurrentSize();
 		if (current == 0) {
-			log.warn("Can't adjust table {}'s partition to {}. there's no partitions now.", table.getSchemaAndTable(),
+			log.warn("Unable to adjust table {}'s partition to {}. there's no partitions now.", table.getSchemaAndTable(),
 					toSize);
 			return null;
 		}

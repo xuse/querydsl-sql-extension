@@ -299,7 +299,7 @@ public class CodecClassGenerator implements Opcodes {
 				mw.visitMethodInsn(INVOKEVIRTUAL, getType(Number.class), "shortValue", "()S", false);
 				return true;
 			default:
-				throw Exceptions.illegalState("Can not generate unbox method for type {} -> {}", bindingType,target);
+				throw Exceptions.illegalState("Unable to generate unbox method for type {} -> {}", bindingType,target);
 			}
 		}
 		mw.visitTypeInsn(CHECKCAST, getType(target));// 类型转换

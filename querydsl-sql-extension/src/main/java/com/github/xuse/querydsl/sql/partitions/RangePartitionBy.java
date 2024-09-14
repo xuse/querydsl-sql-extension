@@ -141,10 +141,10 @@ public class RangePartitionBy extends PartitionAssigned {
 
 	@Override
 	public Expression<?> defineOnePartition(Partition p, ConfigurationEx configurationEx) {
-		if(configurationEx.getTemplates().supports(PartitionDefineOps.PARTITION_FROM_TO)) {
-			return DDLExpressions.simple(PartitionDefineOps.PARTITION_FROM_TO, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.from()), DDLExpressions.text(p.value()));
+		if(configurationEx.getTemplates().supports(PartitionDefineOps.VALUES_FROM_TO)) {
+			return DDLExpressions.simple(PartitionDefineOps.VALUES_FROM_TO, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.from()), DDLExpressions.text(p.value()));
 		}else {
-			return DDLExpressions.simple(PartitionDefineOps.PARTITION_LESS_THAN, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.value()));	
+			return DDLExpressions.simple(PartitionDefineOps.VALUES_LESS_THAN, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.value()));	
 		}
 		
 	}

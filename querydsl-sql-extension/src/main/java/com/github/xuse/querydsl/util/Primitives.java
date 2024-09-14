@@ -224,7 +224,7 @@ public final class Primitives {
 	 */
 	public static int toIntSafely(long num) {
 		if (num > Integer.MAX_VALUE || num < Integer.MIN_VALUE) {
-			throw Exceptions.illegalArgument("Can't convert {} to a int value.", num);
+			throw Exceptions.illegalArgument("Unable to convert {} to a int value.", num);
 		}
 		return (int) num;
 	}
@@ -236,7 +236,7 @@ public final class Primitives {
 	 */
 	public static short toShortSafely(int num) {
 		if (num > Short.MAX_VALUE || num < Short.MIN_VALUE) {
-			throw Exceptions.illegalArgument("Can't convert {} to a short value.", num);
+			throw Exceptions.illegalArgument("Unable to convert {} to a short value.", num);
 		}
 		return (short) num;
 	}

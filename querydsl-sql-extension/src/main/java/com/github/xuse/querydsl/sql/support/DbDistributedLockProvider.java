@@ -12,7 +12,7 @@ public class DbDistributedLockProvider implements DistributedLockProvider{
 		this.factory=factory;
 		DataInitLog global=DDLLockUtils.initInitLogTable(factory);
 		if(global==null) {
-			throw Exceptions.illegalState("can not init db lock table.");
+			throw Exceptions.illegalState("Unable to init db lock table.");
 		}
 	}
 	

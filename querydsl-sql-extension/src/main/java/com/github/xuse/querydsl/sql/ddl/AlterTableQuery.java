@@ -27,6 +27,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.types.Constant;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -60,6 +61,9 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	private MetadataQuerySupport metadata;
 
 	private final RelationalPathExImpl<?> table;
+	
+	//K = old column, V = new column
+	private final Map<String, String> columnRename = new HashMap<>();
 
 	public AlterTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
 		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(path));
@@ -163,7 +167,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	}
 
 	/**
-	 * adding a column / 增加一个列
+	 * Adding a column / 增加一个列
 	 * @param <A> type of the column
 	 * @param column 列定义，参见 {@link ColumnMetadata}
 	 * @param type Java数据类型
@@ -172,6 +176,33 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	public <A> ColumnBuilderHandler<A, AlterTableQuery> addColumn(ColumnMetadata column, Class<A> type) {
 		String name = column.getName();
 		Path<A> path = table.createPath(name, type);
+		PathMapping cb = table.addMetadataDynamic(path, column);
+		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
+	}
+	
+	/**
+	 * Change a column. / 修改列。
+	 * @implSpec
+	 * 内部实现是从模型上移除旧列的元数据，再添加新列的元数据。
+	 * @param <A> 新的Java映射类型，如果是和静态模型映射，使用Java字段类型即可。
+	 * @param path 字段
+	 * @param column
+	 * @param type
+	 * 
+	 *  //RENAME COLUMN t.c1_newtype TO c1
+	 * @return
+	 */
+	public <A> ColumnBuilderHandler<A, AlterTableQuery> changeColumn(Path<?> path, Class<A> type, ColumnMetadata column) {
+		ColumnMapping mapping = table.removeColumn(path);
+		if(mapping==null) {
+			throw new IllegalArgumentException("The path '"+column+"' is not belong to current table.");
+		}
+		if(!mapping.getName().equals(column.getName())){
+			//Column rename
+			this.columnRename.put(mapping.getName().toLowerCase(), column.getName().toLowerCase());
+			//如果列改名，Path需要更换为指向当前对象的Path，否则会在序列化时导致列名计算不正确
+			path=TypeUtils.createPathByType(type, path.getMetadata().getName(), table);
+		}
 		PathMapping cb = table.addMetadataDynamic(path, column);
 		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
 	}
@@ -275,28 +306,33 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		if (!supportsChangeDelete) {
 			log.warn("Current database [{}] doesn't support alter table column.", dialect.getClass().getName());
 		}
-		// 新增列
+		PrimaryKey<?> keys= this.table.getPrimaryKey();
+		//defined - 当前内存模型中的列定义 
 		Map<String, ColumnMapping> defined = getColumnMapLower(this.table);
 		List<String> toBeDropped = new ArrayList<String>();
 		List<ColumnModification> changed = new ArrayList<ColumnModification>();
-		PrimaryKey<?> keys= this.table.getPrimaryKey();
 		
-		
-		// 比较差异
+		//比较差异, columns=数据库中的实际列定义
 		for (ColumnDef c : columns) {
 			String columnKey = c.getColumnName().toLowerCase();
+			String originalName=null;
+			if(columnRename.get(columnKey)!=null) {
+				originalName = c.getColumnName();
+				columnKey = columnRename.get(columnKey);
+			}
 			ColumnMapping definedColumn = defined.remove(columnKey);
-			// is dropped column
+			// is drop column
 			if (definedColumn == null) {
 				if (allowColumnDrop && supportsChangeDelete) {
 					toBeDropped.add(c.getColumnName());
 				}
 				continue;
 			}
-			// 创建Java侧的列定义(为什么不直接用PathMapping中的ColumnMetadata？因为该定义在数据库方言下，部分字段的类型和长度可能被转化为其他类型。)
-			Path<?> path = definedColumn.getPath();
+			// 创建Java侧的列定义(不可以直接用PathMapping中的ColumnMetadata？因为该定义在数据库方言下，部分字段的类型和长度可能被转化为其他类型。)
 			ColumnDef javaColumn = getTemplates().getColumnDataType(definedColumn.getJdbcType(), definedColumn.getSize(), definedColumn.getDigits());
 			ColumnMetadata columnMetadata = definedColumn.getColumn().ofType(javaColumn.getJdbcType()).withSize(javaColumn.getColumnSize()).withDigits(javaColumn.getDecimalDigit());
+			
+			Path<?> path = definedColumn.getPath();
 			boolean isPk = keys == null ? false : keys.getLocalColumns().contains(path);
 			if(isPk) {
 				columnMetadata = columnMetadata.notNull();
@@ -310,10 +346,9 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			// 创建Database侧的列定义
 			ColumnMetadataExImpl dbSide = toColumnMetadata(c);
 			// 比较差异
-			List<ColumnChange> changes = compareDataType(javaSide, dbSide, javaColumn, c);
-			if (!changes.isEmpty()) {
-				// 这里必须填写definedColumn
-				changed.add(new ColumnModification(path, dbSide, changes, definedColumn));
+			List<ColumnChange> modifications = compareDataType(javaSide, dbSide, javaColumn, c);
+			if (originalName!=null || !modifications.isEmpty()) {
+				changed.add(new ColumnModification(path, dbSide, modifications, definedColumn,originalName));
 			}
 		}
 		Map<String, ColumnMapping> insert = new HashMap<String, ColumnMapping>();

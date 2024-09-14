@@ -240,7 +240,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	protected <P> ColumnBuilder<P> addMetadata(Path<P> expr, ColumnMetadata metadata) {
 		Class<?> beanType = super.getType();
 		Field field = ReflectionUtils.getFieldOrNull(beanType, expr.getMetadata().getName());;
-		Assert.notNull(field, "Can't find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
+		Assert.notNull(field, "Unable to find field " + expr.getMetadata().getName() + " in class " + super.getType().getName());
 
 		field.setAccessible(true);
 		if (isNotAssignableFrom(field.getType(), expr.getType())) {

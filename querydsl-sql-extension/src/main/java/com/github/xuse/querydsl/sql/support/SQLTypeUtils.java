@@ -217,7 +217,7 @@ public class SQLTypeUtils {
 				return (Type<?>) c.newInstance(ArrayUtils.addAllElement(new Object[] { fieldType }, parameters));
 			}
 		}
-		throw new IllegalArgumentException("can not Instant type " + clz.getName() + ".");
+		throw new IllegalArgumentException("Unable to Instant type " + clz.getName() + ".");
 	}
 
 	public static void setWhere(List<Path<?>> mergeKey, FilteredClause<?> select, Map<Path<?>, Object> values) {

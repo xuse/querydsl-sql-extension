@@ -47,7 +47,7 @@ public class ListPartitionBy extends PartitionAssigned{
 
 	@Override
 	public Expression<?> defineOnePartition(Partition p, ConfigurationEx configurationEx) {
-		return DDLExpressions.simple(PartitionDefineOps.PARTITION_IN_LIST, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.value()));
+		return DDLExpressions.simple(PartitionDefineOps.VALUES_IN_LIST, DDLExpressions.text(p.name()), table, DDLExpressions.text(p.value()));
 	}
 
 	@Override
