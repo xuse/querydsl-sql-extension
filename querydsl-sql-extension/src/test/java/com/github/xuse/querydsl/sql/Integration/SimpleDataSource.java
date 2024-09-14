@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql;
+package com.github.xuse.querydsl.sql.Integration;
 
 import java.io.PrintWriter;
 import java.sql.Connection;

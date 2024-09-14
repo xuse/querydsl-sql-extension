@@ -1,10 +1,11 @@
-package com.github.xuse.querydsl.sql;
+package com.github.xuse.querydsl.sql.Integration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -39,12 +40,14 @@ import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.repository.LambdaQueryWrapper;
 import com.github.xuse.querydsl.repository.Selects;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Pair;
@@ -122,14 +125,17 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	}
 
 	@Test
-	public void testSelect() {
+	public void testSelect() throws SQLException {
 		QAaa t1 = QAaa.aaa;
 		Aaa a = generateEntity();
 		factory.insert(t1).populate(a).execute();
-
 		List<Aaa> list = factory.selectFrom(t1).fetch();
-		for (Aaa aa : list) {
-			System.err.println(aa.getDataInt());
+		assertTrue(list.size()>0);
+		
+		try(ResultSet rs=factory.selectFrom(t1).getResults()){
+			String str=SQLTypeUtils.toString(rs);
+			//System.out.println(str);
+			assertTrue(str.startsWith("ID, NAME, CREATED"));
 		}
 	}
 

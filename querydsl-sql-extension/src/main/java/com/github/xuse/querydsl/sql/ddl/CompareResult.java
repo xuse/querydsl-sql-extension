@@ -1,13 +1,21 @@
 package com.github.xuse.querydsl.sql.ddl;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.querydsl.core.types.Operator;
-import lombok.Data;
 
-import java.util.*;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class CompareResult {
 
 	public boolean isEmpty() {

@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql;
+package com.github.xuse.querydsl.sql.Integration;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -7,6 +7,7 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
+import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;

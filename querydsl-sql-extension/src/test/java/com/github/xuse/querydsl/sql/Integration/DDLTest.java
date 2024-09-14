@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql;
+package com.github.xuse.querydsl.sql.Integration;
 
 import static org.junit.Assert.assertEquals;
 
@@ -12,6 +12,7 @@ import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
+import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;

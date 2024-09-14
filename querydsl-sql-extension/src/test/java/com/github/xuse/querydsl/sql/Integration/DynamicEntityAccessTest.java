@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql;
+package com.github.xuse.querydsl.sql.Integration;
 
 import java.sql.Date;
 import java.sql.Types;
@@ -9,6 +9,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import com.github.xuse.querydsl.annotation.GeneratedType;
+import com.github.xuse.querydsl.sql.DynamicRelationalPath;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Path;

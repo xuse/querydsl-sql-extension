@@ -24,7 +24,7 @@ import org.apache.shardingsphere.sql.parser.core.ParseASTNode;
 import org.apache.shardingsphere.sql.parser.mysql.visitor.format.MySQLFormatVisitor;
 import org.h2.Driver;
 
-import com.github.xuse.querydsl.sql.SimpleDataSource;
+import com.github.xuse.querydsl.sql.Integration.SimpleDataSource;
 
 /**
  * This is a virtual JDBC driver designed to support database operations using

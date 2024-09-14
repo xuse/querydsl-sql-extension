@@ -133,8 +133,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				return new QueryResults<T>(results, originalModifiers, total);
 			} else {
 				// 我怎么感觉这两句话是没什么用处的。
-				// Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
-				// queryMixin.setProjection(expr);
+//				 Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
+//				 queryMixin.setProjection(expr);
 				long total = fetchCount();
 				if (total > 0) {
 					return new QueryResults<T>(fetch(), originalModifiers, total);

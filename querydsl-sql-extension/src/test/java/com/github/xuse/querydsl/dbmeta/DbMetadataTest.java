@@ -10,7 +10,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.github.xuse.querydsl.sql.AbstractTestBase;
+import com.github.xuse.querydsl.sql.Integration.AbstractTestBase;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.DataType;
 import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;

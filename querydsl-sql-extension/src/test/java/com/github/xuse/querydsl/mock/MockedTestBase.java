@@ -7,7 +7,7 @@ import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
-import com.github.xuse.querydsl.sql.SimpleDataSource;
+import com.github.xuse.querydsl.sql.Integration.SimpleDataSource;
 import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;

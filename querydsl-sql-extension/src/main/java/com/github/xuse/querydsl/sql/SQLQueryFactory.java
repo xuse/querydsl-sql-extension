@@ -135,10 +135,6 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 		}
 	}
 
-	protected ConfigurationEx getConfigurationEx() {
-		return configEx;
-	}
-
 	public com.querydsl.sql.SQLQueryFactory asRaw() {
 		return new com.querydsl.sql.SQLQueryFactory(configuration.get(), connection);
 	}
