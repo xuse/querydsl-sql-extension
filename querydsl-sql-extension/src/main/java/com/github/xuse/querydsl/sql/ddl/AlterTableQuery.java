@@ -63,7 +63,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	private final RelationalPathExImpl<?> table;
 	
 	//K = old column, V = new column
-	private final Map<String, String> columnRename = new HashMap<>();
+	private final Map<String, String> columnRenameMapping = new HashMap<>();
 
 	public AlterTableQuery(MetadataQuerySupport connection, ConfigurationEx configuration, RelationalPath<?> path) {
 		super(connection, configuration, RelationalPathExImpl.toRelationPathEx(path));
@@ -181,16 +181,12 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	}
 	
 	/**
-	 * Change a column. / 修改列。
-	 * @implSpec
-	 * 内部实现是从模型上移除旧列的元数据，再添加新列的元数据。
+	 * Change a column. / 修改列。如果前后列名不一样，会对列重命名。
 	 * @param <A> 新的Java映射类型，如果是和静态模型映射，使用Java字段类型即可。
 	 * @param path 字段
-	 * @param column
-	 * @param type
-	 * 
-	 *  //RENAME COLUMN t.c1_newtype TO c1
-	 * @return
+	 * @param column column metadata.
+	 * @param type type 
+	 * @return ColumnBuilderHandler，可配置该列的缺省值等信息。
 	 */
 	public <A> ColumnBuilderHandler<A, AlterTableQuery> changeColumn(Path<?> path, Class<A> type, ColumnMetadata column) {
 		ColumnMapping mapping = table.removeColumn(path);
@@ -199,7 +195,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		}
 		if(!mapping.getName().equals(column.getName())){
 			//Column rename
-			this.columnRename.put(mapping.getName().toLowerCase(), column.getName().toLowerCase());
+			this.columnRenameMapping.put(mapping.getName().toLowerCase(), column.getName().toLowerCase());
 			//如果列改名，Path需要更换为指向当前对象的Path，否则会在序列化时导致列名计算不正确
 			path=TypeUtils.createPathByType(type, path.getMetadata().getName(), table);
 		}
@@ -210,8 +206,8 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	/**
 	 * drop one column by the path name.
 	 * @param pathName
-	 * @return
-	 */
+	 * @return this
+	 */ 
 	public AlterTableQuery removeColumn(String pathName) {
 		Path<?> p=table.getColumn(pathName);
 		if(p==null) {
@@ -316,9 +312,9 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		for (ColumnDef c : columns) {
 			String columnKey = c.getColumnName().toLowerCase();
 			String originalName=null;
-			if(columnRename.get(columnKey)!=null) {
+			if(columnRenameMapping.get(columnKey)!=null) {
 				originalName = c.getColumnName();
-				columnKey = columnRename.get(columnKey);
+				columnKey = columnRenameMapping.get(columnKey);
 			}
 			ColumnMapping definedColumn = defined.remove(columnKey);
 			// is drop column
