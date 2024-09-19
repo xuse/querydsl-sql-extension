@@ -6,7 +6,7 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
 本框架是在 [querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html 
 
-> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。写这个框架的目的是获得一个轻量便捷的数据库访问层，也可以与MyBatis、Spring JDBC Template等一起使用。
+> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。本框架基于DataSource JDBC，也可以与MyBatis、Spring JDBC Template等一起使用。
 
 **什么是queryDSL，为什么推荐?**
 
@@ -55,7 +55,9 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 ### 提升使用便利性
 
 * 提供@CustomType注解，支持将复杂的Bean映射到数据库字段中。
-  **Example**
+  
+
+**Example**
 
   ```java
       //Using a string type to mapping a column of timestamp in database.
@@ -71,7 +73,7 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
       private CaAsset asserts;
   ```
 
-  
+
 
 * 提供更多Batch Insert、Batch Update、Batch Delete操作。通过一个SQL Statment支持多组操作值，提升操作效率。
 
@@ -224,9 +226,9 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 * **表模型与BeanCodec缓存**：对表和字段模型。以及每个对象的编解码器进行了缓存。
 
-* **其他各种优化：**如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
+* **面向字节码 / JIT友好**： 如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
 
-* **向开发者提供Tunning API：**提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
+* **向开发者提供Tunning API**： 提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
 
   **Example**：一次查出一百万ID。
 
