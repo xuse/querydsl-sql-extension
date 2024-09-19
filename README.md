@@ -252,10 +252,14 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 完整的数据库结构建模：扩展QueryDSL原生的ColumnMetadata，支持在Java(JDBC)模型中描述全部数据库表的特征——包括default value、unsigned、自增、索引、约束（不含外键）。相关模型可以通过元模型API创建，也可以通过注解来定义。
 
-  Q: 有什么用？
+  Q: 这功能有什么用？
+
   A: 数据库应用开发者一般有两种用法，一种是先在数据库中设计数据结构，然后通过Bean生成工具生成Java类结构。（称为数据库Schema优先）
-  另外一种是软件开发者开发跨多种RDBMS应用的做法，是先建立Java Entity模型，然后通过程序等手段自动创建数据库结构。(称为Metadata优先)。
-  QueryDSL仅支持第一种用法。本库满足了Metadata优先的场合，可以通过Java元模型反向更新数据库结构。 同时，这种更新支持基于数据库结构对比的增量更新，支持更新索引、约束、视图、等数据表结构。（不支持：外键、物化视图、索引组织表、函数、触发器、存储过程，由于这些特性很少在跨RDBMS应用中用到，暂无支持的必要。）
+  另外一种是软件开发者开发跨多种RDBMS应用的做法，是先建立Java Entity模型，然后通过程序等手段自动创建数据库结构。(称为Metadata优先)。 典型地，Hibernate就支持启动时自动创建数据库结构；本框架也支持这一用法。
+
+QueryDSL思路是数据库Schema优先，本框架扩展支持了Metadata优先的场合，可以通过Java元模型反向更新数据库结构。 同时，这种更新支持基于数据库结构对比的增量更新，支持更新索引、约束、视图、等数据表结构。
+
+> 不支持：外键、物化视图、索引组织表、自定义函数、触发器、存储过程，由于这些特性很少在跨RDBMS应用中用到，暂无支持的必要。
 
 #### 纯POJO使用 (无QueryClass)
 
@@ -382,6 +386,8 @@ metadata.dropPartition(t1)
 ### DDL Support
 
 > 实验性功能，个人精力有限目前仅完成了部分数据库的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+>
+> 以下是计划中的2024年内支持的数据库：Oracle，H2
 
 **数据库支持(DDL)**
 
@@ -410,7 +416,7 @@ ALTER TABLE table1
   ADD KEY idx_aaa_taskstatus (task_status), ALGORITHM = INPLACE, LOCK = SHARED
 ```
 
-* （此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL）
+* 此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL
 * Online DDL是在MySQL 5.x引入的，8.x中支持更多的Online DDL策略。但目前5.x和8.x的方言还没有区分开，目前仅按5.x做了相对保守的策略。
 
 ## 修订记录
@@ -515,3 +521,11 @@ v{querydsl 版本号} - r(extension version)
 * Lambda在表示数据表时是单例的，无法构造出自表关联查询时。
   （类似这个SQL语句，就是一个自表关联查询 `SELECT t.* FROM tree_node t LEFT JOIN tree_node parent ON t.pid = parent.id`）
   r110版本进一步扩展API，可以使用Lambda表达式构建出自表查询请求。
+
+### Language
+
+目前框架使用的语言情况
+
+* 文档 / Documentation：中文
+* Javadoc:  中英文双语 / Chinese English bilingual
+* 日志和异常信息  / Log and exception messages: 英文/English only

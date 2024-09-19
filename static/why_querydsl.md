@@ -47,11 +47,9 @@ QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯
 
 最后：如果有使用下来觉得不错的朋友，无需给这个项目Star，请 Star [QueryDSL](https://github.com/querydsl/querydsl) 项目，各位觉得好的设计都来自QueryDSL，我只是为方便自己做了一些微不足道的修改而已。
 
-
-
 ## Java常见数据库访问的技术路线
 
-### 数据访问层常用路线——JPA路线
+### JPA路线
 
 对比下表可发现，该路线对于 单表应用/ 小规模企业应用 的开发者是较为适合的。但是要想精通，需要专门学习框架自身知识体系——HQL / JPQL / QueryBuilder/ QueryDSL-JPA /SpringData-JPA /Hiberbate自身的对象管理和缓存机制 等等。
 
