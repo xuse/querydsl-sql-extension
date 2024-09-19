@@ -39,7 +39,7 @@ GenericRepository中提供了对单表常用的增删该查功能见下表，其
 
 ### 准备工作
 
-要完成下列示例，可以先创建一个简单的POJO
+Step.1 要完成下列示例，可以先创建一个简单的POJO
 
 ```java
 @Data
@@ -60,20 +60,17 @@ public class Foo {
 }
 ```
 
-创建表，你可以自行手动创建。如果确认程序有DDL操作权限，也可以用以下java代码创建数据库表。
+Step.2 创建表
+你可以自行手动创建。如果确认程序有DDL操作权限，也可以用以下java代码创建数据库表。
 
 ```java
 SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 metadata.createTable(()->Foo.class).ifExists().execute();
 ```
 
-获得Repository对象
+Step.3 获得Repository对象
 
-您可以参阅第3章来获得Repository对象。
-
-
-
-下面以一个查询为例介绍不同风格API用法。
+您可以参阅 第3章 用法简述 来获得Repository对象。然后即可体验，下面以一个查询为例介绍不同风格API用法。
 
 ### 传统风格
 
@@ -101,7 +98,7 @@ repository.query()
 
 ### MyBatis-Plus风格
 
-MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询分为两个对象—— 一个记录查询条件，一个框架会话 (在Mybatis里常用Mapper。在其他各类框架里有Session、Context、EntityManager等不同叫法)。
+MyBatis支持Lambda风格用法，区别在于其还是相对传统地将查询分为两个对象—— 一个记录查询条件，一个框架会话 (在Mybatis里常用SqlSession或Mapper。在其他各类框架里有Session、Context、EntityManager等不同叫法)。
 
 ```java
 	LambdaQueryWrapper<Foo> wrapper=new LambdaQueryWrapper<>();
@@ -143,12 +140,18 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 
 
 
-## 3 用法简述(Spring集成)
+## 3 用法简述
+
+> 本节仅介绍Spring集成场景。
+
+**如在非Spring下使用**
+
+参见此文档 [Without Springframework](static/without_springfrwmework.md)
 
 
 ### 基本
 
-本框架直接依赖DSL库，主要用法和querydsl一致。但初始化方法与querydsl有所不同。
+本框架直接依赖querydsl-sql库，主要用法和querydsl一致。但初始化方法与querydsl有所不同。
 
 **依赖(Maven)**
 
@@ -187,10 +190,6 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 		return new DataSourceTransactionManager(ds);
 	}
 ```
-
-**非Spring下使用**
-
-参见此文档 [Without Springframework](static/without_springfrwmework.md)
 
 
 
