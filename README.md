@@ -2,15 +2,21 @@
 
 query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 
-本框架是在 [querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html 
+## 摘要
 
-本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
+本框架是在 [querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html 
 
 > 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。与JPA模式的比较参见下一节。写这个框架的目的是获得一个轻量便捷的数据库访问层，也可以与MyBatis、Spring JDBC Template等一起使用。
 
-**什么是queryDSL，好在哪里，为什么推荐？**
+**什么是queryDSL，为什么推荐?**
 
 参见 [Why QueryDSL](static/why_querydsl.md)
+
+**Getting started**
+
+参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
+
+
 
 **引用 / How to import**
 
@@ -32,15 +38,10 @@ query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
 </dependency>
 ```
 
-**Getting started**
-
-参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
-
-### 重要变更
+**变更备注**
 
 5.0.0-r111版本，将Spring框架支持功能移到 querydsl-sql-extension-spring 模块，相关使用说明已修改，Spring下使用需要添加该依赖包。
 Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修改为  `QueryDSLSqlExtension.createSpringQueryFactory()`
-
 
 
 ### 本框架能和QueryDsl-JPA一起使用吗？
@@ -49,9 +50,7 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 > 如果没有两类框架操作共享事务机制的要求，那就随便了。
 
-
-
-## 特性
+## 特性介绍 (对照原版querydsl-sql)
 
 ### 提升使用便利性
 
@@ -318,36 +317,6 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持该类对�
 
 > 其他数据库可以自行编写SQLTemplates进行扩展 。
 
-### 业务层分表兼容机制
-
-> 本框架不提供分库分表功能
-
-但有一种情形，当分表规则和用法较为简单，业务层希望自行封装分表时，需要能根据业务数据动态变化表名。针对这种情形，提供了一个允许业务代码自行调整表名的机制。
-
-```java
-	//定义本次操作中的表名后缀
-	TableRouting routing=TableRouting.suffix( "2024Q2");
-
-	//在DDL中操作带后缀的表名（删表建表）
-	SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
-	metadata.dropTable(t2).withRouting(routing).execute();
-	metadata.createTable(t2).withRouting(routing).execute();
-	
-	//在DML中操作带有后缀的表名
-	List<Tuple> tuples=factory.select(t2.content,t2.code).from(t2)
-	    .withRouting(routing)
-	    .where(t2.name.eq("Test"))
-	    .fetch();
-	
-	//如果在一个SQL中有多张表需要调整后缀，参考下例
-	TableRouting routing=TableRouting.builder()
-		.suffix(t1,"202406")
-		.suffix(t2, "2024Q2")
-		.build();
-```
-
-> 如果分库分表规则较为复杂，建议使用Sharding JDBC/Sharding Sphere等专用框架。
-
 ## 实验性功能
 
 > 实验性功能是根据特定使用场景或建议增加的一些新特性，用于体验和建议收集。
@@ -443,78 +412,6 @@ ALTER TABLE table1
 
 * （此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL）
 * Online DDL是在MySQL 5.x引入的，8.x中支持更多的Online DDL策略。但目前5.x和8.x的方言还没有区分开，目前仅按5.x做了相对保守的策略。
-
-
-
-### 动态变化的数据库表
-
-> 当数据库表字段是动态定义时，无法用Java类来创建静态的表和字段模型。
-
-1. 定义动态表模型
-
-```java
-//定义一个动态的表模型
-DynamicRelationlPath table = new DynamicRelationlPath("t1", null, key);
-//创建各列的模型
-Path<Long> id=table.addColumn(Long.class, ColumnMetadata.named("id").ofType(Types.BIGINT).notNull())
-		.with(ColumnFeature.AUTO_INCREMENT).unsigned().comment("主键ID")
-		.build();
-		
-Path<String> name=table.addColumn(String.class,ColumnMetadata.named("name").ofType(Types.VARCHAR)
-		.withSize(256).notNull())
-		.defaultValue("")
-		.build();
-		
-Path<Integer> status=table.addColumn(Integer.class, ColumnMetadata.named("status")
-		.ofType(Types.INTEGER).notNull())
-		.build();
-			
-Path<Date> created=table.addColumn(Date.class,ColumnMetadata.named("create_time")
-		.ofType(Types.TIMESTAMP).notNull())
-		.withAutoGenerate(GeneratedType.CREATED_TIMESTAMP)
-		.build();
-
-//创建主键
-table.createPrimaryKey(id);
-//创建索引
-table.createIndex("idx_table_name_status", name, status);
-...
-```
-
-2. DDL：建表
-
-```java
-DynamicRelationlPath table=getModel("dyn_entity_apple");
-factory.getMetadataFactory().createTable(table).ifExists().execute();
-```
-
-2. DML：数据访问
-
-```java
-DynamicRelationlPath table=getModel("dyn_entity_apple");
-Tuple o = table.newTuple(null,"张三",2,null);
-//Add
-factory.insert(table).populate(o).execute();
-
-//Update
-Map<String,Object> bean=new HashMap<>();
-bean.put("id", 3);
-bean.put("name", "李四");
-Tuple u = table.newTuple(bean);
-factory.update(table).populate(u, true).execute();
-		
-//Delete
-factory.delete(table).populatePrimaryKey(u).execute();
-		
-//Query
-SimpleExpression<String> name = table.path("name", String.class);
-SimpleExpression<Long> id = table.path("id", Long.class);
-SimpleExpression<Integer> status = table.path("status", Integer.class);
-
-List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")).fetch();
-```
-
-
 
 ## 修订记录
 
