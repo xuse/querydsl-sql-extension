@@ -46,6 +46,7 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.AbstractSQLQuery;
+import com.querydsl.sql.Configuration;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLCommonQuery;
 import com.querydsl.sql.SQLListenerContext;
@@ -314,7 +315,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	abstract class AbstractProjection<RT> implements Projection<RT> {
-
 		boolean getLastCell;
 
 		Object lastCell;
@@ -351,41 +351,42 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	final class FactoryExpressionResult<RT> extends AbstractProjection<RT> {
 
-		private final FactoryExpression<RT> c;
+		private final FactoryExpression<RT> expr;
 
 		private final int argSize;
 
-		private final List<Path<?>> argPath;
+		private final Path<?>[] argPath;
 
-		private final List<Class<?>> argTypes;
+		private final Class<?>[] argTypes;
 
-		FactoryExpressionResult(FactoryExpression<RT> c) {
-			List<Expression<?>> args = c.getArgs();
+		FactoryExpressionResult(FactoryExpression<RT> factoryExpr) {
+			List<Expression<?>> args = factoryExpr.getArgs();
 			int argSize = args.size();
-			this.c = c;
+			this.expr = factoryExpr;
 			this.argSize = argSize;
-			this.argPath = new ArrayList<>(argSize);
-			this.argTypes = new ArrayList<>(argSize);
+			this.argPath = new Path<?>[argSize];
+			this.argTypes = new Class<?>[argSize];
 			for (int i = 0; i < argSize; i++) {
 				Expression<?> expr = args.get(i);
-				argPath.add(expr instanceof Path ? (Path<?>) expr : null);
-				argTypes.add(expr.getType());
+				argPath[i] = (expr instanceof Path ? (Path<?>) expr : null);
+				argTypes[i] = expr.getType();
 			}
 		}
 
-		protected RT fetch(ResultSet rs) throws SQLException {
-			int offset = 0;
+		protected final RT fetch(ResultSet rs) throws SQLException {
+			int argSize= this.argSize;
+			Configuration configuration = SQLQueryAlter.this.configuration;
 			Object[] args = new Object[argSize];
-			for (int i = 0; i < args.length; i++) {
+			for (int i = 0; i < argSize; i++) {
 				try {
-					args[i] = configuration.get(rs, argPath.get(i), offset + i + 1, argTypes.get(i));
+					args[i] = configuration.get(rs, argPath[i], i + 1, argTypes[i]);
 				} catch (SQLException ex) {
 					throw ex;
 				} catch (Exception ex) {
-					throw new SQLException("get field:" + argPath.get(i) + "error", ex);
+					throw new SQLException("get field:" + argPath[i] + "error", ex);
 				}
 			}
-			return c.newInstance(args);
+			return expr.newInstance(args);
 		}
 
 		@Override
@@ -405,7 +406,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		protected RT fetch(ResultSet rs) throws SQLException {
+		protected final RT fetch(ResultSet rs) throws SQLException {
 			Object[] row = new Object[columnSize];
 			for (int i = 0; i < row.length; i++) {
 				row[i] = rs.getObject(i + 1);
@@ -431,7 +432,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 
 		@Override
-		protected RT fetch(ResultSet rs) throws SQLException {
+		protected final RT fetch(ResultSet rs) throws SQLException {
 			return configuration.get(rs, path, 1, expr.getType());
 		}
 
@@ -442,10 +443,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	final class DefaultValueResult<RT> extends AbstractProjection<RT> {
-
 		@SuppressWarnings("unchecked")
 		@Override
-		protected RT fetch(ResultSet rs) throws SQLException {
+		protected final RT fetch(ResultSet rs) throws SQLException {
 			return (RT) rs.getObject(1);
 		}
 

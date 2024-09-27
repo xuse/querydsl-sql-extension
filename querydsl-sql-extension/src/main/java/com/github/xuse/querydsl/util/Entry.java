@@ -75,12 +75,9 @@ public class Entry<K, V> implements Serializable, java.util.Map.Entry<K, V> {
 
 	@Override
 	public int hashCode() {
-		int i = 0;
-		if (key != null)
-			i += key.hashCode();
-		if (value != null)
-			i += value.hashCode();
-		return i;
+		int l = key != null ? key.hashCode() : 0;
+		int r = value!=null? value.hashCode(): 0;
+		return l ^ r;
 	}
 
 	@SuppressWarnings("rawtypes")

@@ -43,7 +43,7 @@ public class BeanCodecManager {
 		private CacheKey(Class<?> targetClass, List<String> fieldNames) {
 			this.targetClass = targetClass;
 			this.fieldNames = fieldNames;
-			this.hash = fieldNames.hashCode();
+			this.hash = targetClass.hashCode() ^ fieldNames.hashCode();
 		}
 
 		@Override
@@ -53,7 +53,7 @@ public class BeanCodecManager {
 
 		@Override
 		public int hashCode() {
-			return targetClass.hashCode() * 37 + hash;
+			return hash;
 		}
 
 		@Override
@@ -73,7 +73,7 @@ public class BeanCodecManager {
 	public BeanCodec getCodec(Class<?> target, BindingProvider bindings) {
 		List<String> fieldNames = bindings.fieldNames();
 		CacheKey key = CacheKey.of(target, fieldNames);
-		return beanCodecs.computeIfAbsent(key, (k)->generateAccessor(k, bindings));
+		return beanCodecs.computeIfAbsent(key, (k) -> generateAccessor(k, bindings));
 	}
 
 	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings){

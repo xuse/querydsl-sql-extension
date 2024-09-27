@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.util;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -96,9 +95,19 @@ public class SimpleTest {
 		System.out.println(map);
 	}
 	
+    public static int bitCount(int i) {
+        i = i - ((i >>> 1) & 0x55555555);  //(0101 0101)
+        i = (i & 0x33333333) + ((i >>> 2) & 0x33333333);//0011 0011
+        i = (i + (i >>> 4)) & 0x0f0f0f0f;//0000 1111
+        i = i + (i >>> 8);
+        i = i + (i >>> 16);
+        return i & 0x3f; // 0011 1111
+    }
+    
 	@Test 
-	public void timeAccuTest() throws IOException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-		
+	public void timeAccuTest()  {
+		BigInteger num=new BigInteger("00010110",2);
+		System.out.println(bitCount(num.intValue()));
 
 	}
 	
