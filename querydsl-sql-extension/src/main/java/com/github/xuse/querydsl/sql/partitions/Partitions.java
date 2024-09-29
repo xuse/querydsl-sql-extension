@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.sql.partitions;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +12,7 @@ import com.github.xuse.querydsl.annotation.partition.Period;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.Assert;
+import com.github.xuse.querydsl.util.FastHashtable;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
@@ -133,8 +133,9 @@ public class Partitions {
 
 		/**
 		 *  分区信息
+		 *  Note： the FastHashtable do not support 'Remove' method.
 		 */
-		Map<String, Pair<String,String>> partitions = new LinkedHashMap<>();
+		Map<String, Pair<String,String>> partitions = new FastHashtable<>(32);
 
 		private Period autoPartitionPeriod;
 

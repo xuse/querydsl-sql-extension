@@ -3,7 +3,6 @@ package com.github.xuse.querydsl.sql.ddl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +22,7 @@ import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.partitions.PartitionDef;
 import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.FastHashtable;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
@@ -177,7 +177,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	}
 
 	private Reorganize calcList(Partition p, List<PartitionInfo> infors) {
-		LinkedHashMap<String, Partition> effected = new LinkedHashMap<>();
+		FastHashtable<Partition> effected = new FastHashtable<>(infors.size());
 		List<String> newList = Arrays.asList(StringUtils.split(p.value(), ','));
 		PartitionInfo lastEffected = null;
 		// First find all effected partitions in exist.
@@ -195,7 +195,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 		if (effected.isEmpty()) {
 			return null;
 		}
-		String firstName = effected.keySet().iterator().next();
+		String firstName = effected.firstKey();
 		String lastName = lastEffected.getName();
 		List<String> sourcePartitions = new ArrayList<>();
 		List<Partition> targetPartitionDefine = new ArrayList<>();

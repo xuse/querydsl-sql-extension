@@ -322,7 +322,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		@Override
 		public CloseableIterator<RT> iterator(PreparedStatement stmt, ResultSet rs, SQLListenerContext context) {
 			return new SQLResultIterator<RT>(configuration, stmt, rs, listeners, context) {
-
 				@Override
 				public RT produceNext(ResultSet rs) throws Exception {
 					return fetch(rs);

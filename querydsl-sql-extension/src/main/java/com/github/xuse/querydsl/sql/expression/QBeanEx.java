@@ -15,10 +15,10 @@ package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.github.xuse.querydsl.util.FastHashtable;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -49,7 +49,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	}
 
 	private static Map<String, Expression<?>> createBindings(Expression<?>... args) {
-		Map<String, Expression<?>> rv = new LinkedHashMap<>();
+		Map<String, Expression<?>> rv = new FastHashtable<>(args.length);
 		for (Expression<?> expr : args) {
 			if (expr instanceof Path<?>) {
 				Path<?> path = (Path<?>) expr;

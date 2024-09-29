@@ -457,7 +457,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
 		ColumnMapping metadata = columnMetadata.get(column);
-		return metadata == null ? null : metadata.getColumn();
+		return metadata != null ? metadata.getColumn():null;
 	}
 
 	/**

@@ -1,9 +1,9 @@
 package com.github.xuse.querydsl.sql.expression;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.github.xuse.querydsl.util.FastHashtable;
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.ArrayConstructorExpression;
 import com.querydsl.core.types.ConstructorExpression;
@@ -26,8 +26,9 @@ public class ProjectionsAlter {
 				return (QBeanEx<T>)expr;
 			}
 		}
-		Map<String, Expression<?>> bindings = new LinkedHashMap<>();
-		for (Path<?> p : beanPath.getColumns()) {
+		List<Path<?>> paths=beanPath.getColumns();
+		Map<String, Expression<?>> bindings = new FastHashtable<>(paths.size());
+		for (Path<?> p : paths) {
 			bindings.put(p.getMetadata().getName(), p);
 		}
 		return new QBeanEx<T>(type, bindings);
@@ -103,8 +104,9 @@ public class ProjectionsAlter {
 	}
 
 	public static <T> QBeanEx<T> createBeanProjection(RelationalPath<T> path) {
-		Map<String, Expression<?>> bindings = new LinkedHashMap<String, Expression<?>>();
-		for (Path<?> column : path.getColumns()) {
+		List<Path<?>> paths=path.getColumns();
+		Map<String, Expression<?>> bindings = new FastHashtable<Expression<?>>(paths.size());
+		for (Path<?> column : paths) {
 			bindings.put(column.getMetadata().getName(), column);
 		}
 		if (bindings.isEmpty()) {

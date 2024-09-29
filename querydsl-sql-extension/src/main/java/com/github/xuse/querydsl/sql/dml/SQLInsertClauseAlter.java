@@ -755,7 +755,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				}
 				stmt.addBatch();
 			} else {
-				throw Exceptions.illegalArgument("Object in batch must be in consistent type {}. encounter a {}",beanCodec.getType(), bean.getClass());
+				throw Exceptions.illegalArgument("Object in batch must be in consistent type {}. encounter a {}",
+						beanCodec.getType(), bean.getClass());
 			}
 		}
 		private void setParameterBulk(PreparedStatement stmt, Object[] objects, List<Path<?>> paths, int offset,

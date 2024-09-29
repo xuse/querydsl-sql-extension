@@ -20,6 +20,8 @@ import java.util.Map;
 
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
@@ -63,8 +65,17 @@ import com.querydsl.sql.SQLExpressions;
 
 import lombok.Data;
 
+//@RunWith(Parameterized.class)
 @SuppressWarnings("unused")
 public class DMLTest extends AbstractTestBase implements LambdaHelpers {
+//	@Parameterized.Parameters
+//	public static List<Object> data() {
+//		return Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10 );
+//	}
+	
+//	public DMLTest(int i) {
+//	}
+
 	@Test
 	public void testTupleResult() {
 		QAaa t1 = QAaa.aaa;
@@ -130,11 +141,11 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		Aaa a = generateEntity();
 		factory.insert(t1).populate(a).execute();
 		List<Aaa> list = factory.selectFrom(t1).fetch();
-		assertTrue(list.size()>0);
-		
-		try(ResultSet rs=factory.selectFrom(t1).getResults()){
-			String str=SQLTypeUtils.toString(rs);
-			//System.out.println(str);
+		assertTrue(list.size() > 0);
+
+		try (ResultSet rs = factory.selectFrom(t1).getResults()) {
+			String str = SQLTypeUtils.toString(rs);
+			// System.out.println(str);
 			assertTrue(str.startsWith("ID, NAME, CREATED"));
 		}
 	}
@@ -688,43 +699,41 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			System.out.println(aaas);
 		}
 	}
-	
+
 	/**
-	 * 在没有Query class情况下的自表关联查询 
+	 * 在没有Query class情况下的自表关联查询
 	 */
 	@Test
 	public void testTableSelfJoin() {
-		factory.getMetadataFactory().truncate(()->Foo.class).execute();
+		factory.getMetadataFactory().truncate(() -> Foo.class).execute();
 		{
-			//准备数据
+			// 准备数据
 			Foo foo = new Foo();
 			foo.setName("张三");
 			foo.setCode("Zhangsan");
 			foo.setCreated(Instant.now());
-			Integer id=factory.insert(()->Foo.class).populate(foo).executeWithKey(Integer.class);	
-			
+			Integer id = factory.insert(() -> Foo.class).populate(foo).executeWithKey(Integer.class);
+
 			Foo foo2 = new Foo();
 			foo2.setName("张三的儿子");
 			foo2.setCode("Lisi");
 			foo2.setCreated(Instant.now());
-			//这个字段当作ParentId使用
+			// 这个字段当作ParentId使用
 			foo2.setVolume(id);
-			factory.insert(()->Foo.class).populate(foo2).executeWithKey(Integer.class);	
+			factory.insert(() -> Foo.class).populate(foo2).executeWithKey(Integer.class);
 		}
-		
-		//自表关联查询
-		RelationalPathExImpl<Foo> t1 = ((LambdaTable<Foo>)() -> Foo.class).forVariable("t1");
+
+		// 自表关联查询
+		RelationalPathExImpl<Foo> t1 = ((LambdaTable<Foo>) () -> Foo.class).forVariable("t1");
 		RelationalPathExImpl<Foo> parent = t1.forVariable("parent");
-		
-		List<Beans> list = factory.select(Selects.beans(t1,parent)).from(t1)
-			.innerJoin(parent)
-			.on(parent.get(Foo::getId).eq(t1.get(Foo::getVolume)))
-			.where(parent.get(Foo::getName).eq("张三")).fetch();
-		
+
+		List<Beans> list = factory.select(Selects.beans(t1, parent)).from(t1).innerJoin(parent)
+				.on(parent.get(Foo::getId).eq(t1.get(Foo::getVolume))).where(parent.get(Foo::getName).eq("张三")).fetch();
+
 		assertEquals(1, list.size());
-		for(Beans beans:list) {
-			Foo childFoo=beans.get(t1);
-			Foo parentFoo=beans.get(parent);
+		for (Beans beans : list) {
+			Foo childFoo = beans.get(t1);
+			Foo parentFoo = beans.get(parent);
 			System.out.println(childFoo);
 			System.out.println(parentFoo);
 			assertEquals("张三的儿子", childFoo.getName());
@@ -832,8 +841,8 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			s.setMachineId("aa");
 			s.setParentId("bb");
 			String id = repo.insert(s);
-			
-			assertTrue(id==null || s.getId().equals(id));
+
+			assertTrue(id == null || s.getId().equals(id));
 		}
 		{
 			StateMachine s1 = new StateMachine();
@@ -844,7 +853,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			s1.setIsRunning(0);
 			s1.setMachineId("aa");
 			s1.setParentId("bb");
-			
+
 			StateMachine s2 = new StateMachine();
 			s2.setId(StringUtils.generateGuid());
 			s2.setEndParams("123");
@@ -853,7 +862,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			s2.setIsRunning(0);
 			s2.setMachineId("aa");
 			s2.setParentId("bb");
-			
+
 			StateMachine s3 = new StateMachine();
 			s3.setId(StringUtils.generateGuid());
 			s3.setEndParams("123");
@@ -862,7 +871,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			s3.setIsRunning(0);
 			s3.setMachineId("aa");
 			s3.setParentId("bb");
-			String vs=factory.insert(table).populateBatch(Arrays.asList(s1,s2,s3)).executeWithKey(String.class);
+			String vs = factory.insert(table).populateBatch(Arrays.asList(s1, s2, s3)).executeWithKey(String.class);
 			System.out.println(vs);
 		}
 
