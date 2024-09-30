@@ -1,6 +1,6 @@
 # querydsl-sql-extension
 
-query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
+query-dsl-sql-extension is an enhanced library based on module 'querydsl-sql'.
 
 ## 摘要
 
