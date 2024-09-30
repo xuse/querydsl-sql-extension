@@ -797,7 +797,7 @@ configuration.setExternalDistributedLockProvider(new MyLockProvider());
 ```java
 	SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 	QFoo t=QFoo.foo;
-	metadata.refreshTable(QAaa.aaa)
+	metadata.refreshTable(t)
 		.removeConstraintOrIndex("unq_${table}_name_version")  //变量${table}会被实际的表名替换
 		.addColumn(
 				ColumnMetadata.named("new_column").ofType(Types.VARCHAR)
