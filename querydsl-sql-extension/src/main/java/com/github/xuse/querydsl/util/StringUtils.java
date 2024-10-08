@@ -176,6 +176,35 @@ public class StringUtils {
 		return INDEX_NOT_FOUND;
 	}
 
+	public static String replaceChars(final String str, final String searchChars, String replaceChars) {
+		if (isEmpty(str) || isEmpty(searchChars)) {
+			return str;
+		}
+		if (replaceChars == null) {
+			replaceChars = EMPTY;
+		}
+		boolean modified = false;
+		final int replaceCharsLength = replaceChars.length();
+		final int strLength = str.length();
+		final StringBuilder buf = new StringBuilder(strLength);
+		for (int i = 0; i < strLength; i++) {
+			final char ch = str.charAt(i);
+			final int index = searchChars.indexOf(ch);
+			if (index >= 0) {
+				modified = true;
+				if (index < replaceCharsLength) {
+					buf.append(replaceChars.charAt(index));
+				}
+			} else {
+				buf.append(ch);
+			}
+		}
+		if (modified) {
+			return buf.toString();
+		}
+		return str;
+	}
+	
 	public static String replaceEach(final String text, final String[] searchList, final String[] replacementList) {
 		return replaceEach(text, searchList, replacementList, false, 0);
 	}

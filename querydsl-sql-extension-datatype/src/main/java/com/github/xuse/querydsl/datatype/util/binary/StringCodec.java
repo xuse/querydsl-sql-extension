@@ -54,8 +54,8 @@ class StringCodec implements Codec<String> {
 			buffer.put(CodecContext.TYPE_NULL);
 			return;
 		}
-		byte[] bits = ((String) str).getBytes(StandardCharsets.UTF_8);
-		int length = bits.length;
+		byte[] bytes = ((String) str).getBytes(StandardCharsets.UTF_8);
+		int length = bytes.length;
 		if (length < 255) {
 			buffer.put(CodecContext.TYPE_SHORT_STRING);
 			buffer.put((byte) length);
@@ -66,7 +66,7 @@ class StringCodec implements Codec<String> {
 			buffer.put(CodecContext.TYPE_EMPTY_STRING);
 			return;
 		}
-		buffer.put(bits);
+		buffer.put(bytes,0,bytes.length);
 
 	}
 }

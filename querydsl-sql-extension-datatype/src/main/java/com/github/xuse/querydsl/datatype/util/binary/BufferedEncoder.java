@@ -164,7 +164,7 @@ public class BufferedEncoder {
 	}
 
 	public void putString(String str) {
-		StringCodec.INSTANCE.encode(buffer, str, CodecContext.INSTANCE);
+		CodecContext.INSTANCE.putString(buffer,str);
 	}
 
 	public void putUnsignedInt(long data) {

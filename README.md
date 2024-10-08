@@ -26,7 +26,7 @@ query-dsl-sql-extension is an enhanced library based on module 'querydsl-sql'.
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r111</version>
+	<version>5.0.0-r120</version>
 </dependency>
 ```
 
@@ -36,7 +36,7 @@ query-dsl-sql-extension is an enhanced library based on module 'querydsl-sql'.
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension-spring</artifactId>
-	<version>5.0.0-r111</version>
+	<version>5.0.0-r120</version>
 </dependency>
 ```
 
@@ -439,12 +439,12 @@ ALTER TABLE table1
 v{querydsl 版本号} - r(extension version)
 ```
 
-### v5.0.0-r111
+### v5.0.0-r120
 
 2024-10-01
 
 * 工程拆分，将核心不使用的类拆分到其他工程中。拆分出querydsl-sql-extension-spring，用于Spring下集成。querydsl-sql-extension不再依赖任何Spring Framework和FastJSON。
-* 构建期自动执行单元测试并输出报告，此版本发布条件为单元测试行覆盖达到85%。
+* 构建期自动执行单元测试并输出报告，目前行覆盖65%，下个版本继续改进。
 * 测试代码增加了MySQL Mock驱动，用于单元测试时模拟MySQL数据库行为。
 * 对工具类的单元测试，修复几处边界数值下的小错误。
 * AlterTableQuery功能增强，支持列修改、更名等操作。
