@@ -39,7 +39,7 @@ GenericRepository中提供了对单表常用的增删该查功能见下表，其
 
 ### 准备工作
 
-要完成下列示例，可以先创建一个简单的POJO
+Step.1 要完成下列示例，可以先创建一个简单的POJO
 
 ```java
 @Data
@@ -60,20 +60,17 @@ public class Foo {
 }
 ```
 
-创建表，你可以自行手动创建。如果确认程序有DDL操作权限，也可以用以下java代码创建数据库表。
+Step.2 创建表
+你可以自行手动创建。如果确认程序有DDL操作权限，也可以用以下java代码创建数据库表。
 
 ```java
 SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 metadata.createTable(()->Foo.class).ifExists().execute();
 ```
 
-获得Repository对象
+Step.3 获得Repository对象
 
-您可以参阅第3章来获得Repository对象。
-
-
-
-下面以一个查询为例介绍不同风格API用法。
+您可以参阅 第3章 用法简述 来获得Repository对象。然后即可体验，下面以一个查询为例介绍不同风格API用法。
 
 ### 传统风格
 
@@ -101,7 +98,7 @@ repository.query()
 
 ### MyBatis-Plus风格
 
-MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询分为两个对象—— 一个记录查询条件，一个框架会话 (在Mybatis里常用Mapper。在其他各类框架里有Session、Context、EntityManager等不同叫法)。
+MyBatis支持Lambda风格用法，区别在于其还是相对传统地将查询分为两个对象—— 一个记录查询条件，一个框架会话 (在Mybatis里常用SqlSession或Mapper。在其他各类框架里有Session、Context、EntityManager等不同叫法)。
 
 ```java
 	LambdaQueryWrapper<Foo> wrapper=new LambdaQueryWrapper<>();
@@ -145,17 +142,25 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 
 ## 3 用法简述
 
+> 本节仅介绍Spring集成场景。
+
+**如在非Spring下使用**
+
+参见此文档 [Without Springframework](static/without_springfrwmework.md)
+
 
 ### 基本
 
-本框架直接依赖DSL库，主要用法和querydsl一致。但初始化方法与querydsl有所不同。
+本框架直接依赖querydsl-sql库，主要用法和querydsl一致。但初始化方法与querydsl有所不同。
 
 **依赖(Maven)**
+
+本文档使用Spring集成示例，故依赖 `querydsl-sql-extension-spring` 包，如不集成Spring使用可仅依赖 `querydsl-sql-extension`。
 
 ```xml
 <dependency>
 	<groupId>io.github.xuse</groupId>
-	<artifactId>querydsl-sql-extension</artifactId>
+	<artifactId>querydsl-sql-extension-spring</artifactId>
 	<version>${querydsl-sql-extension.version}</version>
 </dependency>
 ```
@@ -165,7 +170,7 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 ```java
 	@Bean
 	public com.github.xuse.querydsl.sql.SQLQueryFactory factory(DataSource ds) {
-        return com.github.xuse.querydsl.sql.SQLQueryFactory
+        return com.github.xuse.querydsl.sql.spring.QueryDSLSqlExtension
             .createSpringQueryFactory(ds, querydslConfiguration());
 	}
 
@@ -185,6 +190,8 @@ MyBatis也是lambda风格用法，区别在于其还是相对传统地将查询�
 		return new DataSourceTransactionManager(ds);
 	}
 ```
+
+
 
 ### 构造自己的业务Repository
 
@@ -770,7 +777,7 @@ configuration.setExternalDistributedLockProvider(new MyLockProvider());
 
 ## 7. 执行DDL语句
 
-> 实验性功能，个人精力有限目前仅完成了MySQL 和 Derby的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+> 实验性功能，个人精力有限目前仅完成了部分数据的方言适配（清单参见 README.md ）。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
 
 ### 表修改示例
 
@@ -790,7 +797,7 @@ configuration.setExternalDistributedLockProvider(new MyLockProvider());
 ```java
 	SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 	QFoo t=QFoo.foo;
-	metadata.refreshTable(QAaa.aaa)
+	metadata.refreshTable(t)
 		.removeConstraintOrIndex("unq_${table}_name_version")  //变量${table}会被实际的表名替换
 		.addColumn(
 				ColumnMetadata.named("new_column").ofType(Types.VARCHAR)
@@ -905,3 +912,106 @@ ALTER TABLE table1
 
 * （此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL）
 * Online DDL是在MySQL 5.x引入的，8.x中支持更多的Online DDL策略。但目前5.x和8.x的方言还没有区分开，目前仅按5.x做了相对保守的策略。
+
+
+
+## 8. 常见问题 / 功能杂项
+
+### 业务层分表兼容机制
+
+> 本框架不提供分库分表功能
+
+但有一种情形，当分表规则和用法较为简单，业务层希望自行封装分表时，需要能根据业务数据动态变化表名。针对这种情形，提供了一个允许业务代码自行调整表名的机制。
+
+```java
+	//定义本次操作中的表名后缀
+	TableRouting routing=TableRouting.suffix( "2024Q2");
+
+	//在DDL中操作带后缀的表名（删表建表）
+	SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
+	metadata.dropTable(t2).withRouting(routing).execute();
+	metadata.createTable(t2).withRouting(routing).execute();
+	
+	//在DML中操作带有后缀的表名
+	List<Tuple> tuples=factory.select(t2.content,t2.code).from(t2)
+	    .withRouting(routing)
+	    .where(t2.name.eq("Test"))
+	    .fetch();
+	
+	//如果在一个SQL中有多张表需要调整后缀，参考下例
+	TableRouting routing=TableRouting.builder()
+		.suffix(t1,"202406")
+		.suffix(t2, "2024Q2")
+		.build();
+```
+
+> 如果分库分表规则较为复杂，建议使用Sharding JDBC/Sharding Sphere等专用框架。
+
+### 动态数据库表模型
+
+> 当数据库表字段是动态定义时，无法用Java类来创建静态的表和字段模型。
+
+1. 定义动态表模型
+
+```java
+//定义一个动态的表模型
+DynamicRelationlPath table = new DynamicRelationlPath("t1", null, key);
+//创建各列的模型
+Path<Long> id=table.addColumn(Long.class, ColumnMetadata.named("id").ofType(Types.BIGINT).notNull())
+		.with(ColumnFeature.AUTO_INCREMENT).unsigned().comment("主键ID")
+		.build();
+		
+Path<String> name=table.addColumn(String.class,ColumnMetadata.named("name").ofType(Types.VARCHAR)
+		.withSize(256).notNull())
+		.defaultValue("")
+		.build();
+		
+Path<Integer> status=table.addColumn(Integer.class, ColumnMetadata.named("status")
+		.ofType(Types.INTEGER).notNull())
+		.build();
+			
+Path<Date> created=table.addColumn(Date.class,ColumnMetadata.named("create_time")
+		.ofType(Types.TIMESTAMP).notNull())
+		.withAutoGenerate(GeneratedType.CREATED_TIMESTAMP)
+		.build();
+
+//创建主键
+table.createPrimaryKey(id);
+//创建索引
+table.createIndex("idx_table_name_status", name, status);
+...
+```
+
+2. DDL：建表
+
+```java
+DynamicRelationlPath table=getModel("dyn_entity_apple");
+factory.getMetadataFactory().createTable(table).ifExists().execute();
+```
+
+2. DML：数据访问
+
+```java
+DynamicRelationlPath table=getModel("dyn_entity_apple");
+Tuple o = table.newTuple(null,"张三",2,null);
+//Add
+factory.insert(table).populate(o).execute();
+
+//Update
+Map<String,Object> bean=new HashMap<>();
+bean.put("id", 3);
+bean.put("name", "李四");
+Tuple u = table.newTuple(bean);
+factory.update(table).populate(u, true).execute();
+		
+//Delete
+factory.delete(table).populatePrimaryKey(u).execute();
+		
+//Query
+SimpleExpression<String> name = table.path("name", String.class);
+SimpleExpression<Long> id = table.path("id", Long.class);
+SimpleExpression<Integer> status = table.path("status", Integer.class);
+
+List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")).fetch();
+```
+

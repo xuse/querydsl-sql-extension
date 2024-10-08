@@ -1,51 +1,75 @@
 # querydsl-sql-extension
 
-query-dsl-sql-extension is a enhancemant lib based on querydsl-sql module.
+query-dsl-sql-extension is an enhanced library based on module 'querydsl-sql'.
+
+## 摘要
 
 本框架是在 [querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html 
 
-本框架是为了更便利，以及提供更高性能为目的对querydsl进行的改进。本框架通过初始化时使用不同的入口类的方式与原生的querydsl用法做出区别，保留原querydsl的更新能力，对原框架无侵入性。
+> 注意：不是基于`querydsl-jpa`的，是基于querydsl-sql模块，与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。本框架基于DataSource JDBC，也可以与MyBatis、Spring JDBC Template等一起使用。
+>
+> 如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
 
-> 注意：不是基于`querydsl-jpa`的，中文网上到处都是querydsl-jpa的资料，将其介绍为弥补JPA不足的查询构建器，搞得好像querydsl是JPA下的一个配件一样。实际上queydsl有十几个模块，针对各类SQL与NO  SQL数据存储都有适配。`querydsl-sql`不是JPA的配件，是可以单个框架搞定企业级复杂项目的存在。 写这个框架的目的是轻量便捷，可以与MyBatis、Spring JDBC Template等一起用。
+**什么是queryDSL，为什么推荐?**
+
+参见 [Why QueryDSL](static/why_querydsl.md)
 
 **Getting started**
-
-```xml
-<dependency>
-	<groupId>io.github.xuse</groupId>
-	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r104</version>
-</dependency>
-```
 
 参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
 
 
 
-## 什么是QueryDSL
+**引用 / How to import**
 
-[QueryDSL](https://github.com/querydsl/querydsl) 是一个历史悠久的SQL查询构建器。
+```xml
+<dependency>
+	<groupId>io.github.xuse</groupId>
+	<artifactId>querydsl-sql-extension</artifactId>
+	<version>5.0.0-r120</version>
+</dependency>
+```
 
-在Hibernate和JPA大行其道的年代里，开发者很快发现ORM无法表达一些稍微复杂的查询，更不要说带有多个组合查询了。Hibernate的方案是引入HQL，JPA的方案是引入QueryBuilder和NativeQuery，然而这些方案都不完美，逐渐被淘汰。大约在2015左右，我在编写GeeQuery以支持Spring-data的时候，发现Spring-Data引入了一套的新的QueryBuilder，即是QueryDSL。
+如需要与Spring framework集成，还需要
 
-QueryDSL是针对SQL的词法树抽象进行建模的，这就使得它的查询模型非常丰富，几乎能涵盖查询语言（如SQL）的所有功能。QueryDSL用相同的方法为Lucene、JPA、ES、JDO、Mongo等都进行了查询模型的建模，使得开发者可以在强语法和类型检查的情况下访问持久层。
+```xml
+<dependency>
+	<groupId>io.github.xuse</groupId>
+	<artifactId>querydsl-sql-extension-spring</artifactId>
+	<version>5.0.0-r120</version>
+</dependency>
+```
 
-如果开发者直接使用JSON、SQL、HQL、JPQL等查询语言，只能基于字符串拼接完成。而字符串拼接对于一个长期维护的业务项目是非常危险且繁琐的。开发者无法知道改对了没有，也无法确认要修改的代码位置是否都得到了修改。
+**变更备注**
 
-QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。 (这种风格大概在十多年前就有了，近几年才被国内的一些MyBatis Facade作者学习和借鉴)
+5.0.0-r111版本，将Spring框架支持功能移到 querydsl-sql-extension-spring 模块，相关使用说明已修改，Spring下使用需要添加该依赖包。
+Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修改为  `QueryDSLSqlExtension.createSpringQueryFactory()`
 
-在这个基础上，我将自己使用querydsl中用到的一些功能包装了一下，就有个这个框架。前面已经说过querydsl的查询构建界面(Facade)非常好，所以我针对对象构造与反射等场合作了重写，以期将性能推到极致，就此使用了好多年，功能上逐步接近我对数据库访问的理想。直到前期，我感觉功能上已经超过了我的前一个框架，于是进行了上传和分享。
+### 和 Querydsl-JPA 一起使用 （Using With querydsl-JPA）
 
-### 真的不能和QueryDsl-JPA一起使用吗？
+要一起使用，需要解决两个问题。
 
-querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。两者如果要一起用，也不是不行。但两类操作难以协调到一个事务中，因为两者的Spring事务管理器不一样。总之麻烦有坑，不值得花费精力去解决。而MyBatis、Spring JDBC template等各类其他框架是基于DataSoruce做事务的，共享事务没有难度。最后，个人观点JPA已经是一个时代的眼泪，臃肿低效，不值得年轻人花时间去学习。
+1、事务管理器(Transaction Manager)问题。
 
-## 特性
+querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。两者如果要一起用，也不是不行。但两类操作难以协调到一个事务中，因为两者的Spring事务管理器不一样。
+
+> 如果一个事务禁用一个框架操作，那么就没问题
+
+2、Querydsl-sql中自动生成的表模型（Query class）继承 `com.querydsl.sql.RelationalPath`，但是JPA中的Query class继承 `com.querydsl.core.types.EntityPath` 两者并不一致。
+
+这个问题可以通过 `querydsl-entityql` 的框架解决（https://github.com/eXsio/querydsl-entityql）
+它最主要的作用之一就是将querydsl-jpa的模型转换为querydsl-sql模型。可以使用该框架，动态地生成querydsl-sql模型。
+
+
+
+## 特性介绍 (对照原版querydsl-sql)
 
 ### 提升使用便利性
 
 * 提供@CustomType注解，支持将复杂的Bean映射到数据库字段中。
-  **Example**
+  
+
+**Example**
 
   ```java
       //Using a string type to mapping a column of timestamp in database.
@@ -61,7 +85,7 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
       private CaAsset asserts;
   ```
 
-  
+
 
 * 提供更多Batch Insert、Batch Update、Batch Delete操作。通过一个SQL Statment支持多组操作值，提升操作效率。
 
@@ -171,7 +195,7 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 对QueryDSL-SQL的性能进行了较大幅度的优化。优化后的性能基本与编写良好的JDBC操作持平。
 
-下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](performance_tunning.md)
+下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](static/performance_tunning.md)
 
 #### 性能对比测试（v5.0.0-r110）
 
@@ -180,15 +204,15 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 * URL：postgresql://局域网地址:3306/test?useSSL=false
 * jvm version=17
 
-| Case                                                 | Mybatis 3.5.9（单位ms）                | querydsl-sql-extension<br /> 5.0.0-r110（单位ms） | A/B     |
-| ---------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
-| 7列的表，15批次，每批10000条。<br />总计15万记录     | 7203, 7438, 7925<br />平均 7522        | 2476, 2711, 2834<br />平均2673.67                 | 281.34% |
-| 22列的表，15批次，每批10000条<br />总计15万记录      | 16939, 16870, 16782<br />平均 16863.67 | 5541, 5609, 5538<br />平均 5562.67                | 303.16% |
-| 22字段表，查出50记录<br />全部加载到内存中的List内   | 12, 14, 12<br />平均12.667             | 8, 9, 10<br />平均9                               | 140.7%  |
-| 22字段表，查出5000记录<br />全部加载到内存中的List内 | 646 , 601, 589<br />平均612            | 79, 75, 82<br />平均78.67                         | 777.90% |
-| 22字段表，查出5万记录<br />全部加载到内存中的List内  | 935, 930, 953<br />平均939.33          | 321, 323, 339<br />平均327.67                     | 286.67% |
-| 22字段表，查出30万记录<br />全部加载到内存中的List内 | 3340，3343, 3577<br />平均 3420        | 1832, 1925, 2313<br />平均 2023.33                | 169.03% |
-| 22字段表，查出1M记录<br />全部加载到内存中的List内   | 8478, 9219, 7468<br />平均 8388.33     | 6571, 7535, 5271<br />平均 6459                   | 129.87% |
+| Case                                                     | Mybatis 3.5.9（单位ms）                | querydsl-sql-extension<br /> 5.0.0-r110（单位ms） | A/B     |
+| -------------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
+| 7列的表插入数据，15批次，每批10000条。<br />总计15万记录 | 7203, 7438, 7925<br />平均 7522        | 2476, 2711, 2834<br />平均2673.67                 | 281.34% |
+| 22列的表插入数据，15批次，每批10000条<br />总计15万记录  | 16939, 16870, 16782<br />平均 16863.67 | 5541, 5609, 5538<br />平均 5562.67                | 303.16% |
+| 22字段表，查出50记录<br />全部加载到内存中的List内       | 12, 14, 12<br />平均12.667             | 8, 9, 10<br />平均9                               | 140.7%  |
+| 22字段表，查出5000记录<br />全部加载到内存中的List内     | 646 , 601, 589<br />平均612            | 79, 75, 82<br />平均78.67                         | 777.90% |
+| 22字段表，查出5万记录<br />全部加载到内存中的List内      | 935, 930, 953<br />平均939.33          | 321, 323, 339<br />平均327.67                     | 286.67% |
+| 22字段表，查出30万记录<br />全部加载到内存中的List内     | 3340，3343, 3577<br />平均 3420        | 1832, 1925, 2313<br />平均 2023.33                | 169.03% |
+| 22字段表，查出1M记录<br />全部加载到内存中的List内       | 8478, 9219, 7468<br />平均 8388.33     | 6571, 7535, 5271<br />平均 6459                   | 129.87% |
 
 备注：
 
@@ -214,9 +238,9 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 * **表模型与BeanCodec缓存**：对表和字段模型。以及每个对象的编解码器进行了缓存。
 
-* **其他各种优化：**如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
+* **面向字节码 / JIT友好**： 如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
 
-* **向开发者提供Tunning API：**提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
+* **向开发者提供Tunning API**： 提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
 
   **Example**：一次查出一百万ID。
 
@@ -242,10 +266,14 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 完整的数据库结构建模：扩展QueryDSL原生的ColumnMetadata，支持在Java(JDBC)模型中描述全部数据库表的特征——包括default value、unsigned、自增、索引、约束（不含外键）。相关模型可以通过元模型API创建，也可以通过注解来定义。
 
-  Q: 有什么用？
+  Q: 这功能有什么用？
+
   A: 数据库应用开发者一般有两种用法，一种是先在数据库中设计数据结构，然后通过Bean生成工具生成Java类结构。（称为数据库Schema优先）
-  另外一种是软件开发者开发跨多种RDBMS应用的做法，是先建立Java Entity模型，然后通过程序等手段自动创建数据库结构。(称为Metadata优先)。
-  QueryDSL仅支持第一种用法。本库满足了Metadata优先的场合，可以通过Java元模型反向更新数据库结构。 同时，这种更新支持基于数据库结构对比的增量更新，支持更新索引、约束、视图、等数据表结构。（不支持：外键、物化视图、索引组织表、函数、触发器、存储过程，由于这些特性很少在跨RDBMS应用中用到，暂无支持的必要。）
+  另外一种是软件开发者开发跨多种RDBMS应用的做法，是先建立Java Entity模型，然后通过程序等手段自动创建数据库结构。(称为Metadata优先)。 典型地，Hibernate就支持启动时自动创建数据库结构；本框架也支持这一用法。
+
+QueryDSL思路是数据库Schema优先，本框架扩展支持了Metadata优先的场合，可以通过Java元模型反向更新数据库结构。 同时，这种更新支持基于数据库结构对比的增量更新，支持更新索引、约束、视图、等数据表结构。
+
+> 不支持：外键、物化视图、索引组织表、自定义函数、触发器、存储过程，由于这些特性很少在跨RDBMS应用中用到，暂无支持的必要。
 
 #### 纯POJO使用 (无QueryClass)
 
@@ -306,36 +334,6 @@ java 16开始支持 Record特性(**@jls** 8.10 Record Types)， 支持该类对�
 * SQLite 
 
 > 其他数据库可以自行编写SQLTemplates进行扩展 。
-
-### 业务层分表兼容机制
-
-> 本框架不提供分库分表功能
-
-但有一种情形，当分表规则和用法较为简单，业务层希望自行封装分表时，需要能根据业务数据动态变化表名。针对这种情形，提供了一个允许业务代码自行调整表名的机制。
-
-```java
-	//定义本次操作中的表名后缀
-	TableRouting routing=TableRouting.suffix( "2024Q2");
-
-	//在DDL中操作带后缀的表名（删表建表）
-	SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
-	metadata.dropTable(t2).withRouting(routing).execute();
-	metadata.createTable(t2).withRouting(routing).execute();
-	
-	//在DML中操作带有后缀的表名
-	List<Tuple> tuples=factory.select(t2.content,t2.code).from(t2)
-	    .withRouting(routing)
-	    .where(t2.name.eq("Test"))
-	    .fetch();
-	
-	//如果在一个SQL中有多张表需要调整后缀，参考下例
-	TableRouting routing=TableRouting.builder()
-		.suffix(t1,"202406")
-		.suffix(t2, "2024Q2")
-		.build();
-```
-
-> 如果分库分表规则较为复杂，建议使用Sharding JDBC/Sharding Sphere等专用框架。
 
 ## 实验性功能
 
@@ -401,7 +399,9 @@ metadata.dropPartition(t1)
 
 ### DDL Support
 
-> 实验性功能，个人精力有限目前仅完成了部分数据库的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+> 实验性功能，支持DDL需要编写各个不同数据库的方言，个人精力有限目前仅完成了部分数据库的方言适配。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+>
+> 以下是计划中的2024年内支持的数据库：Oracle，H2
 
 **数据库支持(DDL)**
 
@@ -410,8 +410,6 @@ metadata.dropPartition(t1)
 * PostgreSQL 10.3 and above
 
 相关说明参见文档 quick_start.md
-
-支持DDL需要编写各个不同数据库的方言，目前整个方言的框架机制有了，但只编写完成了MySQL和Derby。下一个考虑抽空完成PostgresSQL的，剩下的看需要吧。
 
 > 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
 
@@ -430,80 +428,8 @@ ALTER TABLE table1
   ADD KEY idx_aaa_taskstatus (task_status), ALGORITHM = INPLACE, LOCK = SHARED
 ```
 
-* （此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL）
+* 此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL
 * Online DDL是在MySQL 5.x引入的，8.x中支持更多的Online DDL策略。但目前5.x和8.x的方言还没有区分开，目前仅按5.x做了相对保守的策略。
-
-
-
-### 动态变化的数据库表
-
-> 当数据库表字段是动态定义时，无法用Java类来创建静态的表和字段模型。
-
-1. 定义动态表模型
-
-```java
-//定义一个动态的表模型
-DynamicRelationlPath table = new DynamicRelationlPath("t1", null, key);
-//创建各列的模型
-Path<Long> id=table.addColumn(Long.class, ColumnMetadata.named("id").ofType(Types.BIGINT).notNull())
-		.with(ColumnFeature.AUTO_INCREMENT).unsigned().comment("主键ID")
-		.build();
-		
-Path<String> name=table.addColumn(String.class,ColumnMetadata.named("name").ofType(Types.VARCHAR)
-		.withSize(256).notNull())
-		.defaultValue("")
-		.build();
-		
-Path<Integer> status=table.addColumn(Integer.class, ColumnMetadata.named("status")
-		.ofType(Types.INTEGER).notNull())
-		.build();
-			
-Path<Date> created=table.addColumn(Date.class,ColumnMetadata.named("create_time")
-		.ofType(Types.TIMESTAMP).notNull())
-		.withAutoGenerate(GeneratedType.CREATED_TIMESTAMP)
-		.build();
-
-//创建主键
-table.createPrimaryKey(id);
-//创建索引
-table.createIndex("idx_table_name_status", name, status);
-...
-```
-
-2. DDL：建表
-
-```java
-DynamicRelationlPath table=getModel("dyn_entity_apple");
-factory.getMetadataFactory().createTable(table).ifExists().execute();
-```
-
-2. DML：数据访问
-
-```java
-DynamicRelationlPath table=getModel("dyn_entity_apple");
-Tuple o = table.newTuple(null,"张三",2,null);
-//Add
-factory.insert(table).populate(o).execute();
-
-//Update
-Map<String,Object> bean=new HashMap<>();
-bean.put("id", 3);
-bean.put("name", "李四");
-Tuple u = table.newTuple(bean);
-factory.update(table).populate(u, true).execute();
-		
-//Delete
-factory.delete(table).populatePrimaryKey(u).execute();
-		
-//Query
-SimpleExpression<String> name = table.path("name", String.class);
-SimpleExpression<Long> id = table.path("id", Long.class);
-SimpleExpression<Integer> status = table.path("status", Integer.class);
-
-List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")).fetch();
-```
-
-
 
 ## 修订记录
 
@@ -512,6 +438,16 @@ List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")
 ```
 v{querydsl 版本号} - r(extension version)
 ```
+
+### v5.0.0-r120
+
+2024-10-01
+
+* 工程拆分，将核心不使用的类拆分到其他工程中。拆分出querydsl-sql-extension-spring，用于Spring下集成。querydsl-sql-extension不再依赖任何Spring Framework和FastJSON。
+* 构建期自动执行单元测试并输出报告，目前行覆盖65%，下个版本继续改进。
+* 测试代码增加了MySQL Mock驱动，用于单元测试时模拟MySQL数据库行为。
+* 对工具类的单元测试，修复几处边界数值下的小错误。
+* AlterTableQuery功能增强，支持列修改、更名等操作。
 
 ### v5.0.0-r110
 
@@ -559,7 +495,9 @@ v{querydsl 版本号} - r(extension version)
 * 完成DDL相关表语法支持。部分类名重构调整。
 * 版本号100开始，保持三位数。QueryDSL官方版本5.1.0是需要Java 11以上的，目前还不打算跟进支持。 
 
-### v5.0.0-r8
+### v5.0.0-r8 
+
+2018年
 
 * 升级支持Querydsl v5.0.0
 * 添加MySQL方言：com.querydsl.core.types.dsl.MySQLWithJSONTemplates、JsonExpressions等，支持JSON字段操作
@@ -571,7 +509,10 @@ v{querydsl 版本号} - r(extension version)
 * 结果集拼接性能优化。提供额外的RelationalPathBaseEx用于继承。
 * API增加——增加DDL语法框架（尚未实现）。
 
-### v4.2.1-r1
+### v4.2.1-r1 
+
+2017年
+
 1. 日志扩展
 2. 关于Connection is not transactional异常修复，还有一些其他方面的个性化要求，因此通过本项目进行扩展。后续随功能更新。
 
@@ -585,30 +526,18 @@ v{querydsl 版本号} - r(extension version)
 
 ## 其他
 
-### 什么是元模型
+### 什么是元模型/Query Class
 
-* 元模型(meta mode)：在QuerDSL中，对每个实体会有一个"Q"开头的class，在querydsl文档中，称为 `Query Class`. 其实这个类和JPA中的元模型差不多，都是用于描述数据结构，并且提供查询API引用的类。（在OpenJPA中，会生成下划线结尾的类，用途是差不多的）。所以本文某些场合也会使用元模型一词，和QueryDSL文档中的 query class是一个东西。
+* 元模型(meta mode)：在QuerDSL中，对每个实体会有一个"Q"开头的class，在querydsl文档中，称为 `Query Class`. 其实这个类和JPA中的元模型用途差不多，都是用于描述数据结构，并且提供查询API引用的类。（在OpenJPA中，会生成下划线结尾的类，用途是差不多的）。所以本文某些场合也会使用元模型一词，和QueryDSL文档中的 query class是一个东西。
 * 本框架自r104后，可支持通过Lambda表达式代替元模型，从而省去`Query Class`，本质上是一种语法糖，但对初学者更加友好。
+* Lambda在表示数据表时是单例的，无法构造出自表关联查询时。
+  （类似这个SQL语句，就是一个自表关联查询 `SELECT t.* FROM tree_node t LEFT JOIN tree_node parent ON t.pid = parent.id`）
+  r110版本进一步扩展API，可以使用Lambda表达式构建出自表查询请求。
 
-### 一点感想
+### Language
 
-这个框架可以说是无心偶得，今后也会佛系维护。
+目前框架使用的语言情况
 
-* 开始 (2017)。近日使用QueryDSL-sql作为轻量级数据库操作框架，有手写SQL的畅快，有静态语法检查的安心，还有语法自动完成的高效。
-  QueryDSL提供了友好的查询构建API，接近SQL且符合自然语言习惯。我在试用后就发现使用它编写的业务代码可读性很强且没有冗余代码，它的潜力巨大，可以说是一个理想的数据库Facade。
-
-  我在编写GeeQuery的几年中，阅读了几乎所有Java数据库访问框架的代码，当我意识到其他QueryDSL的代码要比用其他任何Facade的代码都要简练自由时，我抛弃了其他已知的框架，包括写了近十年的GeeQuery。在2017我将自己使用queryDSL的一些代码放在一个库里，只有几个类。
-  本着最小修改的原则，用这个项目对QueryDSL的监听行为进行扩展，从而可以得到更详细的日志信息。
-
-* 性能演进（2018）
-对性能进行了优化。除了代码细节修改外，还增加了基于ASM自动生成动态类来完成字段拼装对象，无反射调用。
-
-* 后来（2019~2023）
-
-  之后就是自己用得非常爽快，期间仅对一些常用的功能进行了小改，使得代码更简洁。如自动时间戳、自动生成GUID等。
-
-* 再后来(2024)
-  在使用过程中，阅读源码中发现原作者一开始是想要支持DDL语法的，后来不知道为什么没有再支持了。可能确实使用场景不太多，总归有点小缺憾，由于我早年在别的框架上写过相关的功能，于是花了不少时间在目前的框架上支持了DDL语法。
-  另外还有些朋友喜欢无代码自动生成，无Query class的纯POJO用法，为此也作了一些适配来降低使用门槛。
-
-* 今后：保持轻量是维护的宗旨，不会再考虑加入什么乐观锁、词法分析器、分库分表、内置连接池之类的东西，虽然都写过，但是将它们糅合在一起没有必要。
+* 文档 / Documentation：中文
+* Javadoc:  中英文双语 / Chinese English bilingual
+* 日志和异常信息  / Log and exception messages: 英文/English only
