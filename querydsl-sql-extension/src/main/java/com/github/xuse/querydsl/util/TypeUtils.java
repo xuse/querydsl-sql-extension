@@ -43,8 +43,27 @@ public class TypeUtils {
 	private static final BiFunction<Class<?>, PathMetadata, Path<?>> BooleanCreator = (a, b) -> Expressions
 			.booleanPath(b);
 	private static final BiFunction<Class<?>, PathMetadata, Path<?>> SimpleCreator = Expressions::simplePath;
-
+	
+	private static final BiFunction<Class<?>, PathMetadata, Path<?>> ArrayCreator = (a, b) -> Expressions.arrayPath(a, b);
+	
 	static {
+		PathCreators.put(byte[].class, ArrayCreator);
+		PathCreators.put(Byte[].class, ArrayCreator);
+		PathCreators.put(long[].class, ArrayCreator);
+		PathCreators.put(Long[].class, ArrayCreator);
+		PathCreators.put(float[].class, ArrayCreator);
+		PathCreators.put(Float[].class, ArrayCreator);
+		PathCreators.put(double[].class, ArrayCreator);
+		PathCreators.put(Double[].class, ArrayCreator);
+		PathCreators.put(short[].class, ArrayCreator);
+		PathCreators.put(Short[].class, ArrayCreator);
+		PathCreators.put(char[].class, ArrayCreator);
+		PathCreators.put(Character[].class, ArrayCreator);
+		PathCreators.put(boolean[].class, ArrayCreator);
+		PathCreators.put(Boolean[].class, ArrayCreator);
+		PathCreators.put(int[].class, ArrayCreator);
+		PathCreators.put(Integer[].class, ArrayCreator);
+		
 		PathCreators.put(String.class, StringCreator);
 		PathCreators.put(CharSequence.class, StringCreator);
 

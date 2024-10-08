@@ -1,26 +1,26 @@
 # querydsl-sql-extension
 
-query-dsl-sql-extension is an enhanced library based on module 'querydsl-sql'.
+**An enhancement for Querydsl based on module 'querydsl-sql'.**
 
-## 摘要
+本框架是在 Querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅官方文档 [Querying SQL](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html)
 
-本框架是在 [querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html 
 
-> 注意：不是基于`querydsl-jpa`的，是基于querydsl-sql模块，与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。本框架基于DataSource JDBC，也可以与MyBatis、Spring JDBC Template等一起使用。
->
-> 如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
 
-**什么是queryDSL，为什么推荐?**
+**Querydsl是什么? 为什么选择？/ Introduction**
 
-参见 [Why QueryDSL](static/why_querydsl.md)
+介绍:  [Why QueryDSL (Chinese)](static/why_querydsl.md)
 
-**Getting started**
+注意：本框架不是基于`querydsl-jpa`的，是基于`querydsl-sql`与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
+
+
+
+**入门 / Getting started**
 
 参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
 
 
 
-**引用 / How to import**
+**引用 / Repository**
 
 ```xml
 <dependency>
@@ -45,22 +45,32 @@ query-dsl-sql-extension is an enhanced library based on module 'querydsl-sql'.
 5.0.0-r111版本，将Spring框架支持功能移到 querydsl-sql-extension-spring 模块，相关使用说明已修改，Spring下使用需要添加该依赖包。
 Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修改为  `QueryDSLSqlExtension.createSpringQueryFactory()`
 
-### 和 Querydsl-JPA 一起使用 （Using With querydsl-JPA）
+## 目录 / Contents
+
+- [与 Querydsl-JPA 一起使用 / Using With Querydsl-JPA](#与-querydsl-jpa-一起使用--using-with-querydsl-jpa)
+- [特性介绍 (对照原版querydsl-sql)](#特性介绍-对照原版querydsl-sql)
+  - [提升使用便利性](#提升使用便利性)
+  - [访问安全](#访问安全)
+  - [性能优化](#性能优化)
+  - [功能增强](#功能增强)
+  - [运行环境与适用范围](#运行环境与适用范围)
+- [实验性功能](#实验性功能)
+  - [Partition管理（已支持MySQL、PostgreSQL）](#partition管理已支持mysqlpostgresql)
+  - [DDL Support](#ddl-support)
+  - [MySQL Online DDL](#mysql-online-ddl)
+- [修订记录](#修订记录)
+- [FAQ](#faq)
+- [其他](#其他)
+
+### 与 Querydsl-JPA 一起使用 / Using With Querydsl-JPA
 
 要一起使用，需要解决两个问题。
 
-1、事务管理器(Transaction Manager)问题。
+1. 事务管理器(Transaction Manager)问题。
+   querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。两者如果要一起用，也不是不行。但两类操作难以协调到一个事务中，因为两者的Spring事务管理器不一样。
 
-querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。两者如果要一起用，也不是不行。但两类操作难以协调到一个事务中，因为两者的Spring事务管理器不一样。
-
-> 如果一个事务禁用一个框架操作，那么就没问题
-
-2、Querydsl-sql中自动生成的表模型（Query class）继承 `com.querydsl.sql.RelationalPath`，但是JPA中的Query class继承 `com.querydsl.core.types.EntityPath` 两者并不一致。
-
-这个问题可以通过 `querydsl-entityql` 的框架解决（https://github.com/eXsio/querydsl-entityql）
-它最主要的作用之一就是将querydsl-jpa的模型转换为querydsl-sql模型。可以使用该框架，动态地生成querydsl-sql模型。
-
-
+2. Querydsl-sql中自动生成的表模型（Query class）继承 `com.querydsl.sql.RelationalPath`，但是JPA中的Query class继承 `com.querydsl.core.types.EntityPath` 两者并不一致。
+   这个问题可以通过 `querydsl-entityql` 的框架解决（https://github.com/eXsio/querydsl-entityql) ，该框架主要作用之一就是将querydsl-jpa的模型转换为querydsl-sql模型。
 
 ## 特性介绍 (对照原版querydsl-sql)
 
