@@ -57,7 +57,8 @@ querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的�
 
 2、Querydsl-sql中自动生成的表模型（Query class）继承 `com.querydsl.sql.RelationalPath`，但是JPA中的Query class继承 `com.querydsl.core.types.EntityPath` 两者并不一致。
 
-这个问题可以通过 `querydsl-entityql` 的框架解决（https://github.com/eXsio/querydsl-entityql）。它最主要的作用之一就是将querydsl-jpa的模型转换为querydsl-sql模型。可以使用该框架，动态地生成querydsl-sql模型，可以解决前述问题。
+这个问题可以通过 `querydsl-entityql` 的框架解决（https://github.com/eXsio/querydsl-entityql）
+它最主要的作用之一就是将querydsl-jpa的模型转换为querydsl-sql模型。可以使用该框架，动态地生成querydsl-sql模型。
 
 
 
