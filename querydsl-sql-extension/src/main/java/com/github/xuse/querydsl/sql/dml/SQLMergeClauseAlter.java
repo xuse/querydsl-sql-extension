@@ -66,7 +66,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 
 	private boolean writeNulls = false;
 
-	public SQLMergeClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	SQLMergeClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
 	}

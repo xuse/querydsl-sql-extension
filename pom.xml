@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -11,6 +11,7 @@
 		<module>querydsl-sql-extension</module>
 		<module>querydsl-sql-extension-spring</module>
 		<module>querydsl-sql-extension-datatype</module>
+		<module>querydsl-sql-r2dbc</module>
 	</modules>
 	<name>querydsl-sql-extension-parent</name>
 	<description>extension of querdsl-sql, extending its capabilities and
@@ -203,9 +204,11 @@
 						<include>com/querydsl/sql/TemplatesAccessor.class</include>
 					</includes>
 					<excludes>
-						<exclude>com/github/xuse/querydsl/util/JDKEnvironment.class</exclude>
+						<exclude>
+							com/github/xuse/querydsl/util/JDKEnvironment.class</exclude>
 						<exclude>com/github/xuse/querydsl/asm/**</exclude>
-						<exclude>com/github/xuse/querydsl/spring/core/resource/**</exclude>
+						<exclude>
+							com/github/xuse/querydsl/spring/core/resource/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>

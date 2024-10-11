@@ -88,14 +88,14 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	@SuppressWarnings("rawtypes")
 	private transient Mapper batchMapper;
 
-	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity,
+	SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity,
 			SQLQuery<?> subQuery) {
 		super(connection, configuration.get(), entity, subQuery);
 		this.configuration = configuration;
 		this.batchToBulk = configuration.getTemplates().isBatchToBulkInDefault();
 	}
 
-	public SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	SQLInsertClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configuration = configuration;
 		this.batchToBulk = configuration.getTemplates().isBatchToBulkInDefault();

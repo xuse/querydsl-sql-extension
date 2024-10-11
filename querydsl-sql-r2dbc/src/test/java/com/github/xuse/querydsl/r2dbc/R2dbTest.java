@@ -1,0 +1,31 @@
+package com.github.xuse.querydsl.r2dbc;
+
+import java.time.Instant;
+import java.util.Date;
+
+import org.junit.Test;
+
+import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.r2dbc.entity.Foo;
+
+public class R2dbTest extends R2DbTestBase{
+	
+	LambdaTable<Foo> table=()->Foo.class;
+	
+	@Test
+	public void testInit() {
+		R2dbcQueryFactory factory=new R2dbcQueryFactory(getConfiguration(), getConnectionFactory());
+		
+		Foo foo=new Foo();
+		foo.setCode("A");
+		foo.setContent("Test");
+		foo.setCreated(Instant.now());
+		foo.setId(123);
+		foo.setName("Zhangsan");
+		foo.setUpdated(new Date());
+		foo.setVolume(100);
+		
+		factory.insert(table).populate(foo).execute();
+	}
+
+}

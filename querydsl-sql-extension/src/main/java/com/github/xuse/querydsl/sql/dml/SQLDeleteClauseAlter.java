@@ -49,7 +49,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 
 	private RoutingStrategy routing;
 
-	public SQLDeleteClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	SQLDeleteClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
 	}

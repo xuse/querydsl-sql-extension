@@ -57,32 +57,32 @@ Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修�
 
 
 
-**目录/Contents**
+# 目录/ Contents
 
-- [querydsl-sql-extension](#querydsl-sql-extension)
-- [特性介绍 (对照原版querydsl-sql)](#特性介绍-对照原版querydsl-sql)
-  - [提升使用便利性](#提升使用便利性)
-  - [访问安全](#访问安全)
-  - [性能优化](#性能优化)
-    - [性能对比测试（v5.0.0-r110）](#性能对比测试v500-r110)
-    - [高性能的秘密](#高性能的秘密)
-    - [兼容性](#兼容性)
-  - [功能增强](#功能增强)
-    - [数据库结构建模](#数据库结构建模)
-    - [纯POJO使用 (无QueryClass)](#纯pojo使用-无queryclass)
-    - [多种风格的低代码API](#多种风格的低代码api)
-    - [数据库结构访问与修改(DDL)](#数据库结构访问与修改ddl)
-    - [Record对象作为数据表映射](#record对象作为数据表映射)
-  - [运行环境与适用范围](#运行环境与适用范围)
-- [实验性功能](#实验性功能)
-  - [Partition管理（已支持MySQL、PostgreSQL）](#partition管理已支持mysqlpostgresql)
-  - [DDL Support](#ddl-support)
-  - [MySQL Online DDL](#mysql-online-ddl)
-- [修订记录 / ChangeLog](#修订记录--changelog)
-- [FAQ](#faq)
-- [其他](#其他)
-  - [什么是元模型/Query Class](#什么是元模型query-class)
-  - [Language](#language)
+- [目录/ Contents](#目录-contents)
+  - [特性介绍 (对照原版querydsl-sql)](#特性介绍-对照原版querydsl-sql)
+    - [提升使用便利性](#提升使用便利性)
+    - [访问安全](#访问安全)
+    - [性能优化](#性能优化)
+      - [性能对比测试（v5.0.0-r110）](#性能对比测试v500-r110)
+      - [高性能的秘密](#高性能的秘密)
+      - [兼容性](#兼容性)
+    - [功能增强](#功能增强)
+      - [数据库结构建模](#数据库结构建模)
+      - [纯POJO使用 (无QueryClass)](#纯pojo使用-无queryclass)
+      - [多种风格的低代码API](#多种风格的低代码api)
+      - [数据库结构访问与修改(DDL)](#数据库结构访问与修改ddl)
+      - [Record对象作为数据表映射](#record对象作为数据表映射)
+    - [运行环境与适用范围](#运行环境与适用范围)
+  - [实验性功能](#实验性功能)
+    - [Partition管理（已支持MySQL、PostgreSQL）](#partition管理已支持mysqlpostgresql)
+    - [DDL Support](#ddl-support)
+    - [MySQL Online DDL](#mysql-online-ddl)
+  - [修订记录 / ChangeLog](#修订记录--changelog)
+  - [FAQ](#faq)
+  - [其他](#其他)
+    - [什么是元模型/Query Class](#什么是元模型query-class)
+    - [Language](#language)
 
 
 ## 特性介绍 (对照原版querydsl-sql)
@@ -438,6 +438,7 @@ metadata.dropPartition(t1)
 
 
 ### MySQL Online DDL
+([Contents](# 目录/ Contents))
 
 OnLine DDL可以防止DDL执行期间锁导致阻塞,影响用户的 DML 操作,而 Online DDL 指的是在 DDL 期间,允许用户进行 DML 操作。
 

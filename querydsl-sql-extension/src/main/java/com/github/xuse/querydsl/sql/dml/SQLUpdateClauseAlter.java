@@ -63,7 +63,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 
 	private boolean updateNulls = false;
 
-	public SQLUpdateClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	SQLUpdateClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
 	}
