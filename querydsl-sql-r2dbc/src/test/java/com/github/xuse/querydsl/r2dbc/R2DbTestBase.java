@@ -9,12 +9,11 @@ import io.r2dbc.h2.H2ConnectionConfiguration;
 import io.r2dbc.h2.H2ConnectionFactory;
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
-import io.r2dbc.spi.ConnectionFactory;
 
 public class R2DbTestBase {
 	private static volatile ConnectionPool pool;
 	//
-	public static ConnectionFactory getConnectionFactory() {
+	public static ConnectionPool getConnectionFactory() {
 		if(pool!=null) {
 			return pool;
 		}

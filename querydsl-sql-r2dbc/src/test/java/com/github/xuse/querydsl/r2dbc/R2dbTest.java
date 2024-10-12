@@ -14,7 +14,7 @@ public class R2dbTest extends R2DbTestBase{
 	
 	@Test
 	public void testInit() {
-		R2dbcQueryFactory factory=new R2dbcQueryFactory(getConfiguration(), getConnectionFactory());
+		R2dbcQueryFactory factory=new R2dbcQueryFactory(getConnectionFactory(),getConfiguration());
 		
 		Foo foo=new Foo();
 		foo.setCode("A");

@@ -7,6 +7,7 @@ import com.github.xuse.querydsl.r2dbc.clause.dml.R2MergeClause;
 import com.github.xuse.querydsl.r2dbc.clause.dml.R2QueryClause;
 import com.github.xuse.querydsl.r2dbc.clause.dml.R2UpdateClause;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.sql.RelationalPath;
@@ -14,32 +15,29 @@ import com.querydsl.sql.RelationalPath;
 import io.r2dbc.spi.ConnectionFactory;
 
 public class R2dbcQueryFactory extends AbstractR2CommonQueryFactory<R2QueryClause<?>>{
-	protected R2dbcQueryFactory(ConfigurationEx config, ConnectionFactory connection) {
+	protected R2dbcQueryFactory(ConnectionFactory connection,ConfigurationEx config) {
 		super(config, connection);
 	}
 
 	@Override
 	public R2DeleteClause delete(RelationalPath<?> path) {
-		// TODO Auto-generated method stub
-		return null;
+		return new R2DeleteClause(connection, configEx, path);
 	}
 
 	@Override
 	public R2QueryClause<?> from(Expression<?> from) {
-		// TODO Auto-generated method stub
-		return null;
+		return query().from(from);
 	}
 
 	@Override
 	public R2QueryClause<?> from(Expression<?>... from) {
-		// TODO Auto-generated method stub
-		return null;
+		return query().from(from);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public R2QueryClause<?> from(SubQueryExpression<?> subQuery, Path<?> alias) {
-		// TODO Auto-generated method stub
-		return null;
+		 return query().from((Expression) ExpressionUtils.as((Expression) subQuery, alias));
 	}
 
 	@Override
@@ -59,8 +57,6 @@ public class R2dbcQueryFactory extends AbstractR2CommonQueryFactory<R2QueryClaus
 
 	@Override
 	public R2QueryClause<?> query() {
-		// TODO Auto-generated method stub
-		return null;
+		return new R2QueryClause<Void>(connection, configEx);
 	}
-
 }

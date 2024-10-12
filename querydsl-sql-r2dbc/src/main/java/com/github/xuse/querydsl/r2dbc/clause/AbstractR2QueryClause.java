@@ -10,12 +10,17 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.sql.ProjectableSQLQuery;
 import com.querydsl.sql.SQLSerializer;
 
-public abstract class AbstractR2QueryClause<T> extends ProjectableSQLQuery<T,AbstractR2QueryClause<T>>{
+import io.r2dbc.spi.ConnectionFactory;
+
+public abstract class AbstractR2QueryClause<T,Q extends AbstractR2QueryClause<T, Q>> extends ProjectableSQLQuery<T,Q>{
 
 	protected final ConfigurationEx configuration;
 	
-	public AbstractR2QueryClause(QueryMixin<AbstractR2QueryClause<T>> queryMixin, ConfigurationEx configuration) {
+	protected final ConnectionFactory connection;
+	
+	public AbstractR2QueryClause(ConnectionFactory connection, QueryMixin<Q> queryMixin, ConfigurationEx configuration) {
 		super(queryMixin, configuration.get());
+		this.connection=connection;
 		this.configuration=configuration;
 	}
 
@@ -44,7 +49,7 @@ public abstract class AbstractR2QueryClause<T> extends ProjectableSQLQuery<T,Abs
 	}
 
 	@Override
-	public AbstractR2QueryClause<T> clone() {
+	public Q clone() {
 		// TODO Auto-generated method stub
 		return null;
 	}

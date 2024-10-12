@@ -56,17 +56,6 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
 
     protected transient boolean batchToBulk;
 
-//    public AbstractSQLInsertClause(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity, SQLQuery<?> subQuery) {
-//        this(connection, configuration, entity);
-//        this.subQueryBuilder = subQuery;
-//    }
-
-//    public AbstractSQLInsertClause(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
-//        super(configuration, connection);
-//        this.entity = entity;
-//        metadata.addJoin(JoinType.DEFAULT, entity);
-//    }
-
     /**
      * Add the given String literal at the given position as a query flag
      *
@@ -382,17 +371,6 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
 //            serializer.serializeInsert(metadata, entity, columns, values, subQuery);
 //        }
 //        return serializer.toString();
-    }
-
-    /**
-     * Populate the INSERT clause with the properties of the given bean. The
-     * properties need to match the fields of the clause's entity instance.
-     *
-     * @param bean bean to use for population
-     * @return the current object
-     */
-    public C populate(Object bean) {
-        return populate(bean, DefaultMapper.DEFAULT);
     }
 
     /**

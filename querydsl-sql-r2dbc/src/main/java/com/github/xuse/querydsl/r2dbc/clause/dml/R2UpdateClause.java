@@ -10,6 +10,7 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.SQLBindings;
 
 import io.r2dbc.spi.ConnectionFactory;
 
@@ -59,6 +60,24 @@ public class R2UpdateClause extends AbstractR2UpdateClause<R2UpdateClause>{
 	public R2UpdateClause where(Predicate... o) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void clear() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<SQLBindings> getSQL() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getBatchCount() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }
