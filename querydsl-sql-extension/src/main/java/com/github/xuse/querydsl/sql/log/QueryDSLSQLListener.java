@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.sql.log;
 
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -14,6 +13,7 @@ import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.DateFormats.TLDateFormat;
 import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
@@ -128,7 +128,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			Iterator<SQLBindings> iter = bs.iterator();
 			SQLBindings binding = iter.next();
 			StringBuilder sb = formatSQL(binding.getSQL());
-			List<Path<?>> constantPaths = ALL_NULL_LIST;
+			List<Path<?>> constantPaths = CollectionUtils.nullElementsList();
 			if (binding instanceof SQLBindingsAlter) {
 				constantPaths = ((SQLBindingsAlter) binding).getPaths();
 			}
@@ -327,18 +327,6 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			log.info(infoFormatter.format(context.getAllSQLBindings()));
 		}
 	}
-
-	private static final List<Path<?>> ALL_NULL_LIST = new AbstractList<Path<?>>() {
-		@Override
-		public Path<?> get(int index) {
-			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-	};
 
 	@Override
 	public final void executed(SQLListenerContext context) {

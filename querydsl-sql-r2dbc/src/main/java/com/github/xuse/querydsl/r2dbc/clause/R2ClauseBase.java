@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.r2dbc.clause;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -27,6 +26,8 @@ import com.querydsl.sql.SQLSerializer;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Statement;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public abstract class R2ClauseBase<T extends R2ClauseBase<T>> {
 	protected final ConnectionFactory connection;
@@ -148,27 +149,10 @@ public abstract class R2ClauseBase<T extends R2ClauseBase<T>> {
         }
     }
 
-    private long executeBatch(PreparedStatement stmt) throws SQLException {
-        if (configuration.get().getUseLiterals()) {
-            return stmt.executeUpdate();
-        } else if (configuration.get().getTemplates().isBatchCountViaGetUpdateCount()) {
-            stmt.executeBatch();
-            return stmt.getUpdateCount();
-        } else {
-            long rv = 0;
-            for (int i : stmt.executeBatch()) {
-                rv += i;
-            }
-            return rv;
-        }
-    }
-
-    protected long executeBatch(Collection<PreparedStatement> stmts) throws SQLException {
-        long rv = 0;
-        for (PreparedStatement stmt : stmts) {
-            rv += executeBatch(stmt);
-        }
-        return rv;
+    protected Mono<Long> executeBatch(Flux<Statement> stmts) throws SQLException {
+		return stmts.flatMap(stmt -> stmt.execute())
+				.flatMap(result -> result.getRowsUpdated())
+				.reduce((a, b) -> a + b);
     }
 
 //    protected void close(Statement stmt) {
@@ -203,7 +187,7 @@ public abstract class R2ClauseBase<T extends R2ClauseBase<T>> {
     protected void reset() {
     }
 
-    protected Connection connection() {
+    protected Mono<Connection> connection() {
        return null;
     }
 

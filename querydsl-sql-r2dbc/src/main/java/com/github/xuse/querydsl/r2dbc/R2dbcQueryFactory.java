@@ -2,9 +2,9 @@ package com.github.xuse.querydsl.r2dbc;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.r2dbc.clause.dml.R2DeleteClause;
-import com.github.xuse.querydsl.r2dbc.clause.dml.R2InsertClause;
 import com.github.xuse.querydsl.r2dbc.clause.dml.R2MergeClause;
 import com.github.xuse.querydsl.r2dbc.clause.dml.R2QueryClause;
+import com.github.xuse.querydsl.r2dbc.clause.dml.R2SQLInsertClause;
 import com.github.xuse.querydsl.r2dbc.clause.dml.R2UpdateClause;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -41,8 +41,8 @@ public class R2dbcQueryFactory extends AbstractR2CommonQueryFactory<R2QueryClaus
 	}
 
 	@Override
-	public R2InsertClause insert(RelationalPath<?> path) {
-		return new R2InsertClause(connection,configEx,path);
+	public R2SQLInsertClause insert(RelationalPath<?> path) {
+		return new R2SQLInsertClause(connection,configEx,path);
 	}
 
 	@Override

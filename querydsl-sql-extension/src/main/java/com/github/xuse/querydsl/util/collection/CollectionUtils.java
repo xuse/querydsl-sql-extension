@@ -16,6 +16,7 @@
 package com.github.xuse.querydsl.util.collection;
 
 import java.lang.reflect.Array;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,7 +43,31 @@ import com.github.xuse.querydsl.util.Assert;
  * @author Joey
  */
 public class CollectionUtils {
-
+	@SuppressWarnings("rawtypes")
+	private static final List ALL_NULL_LIST = new NullsList<>();
+	
+	
+	private static final class NullsList<E> extends AbstractList<E>{
+		@Override
+		public E get(int index) {
+			return null;
+		}
+		@Override
+		public int size() {
+			return 0;
+		}
+	};
+	
+	/**
+	 * 返回一个size()为零。但可以获取任意标号元素的List。其每个元素都是null.
+	 * @param <T> type
+	 * @return nullElementsList
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> nullElementsList(){
+		return ALL_NULL_LIST;
+	}
+	
 	protected CollectionUtils() {
 	}
 

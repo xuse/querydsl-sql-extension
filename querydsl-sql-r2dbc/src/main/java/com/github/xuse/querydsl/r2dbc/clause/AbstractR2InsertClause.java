@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.r2dbc.clause;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -9,32 +10,39 @@ import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.r2dbc.core.R2InsertClause;
+import com.github.xuse.querydsl.sql.SQLBindingsAlter;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryFlag;
 import com.querydsl.core.QueryFlag.Position;
 import com.querydsl.core.QueryMetadata;
-import com.querydsl.core.dml.InsertClause;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
+import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLQuery;
-import com.querydsl.sql.dml.DefaultMapper;
+import com.querydsl.sql.SQLSerializer;
+import com.querydsl.sql.SQLSerializerAlter;
 import com.querydsl.sql.dml.Mapper;
 import com.querydsl.sql.dml.SQLInsertBatch;
 import com.querydsl.sql.types.Null;
 
 import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.Statement;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Slf4j
-public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>> extends R2ClauseBase<C> implements InsertClause<C> {
+public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>> extends R2ClauseBase<C> implements R2InsertClause<C> {
     public AbstractR2InsertClause(ConnectionFactory connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration, entity);
 	}
+	private RoutingStrategy routing;
 
     protected final QueryMetadata metadata = new DefaultQueryMetadata();
 
@@ -129,7 +137,7 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
      */
     @SuppressWarnings("unchecked")
     @Nullable
-    public <T> T executeWithKey(Path<T> path) {
+    public <T> Mono<T> executeWithKey(Path<T> path) {
         return executeWithKey((Class<T>) path.getType(), path);
     }
 
@@ -142,11 +150,11 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
      * @param type type of key
      * @return generated key
      */
-    public <T> T executeWithKey(Class<T> type) {
+    public <T> Mono<T> executeWithKey(Class<T> type) {
         return executeWithKey(type, null);
     }
 
-    protected <T> T executeWithKey(Class<T> type, @Nullable Path<T> path) {
+    protected <T> Mono<T> executeWithKey(Class<T> type, @Nullable Path<T> path) {
     	return null;
 //        ResultSet rs = null;
 //        try {
@@ -244,18 +252,22 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
     }
 
     @Override
-    public long execute() {
-    	return 0L;
+    public Mono<Long> execute() {
+    	connection()
+    		.flatMapMany(conn->conn.createStatement("").execute())
+    		.flatMap(result->result.getRowsUpdated()).next();
+    	
+    	
 //        context = startContext(connection(), metadata,entity);
-//        PreparedStatement stmt = null;
-//        Collection<PreparedStatement> stmts = null;
+//        Statement stmt = null;
+//        Collection<Statement> stmts = null;
 //        try {
 //            if (batches.isEmpty()) {
 //                stmt = createStatement(false);
 //                listeners.notifyInsert(entity, metadata, columns, values, subQuery);
 //
 //                listeners.preExecute(context);
-//                int rc = stmt.executeUpdate();
+//                int rc = stmt.execute();
 //                listeners.executed(context);
 //                return rc;
 //            } else if (batchToBulk) {
@@ -288,8 +300,29 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
 //            reset();
 //            endContext(context);
 //        }
+    	return Mono.empty();
     }
 
+	protected Statement createStatement(boolean withKeys) throws SQLException {
+		listeners.preRender(context);
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+		serializer.setUseLiterals(useLiterals);
+		serializer.setRouting(routing);
+		if (subQueryBuilder != null) {
+			subQuery = subQueryBuilder.select(values.toArray(new Expression[values.size()])).clone();
+			values.clear();
+		}
+		if (!batches.isEmpty() && batchToBulk) {
+			//这个实现是有问题的,所有Batch都必须有完全相同的Column，必须先按Column分组
+			serializer.serializeInsert(metadata, entity, batches);
+		} else {
+			serializer.serializeInsert(metadata, entity, columns, values, subQuery);
+		}
+		SQLBindingsAlter bindings = createBindings(metadata, serializer);
+		context.addSQL(bindings);
+		listeners.rendered(context);
+		return null;//prepareStatementAndSetParameters(bindings, withKeys);
+	}
     public List<SQLBindings> getSQL() {
     	return null;
 //        if (batches.isEmpty()) {
@@ -311,6 +344,23 @@ public abstract class AbstractR2InsertClause<C extends AbstractR2InsertClause<C>
 //        }
     }
 
+	@Override
+	protected SQLBindingsAlter createBindings(QueryMetadata metadata, SQLSerializer serializer) {
+		String queryString = serializer.toString();
+		List<Object> args = new ArrayList<>();
+		Map<ParamExpression<?>, Object> params = metadata.getParams();
+		for (Object o : serializer.getConstants()) {
+			if (o instanceof ParamExpression) {
+				if (!params.containsKey(o)) {
+					throw new ParamNotSetException((ParamExpression<?>) o);
+				}
+				o = metadata.getParams().get(o);
+			}
+			args.add(o);
+		}
+		return new SQLBindingsAlter(queryString, args, serializer.getConstantPaths());
+	}
+	
     @Override
     public C select(SubQueryExpression<?> sq) {
         subQuery = sq;
