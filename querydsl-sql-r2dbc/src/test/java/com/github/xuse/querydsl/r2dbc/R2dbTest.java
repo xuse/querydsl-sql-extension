@@ -20,7 +20,6 @@ public class R2dbTest extends R2DbTestBase implements LambdaHelpers{
 	
 	@Test
 	public void testInit() {
-		SQLQueryFactory factory=getSqlFactory();
 		
 	}
 	
@@ -30,9 +29,12 @@ public class R2dbTest extends R2DbTestBase implements LambdaHelpers{
 		List<Foo> list=factory.selectFrom(table).prepare(q->q.where(string(Foo::getName).eq("Zhangsan"))).fetch().buffer().blockFirst();
 		System.out.println(list);
 		
+		//FIXME 目前连接池连接关闭动作没做
+		//TODO Spring事务还没支持
+		
 	}
 	
-	//FIXME 目前连接池连接关闭动作没做
+
 	
 	@Test
 	public void testInsert() {

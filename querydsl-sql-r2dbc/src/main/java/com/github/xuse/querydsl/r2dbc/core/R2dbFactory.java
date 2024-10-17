@@ -9,12 +9,20 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
+
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2ResultWrapper;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2StatementWrapper;
+import com.github.xuse.querydsl.r2dbc.listener.R2BaseListener;
+import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContext;
+import com.github.xuse.querydsl.r2dbc.listener.R2Listeners;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
+import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
+import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.QueryMetadata;
@@ -26,6 +34,7 @@ import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
+import com.querydsl.sql.SQLListeners;
 import com.querydsl.sql.dml.AbstractSQLClause;
 
 import io.r2dbc.spi.ConnectionFactory;
@@ -36,20 +45,24 @@ import io.r2dbc.spi.Statement;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * R2dbc query factory
+ * 
+ * @author Joey
+ *
+ */
 public class R2dbFactory {
 	protected final ConfigurationEx configEx;
 
 	protected final ConnectionFactory connection;
+	
+	private final R2BaseListener listeners;
 
 	public R2dbFactory(ConnectionFactory connection, ConfigurationEx configEx) {
 		super();
 		this.configEx = configEx;
 		this.connection = connection;
-	}
-
-	public R2Executeable<SQLInsertClauseAlter> insert(RelationalPath<?> t) {
-		SQLInsertClauseAlter clause = new SQLInsertClauseAlter(null, configEx, t);
-		return new R2Executeable<>(clause);
+		listeners=R2Listeners.wrap(configEx.get().getListeners());
 	}
 
 	public <T> R2Fetchable<T> select(Expression<T> expr) {
@@ -61,18 +74,40 @@ public class R2dbFactory {
 		SQLQueryAlter<Tuple> query = new SQLQueryAlter<Tuple>((Supplier<Connection>) null, configEx);
 		return new R2Fetchable<>(query.select(exprs));
 	}
-	
+
 	public <T> R2Fetchable<T> selectFrom(RelationalPath<T> expr) {
 		SQLQueryAlter<T> query = new SQLQueryAlter<T>((Supplier<Connection>) null, configEx);
 		return new R2Fetchable<>(query.select(expr).from(expr));
 	}
+	public <T> R2Fetchable<T> selectFrom(LambdaTable<T> expr) {
+		SQLQueryAlter<T> query = new SQLQueryAlter<T>((Supplier<Connection>) null, configEx);
+		return new R2Fetchable<>(query.select(expr).from(expr));
+	}
 	
-
+	public R2Executeable<SQLInsertClauseAlter> insert(RelationalPath<?> t) {
+		return new R2Executeable<>(new SQLInsertClauseAlter(null, configEx, t));
+	}
+	public final R2Executeable<SQLUpdateClauseAlter> update(RelationalPath<?> path) {
+		return new R2Executeable<>(new SQLUpdateClauseAlter((Supplier<Connection>) null, configEx, path));
+	}
+	public final R2Executeable<SQLDeleteClauseAlter> delete(RelationalPath<?> path) {
+		return new R2Executeable<>(new SQLDeleteClauseAlter((Supplier<Connection>) null, configEx, path));
+	}
+	public R2Executeable<SQLInsertClauseAlter> insert(LambdaTable<?> t) {
+		return new R2Executeable<>(new SQLInsertClauseAlter(null, configEx, t));
+	}
+	public final R2Executeable<SQLUpdateClauseAlter> update(LambdaTable<?> path) {
+		return new R2Executeable<>(new SQLUpdateClauseAlter((Supplier<Connection>) null, configEx, path));
+	}
+	public final R2Executeable<SQLDeleteClauseAlter> delete(LambdaTable<?> path) {
+		return new R2Executeable<>(new SQLDeleteClauseAlter((Supplier<Connection>) null, configEx, path));
+	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	public class R2Fetchable<R> {
 		final SQLQueryAlter<R> query;
 		private SQLBindings sqls;
+		private R2ListenerContext context;
 		
 		R2Fetchable(SQLQueryAlter<R> clause) {
 			this.query = clause;
@@ -103,24 +138,22 @@ public class R2dbFactory {
 
 		private Flux<R> fetch0(SQLBindings sqls) {
 			this.sqls = sqls;
-			return Mono.from(connection.create())
-					.flatMapMany(conn -> binds(conn.createStatement(sqls.getSQL()), sqls).execute())
-					.flatMap(this::transform);
+			return Mono.from(connection.create()).doOnSuccess(io.r2dbc.spi.Connection::close)
+					.flatMapMany(conn -> createStatement(conn, sqls).execute()).flatMap(this::transform);
 		}
 		
 		private Mono<Long> fetchCnt(SQLBindings sqls) {
 			this.sqls = sqls;
-			return Mono.from(connection.create())
-					.flatMapMany(conn -> binds(conn.createStatement(sqls.getSQL()), sqls).execute())
-					.flatMap(this::transformLong).next();
+			return Mono.from(connection.create()).doOnSuccess(io.r2dbc.spi.Connection::close)
+					.flatMapMany(conn -> createStatement(conn, sqls).execute()).flatMap(this::transformLong).next();
 		}
 		
-		private Flux<Long> transformLong(Result result){
-			return Flux.from(result.map((r, m) -> r.get(0, Long.class)));
+		private Publisher<Long> transformLong(Result result){
+			return result.map((r, m) -> r.get(0, Long.class));
 		}
 
-		private Flux<R> transform(Result result) {
-			return Flux.from(result.map(getProjection(result, false)));
+		private Publisher<R> transform(Result result) {
+			return result.map(getProjection(result, false));
 		}
 
 		private AbstractProjection<R> getProjection(Result rs, boolean getLastCell){
@@ -290,6 +323,7 @@ public class R2dbFactory {
 
 	public class R2Executeable<T extends AbstractSQLClause<T>> {
 		T clause;
+		private R2ListenerContext context;
 
 		public R2Executeable(T clause) {
 			this.clause = clause;
@@ -308,12 +342,14 @@ public class R2dbFactory {
 
 		private Mono<Long> execute(SQLBindings sqls) {
 			return Mono.from(connection.create())
-					.flatMapMany(conn -> binds(conn.createStatement(sqls.getSQL()), sqls).execute())
+					.doOnSuccess(io.r2dbc.spi.Connection::close)
+					.flatMapMany(conn -> createStatement(conn, sqls).execute())
 					.flatMap(Result::getRowsUpdated).reduce((a, b) -> a + b);
 		}
 	}
 
-	private Statement binds(Statement stmt, SQLBindings binding) {
+	private Statement createStatement(io.r2dbc.spi.Connection conn, SQLBindings binding) {
+		Statement stmt=conn.createStatement(binding.getSQL());
 		Configuration config = configEx.get();
 		List<Path<?>> paths = CollectionUtils.nullElementsList();
 		if (binding instanceof SQLBindingsAlter) {
