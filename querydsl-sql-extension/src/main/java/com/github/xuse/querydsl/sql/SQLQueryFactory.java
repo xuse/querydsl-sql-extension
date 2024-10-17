@@ -44,6 +44,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.DerbyTemplates;
+import com.querydsl.sql.H2Templates;
 import com.querydsl.sql.OracleTemplates;
 import com.querydsl.sql.PostgreSQLTemplates;
 import com.querydsl.sql.RelationalPath;
@@ -113,7 +114,9 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 			return new SQLServer2012Templates();
 		} else if (url.startsWith("jdbc:oracle:")) {
 			return new OracleTemplates();
-		} 
+		} else if(url.startsWith("jdbc:h2:")) {
+			return new H2Templates();
+		}
 		throw Exceptions.illegalArgument(url);
 	}
 

@@ -9,6 +9,7 @@ import com.github.xuse.querydsl.util.Assert;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.SQLTemplates;
+import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 
 public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	protected final TypeNames typeNames = TypeNames.generateDefault();
@@ -32,6 +33,10 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 		}
 	}
 
+	public LetterCase getDefaultLetterCase() {
+		return LetterCase.UPPER;
+	}
+	
 	public ColumnDef getColumnDataType(int sqlTypes, int size, int scale) {
 		return typeNames.get(sqlTypes, size, scale);
 	}

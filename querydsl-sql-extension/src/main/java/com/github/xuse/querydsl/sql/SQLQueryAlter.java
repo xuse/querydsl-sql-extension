@@ -13,7 +13,6 @@
  */
 package com.github.xuse.querydsl.sql;
 
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,7 +31,6 @@ import com.github.xuse.querydsl.util.Holder;
 import com.mysema.commons.lang.CloseableIterator;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
-import com.querydsl.core.QueryException;
 import com.querydsl.core.QueryFlag;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.QueryModifiers;
@@ -271,9 +269,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 					}
 					postExecuted(context, timeElapsed, "Fetch", result.size());
 					return result;
-				} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-					onException(context, e);
-					throw new QueryException(e);
 				} catch (SQLException e) {
 					onException(context, e);
 					throw configuration.translate(queryString, constants, e);
@@ -290,6 +285,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 	}
 
+	/*
+	 * 原版是通过三个代码分支在fetch方法中直接走三段不同的代码逻辑的，本框架修改时将其提取为JdbcProjection对象。
+	 */
 	@SuppressWarnings("unchecked")
 	private Projection<T> getProjection(ResultSet rs, boolean getLastCell) throws SQLException {
 		Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
@@ -348,14 +346,13 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		protected abstract int getArgSize();
 	}
 
+	/*
+	 * 标准返回值Projection，根据FactoryExpression的转换规则返回
+	 */
 	final class FactoryExpressionResult<RT> extends AbstractProjection<RT> {
-
 		private final FactoryExpression<RT> expr;
-
 		private final int argSize;
-
 		private final Path<?>[] argPath;
-
 		private final Class<?>[] argTypes;
 
 		FactoryExpressionResult(FactoryExpression<RT> factoryExpr) {
@@ -394,10 +391,11 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 	}
 
+	/*
+	 * 以Object[]形式返回所有列
+	 */
 	final class WildcardAllResult<RT> extends AbstractProjection<RT> {
-
 		private final int columnSize;
-
 		public WildcardAllResult(int columnSize) {
 			super();
 			this.columnSize = columnSize;
@@ -418,11 +416,11 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			return columnSize;
 		}
 	}
-
+	/*
+	 * 仅获取结果集第一列的Path数据类型
+	 */
 	final class SingleValueResult<RT> extends AbstractProjection<RT> {
-
 		private final Expression<RT> expr;
-
 		private final Path<?> path;
 
 		public SingleValueResult(Expression<RT> expr) {
@@ -440,14 +438,15 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			return 1;
 		}
 	}
-
+	/*
+	 * 仅获取结果集第一列的原始数据类型
+	 */
 	final class DefaultValueResult<RT> extends AbstractProjection<RT> {
 		@SuppressWarnings("unchecked")
 		@Override
 		protected final RT fetch(ResultSet rs) throws SQLException {
 			return (RT) rs.getObject(1);
 		}
-
 		@Override
 		protected int getArgSize() {
 			return 1;
@@ -637,6 +636,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 		return new SQLBindingsAlter(serializer.toString(), args, serializer.getConstantPaths());
 	}
+	
+    public SQLBindings getSQL(boolean forCount) {
+        return getSQL(serialize(forCount));
+    }
 
 	@Override
 	public SQLQueryAlter<T> clone() {

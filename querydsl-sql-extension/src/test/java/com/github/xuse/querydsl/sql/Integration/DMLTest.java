@@ -417,7 +417,6 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			sid = factory.insert(t2).populate(data).executeWithKey(t2.id);
 		}
 		System.err.println(sid);
-
 		CRUDRepository<AvsUserAuthority, Integer> repository = factory.asRepository(t2);
 		AvsUserAuthority obj = repository.load(sid);
 		System.out.println(obj.getCreateTime());

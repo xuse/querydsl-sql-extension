@@ -51,10 +51,12 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
 import com.querydsl.core.types.ParamNotSetException;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.util.CollectionUtils;
 import com.querydsl.core.util.ResultSetAdapter;
 import com.querydsl.sql.ColumnMetadata;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContextImpl;
 import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLSerializer;
@@ -532,9 +534,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 		return stmts.values();
 	}
-
-	protected PreparedStatement createStatement(boolean withKeys) throws SQLException {
-		listeners.preRender(context);
+	
+	private SQLBindingsAlter getSQLForSingle() {
 		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
 		serializer.setUseLiterals(useLiterals);
 		serializer.setRouting(routing);
@@ -548,7 +549,31 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		} else {
 			serializer.serializeInsert(metadata, entity, columns, values, subQuery);
 		}
-		SQLBindingsAlter bindings = createBindings(metadata, serializer);
+		return createBindings(metadata, serializer);
+	}
+	
+	@Override
+	public List<SQLBindings> getSQL() {
+		if (batches.isEmpty()) {
+			return Collections.singletonList(getSQLForSingle());
+        } else if (batchToBulk) {
+            SQLSerializer serializer = createSerializer();
+            serializer.serializeInsert(metadata, entity, batches);
+            return Collections.singletonList(createBindings(metadata, serializer));
+        } else {
+            List<SQLBindings> builder = new ArrayList<>();
+            for (SQLInsertBatch batch : batches) {
+                SQLSerializer serializer = createSerializer();
+                serializer.serializeInsert(metadata, entity, batch.getColumns(), batch.getValues(), batch.getSubQuery());
+                builder.add(createBindings(metadata, serializer));
+            }
+            return CollectionUtils.unmodifiableList(builder);
+        }
+	}
+
+	protected PreparedStatement createStatement(boolean withKeys) throws SQLException {
+		listeners.preRender(context);
+		SQLBindingsAlter bindings=getSQLForSingle();
 		context.addSQL(bindings);
 		listeners.rendered(context);
 		return prepareStatementAndSetParameters(bindings, withKeys);

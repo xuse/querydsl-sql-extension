@@ -17,6 +17,11 @@
 	</properties>
 	<dependencies>
 		<dependency>
+    		<groupId>org.springframework</groupId>
+    		<artifactId>spring-r2dbc</artifactId>
+    		<version>5.3.33</version>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>1.18.32</version>
