@@ -26,6 +26,11 @@ public class R2dbcTest extends R2DbTestBase implements LambdaHelpers {
 	LambdaTable<Foo> table = () -> Foo.class;
 
 	@Test
+	public void createTable() {
+		getSqlFactory();
+	}
+	
+	@Test
 	public void testSelect() throws InterruptedException {
 		R2dbcFactory factory = getR2Factory();
 

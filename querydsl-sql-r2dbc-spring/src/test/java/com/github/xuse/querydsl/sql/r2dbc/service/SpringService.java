@@ -13,6 +13,7 @@ import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory;
 import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory.R2Fetchable;
 import com.github.xuse.querydsl.sql.r2dbc.entity.Foo;
+import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.StringUtils;
 
 import reactor.core.publisher.Flux;
@@ -52,7 +53,7 @@ public class SpringService implements LambdaHelpers{
 	}
 	
 	@Transactional
-	public Mono<Long> testRollback(Runnable run) {
+	public Flux<Long> testRollback(RoutingStrategy routing) {
 		Foo foo = new Foo();
 		foo.setCode("A" + StringUtils.randomString());
 		foo.setContent("Test");
@@ -60,12 +61,11 @@ public class SpringService implements LambdaHelpers{
 		foo.setName("Zhangsan");
 		foo.setUpdated(new Date());
 		foo.setVolume(100);
-		Mono<Long> v = factory.insert(table).prepare(q -> q.populate(foo)).execute();
+		Mono<Long> count1 = factory.insert(table).prepare(q -> q.populate(foo)).execute();
 		
-		//System.out.println(countRecordSync());
-		
-		run.run();
-		return v;
+		Mono<Long> count2 = countRecord().filter(e->e>2).flatMap(
+				e->factory.delete(table).prepare(d->d.withRouting(routing).where(column(Foo::getName).eq("zhangsan"))).execute());
+		return Flux.merge(count1, count2);
 	}
 
 

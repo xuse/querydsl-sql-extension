@@ -12,6 +12,7 @@
 		<module>querydsl-sql-extension-spring</module>
 		<module>querydsl-sql-extension-datatype</module>
 		<module>querydsl-sql-r2dbc</module>
+		<module>querydsl-sql-r2dbc-spring</module>
 	</modules>
 	<name>querydsl-sql-extension-parent</name>
 	<description>extension of querdsl-sql, extending its capabilities and

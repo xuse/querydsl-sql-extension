@@ -32,7 +32,7 @@ public class SpringConfiguration {
 	public ConnectionFactory connectionPool() {
 		H2ConnectionConfiguration config = H2ConnectionConfiguration.builder().file("~/h2db").build();
 		H2ConnectionFactory datasource = new H2ConnectionFactory(config);
-		ConnectionPool pool = new ConnectionPool(ConnectionPoolConfiguration.builder(datasource).minIdle(0).maxSize(2)
+		ConnectionPool pool = new ConnectionPool(ConnectionPoolConfiguration.builder(datasource).minIdle(0).maxSize(1)
 				.maxIdleTime(Duration.ofMillis(1000)).build());
 		return pool;
 	}

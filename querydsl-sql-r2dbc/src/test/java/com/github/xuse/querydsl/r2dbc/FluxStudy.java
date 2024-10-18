@@ -8,7 +8,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-public class FluxSimple {
+public class FluxStudy {
 	@Test
 	public void testFlux() {
 		Flux.just(1, 2, 3).map((a) -> Mono.just(a*2)).map(e->e.block()).subscribe(System.out::println);

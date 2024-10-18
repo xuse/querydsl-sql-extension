@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -181,6 +182,18 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		populatePrimaryKey0(bean, Mappers.getNormal(tuple));
 		return this;
 	}
+
+	/*
+	 * 父类方法不支持routing参数。
+	 */
+	@Override
+	protected SQLSerializer createSerializer() {
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
+		serializer.setUseLiterals(useLiterals);
+		serializer.setRouting(routing);
+		return serializer;
+	}
+
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void populatePrimaryKey0(Object bean, Mapper mapper) {

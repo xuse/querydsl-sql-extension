@@ -25,8 +25,7 @@ public class SpringRectiveTransactionProvider implements ConnectionFactory {
 		ConnectionFactory key=this.transactionManagedFactory;
 		return TransactionContextManager.currentContext()
 				.flatMap((e)->ConnectionFactoryUtils.doGetConnection(key))
-				.onErrorResume(NoTransactionException.class,this::unmanagedConnection)
-				.doOnNext(c->System.out.println("提供连接"+c));
+				.onErrorResume(NoTransactionException.class,this::unmanagedConnection);
 	}
 	
 	@SuppressWarnings("unchecked")	
