@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 
@@ -57,7 +58,7 @@ import reactor.core.publisher.Mono;
  * @author Joey
  *
  */
-public class R2dbFactory {
+public class R2dbcFactory {
 	protected final ConfigurationEx configEx;
 
 	protected final ConnectionFactory connection;
@@ -65,9 +66,16 @@ public class R2dbFactory {
     private R2ListenerContext parentContext;
 	
 	private final R2BaseListener listeners;
+	
+	private final Function<Connection, Mono<Void>> closeHandder;
 
-	public R2dbFactory(ConnectionFactory connection, ConfigurationEx configEx) {
+	public R2dbcFactory(ConnectionFactory connection, ConfigurationEx configEx) {
+		this(connection,configEx,c->(Mono<Void>)c.close());	
+	}
+	
+	public R2dbcFactory(ConnectionFactory connection, ConfigurationEx configEx,Function<Connection, Mono<Void>> closeHandder) {
 		super();
+		this.closeHandder=closeHandder;
 		this.configEx = configEx;
 		this.connection = connection;
 		listeners=R2Listeners.wrap(configEx.get().getListeners());
@@ -116,7 +124,7 @@ public class R2dbFactory {
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
-	public class R2Fetchable<R> {
+	public class R2Fetchable<R>{
 		final SQLQueryR2<R> query;
 		private SQLBindings sqls;
 		private R2ListenerContextImpl context;
@@ -164,7 +172,7 @@ public class R2dbFactory {
 			context.setData(ContextKeyConstants.ACTION, "Fetch");
 			return Flux.usingWhen(connection.create(),
 				conn-> Flux.from(createStatement(conn, sql, context).execute()).flatMap(this::transform).doOnNext(this::onFetchNext).doOnComplete(this::postFetch),
-				Connection::close);
+				this::close);
 		}
 		
 		//使用{#usingWhen}方法来关闭连接。
@@ -176,7 +184,7 @@ public class R2dbFactory {
 			context.setData(ContextKeyConstants.ACTION, "Count");
 			return Mono.usingWhen(connection.create(), conn-> 
 				Flux.from(createStatement(conn, sql, context).execute()).flatMap(this::transformLong).next().doOnSuccess(this::postCount),
-				Connection::close);
+				this::close);
 		}
 		
 		private void postFetch() {
@@ -278,7 +286,7 @@ public class R2dbFactory {
 			protected final RT convert(Row row,RowMetadata meta) throws SQLException {
 				wrapper.prepare(row,meta);
 				int argSize= this.argSize;
-				Configuration configuration = R2dbFactory.this.configEx.get();
+				Configuration configuration = R2dbcFactory.this.configEx.get();
 				Object[] args = new Object[argSize];
 				for (int i = 0; i < argSize; i++) {
 					try {
@@ -340,7 +348,7 @@ public class R2dbFactory {
 			}
 			@Override
 			protected RT convert(Row rs, RowMetadata meta) throws SQLException {
-				Configuration configuration = R2dbFactory.this.configEx.get();
+				Configuration configuration = R2dbcFactory.this.configEx.get();
 				wrapper.prepare(rs, meta);
 				return configuration.get(wrapper, path, 1, expr.getType());
 			}
@@ -363,13 +371,20 @@ public class R2dbFactory {
 				return (RT) rs.get(0);
 			}
 		}
+		
+		private Mono<Void> close(Connection connection) {
+	    	if (connection != null && context.getData(R2ListenerContextImpl.PARENT_CONTEXT) == null) {
+	    		return closeHandder.apply(connection);
+	    	}
+	    	return Mono.empty();
+	    }
 	}
 
-	public class R2Executeable<T extends AbstractSQLClause<T>> {
+	public class R2Executeable<T extends AbstractSQLClause<T>>{
 		final T clause;
 		private R2ListenerContextImpl context;
 		private RelationalPath<?> entity;
-		private final R2Clause r2Clause;
+		protected final R2Clause r2Clause;
 
 		public R2Executeable(T clause, RelationalPath<?> entity) {
 			this.clause = clause;
@@ -397,7 +412,7 @@ public class R2dbFactory {
 		private Mono<Long> execute(SQLBindings sqls) {
 			return Mono.usingWhen(connection.create(),
 					conn-> Flux.from(createStatement(conn, sqls, context).execute()).flatMap(Result::getRowsUpdated).reduce((a, b) -> a + b).doOnSuccess(this::postExecute),
-					Connection::close);
+					this::close);
 		}
 		
 		private void postExecute(long count) {
@@ -410,6 +425,13 @@ public class R2dbFactory {
 			}
 			listeners.executed(context);
 		}
+		
+		private Mono<Void> close(Connection connection) {
+	    	if (connection != null && context.getData(R2ListenerContextImpl.PARENT_CONTEXT) == null) {
+	    		return closeHandder.apply(connection);
+	    	}
+	    	return Mono.empty();
+	    }
 	}
 
     protected R2ListenerContextImpl startContext(QueryMetadata metadata,RelationalPath<?> entity) {

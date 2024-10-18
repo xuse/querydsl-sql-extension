@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.reactivestreams.Publisher;
-
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
@@ -16,8 +14,6 @@ import com.querydsl.sql.SQLListeners;
 import com.querydsl.sql.dml.SQLInsertBatch;
 import com.querydsl.sql.dml.SQLMergeBatch;
 import com.querydsl.sql.dml.SQLUpdateBatch;
-
-import io.r2dbc.spi.Connection;
 
 public class R2Listeners implements R2BaseListener{
 	private final List<SQLDetailedListener> sqls= new ArrayList<>();
@@ -238,13 +234,6 @@ public class R2Listeners implements R2BaseListener{
 		}
 		for (R2BaseListener e : listeners) {
 			e.end(context);
-		}
-	}
-
-	@Override
-	public void close(Connection conn) {
-		if(conn!=null) {
-			conn.close();
 		}
 	}
 }

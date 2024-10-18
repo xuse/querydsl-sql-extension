@@ -17,7 +17,7 @@ import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContext;
 
 public class R2ListenerContextImpl implements SQLListenerContext, R2ListenerContext {
-	protected static final String PARENT_CONTEXT = AbstractSQLQuery.class.getName() + "#PARENT_CONTEXT";
+	public static final String PARENT_CONTEXT = AbstractSQLQuery.class.getName() + "#PARENT_CONTEXT";
 	
 	private final Map<String, Object> contextMap;
 

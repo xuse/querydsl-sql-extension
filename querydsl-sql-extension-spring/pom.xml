@@ -46,5 +46,23 @@
 			<version>${springframework.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>2.4.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.7.3</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>

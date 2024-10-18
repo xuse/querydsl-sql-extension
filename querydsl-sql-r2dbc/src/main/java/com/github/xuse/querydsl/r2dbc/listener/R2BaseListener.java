@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.r2dbc.listener;
 
 import com.querydsl.sql.SQLListener;
 
-import io.r2dbc.spi.Connection;
-
 public interface R2BaseListener extends SQLListener {
 	/**
 	 * Called at the start of a query. Most context parameters are empty at this
@@ -89,8 +87,4 @@ public interface R2BaseListener extends SQLListener {
 	 */
 	default void end(R2ListenerContext context) {
 	}
-	
-	default void close(Connection conn) {
-	}
-	
 }

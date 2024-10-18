@@ -5,7 +5,7 @@ import java.time.Duration;
 import javax.sql.DataSource;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.r2dbc.core.R2dbFactory;
+import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.querydsl.sql.H2Templates;
@@ -22,16 +22,16 @@ public class R2DbTestBase {
 	
 	private static DataSource ds;
 	
-	private static R2dbFactory r2factory;
+	private static R2dbcFactory r2factory;
 	
 	private static SQLQueryFactory factory;
 	
 	
-	public static R2dbFactory getR2Factory() {
+	public static R2dbcFactory getR2Factory() {
 		if(r2factory!=null) {
 			return r2factory;
 		}
-		return r2factory = new R2dbFactory(getConnectionFactory(), querydslConfiguration(H2Templates.builder().newLineToSingleSpace().build()));
+		return r2factory = new R2dbcFactory(getConnectionFactory(), querydslConfiguration(H2Templates.builder().newLineToSingleSpace().build()));
 	}
 	
 	//

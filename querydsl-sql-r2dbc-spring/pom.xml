@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>io.github.xuse</groupId>
+		<artifactId>querydsl-sql-extension-parent</artifactId>
+		<version>5.0.0-r130</version>
+	</parent>
+	<artifactId>querydsl-sql-r2dbc-spring</artifactId>
+	<packaging>jar</packaging>
+
+	<name>querydsl-sql-r2dbc-spring</name>
+	<url>http://maven.apache.org</url>
+	<properties>
+		<springframework.version>5.3.33</springframework.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>io.github.xuse</groupId>
+			<artifactId>querydsl-sql-r2dbc</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-r2dbc</artifactId>
+			<version>${springframework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.32</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>${springframework.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${springframework.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.r2dbc</groupId>
+			<artifactId>r2dbc-h2</artifactId>
+			<version>1.0.0.RELEASE</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>

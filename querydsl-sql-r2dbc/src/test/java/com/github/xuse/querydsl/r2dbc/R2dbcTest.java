@@ -8,8 +8,8 @@ import org.junit.Test;
 
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
-import com.github.xuse.querydsl.r2dbc.core.R2dbFactory;
-import com.github.xuse.querydsl.r2dbc.core.R2dbFactory.R2Fetchable;
+import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory;
+import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory.R2Fetchable;
 import com.github.xuse.querydsl.r2dbc.entity.Foo;
 import com.github.xuse.querydsl.util.StringUtils;
 
@@ -21,13 +21,13 @@ import reactor.core.publisher.Mono;
  * @author Joey
  *
  */
-public class R2dbTest extends R2DbTestBase implements LambdaHelpers {
+public class R2dbcTest extends R2DbTestBase implements LambdaHelpers {
 
 	LambdaTable<Foo> table = () -> Foo.class;
 
 	@Test
 	public void testSelect() throws InterruptedException {
-		R2dbFactory factory = getR2Factory();
+		R2dbcFactory factory = getR2Factory();
 
 		delete(factory);
 		insert(factory);
@@ -43,18 +43,18 @@ public class R2dbTest extends R2DbTestBase implements LambdaHelpers {
 		insert(factory);
 	}
 
-	private void delete(R2dbFactory factory) {
+	private void delete(R2dbcFactory factory) {
 		Mono<Long> deleted = factory.delete(table).prepare(q -> q.limit(2)).execute();
 		System.out.println("删除:" + deleted.block());
 	}
 
 	@Test
 	public void testInsert() {
-		R2dbFactory factory = getR2Factory();
+		R2dbcFactory factory = getR2Factory();
 		insert(factory);
 	}
 
-	private void insert(R2dbFactory factory) {
+	private void insert(R2dbcFactory factory) {
 		Foo foo = new Foo();
 		foo.setCode("A" + StringUtils.randomString());
 		foo.setContent("Test");
