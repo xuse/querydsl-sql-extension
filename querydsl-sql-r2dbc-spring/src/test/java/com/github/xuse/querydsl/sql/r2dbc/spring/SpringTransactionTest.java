@@ -27,8 +27,9 @@ public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 	public void initTables() throws SQLException {
 	}
 	
+	
 	@Test
-	public void testService() {
+	public void testTxService() {
 		long begin=service.countRecordSync();
 		System.out.println("begin count:"+begin);
 		{
@@ -50,4 +51,19 @@ public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 		}
 		assertTrue(begin==service.countRecord().block());
 	}
+	
+	@Test
+	public void testNoTxService() {
+		long begin=service.countRecordSync();
+		System.out.println("begin count:"+begin);
+		try {
+			//传入一个TableRouting，使其SQL语句访问一张不存在的表，形成异常。
+			Flux<Long> mono=service.testNoTx(TableRouting.suffix("_FAKE"));
+			System.out.println("XXX:" + mono.buffer().blockFirst());
+		}catch(Exception e) {
+			System.out.println("This exception will NOT cause rollback:"+e.getClass().getName()+": "+e.getMessage());
+		}
+		assertTrue(++begin==service.countRecord().block());
+	}
+	
 }

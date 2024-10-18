@@ -14,8 +14,7 @@ public final class UnmanagedR2Connection extends R2ConnectionAdapter {
 
 	@Override
 	public Publisher<Void> close() {
-		Publisher<Void> r= wrapped.close();
 		log.debug("UnmanagedR2Connection closing, {}", wrapped);
-		return r;
+		return wrapped.close();
 	}
 }

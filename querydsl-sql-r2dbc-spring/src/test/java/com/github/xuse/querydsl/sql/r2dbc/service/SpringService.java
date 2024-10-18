@@ -68,7 +68,20 @@ public class SpringService implements LambdaHelpers{
 		return Flux.merge(count1, count2);
 	}
 
-
+	public Flux<Long> testNoTx(RoutingStrategy routing) {
+		Foo foo = new Foo();
+		foo.setCode("A" + StringUtils.randomString());
+		foo.setContent("Test");
+		foo.setCreated(Instant.now());
+		foo.setName("Zhangsan");
+		foo.setUpdated(new Date());
+		foo.setVolume(100);
+		Mono<Long> count1 = factory.insert(table).prepare(q -> q.populate(foo)).execute();
+		
+		Mono<Long> count2 = countRecord().filter(e->e>2).flatMap(
+				e->factory.delete(table).prepare(d->d.withRouting(routing).where(column(Foo::getName).eq("zhangsan"))).execute());
+		return Flux.merge(count1, count2);
+	}
 	
 
 	private void delete(R2dbcFactory factory) {
