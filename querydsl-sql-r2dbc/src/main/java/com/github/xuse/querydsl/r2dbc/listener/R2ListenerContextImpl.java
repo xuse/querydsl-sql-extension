@@ -9,12 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.QueryMetadata;
+import com.querydsl.sql.AbstractSQLQuery;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLListenerContext;
 
 public class R2ListenerContextImpl implements SQLListenerContext, R2ListenerContext {
+	protected static final String PARENT_CONTEXT = AbstractSQLQuery.class.getName() + "#PARENT_CONTEXT";
+	
 	private final Map<String, Object> contextMap;
 
 	private final QueryMetadata md;
@@ -90,5 +94,50 @@ public class R2ListenerContextImpl implements SQLListenerContext, R2ListenerCont
 	@Override
 	public PreparedStatement getPreparedStatement() {
 		return null;
+	}
+	
+	////////////////////
+	public void setParentContext(R2ListenerContext parentContext) {
+		setData(PARENT_CONTEXT, parentContext);
+	}
+
+
+    public void addSQL(final SQLBindings sql) {
+        this.sqlStatements.add(sql);
+    }
+
+    public void addSQLs(Collection<SQLBindings> sqls) {
+        this.sqlStatements.addAll(sqls);
+    }
+    
+    public void setEntity(final RelationalPath<?> entity) {
+        this.entity = entity;
+    }
+
+    private transient long begin;
+    public transient int fetchCount;
+    
+	public void markStartTime() {
+		begin=System.currentTimeMillis();
+	}
+
+	public long markEnd() {
+		if(begin==0L) {
+			throw Exceptions.illegalState("Begin is OL");
+		}
+		long cost = System.currentTimeMillis() - begin;
+		return cost;
+	}
+
+	public void resultIncrement() {
+		fetchCount++;
+	}
+
+	public void clear() {
+		setData(PARENT_CONTEXT, null);
+		fetchCount = 0;
+		begin = 0L;
+		sqlStatements.clear();
+		exception = null;
 	}
 }

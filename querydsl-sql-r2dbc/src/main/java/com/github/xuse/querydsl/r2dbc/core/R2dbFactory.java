@@ -1,28 +1,34 @@
 package com.github.xuse.querydsl.r2dbc.core;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.r2dbc.core.dml.Delete;
+import com.github.xuse.querydsl.r2dbc.core.dml.Dummy;
+import com.github.xuse.querydsl.r2dbc.core.dml.Insert;
+import com.github.xuse.querydsl.r2dbc.core.dml.R2Clause;
+import com.github.xuse.querydsl.r2dbc.core.dml.SQLQueryR2;
+import com.github.xuse.querydsl.r2dbc.core.dml.Update;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2ResultWrapper;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2StatementWrapper;
 import com.github.xuse.querydsl.r2dbc.listener.R2BaseListener;
 import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContext;
+import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContextImpl;
 import com.github.xuse.querydsl.r2dbc.listener.R2Listeners;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
+import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.QueryMetadata;
@@ -34,9 +40,9 @@ import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
-import com.querydsl.sql.SQLListeners;
 import com.querydsl.sql.dml.AbstractSQLClause;
 
+import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Result;
 import io.r2dbc.spi.Row;
@@ -56,6 +62,8 @@ public class R2dbFactory {
 
 	protected final ConnectionFactory connection;
 	
+    private R2ListenerContext parentContext;
+	
 	private final R2BaseListener listeners;
 
 	public R2dbFactory(ConnectionFactory connection, ConfigurationEx configEx) {
@@ -66,50 +74,54 @@ public class R2dbFactory {
 	}
 
 	public <T> R2Fetchable<T> select(Expression<T> expr) {
-		SQLQueryAlter<T> query = new SQLQueryAlter<T>((Supplier<Connection>) null, configEx);
-		return new R2Fetchable<>(query.select(expr));
+		SQLQueryR2<T> query = new SQLQueryR2<T>(configEx);
+		query.select(expr);
+		return new R2Fetchable<>(query);
 	}
 
 	public R2Fetchable<Tuple> select(Expression<?>... exprs) {
-		SQLQueryAlter<Tuple> query = new SQLQueryAlter<Tuple>((Supplier<Connection>) null, configEx);
-		return new R2Fetchable<>(query.select(exprs));
+		SQLQueryR2<Tuple> query = new SQLQueryR2<Tuple>(configEx);
+		query.select(exprs);
+		return new R2Fetchable<>(query);
 	}
 
 	public <T> R2Fetchable<T> selectFrom(RelationalPath<T> expr) {
-		SQLQueryAlter<T> query = new SQLQueryAlter<T>((Supplier<Connection>) null, configEx);
-		return new R2Fetchable<>(query.select(expr).from(expr));
+		SQLQueryR2<T> query = new SQLQueryR2<T>(configEx);
+		query.select(expr).from(expr);
+		return new R2Fetchable<>(query);
 	}
 	public <T> R2Fetchable<T> selectFrom(LambdaTable<T> expr) {
-		SQLQueryAlter<T> query = new SQLQueryAlter<T>((Supplier<Connection>) null, configEx);
-		return new R2Fetchable<>(query.select(expr).from(expr));
+		SQLQueryR2<T> query = new SQLQueryR2<T>(configEx);
+		query.select(expr).from(expr);
+		return new R2Fetchable<>(query);
 	}
 	
-	public R2Executeable<SQLInsertClauseAlter> insert(RelationalPath<?> t) {
-		return new R2Executeable<>(new SQLInsertClauseAlter(null, configEx, t));
+	public R2Executeable<SQLInsertClauseAlter> insert(RelationalPath<?> path) {
+		return new R2Executeable<>(new Insert(configEx, path),path);
 	}
 	public final R2Executeable<SQLUpdateClauseAlter> update(RelationalPath<?> path) {
-		return new R2Executeable<>(new SQLUpdateClauseAlter((Supplier<Connection>) null, configEx, path));
+		return new R2Executeable<>(new Update(configEx, path),path);
 	}
 	public final R2Executeable<SQLDeleteClauseAlter> delete(RelationalPath<?> path) {
-		return new R2Executeable<>(new SQLDeleteClauseAlter((Supplier<Connection>) null, configEx, path));
+		return new R2Executeable<>(new Delete(configEx, path),path);
 	}
-	public R2Executeable<SQLInsertClauseAlter> insert(LambdaTable<?> t) {
-		return new R2Executeable<>(new SQLInsertClauseAlter(null, configEx, t));
+	public R2Executeable<SQLInsertClauseAlter> insert(LambdaTable<?> path) {
+		return new R2Executeable<>(new Insert(configEx, path),path);
 	}
 	public final R2Executeable<SQLUpdateClauseAlter> update(LambdaTable<?> path) {
-		return new R2Executeable<>(new SQLUpdateClauseAlter((Supplier<Connection>) null, configEx, path));
+		return new R2Executeable<>(new Update(configEx, path),path);
 	}
 	public final R2Executeable<SQLDeleteClauseAlter> delete(LambdaTable<?> path) {
-		return new R2Executeable<>(new SQLDeleteClauseAlter((Supplier<Connection>) null, configEx, path));
+		return new R2Executeable<>(new Delete( configEx, path),path);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	public class R2Fetchable<R> {
-		final SQLQueryAlter<R> query;
+		final SQLQueryR2<R> query;
 		private SQLBindings sqls;
-		private R2ListenerContext context;
+		private R2ListenerContextImpl context;
 		
-		R2Fetchable(SQLQueryAlter<R> clause) {
+		R2Fetchable(SQLQueryR2<R> clause) {
 			this.query = clause;
 		}
 
@@ -120,32 +132,71 @@ public class R2dbFactory {
 		}
 		
 		public Flux<R> fetch() {
-			return Mono.just(query.getSQL()).flatMapMany(this::fetch0);
+			context = startContext(query.getMetadata(),null);
+			listeners.preRender(context);
+			return Mono.just(query.getSQL(false)).flatMapMany(this::fetch0);
 		}
-
+		
 		public Mono<R> fetchFirst() {
+			context =  startContext(query.getMetadata(),null);
 			QueryMetadata metadata=query.getMetadata();
 			if (metadata.getModifiers().getLimit() == null
 					&& !metadata.getProjection().toString().contains("count(")) {
 				metadata.setLimit(2L);
 			}
-			return Mono.just(query.getSQL()).flatMapMany(this::fetch0).next();
+			listeners.preRender(context);
+			return Mono.just(query.getSQL(false)).flatMapMany(this::fetch0).next();
 		}
 
 		public Mono<Long> fetchCount() {
+			context = startContext(query.getMetadata(),null);
+			listeners.preRender(context);
 			return Mono.just(query.getSQL(true)).flatMap(this::fetchCnt);	
 		}
-
-		private Flux<R> fetch0(SQLBindings sqls) {
-			this.sqls = sqls;
-			return Mono.from(connection.create()).doOnSuccess(io.r2dbc.spi.Connection::close)
-					.flatMapMany(conn -> createStatement(conn, sqls).execute()).flatMap(this::transform);
+		//////////////////// private methods //////////////////
+		
+		//使用{#usingWhen}方法来关闭连接。
+		private Flux<R> fetch0(SQLBindings sql) {
+			this.sqls = sql;
+			context.addSQL(sql);
+			listeners.rendered(context);
+			query.notifyAction(listeners, context);
+			context.setData(ContextKeyConstants.ACTION, "Fetch");
+			return Flux.usingWhen(connection.create(),
+				conn-> Flux.from(createStatement(conn, sql, context).execute()).flatMap(this::transform).doOnNext(this::onFetchNext).doOnComplete(this::postFetch),
+				Connection::close);
 		}
 		
-		private Mono<Long> fetchCnt(SQLBindings sqls) {
-			this.sqls = sqls;
-			return Mono.from(connection.create()).doOnSuccess(io.r2dbc.spi.Connection::close)
-					.flatMapMany(conn -> createStatement(conn, sqls).execute()).flatMap(this::transformLong).next();
+		//使用{#usingWhen}方法来关闭连接。
+		private Mono<Long> fetchCnt(SQLBindings sql) {
+			this.sqls = sql;
+			context.addSQL(sql);
+			listeners.rendered(context);
+			query.notifyAction(listeners, context);
+			context.setData(ContextKeyConstants.ACTION, "Count");
+			return Mono.usingWhen(connection.create(), conn-> 
+				Flux.from(createStatement(conn, sql, context).execute()).flatMap(this::transformLong).next().doOnSuccess(this::postCount),
+				Connection::close);
+		}
+		
+		private void postFetch() {
+			postCount(context.fetchCount);
+		}
+		
+		private void postCount(long count) {
+			R2ListenerContextImpl context = this.context;
+			long cost=context.markEnd();
+			context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
+			context.setData(ContextKeyConstants.COUNT, count);
+			if (configEx.getSlowSqlWarnMillis() <= cost) {
+				context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			}
+			listeners.executed(context);
+			endContext(context);
+		}
+		
+		private void onFetchNext(R r) {
+			context.resultIncrement();
 		}
 		
 		private Publisher<Long> transformLong(Result result){
@@ -162,34 +213,27 @@ public class R2dbFactory {
 			AbstractProjection<R> fe;
 			if (expr instanceof FactoryExpression) {
 				FactoryExpressionResult<R> r = new FactoryExpressionResult<R>((FactoryExpression<R>) expr);
-				r.getLastCell = getLastCell;
+				//r.getLastCell = getLastCell;
 				fe = r;
 			} else if (expr == null) {
 				DefaultValueResult<R> r = new DefaultValueResult<>();
-				r.getLastCell = getLastCell;
+				//r.getLastCell = getLastCell;
 				fe = r;
 			} else if (expr.equals(Wildcard.all)) {
 				WildcardAllResult<R> r = new WildcardAllResult<>();
-				r.getLastCell = getLastCell;
+				//r.getLastCell = getLastCell;
 				fe = r;
 			} else {
 				SingleValueResult<R> r = new SingleValueResult<>(expr);
-				r.getLastCell = getLastCell;
+				//r.getLastCell = getLastCell;
 				fe = r;
 			}
 			return fe;
 		}
 
 		abstract class AbstractProjection<RT> implements BiFunction<Row,RowMetadata,RT> {
-			boolean getLastCell;
-			Object lastCell;
 			@Override
 			public RT apply(Row r,RowMetadata meta) {
-//				int argSize = getArgSize();
-//				if (getLastCell) {
-//					lastCell = rs.getObject(argSize + 1);
-//					getLastCell = false;
-//				}
 				try {
 					return convert(r,meta);
 				}catch(SQLException e) {
@@ -322,11 +366,15 @@ public class R2dbFactory {
 	}
 
 	public class R2Executeable<T extends AbstractSQLClause<T>> {
-		T clause;
-		private R2ListenerContext context;
+		final T clause;
+		private R2ListenerContextImpl context;
+		private RelationalPath<?> entity;
+		private final R2Clause r2Clause;
 
-		public R2Executeable(T clause) {
+		public R2Executeable(T clause, RelationalPath<?> entity) {
 			this.clause = clause;
+			this.entity = entity;
+			this.r2Clause = (clause instanceof R2Clause) ? (R2Clause) clause : Dummy.R2Clause;
 		}
 
 		public R2Executeable<T> prepare(Consumer<T> consumer) {
@@ -336,19 +384,49 @@ public class R2dbFactory {
 		}
 
 		public Mono<Long> execute() {
+			context = startContext(r2Clause.getMetadata(), entity);
 			List<SQLBindings> sqls = clause.getSQL();
+			
+			context.addSQLs(sqls);	
+			listeners.rendered(context);
+			String action = r2Clause.notifyAction(listeners, context);
+			context.setData(ContextKeyConstants.ACTION, action);
 			return Flux.fromIterable(sqls).flatMap(this::execute).reduce((a, b) -> a + b);
 		}
 
 		private Mono<Long> execute(SQLBindings sqls) {
-			return Mono.from(connection.create())
-					.doOnSuccess(io.r2dbc.spi.Connection::close)
-					.flatMapMany(conn -> createStatement(conn, sqls).execute())
-					.flatMap(Result::getRowsUpdated).reduce((a, b) -> a + b);
+			return Mono.usingWhen(connection.create(),
+					conn-> Flux.from(createStatement(conn, sqls, context).execute()).flatMap(Result::getRowsUpdated).reduce((a, b) -> a + b).doOnSuccess(this::postExecute),
+					Connection::close);
+		}
+		
+		private void postExecute(long count) {
+			R2ListenerContextImpl context = this.context;
+			long cost=context.markEnd();
+			context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
+			context.setData(ContextKeyConstants.COUNT, count);
+			if (configEx.getSlowSqlWarnMillis() <= cost) {
+				context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			}
+			listeners.executed(context);
 		}
 	}
 
-	private Statement createStatement(io.r2dbc.spi.Connection conn, SQLBindings binding) {
+    protected R2ListenerContextImpl startContext(QueryMetadata metadata,RelationalPath<?> entity) {
+        R2ListenerContextImpl context = new R2ListenerContextImpl(metadata, entity);
+        if (parentContext != null) {
+            context.setParentContext(parentContext);
+        }
+        listeners.start(context);
+        return context;
+    }
+    
+	public void endContext(R2ListenerContextImpl context) {
+		listeners.end(context);
+		context.clear();
+	}
+
+	private Statement createStatement(io.r2dbc.spi.Connection conn, SQLBindings binding,R2ListenerContextImpl context) {
 		Statement stmt=conn.createStatement(binding.getSQL());
 		Configuration config = configEx.get();
 		List<Path<?>> paths = CollectionUtils.nullElementsList();
@@ -366,6 +444,8 @@ public class R2dbFactory {
 		} catch (SQLException ex) {
 			throw Exceptions.toRuntime(ex);
 		}
+		listeners.preExecute(context);
+		context.markStartTime();
 		return stmt;
 	}
 }

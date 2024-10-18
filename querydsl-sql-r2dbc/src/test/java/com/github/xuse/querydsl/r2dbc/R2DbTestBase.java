@@ -15,9 +15,10 @@ import io.r2dbc.h2.H2ConnectionConfiguration;
 import io.r2dbc.h2.H2ConnectionFactory;
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
+import io.r2dbc.spi.ConnectionFactory;
 
 public class R2DbTestBase {
-	private static volatile ConnectionPool pool;
+	private static volatile ConnectionFactory pool;
 	
 	private static DataSource ds;
 	
@@ -30,11 +31,11 @@ public class R2DbTestBase {
 		if(r2factory!=null) {
 			return r2factory;
 		}
-		return r2factory = new R2dbFactory(getConnectionFactory(), getConfiguration());
+		return r2factory = new R2dbFactory(getConnectionFactory(), querydslConfiguration(H2Templates.builder().newLineToSingleSpace().build()));
 	}
 	
 	//
-	public static ConnectionPool getConnectionFactory() {
+	public static ConnectionFactory getConnectionFactory() {
 		if(pool!=null) {
 			return pool;
 		}
@@ -43,7 +44,9 @@ public class R2DbTestBase {
 				H2ConnectionConfiguration config = H2ConnectionConfiguration.builder().file("~/h2db").build();
 				H2ConnectionFactory datasource = new H2ConnectionFactory(config);
 				pool = new ConnectionPool(ConnectionPoolConfiguration.builder(datasource)
-						.maxIdleTime(Duration.ofMillis(1000)).maxSize(20).build());
+						.minIdle(0)
+						.maxSize(1)
+						.maxIdleTime(Duration.ofMillis(1000)).build());
 			}
 		}
 		return pool; 
@@ -71,8 +74,5 @@ public class R2DbTestBase {
 //			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.r2dbc.entity");
 		return configuration;
-	}
-	public static ConfigurationEx getConfiguration() {
-		return new ConfigurationEx(H2Templates.builder().build());
 	}
 }
