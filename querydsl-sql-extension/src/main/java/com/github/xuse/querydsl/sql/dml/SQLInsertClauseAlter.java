@@ -373,6 +373,17 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 		return batch.stmt;
 	}
+	
+	/*
+	 * 父类方法不支持routing参数。
+	 */
+	@Override
+	protected SQLSerializerAlter createSerializer() {
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+		serializer.setUseLiterals(useLiterals);
+		serializer.setRouting(routing);
+		return serializer;
+	}
 
 	/**
 	 * Set the data for bulk insertion
@@ -488,9 +499,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		Map<String, PreparedStatement> stmts = new HashMap<>();
 		// add first batch
 		{
-			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-			serializer.setUseLiterals(useLiterals);
-			serializer.setRouting(routing);
+			SQLSerializerAlter serializer = createSerializer();
 			SQLInsertBatch batch = batches.get(0);
 			serializer.serializeInsert(metadata, entity, batch.getColumns(), batch.getValues(), batch.getSubQuery());
 			String sql = serializer.toString();
@@ -508,9 +517,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		for (int i = 1; i < batches.size(); i++) {
 			SQLInsertBatch batch = batches.get(i);
 			listeners.preRender(context);
-			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-			serializer.setUseLiterals(useLiterals);
-			serializer.setRouting(routing);
+			SQLSerializerAlter serializer = createSerializer(); 
 			serializer.serializeInsert(metadata, entity, batch.getColumns(), batch.getValues(), batch.getSubQuery());
 			String sql = serializer.toString();
 			if (i <= maxLoginBatch) {
@@ -536,9 +543,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	}
 	
 	private SQLBindingsAlter getSQLForSingle() {
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setUseLiterals(useLiterals);
-		serializer.setRouting(routing);
+		SQLSerializerAlter serializer = createSerializer(); 
 		if (subQueryBuilder != null) {
 			subQuery = subQueryBuilder.select(values.toArray(new Expression[values.size()])).clone();
 			values.clear();
@@ -718,10 +723,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		private int count = 0;
 
 		BatchProcessor(SQLInsertBatch batch, Class<?> beanClass) {
-			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-			serializer.setUseLiterals(false);
-			serializer.setRouting(routing);
-			
+			useLiterals=false;
+			SQLSerializerAlter serializer = createSerializer(); 
 			listeners.preRender(context);
 			serializer.serializeForInsert(metadata, entity, batch.getColumns(), batch.getValues(), null);
 			principle = new SQLBindingsAlter(serializer.toString(), serializer.getConstants(),

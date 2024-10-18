@@ -193,7 +193,8 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		}
 	}
 
-	protected SQLSerializer createSerializer() {
+	@Override
+	protected SQLSerializerAlter createSerializer() {
 		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
 		serializer.setUseLiterals(useLiterals);
 		serializer.setRouting(routing);
