@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.util.Assert;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
@@ -31,6 +32,11 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 				unsupports.add(op);
 			}
 		}
+	}
+
+	@Override
+	public boolean supportCreateInTableDefinition(ConstraintType type) {
+		return !type.isIndex();
 	}
 
 	public LetterCase getDefaultLetterCase() {

@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.github.xuse.querydsl.entity.Aaa;
+import com.github.xuse.querydsl.entity.CaAsset;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
@@ -30,6 +31,10 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void reCreateTables() {
 		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
+		meta.dropTable(QCaAsset.caAsset).ifExists(true).execute();
+		meta.createTable(QCaAsset.caAsset).ifExists().execute();
+		
+		
 		meta.dropTable(QAaa.aaa).ifExists(true).execute();
 		meta.createTable(QAaa.aaa).execute();
 	}

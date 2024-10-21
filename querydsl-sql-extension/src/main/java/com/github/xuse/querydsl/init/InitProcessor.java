@@ -119,7 +119,7 @@ public class InitProcessor {
 				}
 			}
 		} catch (Exception ex) {
-			log.error("init table [{}] error.", task.table, ex);
+			log.error("Init table [{}] error.", task.table.getSchemaAndTable(), ex);
 			if (stopOnError) {
 				throw ex;
 			}

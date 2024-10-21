@@ -137,11 +137,6 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 	}
 
 	@Override
-	public boolean supportCreateInTableDefinition(ConstraintType type) {
-		return !type.isIndex();
-	}
-
-	@Override
 	public LetterCase getDefaultLetterCase() {
 		return LetterCase.LOWER;
 	}

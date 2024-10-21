@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -92,7 +93,8 @@ public class TypeUtils {
 		PathCreators.put(Instant.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(Instant.class), b));
 		PathCreators.put(java.util.Date.class, DateTimeCreator);
 		PathCreators.put(java.sql.Timestamp.class, DateTimeCreator);
-		PathCreators.put(LocalDateTime.class,  (a, b) ->Expressions.dateTimePath(a.asSubclass(LocalDateTime.class), b));
+		PathCreators.put(ZonedDateTime.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(ZonedDateTime.class), b));
+		PathCreators.put(LocalDateTime.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(LocalDateTime.class), b));
 
 		PathCreators.put(Boolean.class, BooleanCreator);
 		PathCreators.put(Boolean.TYPE, BooleanCreator);

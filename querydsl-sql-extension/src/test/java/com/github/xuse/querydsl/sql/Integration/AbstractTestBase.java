@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.sql.Integration;
 
+import javax.sql.DataSource;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -13,6 +15,7 @@ import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.github.xuse.querydsl.util.JefBase64;
 import com.querydsl.sql.SQLTemplates;
+import com.zaxxer.hikari.HikariDataSource;
 
 public abstract class AbstractTestBase {
 
@@ -25,6 +28,7 @@ public abstract class AbstractTestBase {
 	private static SimpleDataSource dsMySQL = new SimpleDataSource();
 	private static SimpleDataSource dsMySQL8 = new SimpleDataSource();
 	private static SimpleDataSource dsPg14 = new SimpleDataSource();
+	private static SimpleDataSource dsH2 = new SimpleDataSource();
 	
 
 	static {
@@ -39,7 +43,7 @@ public abstract class AbstractTestBase {
 		dsMySQL.setUsername(System.getProperty("mysql.user"));
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
 		
-		String host=JefBase64.decodeUTF8(AbstractTestBase.host).replace("_", "");
+		String host="localhost";
 		dsMySQL8.setDriverClassName("com.mysql.cj.jdbc.Driver");
 		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?useSSL=false");
 		dsMySQL8.setUsername("root");
@@ -51,9 +55,11 @@ public abstract class AbstractTestBase {
 		dsPg14.setUsername("postgres");
 		dsPg14.setPassword(testPws.replace("_", ""));
 		
+		dsH2.setDriverClass("org.h2.Driver");
+		dsH2.setUrl("jdbc:h2:~/h2test");
 	}
 
-	private static final SimpleDataSource effectiveDs = dsDerby;
+	private static final SimpleDataSource effectiveDs = dsH2;
 	
 	
 	public static  SimpleDataSource getEffectiveDs() {
@@ -77,10 +83,16 @@ public abstract class AbstractTestBase {
 	public static void doInit() {
 		try {
 			factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),
-					effectiveDs, true);
+					wrapAsPool(effectiveDs), true);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static DataSource wrapAsPool(DataSource ds) {
+		HikariDataSource pool = new HikariDataSource();
+		pool.setDataSource(ds);
+		return pool;
 	}
 	
 	public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {

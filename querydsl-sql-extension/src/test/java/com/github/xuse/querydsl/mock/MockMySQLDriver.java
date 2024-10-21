@@ -17,7 +17,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
 import org.apache.shardingsphere.sql.parser.api.SQLParserEngine;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterPartitionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterStatementContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateTableContext;
 import org.apache.shardingsphere.sql.parser.core.ParseASTNode;

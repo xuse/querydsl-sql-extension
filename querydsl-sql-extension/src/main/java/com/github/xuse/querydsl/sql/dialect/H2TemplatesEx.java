@@ -15,10 +15,10 @@ public class H2TemplatesEx extends DefaultSQLTemplatesEx {
 		typeNames.put(Types.TINYINT, "smallint").type(Types.SMALLINT);
 	}
 
-	@Override
-	public boolean supportCreateInTableDefinition(ConstraintType type) {
-		return !(type == ConstraintType.KEY || type == ConstraintType.HASH);
-	}
+//	@Override
+//	public boolean supportCreateInTableDefinition(ConstraintType type) {
+//		return !(type == ConstraintType.KEY || type == ConstraintType.HASH);
+//	}
 
 	@Override
 	public void init(SQLTemplates templates) {

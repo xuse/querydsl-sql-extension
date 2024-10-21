@@ -50,11 +50,6 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 	}
 
 	@Override
-	public boolean supportCreateInTableDefinition(ConstraintType type) {
-		return !type.isIndex();
-	}
-
-	@Override
 	public void init(SQLTemplates templates) {
 		SQLTemplatesEx.initDefaultDDLTemplate(templates);
 		

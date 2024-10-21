@@ -27,13 +27,13 @@ import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.expression.ClassLoaderAccessor;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadataFactory;
+import com.querydsl.core.types.dsl.ArrayPath;
 import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.DatePath;
 import com.querydsl.core.types.dsl.DateTimePath;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.core.types.dsl.TimePath;
 
@@ -173,7 +173,7 @@ public class TypeUtilsTest {
 		
 		//////////////////////
 		p = TypeUtils.createPathByType(byte[].class, name, parent);
-		assertTrue(p instanceof SimplePath);
+		assertTrue(p instanceof ArrayPath);
 		
 		p = TypeUtils.createPathByType(Gender.class, name, parent);
 		assertTrue(p instanceof EnumPath);

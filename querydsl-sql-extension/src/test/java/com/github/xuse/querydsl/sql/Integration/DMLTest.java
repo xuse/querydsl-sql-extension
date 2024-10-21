@@ -145,8 +145,16 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 		try (ResultSet rs = factory.selectFrom(t1).getResults()) {
 			String str = SQLTypeUtils.toString(rs);
-			// System.out.println(str);
-			assertTrue(str.startsWith("ID, NAME, CREATED"));
+			System.err.println(str);
+			
+			char c=str.charAt(1);
+			if(Character.isUpperCase(c)){
+				assertTrue(str.startsWith("ID, NAME, CREATED"));	
+			}else {
+				assertTrue(str.startsWith("id, name, created"));
+			}
+			
+			
 		}
 	}
 

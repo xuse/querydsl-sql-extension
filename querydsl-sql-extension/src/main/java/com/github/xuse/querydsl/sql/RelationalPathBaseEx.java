@@ -183,6 +183,18 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	 *   @return Constraint
 	 */
 	protected Constraint createConstraint(String name, ConstraintType type, Path<?>... columns) {
+		return createConstraint(name, type, false, columns);
+	}
+	
+	/**
+	 * Create a normal constraint or index.
+	 * @param name  name of constraint
+	 * @param type  type of constraint
+	 * @param ignore true to ignore error when the database do not support this constraint/index.
+	 * @param columns columns in the constraint
+	 * @return Constraint
+	 */
+	protected Constraint createConstraint(String name, ConstraintType type, boolean ignore, Path<?>... columns) {
 		if (type == ConstraintType.PRIMARY_KEY) {
 			throw Exceptions.unsupportedOperation("please use #createPrimaryKey() method for columns", Arrays.toString(columns));
 		}
@@ -190,6 +202,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		constraint.setName(name);
 		constraint.setConstraintType(type);
 		constraint.setPaths(Arrays.asList(columns));
+		constraint.setAllowIgnore(ignore);
 		this.constraints.add(constraint);
 		return constraint;
 	}
@@ -561,7 +574,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 					}
 					paths.add(path);
 				}
-				this.createConstraint(k.name(), k.type(), paths.toArray(new Path[0]));
+				this.createConstraint(k.name(), k.type(), k.allowIgnore(), paths.toArray(new Path[0]));
 			}
 			for (Check c : spec.checks()) {
 				this.createCheck(c.name(), c.value());

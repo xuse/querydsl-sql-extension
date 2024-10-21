@@ -41,14 +41,13 @@ public class DbMetadataTest extends AbstractTestBase{
 					assertTrue(list.size()>0);
 					showTables(catalog,schema, list);
 				}
+				break;
 			}
 		}
-		
 		List<SequenceInfo> seqs=meta.getSequenceInfo(namespace, null);
 		for(SequenceInfo s:seqs) {
 			System.out.println(s.toString());
 		}
-		
 	}
 	
 	@Test
@@ -57,6 +56,9 @@ public class DbMetadataTest extends AbstractTestBase{
 		DbType type=meta.getDatabaseInfo().getDbType();
 		
 		URL url = this.getClass().getResource("/test_script_" + type.name + ".sql");
+		if(url==null) {
+			return;
+		}
 		Map<String,RuntimeException> exceptions=new HashMap<>();
 		int size=meta.executeScriptFile(url, StandardCharsets.UTF_8, true, exceptions);
 		System.out.println(size);

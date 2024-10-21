@@ -59,7 +59,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 	 * @return Constraint
 	 */
 	public Constraint createConstraint(String name, ConstraintType type, Path<?>... columns) {
-		return super.createConstraint(name, type, columns);
+		return super.createConstraint(name, type, false, columns);
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 	 * @return Constraint
 	 */
 	public Constraint createIndex(String name, Path<?>... columns) {
-		return super.createConstraint(name, ConstraintType.KEY, columns);
+		return super.createConstraint(name, ConstraintType.KEY, false, columns);
 	}
 
 	public PrimaryKey<T> createPrimaryKey(Path<?>... columns) {

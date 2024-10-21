@@ -679,7 +679,7 @@ public abstract class MetadataQuerySupport {
 	 * @return 所有指令返回的行数总和
 	 */
 	public int executeScriptFile(URL url, Charset charset, String endChars, boolean ignoreErrors, Map<String, RuntimeException> exceptionCollector) {
-		Assert.notNull(url);
+		Assert.notNull(url,"Script file url is null.");
 		char[] ends = endChars.toCharArray();
 		Connection conn = getConnection();
 		SQLListenerContextImpl context = startContext(conn);
