@@ -2,7 +2,7 @@ package com.querydsl.core.types;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
@@ -61,7 +61,7 @@ public interface SQLTemplatesEx {
 	}
 	
 	default SchemaReader getSchemaAccessor() {
-		return InfomationSchemaReader.DEFAULT;
+		return InformationSchemaReader.DEFAULT;
 	}
 
 	default LetterCase getDefaultLetterCase() {

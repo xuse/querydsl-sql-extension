@@ -91,7 +91,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		compareConstraints(difference, metadata.getIndexes(actualTable, MetadataQuerySupport.INDEX_POLICY_MERGE_CONSTRAINTS));
 		compareTableAttributes(difference, table, metadata.getTable(actualTable));
 		if (difference.isEmpty()) {
-			log.info("TABLE [{}] compare finished, there's no difference between database and java definitions.", table);
+			log.info("TABLE [{}] compare finished, there's no difference between database and java definitions.", table.getSchemaAndTable());
 			return Collections.emptyList();
 		}
 		builder.serializeAlterTable(difference);
@@ -418,8 +418,15 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 				String c1Str = c1Default.toString();
 				String c2Str = c2Default.toString();
 				if (!c1Str.equals(c2Str)) {
-					if (!compareExpressionViaDb(c1Default, c2Default, c1.getJdbcType())) {
-						result.add(ColumnChange.changeDefault(c2.getDefaultExpression(), c1.getDefaultExpression()));
+					if(c2.getJdbcType()==Types.BOOLEAN) {
+						//1 和 true等同，0 和 false等同
+						if(!normalizerBoolean(c1Str).equals(normalizerBoolean(c2Str))) {
+							result.add(ColumnChange.changeDefault(c2.getDefaultExpression(), c1.getDefaultExpression()));	
+						}
+					}else {
+						if (!compareExpressionViaDb(c1Default, c2Default, c1.getJdbcType())) {
+							result.add(ColumnChange.changeDefault(c2.getDefaultExpression(), c1.getDefaultExpression()));
+						}	
 					}
 				}
 			}
@@ -433,6 +440,15 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			}
 		}
 		return result;
+	}
+
+	private String normalizerBoolean(String word) {
+		if ("false".equalsIgnoreCase(word)) {
+			return "0";
+		} else if ("true".equalsIgnoreCase(word)) {
+			return "1";
+		}
+		return word;
 	}
 
 	/*

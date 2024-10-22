@@ -8,7 +8,7 @@ import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.Integration.SimpleDataSource;
-import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
@@ -42,7 +42,7 @@ public class MockedTestBase {
 		SQLTemplates templates = new MySQLWithJSONTemplates() {
 			@Override
 			public SchemaReader getSchemaAccessor() {
-				return InfomationSchemaReader.DEFAULT;
+				return InformationSchemaReader.DEFAULT;
 			}
 		};
 		factory = new SQLQueryFactory(querydslConfiguration(templates), effectiveDs, true);

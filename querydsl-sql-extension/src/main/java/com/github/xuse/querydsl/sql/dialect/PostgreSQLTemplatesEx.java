@@ -6,7 +6,7 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
 
-import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
@@ -147,10 +147,10 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 	}
 	
 
-	static class PgSchemaReader extends InfomationSchemaReader {
+	static class PgSchemaReader extends InformationSchemaReader {
 		public PgSchemaReader() {
-			super(InfomationSchemaReader.FILTER_NOT_NULL_CHECK | InfomationSchemaReader.HAS_CHECK_CONSTRAINTS
-					| InfomationSchemaReader.REMOVE_BUCKET_FOR_CHECK);
+			super(InformationSchemaReader.FILTER_NOT_NULL_CHECK | InformationSchemaReader.HAS_CHECK_CONSTRAINTS
+					| InformationSchemaReader.REMOVE_BUCKET_FOR_CHECK);
 		}
 
 		@Override

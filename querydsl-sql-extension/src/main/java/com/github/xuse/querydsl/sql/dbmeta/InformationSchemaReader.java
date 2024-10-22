@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
-import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.sql.SQLBindings;
@@ -36,21 +35,27 @@ import com.querydsl.sql.SQLBindings;
  * @author Joey
  *
  */
-public class InfomationSchemaReader implements SchemaReader {
+public class InformationSchemaReader implements SchemaReader {
+	/**
+	 * 数据库支持CHECK的情况下，有check_clause这一列存储该表达式。
+	 */
 	public static final int HAS_CHECK_CONSTRAINTS = 1;
-	
+	/**
+	 * 数据库列NOT NULL也作为约束存储在系统表中，指定该特性可以过滤掉这部分数据
+	 */
 	public static final int FILTER_NOT_NULL_CHECK = 2;
-	
+	/**
+	 * CHECK表达式两边的括号需要移除掉
+	 */
 	public static final int REMOVE_BUCKET_FOR_CHECK = 4;
 	
-	public static final SchemaReader DEFAULT = new InfomationSchemaReader(0);
+	public static final SchemaReader DEFAULT = new InformationSchemaReader(0);
 	
 	private final int features;
 	
-	public InfomationSchemaReader(int features){
+	public InformationSchemaReader(int features){
 		this.features=features;
 	}
-	
 
 	@Override
 	public List<Constraint> getConstraints(String catalog, String schema, String tableName, ConnectionWrapper conn,
@@ -63,7 +68,6 @@ public class InfomationSchemaReader implements SchemaReader {
 		// 只会得到UNIQUE，普通的KEY不会在这个表返回（纯索引）
 		String sqlStr;
 		boolean hasCheck = has(HAS_CHECK_CONSTRAINTS); 
-		boolean filterNotNull=has(FILTER_NOT_NULL_CHECK);
 		if(hasCheck) {
 			sqlStr="SELECT a.*,b.check_clause FROM information_schema.table_constraints a "
 					+ "left join information_schema.check_constraints b on a.constraint_catalog =b.constraint_catalog and a.constraint_schema =b.constraint_schema and a.constraint_name =b.constraint_name "
@@ -84,14 +88,7 @@ public class InfomationSchemaReader implements SchemaReader {
 			if(hasCheck) {
 				String check=rs.getString("check_clause");
 				if(check!=null) {
-					if(filterNotNull && check.endsWith("IS NOT NULL")) {
-						return null;
-					}
-					check=StringUtils.removeBucket(check);
-					if(has(REMOVE_BUCKET_FOR_CHECK)) {
-						check=StringUtils.removeBucket(check);	
-					}
-					c.setCheckClause(DDLExpressions.wrapCheckExpression(check));	
+					c.setCheckClause(DDLExpressions.wrapCheckExpression(processCheckClause(check)));	
 				}
 			}
 			return c;
@@ -125,7 +122,19 @@ public class InfomationSchemaReader implements SchemaReader {
 		}
 		return constraints;
 	}
-	
+
+	protected String processCheckClause(String check) {
+		boolean filterNotNull=has(FILTER_NOT_NULL_CHECK);
+		if(filterNotNull && check.endsWith("IS NOT NULL")) {
+			return null;
+		}
+		check=StringUtils.removeBucket(check);
+		if(has(REMOVE_BUCKET_FOR_CHECK)) {
+			check=StringUtils.removeBucket(check);	
+		}
+		return check;
+	}
+
 	protected String mergeSchema(String catalog, String schema) {
 		if(StringUtils.isNotEmpty(catalog)) {
 			return catalog;
@@ -144,37 +153,4 @@ public class InfomationSchemaReader implements SchemaReader {
 	protected boolean hasAny(int check) {
 		return (this.features & check) > 0; 
 	}
-	
-
-	@Override
-	public List<PartitionInfo> getPartitions(String catalog, String schema, String tableName, ConnectionWrapper conn) {
-		schema = mergeSchema(catalog,schema);
-		if (StringUtils.isEmpty(schema)) {
-			schema = "%";
-		}
-		SQLBindings sql = new SQLBindings(
-				"SELECT * FROM information_schema.partitions WHERE table_name=? AND TABLE_SCHEMA LIKE ? ORDER BY PARTITION_ORDINAL_POSITION ASC",
-				Arrays.asList(tableName, schema));
-		List<PartitionInfo> partitions = conn.query(sql, rs -> {
-			PartitionInfo c = new PartitionInfo();
-			c.setTableCat(rs.getString("TABLE_CATALOG"));
-			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			c.setTableName(rs.getString("TABLE_NAME"));
-			c.setName(rs.getString("PARTITION_NAME"));
-			c.setMethod(PartitionMethod.parse(rs.getString("PARTITION_METHOD")));
-			c.setCreateTime(rs.getTimestamp("CREATE_TIME"));
-			c.setPartitionExpression(rs.getString("PARTITION_EXPRESSION"));
-			c.setPartitionOrdinal(rs.getInt("PARTITION_ORDINAL_POSITION"));
-			c.setPartitionDescription(rs.getString("PARTITION_DESCRIPTION"));
-			return c;
-		});
-		return partitions;
-	}
-
-	@Override
-	public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
-			ObjectType type) {
-		return JdbcSchemaReader.INSTANCE.fetchTables(e, catalog, schema, qMatchName, type);
-	}
-
 }

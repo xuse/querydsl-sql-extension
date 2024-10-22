@@ -458,8 +458,12 @@ public abstract class MetadataQuerySupport {
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		return getConstraints0(policy.asCatalog(namespace),policy.asSchema(namespace),tableName,detail);
+	}
+
+	private List<Constraint> getConstraints0(String catalog, String schema, String tableName, boolean detail) {
 		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
-		return doSQLQuery(q -> template.getConstraints(policy.asCatalog(namespace),policy.asSchema(namespace), tableName, q, detail), "getConstraints");
+		return doSQLQuery(q -> template.getConstraints(catalog,schema, tableName, q, detail), "getConstraints");
 	}
 
 	public List<PartitionInfo> getPartitions(SchemaAndTable table) {
@@ -499,50 +503,35 @@ public abstract class MetadataQuerySupport {
 	 */
 	public List<Constraint> getIndexes(SchemaAndTable table, int fetchPolicy) {
 		table = getConfiguration().getOverride(table);
-		final String namespace = processNamespace(table.getSchema());
+		String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
-		List<Constraint> constraints = fetchPolicy == INDEX_POLICY_ALL_INDEX ? Collections.emptyList() : getConstraints(table, fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS);
+		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
+		final String catalog = policy.asCatalog(namespace);
+		final String schema = policy.asSchema(namespace);
+		
+		List<Constraint> constraints = fetchPolicy == INDEX_POLICY_ALL_INDEX ? Collections.emptyList()
+				: getConstraints0(catalog, schema, tableName, fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS);
 		Set<String> constraintsNames = collectConstraintNames(constraints);
 		List<Constraint> result = new ArrayList<Constraint>();
 		if (fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS) {
 			result.addAll(constraints);
 		}
-		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		List<KeyColumn> indexColumns = doMetadataQuery("getIndexInfo", m -> m.getIndexInfo(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, false, false), rs -> getFromResultSet(rs, KeyColumn.class));
-		Map<String, List<KeyColumn>> map = CollectionUtils.bucket(indexColumns, e -> e.keyName);
-		for (Map.Entry<String, List<KeyColumn>> entry : map.entrySet()) {
-			Constraint index = new Constraint();
-			List<KeyColumn> columns = entry.getValue();
-			columns.sort(Comparator.comparingInt(a -> a.seq));
-			index.setColumnNames(columns.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
-			KeyColumn kc = entry.getValue().get(0);
-			index.setCatalog(kc.getTableCat());
-			index.setSchema(kc.getTableSchema());
-			index.setTableName(kc.getTableName());
-			index.setCheckClause(DDLExpressions.wrapCheckExpression(kc.getFilterCondition()));
-			index.setName(kc.getKeyName());
+		
+		for(Constraint index: getIndex0(catalog,schema,tableName)) {
 			// 已经在约束数据中，从索引中去除
-			if (constraintsNames.contains(kc.getKeyName())) {
+			if (constraintsNames.contains(index.getName())) {
 				continue;
-			}
-			// 从JDBC驱动得到的其实是不准的，真正用系统表查到的才是准的
-			boolean isUnique = !kc.isNonUnique();
-			switch(kc.getType()) {
-				case DatabaseMetaData.tableIndexStatistic:
-					index.setConstraintType(ConstraintType.CHECK);
-					break;
-				case DatabaseMetaData.tableIndexClustered:
-				case DatabaseMetaData.tableIndexOther:
-					index.setConstraintType(isUnique ? ConstraintType.UNIQUE : ConstraintType.KEY);
-					break;
-				case DatabaseMetaData.tableIndexHashed:
-					index.setConstraintType(ConstraintType.HASH);
-					break;
 			}
 			result.add(index);
 		}
 		return result;
 	}
+	
+	private List<Constraint> getIndex0(String catalog, String schema, String tableName) {
+		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
+		return doSQLQuery(q -> template.getIndexes(catalog, schema, tableName, q), "getIndexes");
+	}
+	
 	
 	private Set<String> collectConstraintNames(Collection<Constraint> constraints) {
 		if (constraints == null) {

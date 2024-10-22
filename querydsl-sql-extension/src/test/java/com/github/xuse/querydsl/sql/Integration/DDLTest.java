@@ -9,7 +9,6 @@ import java.util.List;
 import org.junit.Test;
 
 import com.github.xuse.querydsl.entity.Aaa;
-import com.github.xuse.querydsl.entity.CaAsset;
 import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
@@ -33,11 +32,21 @@ public class DDLTest extends AbstractTestBase {
 		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
 		meta.dropTable(QCaAsset.caAsset).ifExists(true).execute();
 		meta.createTable(QCaAsset.caAsset).ifExists().execute();
-		
-		
 		meta.dropTable(QAaa.aaa).ifExists(true).execute();
 		meta.createTable(QAaa.aaa).execute();
 	}
+	
+	@Test
+	public void testRefreshUnachangedTable() {
+		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
+//		meta.createTable(QCaAsset.caAsset).ifExists().execute();
+//		meta.createTable(QAaa.aaa).ifExists().execute();
+		
+		
+		//meta.refreshTable(QCaAsset.caAsset).execute();
+		meta.refreshTable(QAaa.aaa).execute();
+	}
+	
 	
 	@Test
 	public void testDropConstraints() {
@@ -206,5 +215,11 @@ public class DDLTest extends AbstractTestBase {
 		}else {
 			assertEquals(4, list.size());
 		}
+	}
+	
+	@Test
+	public void testFetchColumns() {
+		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
+		
 	}
 }

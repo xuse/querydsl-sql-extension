@@ -106,7 +106,7 @@ public abstract class AbstractTestBase {
 		// 如果使用了自定义映射，需要提前注册，或者扫描指定包
 		configuration.allowTableDropAndCreate();
 		configuration.getScanOptions()
-			.setAlterExistTable(true)
+			.setAlterExistTable(false)
 			.allowDrops()
 			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");

@@ -33,6 +33,7 @@ public class InitProcessor {
 	}
 
 	public void run() {
+		int count = 0;
 		try {
 			TableInitTask task;
 			if ((task = ConfigrationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
@@ -40,14 +41,17 @@ public class InitProcessor {
 					return;
 				}
 				execute(task);
+				count++;
 			}
 			while ((task = ConfigrationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
 				execute(task);
+				count++;
 			}
 		} finally {
 			if (lock != null) {
 				lock.unlock();
 			}
+			log.info("[Init Processor] Database schema init process finished. {} task processed.", count);
 		}
 	}
 

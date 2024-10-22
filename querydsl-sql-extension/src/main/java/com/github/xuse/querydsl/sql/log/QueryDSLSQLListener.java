@@ -87,10 +87,6 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	public final void rendered(SQLListenerContext context) {
 	}
 
-	@Override
-	public final void prePrepare(SQLListenerContext context) {
-	}
-
 	/**
 	 *  输出格式，全部初始化。根据配置等级输出，当error时输出等级自动+1
 	 */
@@ -322,10 +318,14 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	}
 
 	@Override
-	public final void preExecute(SQLListenerContext context) {
+	public final void prePrepare(SQLListenerContext context) {
 		if (log.isInfoEnabled()) {
 			log.info(infoFormatter.format(context.getAllSQLBindings()));
 		}
+	}
+	
+	@Override
+	public final void preExecute(SQLListenerContext context) {
 	}
 
 	@Override
