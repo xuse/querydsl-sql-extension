@@ -20,7 +20,6 @@ import org.apache.shardingsphere.sql.parser.api.SQLParserEngine;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterStatementContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateTableContext;
 import org.apache.shardingsphere.sql.parser.core.ParseASTNode;
-import org.apache.shardingsphere.sql.parser.mysql.visitor.format.MySQLFormatVisitor;
 import org.h2.Driver;
 
 import com.github.xuse.querydsl.sql.Integration.SimpleDataSource;
@@ -156,7 +155,7 @@ public class MockMySQLDriver implements java.sql.Driver, ResultCallback {
 			if (tree.getChildCount() == 0) {
 				return show(rawSql, null);
 			}
-			MySQLFormatVisitor formatter = new MySQLFormatVisitor();
+			MySQLFormatVisitor formatter =ASTUtils.getDDLFormatter();
 			formatter.init(propDDL);
 			return show(rawSql, tree.accept(formatter));
 		}

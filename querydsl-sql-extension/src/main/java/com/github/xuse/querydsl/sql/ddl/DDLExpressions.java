@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.core.types.Constant;
+import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
@@ -12,6 +14,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
+import com.querydsl.sql.types.Null;
 
 /**
  * Expression helpers for DDL generation.
@@ -154,5 +157,9 @@ public class DDLExpressions {
 	@SuppressWarnings("unchecked")
 	public static <T> Expression<T> defaultExpr(){
 		return (Expression<T>) DEFAULT;
+	}
+	
+	public static Constant<?> createConstant(Object t){
+		return t==null? Null.CONSTANT: ConstantImpl.create(t);
 	}
 }

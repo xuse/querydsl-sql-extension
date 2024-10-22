@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.github.xuse.querydsl.annotation.partition.AutoTimePartitions;
 import com.github.xuse.querydsl.annotation.partition.HashType;
+import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo1;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo1b;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo3;
@@ -34,8 +35,8 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	@Test
 	public void test1() {
 		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
-		Collection<String> list = meta.getCatalogs();
-		System.out.println(list);
+		meta.dropTable(QAaa.aaa).ifExists(true).execute();
+		meta.createTable(QAaa.aaa).ifExists().execute();
 	}
 
 	@Test

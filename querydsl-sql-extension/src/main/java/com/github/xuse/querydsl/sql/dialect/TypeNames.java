@@ -121,33 +121,6 @@ final class TypeNames {
 		return type;
 	}
 
-	// /**
-	// * 还原数据类型，根据一个数据类型描述，还原为java.sql.Types常量
-	// *
-	// * @return getTypeNameCodes
-	// */
-	// public Map<String, Integer> getTypeNameCodes() {
-	// Map<String, Integer> result = new HashMap<String, Integer>();
-	// for (ColumnDataType p : defaults.values()) {
-	// result.put(StringUtils.substringBefore(p.getName().toUpperCase(), "("), p.getSqlType());
-	// if (p.getAlias() != null && p.getAlias().length > 0) {
-	// for (String alias : p.getAlias()) {
-	// result.put(alias.toUpperCase(), p.getSqlType());
-	// }
-	// }
-	// }
-	// for (Map<Integer, ColumnDataType> m : weighted.values()) {
-	// for (ColumnDataType p : m.values()) {
-	// result.put(StringUtils.substringBefore(p.getName().toUpperCase(), "("), p.getSqlType());
-	// if (p.getAlias() != null && p.getAlias().length > 0) {
-	// for (String alias : p.getAlias()) {
-	// result.put(alias.toUpperCase(), p.getSqlType());
-	// }
-	// }
-	// }
-	// }
-	// return result;
-	// }
 	// 默认策略参照MYSQL
 	public static TypeNames generateDefault() {
 		TypeNames typeNames = new TypeNames();

@@ -141,7 +141,7 @@ public class InformationSchemaReader implements SchemaReader {
 		}
 		return schema;
 	}
-	
+
 	protected boolean has(int check) {
 		return (this.features & check) == check; 
 	}

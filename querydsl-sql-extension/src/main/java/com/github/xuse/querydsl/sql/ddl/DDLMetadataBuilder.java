@@ -472,7 +472,7 @@ public class DDLMetadataBuilder {
 			String value = e.getValue();
 			if (op == DDLOps.COMMENT_ON_TABLE) {
 				if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
-					createCommentStatement(ConstantImpl.create(value), null);
+					createCommentStatement(DDLExpressions.createConstant(value), null);
 				} else {
 					tableDefExpressions.add(DDLExpressions.simple(DDLOps.COMMENT_ON_COLUMN, DDLExpressions.empty(),
 							ConstantImpl.create(value)));
