@@ -3,13 +3,15 @@ package com.github.xuse.querydsl.r2dbc.core.dml;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.r2dbc.listener.R2BaseListener;
 import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContext;
+import com.github.xuse.querydsl.repository.QueryBuilder;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
+import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.sql.RelationalPath;
 
-public class Delete extends SQLDeleteClauseAlter implements R2Clause{
+public class Delete<E> extends SQLDeleteClauseAlter implements R2Clause,SQLContainer{
 
-	public Delete( ConfigurationEx configuration, RelationalPath<?> entity) {
+	public Delete( ConfigurationEx configuration, RelationalPath<E> entity) {
 		super(null, configuration, entity);
 	}
 
@@ -24,5 +26,11 @@ public class Delete extends SQLDeleteClauseAlter implements R2Clause{
 		return "Delete";
 	}
 
-
+	
+	@SuppressWarnings("unchecked")
+	public QueryBuilder<E,?,Delete<E>> where(){
+		DefaultQueryMetadata meta=(DefaultQueryMetadata) super.metadata;
+		return new QueryBuilder<>((RelationalPath<E>)super.entity, meta, this);
+	}
 }
+

@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.mock;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.BeforeClass;
@@ -15,13 +14,10 @@ import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
-import com.github.xuse.querydsl.util.StringUtils;
-import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLTemplates;
 
 public class MockedTestBase {
@@ -51,29 +47,8 @@ public class MockedTestBase {
 			@Override
 			public SchemaReader getSchemaAccessor() {
 				return new InformationSchemaReader(0) {
-					@Override
-					public List<PartitionInfo> getPartitions(String catalog, String schema, String tableName, ConnectionWrapper conn) {
-						schema = mergeSchema(catalog,schema);
-						if (StringUtils.isEmpty(schema)) {
-							schema = "%";
-						}
-						SQLBindings sql = new SQLBindings(
-								"SELECT * FROM information_schema.partitions WHERE table_name=? AND TABLE_SCHEMA LIKE ? ORDER BY PARTITION_ORDINAL_POSITION ASC",
-								Arrays.asList(tableName, schema));
-						List<PartitionInfo> partitions = conn.query(sql, rs -> {
-							PartitionInfo c = new PartitionInfo();
-							c.setTableCat(rs.getString("TABLE_CATALOG"));
-							c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-							c.setTableName(rs.getString("TABLE_NAME"));
-							c.setName(rs.getString("PARTITION_NAME"));
-							c.setMethod(PartitionMethod.parse(rs.getString("PARTITION_METHOD")));
-							c.setCreateTime(rs.getTimestamp("CREATE_TIME"));
-							c.setPartitionExpression(rs.getString("PARTITION_EXPRESSION"));
-							c.setPartitionOrdinal(rs.getInt("PARTITION_ORDINAL_POSITION"));
-							c.setPartitionDescription(rs.getString("PARTITION_DESCRIPTION"));
-							return c;
-						});
-						return partitions;
+					public List<PartitionInfo> getPartitions(String catalog, String schema, String table, ConnectionWrapper conn) {
+						return mysqlPartitions(catalog, schema, table, conn);
 					}
 				};
 			}

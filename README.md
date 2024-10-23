@@ -428,9 +428,10 @@ metadata.dropPartition(t1)
 
 **数据库支持(DDL)**
 
-* MySQL 5.6 and above
-* Apache Derby 10.14 and above
-* PostgreSQL 10.3 and above
+* MySQL v5.6 and above
+* Apache Derby v10.14 and above
+* PostgreSQL v10.3 and above
+* H2 v2.3.232
 
 相关说明参见文档 quick_start.md
 
@@ -464,11 +465,12 @@ v{querydsl 版本号} - r(extension version)
 ```
 
 **v5.0.0-r130**
-Eta: 2024-11-01
+Eta: 2024-11-11
 
- * r2dbc support. 
+ * r2dbc/r2dbc-spring transaction
+ * 支持H2db的DDL操作
  * 单元测试行覆盖85%以上.
- 
+
 **v5.0.0-r120**
 
 2024-10-01

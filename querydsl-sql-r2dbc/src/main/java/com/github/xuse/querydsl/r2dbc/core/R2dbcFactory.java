@@ -16,6 +16,7 @@ import com.github.xuse.querydsl.r2dbc.core.dml.Delete;
 import com.github.xuse.querydsl.r2dbc.core.dml.Dummy;
 import com.github.xuse.querydsl.r2dbc.core.dml.Insert;
 import com.github.xuse.querydsl.r2dbc.core.dml.R2Clause;
+import com.github.xuse.querydsl.r2dbc.core.dml.SQLContainer;
 import com.github.xuse.querydsl.r2dbc.core.dml.SQLQueryR2;
 import com.github.xuse.querydsl.r2dbc.core.dml.Update;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2ResultWrapper;
@@ -25,10 +26,6 @@ import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContext;
 import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContextImpl;
 import com.github.xuse.querydsl.r2dbc.listener.R2Listeners;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
-import com.github.xuse.querydsl.sql.SQLQueryAlter;
-import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
-import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
-import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
@@ -41,7 +38,6 @@ import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.sql.Configuration;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
-import com.querydsl.sql.dml.AbstractSQLClause;
 
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
@@ -104,25 +100,24 @@ public class R2dbcFactory {
 		return new R2Fetchable<>(query);
 	}
 	
-	public R2Executeable<SQLInsertClauseAlter> insert(RelationalPath<?> path) {
-		return new R2Executeable<>(new Insert(configEx, path),path);
+	public <E> R2Executeable<Insert<E>,E> insert(RelationalPath<E> path) {
+		return new R2Executeable<>(new Insert<>(configEx, path),path);
 	}
-	public final R2Executeable<SQLUpdateClauseAlter> update(RelationalPath<?> path) {
-		return new R2Executeable<>(new Update(configEx, path),path);
+	public final <E> R2Executeable<Update<E>,E> update(RelationalPath<E> path) {
+		return new R2Executeable<>(new Update<>(configEx, path),path);
 	}
-	public final R2Executeable<SQLDeleteClauseAlter> delete(RelationalPath<?> path) {
-		return new R2Executeable<>(new Delete(configEx, path),path);
+	public final <E> R2Executeable<Delete<E>,E> delete(RelationalPath<E> path) {
+		return new R2Executeable<>(new Delete<>(configEx, path),path);
 	}
-	public R2Executeable<SQLInsertClauseAlter> insert(LambdaTable<?> path) {
-		return new R2Executeable<>(new Insert(configEx, path),path);
+	public <E> R2Executeable<Insert<E>,E> insert(LambdaTable<E> path) {
+		return new R2Executeable<>(new Insert<>(configEx, path),path);
 	}
-	public final R2Executeable<SQLUpdateClauseAlter> update(LambdaTable<?> path) {
-		return new R2Executeable<>(new Update(configEx, path),path);
+	public final <E> R2Executeable<Update<E>,E> update(LambdaTable<E> path) {
+		return new R2Executeable<>(new Update<>(configEx, path),path);
 	}
-	public final R2Executeable<SQLDeleteClauseAlter> delete(LambdaTable<?> path) {
-		return new R2Executeable<>(new Delete( configEx, path),path);
+	public final <E> R2Executeable<Delete<E>,E> delete(LambdaTable<E> path) {
+		return new R2Executeable<>(new Delete<>( configEx, path),path);
 	}
-
 	///////////////////////////////////////////////////////////////////////////////
 	public class R2Fetchable<R>{
 		final SQLQueryR2<R> query;
@@ -133,7 +128,7 @@ public class R2dbcFactory {
 			this.query = clause;
 		}
 
-		public R2Fetchable<R> prepare(Consumer<SQLQueryAlter<R>> consumer){
+		public R2Fetchable<R> prepare(Consumer<SQLQueryR2<R>> consumer){
 			if(consumer!=null)
 				consumer.accept(query);
 			return this;
@@ -380,23 +375,27 @@ public class R2dbcFactory {
 	    }
 	}
 
-	public class R2Executeable<T extends AbstractSQLClause<T>>{
+	public class R2Executeable<T extends SQLContainer,E>{
 		final T clause;
 		private R2ListenerContextImpl context;
-		private RelationalPath<?> entity;
+		private RelationalPath<E> entity;
 		protected final R2Clause r2Clause;
 
-		public R2Executeable(T clause, RelationalPath<?> entity) {
+		public R2Executeable(T clause, RelationalPath<E> entity) {
 			this.clause = clause;
 			this.entity = entity;
 			this.r2Clause = (clause instanceof R2Clause) ? (R2Clause) clause : Dummy.R2Clause;
 		}
 
-		public R2Executeable<T> prepare(Consumer<T> consumer) {
+		public R2Executeable<T,E> prepare(Consumer<T> consumer) {
 			if(consumer!=null)
 				consumer.accept(clause);
 			return this;
 		}
+		
+//		public QueryBuilder<E,?,R2Executeable<T,E>> where(){
+//			return new QueryBuilder<>(entity,r2Clause.getMetadata(),this);
+//		}
 
 		public Mono<Long> execute() {
 			context = startContext(r2Clause.getMetadata(), entity);

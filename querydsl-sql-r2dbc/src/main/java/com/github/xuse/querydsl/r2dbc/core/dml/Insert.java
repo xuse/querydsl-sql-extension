@@ -7,9 +7,9 @@ import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.sql.RelationalPath;
 
-public class Insert extends SQLInsertClauseAlter implements R2Clause{
+public class Insert<E> extends SQLInsertClauseAlter implements R2Clause,SQLContainer{
 
-	public Insert( ConfigurationEx configuration, RelationalPath<?> entity) {
+	public Insert(ConfigurationEx configuration, RelationalPath<E> entity) {
 		super(null, configuration, entity);
 	}
 

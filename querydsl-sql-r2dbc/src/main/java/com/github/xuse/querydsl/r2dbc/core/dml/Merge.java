@@ -7,7 +7,7 @@ import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.sql.RelationalPath;
 
-public class Merge extends SQLMergeClauseAlter implements R2Clause{
+public class Merge extends SQLMergeClauseAlter implements R2Clause,SQLContainer{
 	public Merge(ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(null, configuration, entity);
 	}

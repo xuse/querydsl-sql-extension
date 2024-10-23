@@ -25,6 +25,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -289,7 +290,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 			endContext(context);
 		}
 	}
-
+	
 	// @WithBridgeMethods(value = SQLUpdateClause.class, castRequired = true)
 	public <T> SQLUpdateClauseAlter setIf(boolean doSet, Path<T> path, T value) {
 		if (doSet && path != null) {

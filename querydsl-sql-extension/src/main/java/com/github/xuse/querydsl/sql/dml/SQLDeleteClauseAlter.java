@@ -181,7 +181,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		populatePrimaryKey0(bean, Mappers.getNormal(tuple));
 		return this;
 	}
-
+	
 	/*
 	 * 父类方法不支持routing参数。
 	 */

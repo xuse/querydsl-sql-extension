@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -94,28 +93,8 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		}
 
 		@Override
-		public List<PartitionInfo> getPartitions(String catalog, String schema, String tableName, ConnectionWrapper conn) {
-			schema = mergeSchema(catalog,schema);
-			if (StringUtils.isEmpty(schema)) {
-				schema = "%";
-			}
-			SQLBindings sql = new SQLBindings(
-					"SELECT * FROM information_schema.partitions WHERE table_name=? AND TABLE_SCHEMA LIKE ? ORDER BY PARTITION_ORDINAL_POSITION ASC",
-					Arrays.asList(tableName, schema));
-			List<PartitionInfo> partitions = conn.query(sql, rs -> {
-				PartitionInfo c = new PartitionInfo();
-				c.setTableCat(rs.getString("TABLE_CATALOG"));
-				c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-				c.setTableName(rs.getString("TABLE_NAME"));
-				c.setName(rs.getString("PARTITION_NAME"));
-				c.setMethod(PartitionMethod.parse(rs.getString("PARTITION_METHOD")));
-				c.setCreateTime(rs.getTimestamp("CREATE_TIME"));
-				c.setPartitionExpression(rs.getString("PARTITION_EXPRESSION"));
-				c.setPartitionOrdinal(rs.getInt("PARTITION_ORDINAL_POSITION"));
-				c.setPartitionDescription(rs.getString("PARTITION_DESCRIPTION"));
-				return c;
-			});
-			return partitions;
+		public List<PartitionInfo> getPartitions(String catalog, String schema, String table, ConnectionWrapper conn) {
+			return mysqlPartitions(catalog, schema, table, conn);
 		}
 	};
 	
@@ -316,7 +295,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		SQLTemplatesEx.initDefaultDDLTemplate(template);
 		// add(template, DDLOps.ALTER_COLUMN,"CHANGE {0} {0} {1}");
 	}
-
 
 	@Override
 	public SchemaReader getSchemaAccessor() {

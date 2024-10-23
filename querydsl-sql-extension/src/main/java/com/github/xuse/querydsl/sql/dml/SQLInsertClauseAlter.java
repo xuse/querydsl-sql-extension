@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -576,6 +577,14 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
         }
 	}
 
+	public <B,T extends Comparable<T>> SQLInsertClauseAlter set(LambdaColumn<B,T> path, T value) {
+		return super.set(path, value);
+	}
+	
+	public <B,T extends Comparable<T>> SQLInsertClauseAlter set(LambdaColumn<B,T> path, Expression<T> value) {
+		return super.set(path, value);
+	}
+	
 	protected PreparedStatement createStatement(boolean withKeys) throws SQLException {
 		listeners.preRender(context);
 		SQLBindingsAlter bindings=getSQLForSingle();

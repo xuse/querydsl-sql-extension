@@ -27,12 +27,12 @@ public class R2DbTestBase {
 	
 	private static SQLQueryFactory factory;
 	
-	
 	public static R2dbcFactory getR2Factory() {
 		if(r2factory!=null) {
 			return r2factory;
 		}
-		return r2factory = new R2dbcFactory(getConnectionFactory(), querydslConfiguration(H2Templates.builder().newLineToSingleSpace().build()));
+		return r2factory = new R2dbcFactory(getConnectionFactory(), 
+				querydslConfiguration(H2Templates.builder().newLineToSingleSpace().build()));
 	}
 	
 	//
