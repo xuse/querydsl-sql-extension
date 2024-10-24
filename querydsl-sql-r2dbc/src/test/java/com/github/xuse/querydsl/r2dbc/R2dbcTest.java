@@ -23,6 +23,8 @@ import reactor.core.publisher.Mono;
  * @author Joey
  *
  */
+
+@SuppressWarnings("unused")
 public class R2dbcTest extends R2DbTestBase implements LambdaHelpers {
 
 	LambdaTable<Foo> table = () -> Foo.class;
@@ -57,7 +59,7 @@ public class R2dbcTest extends R2DbTestBase implements LambdaHelpers {
 		{
 			QUser user = QUser.user;
 			QSchool school = QSchool.school;
-			
+
 			Flux<Tuple> flux = factory.select(user.id,user.name,school.id,school.name).prepare(q->
 				q.from(user).leftJoin(school).on(user.uid.eq(school.code))
 				.where(user.name.in("Jhon","Mark","Linda"))

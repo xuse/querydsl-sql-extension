@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+@SuppressWarnings({"unused","deprecation"})
 public class DateUtilsTest {
 	private final Date today = DateUtils.get(2024, 1, 1);
 	private final Date afterDay = DateUtils.get(2024, 1, 3);

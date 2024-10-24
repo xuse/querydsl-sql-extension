@@ -62,9 +62,7 @@ public class SpringService implements LambdaHelpers{
 		foo.setUpdated(new Date());
 		foo.setVolume(100);
 		Mono<Long> count1 = factory.insert(table).prepare(q -> q.populate(foo)).execute();
-		
-		Mono<Long> count2 = countRecord().filter(e->e>2).flatMap(
-				e->factory.delete(table).prepare(d->d.withRouting(routing).where(column(Foo::getName).eq("zhangsan"))).execute());
+		Mono<Long> count2 = factory.delete(table).prepare(d -> d.withRouting(routing).where(column(Foo::getName).eq("zhangsan"))).execute();
 		return Flux.merge(count1, count2);
 	}
 

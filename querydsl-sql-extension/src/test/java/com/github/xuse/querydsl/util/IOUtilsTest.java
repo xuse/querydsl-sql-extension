@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import lombok.SneakyThrows;
 
+@SuppressWarnings("unused")
 public class IOUtilsTest {
 
 	private String a = "hello!";

@@ -38,7 +38,7 @@ public class TruncateTableQuery  extends AbstractDDLClause<TruncateTableQuery>{
 
 	@Override
 	protected int finished(List<String> sqls) {
-		log.info("Drop table {} finished, {} sqls executed.",table.getSchemaAndTable(),sqls.size());
+		log.info("Truncate table {} finished, {} sqls executed.",table.getSchemaAndTable(),sqls.size());
 		return super.finished(sqls);
 	}
 }

@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.sql.r2dbc.spring;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.SQLException;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
+import com.github.xuse.querydsl.sql.SQLQueryFactory;
+import com.github.xuse.querydsl.sql.r2dbc.entity.Foo;
 import com.github.xuse.querydsl.sql.r2dbc.service.SpringService;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
@@ -23,10 +26,14 @@ public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 	@Autowired
 	private SpringService service;
 	
+	@Autowired
+	private SQLQueryFactory factory;
+	
 	@PostConstruct
 	public void initTables() throws SQLException {
+		factory.getMetadataFactory().createTable(()->Foo.class).ifExists().execute();
+//		factory.getMetadataFactory().truncate(()->Foo.class).execute();
 	}
-	
 	
 	@Test
 	public void testTxService() {
@@ -39,9 +46,6 @@ public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 		}
 		//commited, 記録增加1
 		assertTrue(++begin==service.countRecord().block());
-		
-		
-		
 		try {
 			//传入一个TableRouting，使其SQL语句访问一张不存在的表，形成异常。
 			Flux<Long> mono=service.testRollback(TableRouting.suffix("_FAKE"));
@@ -49,7 +53,7 @@ public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 		}catch(Exception e) {
 			System.out.println("This exception will cause tx rollback:"+e.getClass().getName()+": "+e.getMessage());
 		}
-		assertTrue(begin==service.countRecord().block());
+		assertEquals((Long)begin,service.countRecord().block());
 	}
 	
 	@Test
@@ -65,5 +69,4 @@ public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 		}
 		assertTrue(++begin==service.countRecord().block());
 	}
-	
 }

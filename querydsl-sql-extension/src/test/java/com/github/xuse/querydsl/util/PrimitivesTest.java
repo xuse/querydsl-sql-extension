@@ -11,6 +11,7 @@ import java.util.Date;
 
 import org.junit.Test;
 
+@SuppressWarnings("unused")
 public class PrimitivesTest {
 	Class<?>[] pClazz= {
 			int.class,

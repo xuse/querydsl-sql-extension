@@ -320,6 +320,7 @@ public class R2StatementWrapper extends UnsupportedJdbcStatement{
 		throw new UnsupportedOperationException();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T unwrap(Class<T> iface) throws SQLException {
 		if(iface == Statement.class) {

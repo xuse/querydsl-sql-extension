@@ -216,10 +216,4 @@ public class DDLTest extends AbstractTestBase {
 			assertEquals(4, list.size());
 		}
 	}
-	
-	@Test
-	public void testFetchColumns() {
-		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		
-	}
 }

@@ -8,6 +8,7 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
+import com.github.xuse.querydsl.sql.support.SimpleDataSource;
 import com.querydsl.sql.H2Templates;
 import com.querydsl.sql.SQLTemplates;
 
@@ -17,6 +18,8 @@ import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.spi.ConnectionFactory;
 
+
+@SuppressWarnings("unused")
 public class R2DbTestBase {
 	private static volatile ConnectionFactory pool;
 	

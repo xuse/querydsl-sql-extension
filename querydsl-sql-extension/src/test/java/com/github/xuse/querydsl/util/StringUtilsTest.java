@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+@SuppressWarnings("unused")
 public class StringUtilsTest {
 	private String empty = "";
 	private String blank = " ";
@@ -571,21 +572,23 @@ public class StringUtilsTest {
 	
 	@Test
 	public void testInnerArrayInputStream() {
-		com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream in=
-				new com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream(new byte[] {0x01,0x02});
-		int b=in.read();
-		assertEquals(1,b);
-		b=in.read();
-		b=in.read();
-		assertEquals(-1,b);
-
-		in.close();
-		
-		 in=new com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream(new byte[] {0x01,0x02});
-		 byte[] data=new byte[100];
-		 int len=in.read(data, 0,0);
-		 assertEquals(0,len); 
-		 len=in.read(data, 0,100);
-		 assertEquals(2,len); 
+		{
+			com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream in=
+					new com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream(new byte[] {0x01,0x02});
+			int b=in.read();
+			assertEquals(1,b);
+			b=in.read();
+			b=in.read();
+			assertEquals(-1,b);	
+			in.close();
+		}
+		 try(com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream in=new com.github.xuse.querydsl.util.StringUtils.ByteArrayInputStream(new byte[] {0x01,0x02})){
+			 byte[] data=new byte[100];
+			 int len=in.read(data, 0,0);
+			 assertEquals(0,len); 
+			 len=in.read(data, 0,100);
+			 assertEquals(2,len);	 
+		 };
+		  
 	}
 }

@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.r2dbc.jdbcwrapper;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
-import java.util.List;
 
 import reactor.core.publisher.Flux;
 
@@ -60,24 +58,5 @@ public class CharSequenceFluxReader extends Reader {
 
 	@Override
 	public void close() throws IOException {
-	}
-
-	//todo move to test cases.
-	public static void main(String[] args) throws IOException {
-		List<String> strs = Arrays.asList("12345", "67890", "abcdef");
-		CharSequenceFluxReader reader = new CharSequenceFluxReader(Flux.fromIterable(strs), 4, 15);
-		int c;
-		char[] buf=new char[4];
-		System.out.println(reader.read(buf));
-		System.out.println(Arrays.toString(buf));
-		
-		System.out.println(reader.read(buf));
-		System.out.println(Arrays.toString(buf));
-		
-		System.out.println(reader.read(buf));
-		System.out.println(Arrays.toString(buf));
-		
-		System.out.println(reader.read(buf));
-		System.out.println(Arrays.toString(buf));
 	}
 }

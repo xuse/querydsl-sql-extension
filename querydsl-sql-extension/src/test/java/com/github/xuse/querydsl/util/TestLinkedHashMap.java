@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+@SuppressWarnings("unused")
 public class TestLinkedHashMap {
 	private static final int LOOP_TIMES = 100000;
 

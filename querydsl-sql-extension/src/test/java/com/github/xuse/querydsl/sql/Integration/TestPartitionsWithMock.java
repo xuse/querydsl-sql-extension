@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.sql.Integration;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -253,7 +253,7 @@ public class TestPartitionsWithMock extends MockedTestBase{
 		metadata.refreshTable(t1).changePrimaryKey(t1.id,t1.code).execute();
 		Constraint c=metadata.getPrimaryKey(t1.getSchemaAndTable());
 		
-		//assertEquals(Arrays.asList("id","code"), c.getColumnNames());
+		assertEquals(Arrays.asList("id","created"), c.getColumnNames());
 		
 		metadata.createPartitioning(t1).partitionBy(
 				Partitions.byListColumns(t1.code)

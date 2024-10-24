@@ -13,9 +13,10 @@ import com.github.xuse.querydsl.util.ArrayUtils;
 import reactor.core.publisher.Flux;
 
 public class JdbcBlobImpl implements Blob{
-	private final io.r2dbc.spi.Blob blob;
 	private static final int MAX_SIZE = 1024 * 1024 * 32;
 	
+	@SuppressWarnings("unused")
+	private final io.r2dbc.spi.Blob blob;
 	private byte[] data;
 	
 	public JdbcBlobImpl(io.r2dbc.spi.Blob blob) {

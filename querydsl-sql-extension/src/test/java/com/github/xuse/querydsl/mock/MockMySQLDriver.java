@@ -22,7 +22,7 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateT
 import org.apache.shardingsphere.sql.parser.core.ParseASTNode;
 import org.h2.Driver;
 
-import com.github.xuse.querydsl.sql.Integration.SimpleDataSource;
+import com.github.xuse.querydsl.sql.support.SimpleDataSource;
 
 /**
  * This is a virtual JDBC driver designed to support database operations using
@@ -54,6 +54,7 @@ public class MockMySQLDriver implements java.sql.Driver, ResultCallback {
 		datasource.setUsername(user);
 		datasource.setPassword(pass);
 		datasource.setDriverClass(driver);
+		@SuppressWarnings("unused")
 		Driver h2 = Driver.load();
 		try {
 			java.sql.DriverManager.registerDriver(getInstance());

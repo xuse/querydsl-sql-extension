@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+@SuppressWarnings("unused")
 public class ContainerTest {
 	private String hello="Hello";
 	
