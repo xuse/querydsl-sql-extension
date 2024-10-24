@@ -1,28 +1,5 @@
-# querydsl-sql-r2dbc-spring
+package com.github.xuse.querydsl.sql.r2dbc.spring;
 
-**Provide Spring transaction support for the querydsl-sql-r2dbc module.**
-
-Table of Contents
-- [querydsl-sql-r2dbc-spring](#querydsl-sql-r2dbc-spring)
-  - [dependency](#dependency)
-  - [Usage](#usage)
-
-
-## dependency
-
-```xml
-<dependency>
-	<groupId>io.github.xuse</groupId>
-	<artifactId>querydsl-sql-r2dbc</artifactId>
-	<version>${querydsl-extension.version}</version>
-</dependency>
-```
-
-## Usage
-* This Is an example on H2db.
-* The transaction manager object can be shared with spring-data-r2dbc.  This means if you are using BOTH `querydsl-sql-r2dbc` and `spring-data-r2dbc` with the same transaction manager object, the transaction is also shared between the two frameworks.
-
-```java
 import java.time.Duration;
 import org.springframework.context.annotation.*;
 import org.springframework.context.annotation.Configuration;
@@ -66,4 +43,3 @@ public class QurerydslR2dbcSpringConfiguration {
 		return new R2dbcTransactionManager(ds);
 	}
 }
-```

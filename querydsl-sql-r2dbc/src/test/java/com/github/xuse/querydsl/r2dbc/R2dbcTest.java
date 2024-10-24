@@ -8,8 +8,7 @@ import org.junit.Test;
 
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
-import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory;
-import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory.R2Fetchable;
+import com.github.xuse.querydsl.r2dbc.R2dbcFactory.R2Fetchable;
 import com.github.xuse.querydsl.r2dbc.entity.Foo;
 import com.github.xuse.querydsl.r2dbc.entity.QSchool;
 import com.github.xuse.querydsl.r2dbc.entity.QUser;

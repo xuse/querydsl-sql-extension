@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.r2dbc.core;
+package com.github.xuse.querydsl.r2dbc;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

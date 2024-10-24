@@ -1,7 +1,7 @@
 package io.github.xuse.querydsl.r2dbc.spring;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory;
+import com.github.xuse.querydsl.r2dbc.R2dbcFactory;
 
 import io.r2dbc.spi.ConnectionFactory;
 import reactor.core.publisher.Mono;

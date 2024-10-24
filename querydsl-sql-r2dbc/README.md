@@ -1,12 +1,25 @@
 # querydsl-sql-r2dbc
 
+Using r2dbc + querydsl API in reactive programming.
 
 
+**Table of contents**
+- [querydsl-sql-r2dbc](#querydsl-sql-r2dbc)
+	- [dependency](#dependency)
+	- [Usage](#usage)
+	- [Features](#features)
 
+## dependency
 
-在响应式编程中使用 r2dbc + querydsl的API。
+```xml
+<dependency>
+	<groupId>io.github.xuse</groupId>
+	<artifactId>querydsl-sql-r2dbc</artifactId>
+	<version>${querydsl-extension.version}</version>
+</dependency>
+```
 
-## 示例：
+## Usage
 
 **Init R2dbc Session**
 
@@ -85,61 +98,29 @@ LambdaTable<Foo> table = () -> Foo.class;
 }
 ```
 
-**简单来说**
+**TL;DR**
 
+The Query object provided for the Lambda within the `prepare` method is a native subclass of the `com.querydsl.sql.AbstractSQLQuery<T, Q>`, they are --
 
-
-在 `prepare` 方法中，Lambda表达式中提供的Query对象就是querydsl原生的Query对象子类，它们是——
-
-* com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter
-
+* com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter 
 * com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter
-
 * com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter
-
 * com.github.xuse.querydsl.sql.SQLQueryAlter<T>
-
   
+1. Building queries on these objects are identical to those on original querydsl-sql-extension.
 
-1. 用法与原生querydsl相同的方法构造查询：在这个对象上构建查询，其方法和在querydsl-sql-extension上完全相同。
+2. Unable to call `execute` or `fetch` methods on these objects: The methods are implemented using JDBC and There is no JDBC connection available in R2db scenario. Therefore, please call the `fetch` and `execute` methods on class `com.github.xuse.querydsl.r2dbc.R2dbcFactory.R2Fetchable` and `com.github.xuse.querydsl.r2dbc.R2dbcFactory.R2Executeable`.
 
-2. 不可以调用`execute``fetch`等方法：上述类的执行方法，底层是调用JDBC实现的，在R2db场合下没有JDBC连接。因此在prepare方法执行完毕后，需要调用R2db框架下的fetch, execute等方法执行R2dbc查询。
+3. Return values in R2dbc queries are always Flux/Mono objects.
 
-3. R2dbc的请求，返回值总是Flux/Mono对象。
+## Features
 
+* Only depends on `r2dbc-spi` and `reactor-core`, without reliance on springframework or spring-data.
 
+* Support for connection pooling with `r2dbc-pool`.
 
+* Does not include transaction control. For transaction control, please use the  [query-sql-r2dbc-spring](../querydsl-sql-r2dbc-spring/) module .
 
+* Batch operations(Insert/Delete/Update) are not supported yet. 
 
-
-
-
-
-依赖
-
-```xml
-<dependency>
-	<groupId>io.github.xuse</groupId>
-	<artifactId>querydsl-sql-r2dbc</artifactId>
-	<version>5.0.0-r130</version>
-</dependency>
-```
-
-
-
-测试支持：
-
-* 
-
-
-
-特性 
-
-* 最小依赖，仅依赖 `r2dbc-spi` `reactor-core` 不依赖springframework,  spring-data。
-
-* 支持连接池 r2dbc-pool.
-
-* 此模块不包含事务控制。事务控制可使用  [query-sql-r2dbc-spring 模块](../querydsl-sql-r2dbc-spring/)  。
-
-  
-
+* Does not support DDL operations (Create Table/Alter table and etc..).

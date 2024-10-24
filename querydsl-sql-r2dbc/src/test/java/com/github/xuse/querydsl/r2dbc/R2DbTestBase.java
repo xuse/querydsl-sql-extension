@@ -6,7 +6,6 @@ import javax.sql.DataSource;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.init.DataInitBehavior;
-import com.github.xuse.querydsl.r2dbc.core.R2dbcFactory;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.querydsl.sql.H2Templates;
