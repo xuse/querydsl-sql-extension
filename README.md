@@ -1,24 +1,50 @@
-## querydsl-sql-extension
+# Querydsl-sql-extension
 
 **An enhancement for Querydsl based on module 'querydsl-sql'.**
 
+[中文](README.md) | [English](README_en.md)
+
+
 本框架是在 Querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅官方文档 [Querying SQL](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html)
 
+**目录/ Table of Contents**
 
+- [Querydsl-sql-extension](#querydsl-sql-extension)
+  - [简介](#简介)
+  - [特性介绍 (对照原版querydsl-sql)](#特性介绍-对照原版querydsl-sql)
+    - [提升使用便利性](#提升使用便利性)
+    - [访问安全](#访问安全)
+    - [性能优化](#性能优化)
+    - [功能增强](#功能增强)
+      - [数据库结构建模](#数据库结构建模)
+      - [纯POJO使用 (无QueryClass)](#纯pojo使用-无queryclass)
+      - [多种风格的低代码API](#多种风格的低代码api)
+      - [数据库结构访问与修改(DDL)](#数据库结构访问与修改ddl)
+      - [Record对象作为数据表映射](#record对象作为数据表映射)
+    - [运行环境与适用范围](#运行环境与适用范围)
+  - [实验性功能](#实验性功能)
+    - [Partition管理（已支持MySQL、PostgreSQL）](#partition管理已支持mysqlpostgresql)
+    - [DDL Support](#ddl-support)
+    - [MySQL Online DDL](#mysql-online-ddl)
+  - [FAQ](#faq)
+  - [其他](#其他)
+    - [什么是元模型/Query Class](#什么是元模型query-class)
+    - [Language](#language)
+
+
+## 简介
 
 **Querydsl是什么? 为什么选择？/ Introduction**
-
 介绍:  [Why QueryDSL (Chinese)](static/why_querydsl.md)
 
-注意：本框架不是基于`querydsl-jpa`的，是基于`querydsl-sql`与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
+注意：本框架不基于`querydsl-jpa`，是基于`querydsl-sql`的扩展。与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。
+如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
 
+**变更日志**
+[ChangeLogs](changelogs.md)
 
-
-**入门 / Getting started**
-
+**手册 / Manuals**
 参见  [使用说明](USER_GUIDE.md) /  See file [User  Guide (Chinese)](USER_GUIDE.md)
-
-
 
 **引用 / Repository**
 
@@ -31,7 +57,6 @@
 ```
 
 如需要与Spring framework集成，还需要
-
 ```xml
 <dependency>
 	<groupId>io.github.xuse</groupId>
@@ -39,13 +64,6 @@
 	<version>5.0.0-r120</version>
 </dependency>
 ```
-
-**变更备注**
-
-5.0.0-r120版本开始，将Spring框架支持功能移到 querydsl-sql-extension-spring 模块，相关使用说明已修改，Spring下使用需要添加该依赖包。
-Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修改为  `QueryDSLSqlExtension.createSpringQueryFactory()`
-
-
 
 **与 Querydsl-JPA 一起使用 / Using With Querydsl-JPA**
 要一起使用，需要解决两个问题。
@@ -55,34 +73,8 @@ Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修�
 2. 事务管理器(Transaction Manager)问题。
    querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。如果您在一个业务交易中使用了两个框架，事务器问题需要您自行处理解决。
 
-
-
-# 目录/ Contents
-
-- [目录/ Contents](#目录-contents)
-  - [特性介绍 (对照原版querydsl-sql)](#特性介绍-对照原版querydsl-sql)
-    - [提升使用便利性](#提升使用便利性)
-    - [访问安全](#访问安全)
-    - [性能优化](#性能优化)
-      - [性能对比测试（v5.0.0-r110）](#性能对比测试v500-r110)
-      - [高性能的秘密](#高性能的秘密)
-      - [兼容性](#兼容性)
-    - [功能增强](#功能增强)
-      - [数据库结构建模](#数据库结构建模)
-      - [纯POJO使用 (无QueryClass)](#纯pojo使用-无queryclass)
-      - [多种风格的低代码API](#多种风格的低代码api)
-      - [数据库结构访问与修改(DDL)](#数据库结构访问与修改ddl)
-      - [Record对象作为数据表映射](#record对象作为数据表映射)
-    - [运行环境与适用范围](#运行环境与适用范围)
-  - [实验性功能](#实验性功能)
-    - [Partition管理（已支持MySQL、PostgreSQL）](#partition管理已支持mysqlpostgresql)
-    - [DDL Support](#ddl-support)
-    - [MySQL Online DDL](#mysql-online-ddl)
-  - [修订记录 / ChangeLog](#修订记录--changelog)
-  - [FAQ](#faq)
-  - [其他](#其他)
-    - [什么是元模型/Query Class](#什么是元模型query-class)
-    - [Language](#language)
+**R2dbc数据源使用：**
+参见  [querydsl-sql-r2dbc](querydsl-sql-r2dbc/) 和 [querydsl-sql-r2dbc的Spring事务](querydsl-sql-r2dbc-spring) 用法。
 
 
 ## 特性介绍 (对照原版querydsl-sql)
@@ -220,7 +212,7 @@ Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修�
 
 下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](static/performance_tunning.md)
 
-#### 性能对比测试（v5.0.0-r110）
+**性能对比测试（v5.0.0-r110）**
 
 * MySQL 5.7.26
 * MySQL JDBC Driver 5.1.49
@@ -251,9 +243,7 @@ Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修�
 
 * MyBatis在SELECT的配置中设置fetchSize="5000"，QueryDSL在查询时设置setFetchSize(5000)
 
-  
-
-#### 高性能的秘密
+**高性能的秘密**
 
 * **无反射访问**：重写了QueryDSL 中JavaBean与JDBC交互部分以提升性能。使用ASM，为每个需要Bean对应的查询字段组合生成了一个访问器，作为反射的一个加速替代。
 
@@ -275,8 +265,7 @@ Spring下的初始化方法从 `SQLQueryFactory.createSpringQueryFactory()`修�
   		.fetch();
   ```
 
-
-#### 兼容性
+**兼容性**
 
 * 使用ASM7的动态类生成，支持JDK 8~ 22，GraalVM（22）。
 
@@ -455,98 +444,6 @@ ALTER TABLE table1
 
 * 此功能的应用并不意味着DDL执行对数据表无影响，24小时的运行的高可用系统还是应当在业务低谷期间执行DDL
 * Online DDL是在MySQL 5.x引入的，8.x中支持更多的Online DDL策略。但目前5.x和8.x的方言还没有区分开，目前仅按5.x做了相对保守的策略。
-
-## 修订记录 / ChangeLog
-
-**版本编号方式：** 版本号由两部分组成，前一个数字是对应的querydsl库版本号，后一个是此扩展框架的修订号。从1开始向上，每个修订都向下兼容。
-
-```
-v{querydsl 版本号} - r(extension version)
-```
-
-**v5.0.0-r130**
-Eta: 2024-11-11
-
- * r2dbc/r2dbc-spring transaction
- * 支持H2db的DDL操作
- * 单元测试行覆盖85%以上.
-
-**v5.0.0-r120**
-
-2024-10-01
-
-* 工程拆分，将核心不使用的类拆分到其他工程中。拆分出querydsl-sql-extension-spring，用于Spring下集成。querydsl-sql-extension不再依赖任何Spring Framework和FastJSON。
-* 构建期自动执行单元测试并输出报告，目前行覆盖65%，下个版本继续改进。
-* 测试代码增加了MySQL Mock驱动，用于单元测试时模拟MySQL数据库行为。
-* 对工具类的单元测试，修复几处边界数值下的小错误。
-* AlterTableQuery功能增强，支持列修改、更名等操作。
-
-**v5.0.0-r110**
-
-2024-09-01
-
-* PostgreSQL DDL支持。基于PostgreSQL 10.3测试。常规DDL操作已经支持完成。
-* PostgreSQL表分区功能支持，但PostgreSQL分区机制与MySQL差异很大，目前仅支持创建分区表，添加/删除分区。
-  不支持Hash分区，
-  不支持为已有的表添加/删除分区配置（机制上无法支持，Postgresql分区表在创建时就已明确是是否分区，之后无法修改）
-  不支持重组织分区
-  上述由数据库机制差异造成的特性差异，暂无支持计划。
-* Postgresql的支持比预想更为复杂，为此重构了Schema获取和DDL部分生成的机制。 主要功能开发完毕，测试中，计划9月初发布。
-* 优化BatchInsert下的数据插入性能。尤其对MySQL下的批量写入，默认从JDBC Batch更换为Bulk SQL语句，某些场景下性能提升约65倍。
-* QueryDSL Insert Batch功能调整，增加参数一致化处理。
-* 数据初始化增加配置，setPrimaryKeys用于控制主键列是否要写入到数据库。
-
-**v5.0.0-r104**
-
-2024-08-08
-
-* 支持GraalVM的Native模式使用
-* 支持在java 16以上环境使用record类型作为实体。
-
-**v5.0.0-r102**
-
-2024-07-24
-
-* 按包整理javadoc，部分类更换包位置。补充重要类的双语javadoc。
-* 支持外部扩展自行实现Facade。通过自行实现ExtensionQueryFactory接口，扩展各种查询API。
-* 提供GenericRepository类，在Spring下可以继承该类后无需编写任何代码实现常用repository的功能。支持多种API风格。
-* 【实验性】支持无Query Class的纯POJO映射使用。使用Bean Class代替QueryClass。使用方法引用Lambda代替模型字段。
-
-**v5.0.0-r101**
-
-2024-06-28
-
-* 增加了一个供上层业务调整表名的机制，以支持业务层分表场景。
-* 支持MySQL Partition管理。支持RANGE/LIST/HASH/KEY等分区类型，支持分区的创建，调整，删除，重组等操作。
-* 补充表约束和索引的缺失接口。部分操作MySQL支持不锁表的Online操作。
-
-**v5.0.0-r100**
-
-2024-06-11
-
-* 完成DDL相关表语法支持。部分类名重构调整。
-* 版本号100开始，保持三位数。QueryDSL官方版本5.1.0是需要Java 11以上的，目前还不打算跟进支持。 
-
-**v5.0.0-r8 **
-
-2018年
-
-* 升级支持Querydsl v5.0.0
-* 添加MySQL方言：com.querydsl.core.types.dsl.MySQLWithJSONTemplates、JsonExpressions等，支持JSON字段操作
-* 注解@AutoGenerated，支持字段内容自动生成(在update/insert时)。如使用populate()方法则自动写入，如使用set()方法，可调用populateAutoGeneratedColumns()方法生成。
-* 增加GUID、SnowFlake ID等生成规则
-
-**v4.1.1-r4**
-* 增加更适合于linux下的简洁日志。
-* 结果集拼接性能优化。提供额外的RelationalPathBaseEx用于继承。
-* API增加——增加DDL语法框架（尚未实现）。
-
-**v4.2.1-r1 **
-
-2017年
-
-1. 日志扩展
-2. 关于Connection is not transactional异常修复，还有一些其他方面的个性化要求，因此通过本项目进行扩展。后续随功能更新。
 
 ## FAQ
 

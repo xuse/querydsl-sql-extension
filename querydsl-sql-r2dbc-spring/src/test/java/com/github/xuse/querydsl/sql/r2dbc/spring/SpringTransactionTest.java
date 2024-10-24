@@ -17,7 +17,7 @@ import com.github.xuse.querydsl.sql.routing.TableRouting;
 
 import reactor.core.publisher.Flux;
 
-@ContextConfiguration(classes = SpringConfiguration.class)
+@ContextConfiguration(classes = QurerydslR2dbcSpringConfiguration.class)
 public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
 
 	@Autowired

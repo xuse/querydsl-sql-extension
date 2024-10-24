@@ -8,7 +8,7 @@ Table of Contents
   - [Usage](#usage)
 
 
-## dependency
+## Dependency
 
 ```xml
 <dependency>
