@@ -72,7 +72,6 @@ public class R2DbTestBase {
 		configuration.allowTableDropAndCreate();
 		// 如果使用了自定义映射，需要提前注册，或者扫描指定包
 		configuration.getScanOptions()
-			.setAlterExistTable(false)
 			.setCreateMissingTable(true)
 			.allowDrops()
 			.setDataInitBehavior(DataInitBehavior.NONE);

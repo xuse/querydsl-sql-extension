@@ -11,7 +11,7 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.StringPath;
 
 public class QUser extends RelationalPathBaseEx<User> {
-	public static final QUser user = new QUser("user");
+	public static final QUser user = new QUser("usr");
 
 	public final NumberPath<Long> id = createNumber("id", long.class);
 

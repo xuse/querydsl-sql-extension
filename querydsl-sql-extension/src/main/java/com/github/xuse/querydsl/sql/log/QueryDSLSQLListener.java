@@ -17,6 +17,7 @@ import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
@@ -243,7 +244,12 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		protected void append0(StringBuilder sb, Path<?> p, Object value, int count) {
 			sb.append("  ").append(count + 1);
 			if (p != null) {
-				sb.append(") ").append(p);
+				PathMetadata metadata=p.getMetadata();
+				sb.append(") ");
+				if(metadata.getParent()!=null) {
+					sb.append(metadata.getParent().getMetadata().getName()).append('.');
+				}
+				sb.append(metadata.getName());
 			} else {
 				sb.append(") ?");
 			}

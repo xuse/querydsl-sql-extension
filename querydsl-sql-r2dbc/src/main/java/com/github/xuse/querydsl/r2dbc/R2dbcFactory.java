@@ -448,7 +448,9 @@ public class R2dbcFactory {
 	}
 
 	private Statement createStatement(io.r2dbc.spi.Connection conn, SQLBindings binding,R2ListenerContextImpl context) {
+		listeners.prePrepare(context);
 		Statement stmt=conn.createStatement(binding.getSQL());
+		listeners.prepared(context);
 		Configuration config = configEx.get();
 		List<Path<?>> paths = CollectionUtils.nullElementsList();
 		if (binding instanceof SQLBindingsAlter) {

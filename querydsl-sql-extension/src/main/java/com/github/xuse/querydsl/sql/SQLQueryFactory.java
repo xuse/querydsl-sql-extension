@@ -107,15 +107,15 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 		if (url.startsWith("jdbc:mysql:")) {
 			return new MySQLWithJSONTemplates();
 		} else if (url.startsWith("jdbc:derby:")) {
-			return DerbyTemplates.builder().build();
+			return DerbyTemplates.builder().newLineToSingleSpace().build();
 		} else if (url.startsWith("jdbc:postgresql:")) {
-			return new PostgreSQLTemplates();
+			return PostgreSQLTemplates.builder().build();
 		} else if (url.startsWith("jdbc:sqlserver")) {
-			return new SQLServer2012Templates();
+			return SQLServer2012Templates.builder().newLineToSingleSpace().build();
 		} else if (url.startsWith("jdbc:oracle:")) {
-			return new OracleTemplates();
+			return OracleTemplates.builder().newLineToSingleSpace().build();
 		} else if(url.startsWith("jdbc:h2:")) {
-			return new H2Templates();
+			return H2Templates.builder().newLineToSingleSpace().build();
 		}
 		throw Exceptions.illegalArgument(url);
 	}
