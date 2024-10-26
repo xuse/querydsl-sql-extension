@@ -3,11 +3,11 @@ package com.github.xuse.querydsl.util;
 
 import static com.github.xuse.querydsl.util.JefBase64.STANDARD;
 import static com.github.xuse.querydsl.util.JefBase64.STANDARD_WITH_WRAP;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -18,7 +18,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("unused")
 public class StringUtilsTest {
@@ -379,29 +380,39 @@ public class StringUtilsTest {
 		
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testExceptionCase() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		StringUtils.toBoolean("s", null);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testExceptionCase2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		StringUtils.toDouble("s", null);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testExceptionCase3() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		StringUtils.toFloat("s", null);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testExceptionCase4() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		StringUtils.toInt("s", null);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testExceptionCase5() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		StringUtils.toLong("s", null);
+		});
 	}
 	
 	@Test
@@ -535,39 +546,51 @@ public class StringUtilsTest {
 		assertEquals(6, data.length);
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void hexTextTestException() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		byte[] data=StringUtils.fromHex("DE !C",true);
 		assertEquals(6, data.length);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void hexTextTestException2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		byte[] data=StringUtils.fromHex("DE FG",true);
 		assertEquals(6, data.length);
+		});
 	}
 	
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void hexTextTestException3() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		byte[] data=StringUtils.fromHex("DE !C".toCharArray(),true);
 		assertEquals(6, data.length);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void hexTextTestException4() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		byte[] data=StringUtils.fromHex("DE FG".toCharArray(),true);
 		assertEquals(6, data.length);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testBase64Exception2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		JefBase64.encode(new byte[0],0,5,STANDARD);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testBase64Exception1() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		JefBase64.decodeFirstByte("",3,JefBase64.STANDARD);
+		});
 	}
 	
 	@Test

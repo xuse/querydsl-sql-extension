@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.r2dbc;
 
 import java.time.Duration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

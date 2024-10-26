@@ -1,12 +1,13 @@
 package com.github.xuse.querydsl.r2dbc.jdbcwrapper;
 
-import static org.junit.Assert.assertArrayEquals;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Flux;
 

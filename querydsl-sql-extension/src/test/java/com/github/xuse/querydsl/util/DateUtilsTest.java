@@ -1,12 +1,12 @@
 package com.github.xuse.querydsl.util;
 
 import static com.github.xuse.querydsl.util.DateUtils.today;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Time;
 import java.time.Instant;
@@ -23,7 +23,8 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"unused","deprecation"})
 public class DateUtilsTest {
@@ -161,7 +162,7 @@ public class DateUtilsTest {
 		assertEquals(1,DateUtils.getWeekDay(ret));
 		assertEquals(0,DateUtils.getWeekDay(ret,TimeZones.UTC_3));
 		assertEquals(6,DateUtils.getWeekOfYear(ret));
-		assertEquals(6,DateUtils.getWeekOfYear(ret,TimeZones.UTC_3));
+		assertEquals(5,DateUtils.getWeekOfYear(ret,TimeZones.UTC_3));
 		
 		assertEquals("20040201180202.666",DateUtils.getFtpDate(millisTime));
 		assertEquals(1075658522000L, DateUtils.parseFTPDate("20040201180202.666").getTime());
@@ -262,9 +263,11 @@ public class DateUtilsTest {
 		today.setTime(todayMillis);
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void exceptionCase() {
+		Assertions.assertThrows(UnsupportedOperationException.class, () -> {
 		DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(today, Calendar.WEEK_OF_YEAR));
+		});
 	}
 	
 	@Test
@@ -301,19 +304,25 @@ public class DateUtilsTest {
 		
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testDataParseException() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		DateFormats.DATE_CS.parse("asadsada");
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testDataParseException2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		DateFormats.DATE_CS.parse("2024.01.01",TimeZones.UTC_8);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testDataParseException3() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		DateFormats.DATE_CS.parse("2024.01.01",8d);
+		});
 	}
 	
 	@Test

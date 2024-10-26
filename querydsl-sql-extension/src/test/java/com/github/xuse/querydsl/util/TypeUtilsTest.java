@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -18,8 +19,8 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.enums.Gender;
@@ -90,7 +91,7 @@ public class TypeUtilsTest {
 
 	@Test
 	public void testRecordAnaly() {
-		Assume.assumeTrue("Only for Database supports Partition",JDKEnvironment.JVM_VERSION>=16);
+		Assumptions.assumeTrue(JDKEnvironment.JVM_VERSION>=16,"Only JDK > 16");
 		URL clzUrl=this.getClass().getResource("/RecordFoo.class");
 		assertNotNull(clzUrl);
 		

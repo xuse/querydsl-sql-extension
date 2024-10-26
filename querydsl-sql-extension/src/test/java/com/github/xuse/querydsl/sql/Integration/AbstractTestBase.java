@@ -2,8 +2,8 @@ package com.github.xuse.querydsl.sql.Integration;
 
 import javax.sql.DataSource;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.enums.Gender;
@@ -76,11 +76,11 @@ public abstract class AbstractTestBase {
 	 * 在Junit测试时，每个测试案例都会运行一次创建和注销。但仅在第一次类加载时才会注册驱动类。
 	 * 因此，第二个和之后的测试案例就会因无法获得连接而失败。
 	 */
-	@AfterClass 
+	@AfterAll
 	public static void closeDerby() {
 	}
 	
-	@BeforeClass
+	@BeforeAll
 	public static void doInit() {
 		try {
 			factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),

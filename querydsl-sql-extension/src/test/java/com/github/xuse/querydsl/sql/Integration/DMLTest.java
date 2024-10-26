@@ -1,7 +1,8 @@
 package com.github.xuse.querydsl.sql.Integration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -18,10 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
@@ -521,7 +520,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void mysqlInsertOnDuplidateKey() {
-		Assume.assumeTrue("Only for MYSQL", factory.getMetadataFactory().getDatabaseInfo().getDbType() == DbType.mysql);
+		Assumptions.assumeTrue(factory.getMetadataFactory().getDatabaseInfo().getDbType() == DbType.mysql,"Only for MYSQL");
 		QCaAsset t2 = QCaAsset.caAsset;
 		CaAsset a = new CaAsset();
 		a.setCode("a");

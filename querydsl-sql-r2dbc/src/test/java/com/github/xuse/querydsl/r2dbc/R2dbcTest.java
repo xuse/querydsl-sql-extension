@@ -1,13 +1,14 @@
 package com.github.xuse.querydsl.r2dbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Date;
 import java.util.List;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
@@ -34,7 +35,7 @@ public class R2dbcTest extends R2DbTestBase implements LambdaHelpers {
 
 	LambdaTable<School> table = () -> School.class;
 
-	@BeforeClass
+	@BeforeAll
 	public static void createTable() {
 		getSqlFactory();
 	}

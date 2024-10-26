@@ -1,12 +1,13 @@
 package com.github.xuse.querydsl.sql.Integration;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;

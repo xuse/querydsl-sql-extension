@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -22,7 +23,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.derby.iapi.services.io.ArrayInputStream;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import lombok.SneakyThrows;
 
@@ -192,10 +194,12 @@ public class IOUtilsTest {
 		assertEquals(116,map.size());
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testPropertiesException() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		URL url=this.getClass().getResource("/testerror.properties");
 		IOUtils.loadProperties(url);
+		});
 	}
 	
 	@Test

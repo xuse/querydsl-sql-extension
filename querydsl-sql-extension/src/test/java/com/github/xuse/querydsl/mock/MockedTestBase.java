@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.mock;
 
 import java.util.List;
 
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.enums.Gender;
@@ -41,7 +41,7 @@ public class MockedTestBase {
 	
 	protected static SQLQueryFactory factory;
 
-	@BeforeClass
+	@BeforeAll
 	public static void doInit() {
 		SQLTemplates templates = new MySQLWithJSONTemplates() {
 			@Override
