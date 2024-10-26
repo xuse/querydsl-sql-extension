@@ -1,0 +1,40 @@
+Query源码解读之Query嵌套
+
+一、Query嵌套
+总共有五种SQLQuery，Query正常情况下都是用Supplier<Connection>构造的，但是存在Query嵌套的情况。
+即在一个Query中为了完成稍微复杂一些任务，需要访问数据库两次或以上，这时内部会再创建出一个Query来，这个Query就是被嵌套的。
+querydsl这块设计可读性不是很好，所以特意做个笔记。
+被嵌套Query构造时直接复用父Query的Connection. 并且其在end context时，要阻止连接被监听器关闭。
+
+二、阻止监听器关闭连接的方法
+使用了两种方法，最终效果都是在Context的Data Map中记录一个Parent context。在所有的Close Listener中，也都会判断是否有Parent context，有就不关闭连接。
+
+- 方法一 在Select Query中，fetchResult方法中，事先设置了parentContext字段作为该方法动作的上下文。当内部再去调用fetch/fetchCount方法，而这些方法创建上下文时会判断 parentContext
+是否有值，并加入到ParentContext中去。
+但是此时并没有更新ParentContext为本次新建的Context，因此这种机制无法建立超过两层的请求嵌套，和parentContext的概念有点不符。有点像ROOT CONTEXT（但在fetchResult方法如果内部调用多次，则会出现新嵌套）。所以这种机制也是不够完善的。
+
+- 方法二 而在Merge查询中，也涉及Query的嵌套，为了阻止内层查询请求关闭连接，使用了另一种不同的方法
+     query.addListener(SQLNoCloseListener.DEFAULT);
+	 这个监听器被添加后，每次startContext时，会将当前context的Parent设置成自己，在end时，将Parent移除。
+	 
+	 这个机制能够正常工作，但我认为不是一个很好的设计，原因如下——
+	 - 这个机制要求监听器顺序敏感， SQLNoCloseListener必须在监听器的尾部，关闭连接的监听器必须在它之前。才能保证移除Parent动作发生在连接关闭之后。
+	 - 这个机制中将context设置成自己的Parent，即自己的Parent是自己，违反了正常嵌套Query约束，并且让人不好理解。
+
+	出现嵌套的场景就只有上述两种，而且采用了不同的机制。这块的设计感觉不太完善，好在嵌套查询的情形确实也很少。
+
+三、实际用到嵌套查询的场景
+- SQLQuery Select场景，如上文所说fetchResult方法中用到了。关于这个fetchReults，还有可以说道的东西。fetchReults目的是返回符合条件的总数和List数据。
+类似许多数据分页返回的场景。
+一般我们执行操作是用两次查询，一次count，一次fetch，在非重复读的隔离级别下，两次返回数据结果可能不一致。
+SQLQuery在这里用一个骚操作进行优化，尝试一次返回数据来完成可重复读效果。使用不带分区的开窗函数列（", count(*) over() "），一次性获得结果集的总数。
+ 
+启用该用法，有两个条件：数据库支持开窗函数，并且语句中没有groupBy
+   configuration.getTemplates().isCountViaAnalytics()
+                && queryMixin.getMetadata().getGroupBy().isEmpty()
+   
+对这个实现我感觉不太推荐。
+- 性能上使用开窗函数的一次查询对比两次查询没太多差距。
+- 开窗函数对数据库支持要求较高，尤其是还与数据库版本有关，开关难以精确控制。目前仅有oracle, teradata，pg三个数据库启用了开窗函数特性。
+- 为了这个实现，增加了lastCell, isLastCell等字段和很多专门的逻辑代码，对整个类的侵入性和可读性影响很大。  
+- 通过改写用户查询请求内容实现，感觉不太好。

@@ -24,6 +24,12 @@ public class R2Listeners implements R2BaseListener{
 		this.sqls.add(sqls);
 	}
 	
+	public void addListener(R2BaseListener listener) {
+		if(listener!=null) {
+			listeners.add(listener);
+		}
+	}
+	
 	public static R2BaseListener wrap(SQLListeners listeners2) {
 		return new R2Listeners(listeners2);
 	}

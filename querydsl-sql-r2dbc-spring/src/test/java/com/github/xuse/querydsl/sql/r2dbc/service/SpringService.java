@@ -24,10 +24,10 @@ public class SpringService implements LambdaHelpers{
 	@Autowired
 	private R2dbcFactory factory;
 	
-	private LambdaTable<Foo> table = ()-> Foo.class;
+	private final LambdaTable<Foo> table = ()-> Foo.class;
 	
 	@Transactional
-	public void testSelect() throws InterruptedException {
+	public void testSelect() {
 		delete(factory);
 		insert(factory);
 		System.out.println("================");

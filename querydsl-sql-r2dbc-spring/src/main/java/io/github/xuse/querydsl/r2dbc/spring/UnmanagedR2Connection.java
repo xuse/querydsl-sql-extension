@@ -1,6 +1,9 @@
 package io.github.xuse.querydsl.r2dbc.spring;
 
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
+
+import com.github.xuse.querydsl.r2dbc.core.R2ConnectionAdapter;
 
 import io.r2dbc.spi.Connection;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +16,7 @@ public final class UnmanagedR2Connection extends R2ConnectionAdapter {
 	}
 
 	@Override
-	public Publisher<Void> close() {
+	public @NotNull Publisher<Void> close() {
 		log.debug("UnmanagedR2Connection closing, {}", wrapped);
 		return wrapped.close();
 	}

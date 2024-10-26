@@ -9,18 +9,17 @@ import java.util.Map;
 
 import org.junit.Test;
 
-@SuppressWarnings("unused")
-public class TestLinkedHashMap {
-	private static final int LOOP_TIMES = 5;
+public class LinkedHashMapPerformance {
+	private static final int LOOP_TIMES = 100000;
 
 	@Test
 	public void testLinkedHasdMap() {
 		int SIZE = 256;
-		//基线
+		// 基线
 		Map<String, String> map0 = new LinkedHashMap<>(SIZE);
-		//测试目标
-		FastHashtable< String> map1 = new FastHashtable<>(SIZE);
-		//对照组
+		// 测试目标
+		FastHashtable<String> map1 = new FastHashtable<>(SIZE);
+		// 对照组
 		Map<String, String> map3 = new NoReadLockHashMap<>();
 
 		String s;
@@ -47,7 +46,7 @@ public class TestLinkedHashMap {
 		}
 		{
 			long time = System.currentTimeMillis();
-			Map<String,String> map = map1;
+			Map<String, String> map = map1;
 
 			for (int j = 0; j < LOOP_TIMES; j++) {
 				map.clear();

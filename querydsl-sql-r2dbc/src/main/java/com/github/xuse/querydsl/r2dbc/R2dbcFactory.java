@@ -8,6 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
@@ -22,7 +23,6 @@ import com.github.xuse.querydsl.r2dbc.core.dml.Update;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2ResultWrapper;
 import com.github.xuse.querydsl.r2dbc.jdbcwrapper.R2StatementWrapper;
 import com.github.xuse.querydsl.r2dbc.listener.R2BaseListener;
-import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContext;
 import com.github.xuse.querydsl.r2dbc.listener.R2ListenerContextImpl;
 import com.github.xuse.querydsl.r2dbc.listener.R2Listeners;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -59,19 +59,17 @@ public class R2dbcFactory {
 
 	protected final ConnectionFactory connection;
 	
-    private R2ListenerContext parentContext;
-	
 	private final R2BaseListener listeners;
 	
-	private final Function<Connection, Mono<Void>> closeHandder;
+	private final Function<Connection, Mono<Void>> closeHandler;
 
 	public R2dbcFactory(ConnectionFactory connection, ConfigurationEx configEx) {
 		this(connection,configEx,c->(Mono<Void>)c.close());	
 	}
 	
-	public R2dbcFactory(ConnectionFactory connection, ConfigurationEx configEx,Function<Connection, Mono<Void>> closeHandder) {
+	public R2dbcFactory(ConnectionFactory connection, ConfigurationEx configEx,Function<Connection, Mono<Void>> closeHandler) {
 		super();
-		this.closeHandder=closeHandder;
+		this.closeHandler =closeHandler;
 		this.configEx = configEx;
 		this.connection = connection;
 		listeners=R2Listeners.wrap(configEx.get().getListeners());
@@ -100,23 +98,23 @@ public class R2dbcFactory {
 		return new R2Fetchable<>(query);
 	}
 	
-	public <E> R2Executeable<Insert<E>,E> insert(RelationalPath<E> path) {
-		return new R2Executeable<>(new Insert<>(configEx, path),path);
+	public <E> R2Executable<Insert<E>,E> insert(RelationalPath<E> path) {
+		return new R2Executable<>(new Insert<>(configEx, path),path);
 	}
-	public final <E> R2Executeable<Update<E>,E> update(RelationalPath<E> path) {
-		return new R2Executeable<>(new Update<>(configEx, path),path);
+	public final <E> R2Executable<Update<E>,E> update(RelationalPath<E> path) {
+		return new R2Executable<>(new Update<>(configEx, path),path);
 	}
-	public final <E> R2Executeable<Delete<E>,E> delete(RelationalPath<E> path) {
-		return new R2Executeable<>(new Delete<>(configEx, path),path);
+	public final <E> R2Executable<Delete<E>,E> delete(RelationalPath<E> path) {
+		return new R2Executable<>(new Delete<>(configEx, path),path);
 	}
-	public <E> R2Executeable<Insert<E>,E> insert(LambdaTable<E> path) {
-		return new R2Executeable<>(new Insert<>(configEx, path),path);
+	public <E> R2Executable<Insert<E>,E> insert(LambdaTable<E> path) {
+		return new R2Executable<>(new Insert<>(configEx, path),path);
 	}
-	public final <E> R2Executeable<Update<E>,E> update(LambdaTable<E> path) {
-		return new R2Executeable<>(new Update<>(configEx, path),path);
+	public final <E> R2Executable<Update<E>,E> update(LambdaTable<E> path) {
+		return new R2Executable<>(new Update<>(configEx, path),path);
 	}
-	public final <E> R2Executeable<Delete<E>,E> delete(LambdaTable<E> path) {
-		return new R2Executeable<>(new Delete<>( configEx, path),path);
+	public final <E> R2Executable<Delete<E>,E> delete(LambdaTable<E> path) {
+		return new R2Executable<>(new Delete<>( configEx, path),path);
 	}
 	///////////////////////////////////////////////////////////////////////////////
 	public class R2Fetchable<R>{
@@ -134,24 +132,24 @@ public class R2dbcFactory {
 			return this;
 		}
 		
-		public Flux<R> fetch() {
+		public @NotNull Flux<R> fetch() {
 			context = startContext(query.getMetadata(),null);
 			listeners.preRender(context);
 			return Mono.just(query.getSQL(false)).flatMapMany(this::fetch0);
 		}
 		
-		public Mono<R> fetchFirst() {
+		public @NotNull Mono<R> fetchFirst() {
 			context =  startContext(query.getMetadata(),null);
 			QueryMetadata metadata=query.getMetadata();
 			if (metadata.getModifiers().getLimit() == null
-					&& !metadata.getProjection().toString().contains("count(")) {
+					&& !String.valueOf(metadata.getProjection()).contains("count(")) {
 				metadata.setLimit(2L);
 			}
 			listeners.preRender(context);
 			return Mono.just(query.getSQL(false)).flatMapMany(this::fetch0).next();
 		}
 
-		public Mono<Long> fetchCount() {
+		public @NotNull Mono<Long> fetchCount() {
 			context = startContext(query.getMetadata(),null);
 			listeners.preRender(context);
 			return Mono.just(query.getSQL(true)).flatMap(this::fetchCnt);	
@@ -159,7 +157,7 @@ public class R2dbcFactory {
 		//////////////////// private methods //////////////////
 		
 		//使用{#usingWhen}方法来关闭连接。
-		private Flux<R> fetch0(SQLBindings sql) {
+		private @NotNull Flux<R> fetch0(SQLBindings sql) {
 			this.sqls = sql;
 			context.addSQL(sql);
 			listeners.rendered(context);
@@ -207,29 +205,21 @@ public class R2dbcFactory {
 		}
 
 		private Publisher<R> transform(Result result) {
-			return result.map(getProjection(result, false));
+			return result.map(getProjection());
 		}
 
-		private AbstractProjection<R> getProjection(Result rs, boolean getLastCell){
+		private AbstractProjection<R> getProjection(){
 			@SuppressWarnings("unchecked")
 			Expression<R> expr = (Expression<R>) query.getMetadata().getProjection();
 			AbstractProjection<R> fe;
 			if (expr instanceof FactoryExpression) {
-				FactoryExpressionResult<R> r = new FactoryExpressionResult<R>((FactoryExpression<R>) expr);
-				//r.getLastCell = getLastCell;
-				fe = r;
+				fe = new FactoryExpressionResult<R>((FactoryExpression<R>) expr);
 			} else if (expr == null) {
-				DefaultValueResult<R> r = new DefaultValueResult<>();
-				//r.getLastCell = getLastCell;
-				fe = r;
+				fe = new DefaultValueResult<>();
 			} else if (expr.equals(Wildcard.all)) {
-				WildcardAllResult<R> r = new WildcardAllResult<>();
-				//r.getLastCell = getLastCell;
-				fe = r;
+				fe = new WildcardAllResult<>();
 			} else {
-				SingleValueResult<R> r = new SingleValueResult<>(expr);
-				//r.getLastCell = getLastCell;
-				fe = r;
+				fe = new SingleValueResult<>(expr);
 			}
 			return fe;
 		}
@@ -249,8 +239,6 @@ public class R2dbcFactory {
 			}
 
 			protected abstract RT convert(Row rs,RowMetadata meta)throws SQLException;
-
-			protected abstract int getArgSize();
 		}
 
 		/*
@@ -294,11 +282,6 @@ public class R2dbcFactory {
 				}
 				return expr.newInstance(args);
 			}
-
-			@Override
-			protected int getArgSize() {
-				return argSize;
-			}
 		}
 
 		/*
@@ -309,13 +292,9 @@ public class R2dbcFactory {
 			public WildcardAllResult() {
 				super();
 			}
-			@Override
-			protected int getArgSize() {
-				return columnSize;
-			}
 			@SuppressWarnings("unchecked")
 			@Override
-			protected RT convert(Row rs, RowMetadata meta) throws SQLException {
+			protected RT convert(Row rs, RowMetadata meta) {
 				int size;
 				if(columnSize>-1) {
 					size = columnSize;
@@ -335,7 +314,7 @@ public class R2dbcFactory {
 		final class SingleValueResult<RT> extends AbstractProjection<RT> {
 			private final Expression<RT> expr;
 			private final Path<?> path;
-			private R2ResultWrapper wrapper=new R2ResultWrapper();
+			private final R2ResultWrapper wrapper=new R2ResultWrapper();
 
 			public SingleValueResult(Expression<RT> expr) {
 				this.expr = expr;
@@ -347,19 +326,11 @@ public class R2dbcFactory {
 				wrapper.prepare(rs, meta);
 				return configuration.get(wrapper, path, 1, expr.getType());
 			}
-			@Override
-			protected int getArgSize() {
-				return 1;
-			}
 		}
 		/*
 		 * 仅获取结果集第一列的原始数据类型
 		 */
 		final class DefaultValueResult<RT> extends AbstractProjection<RT> {
-			@Override
-			protected int getArgSize() {
-				return 1;
-			}
 			@SuppressWarnings("unchecked")
 			@Override
 			protected RT convert(Row rs, RowMetadata meta){
@@ -369,33 +340,29 @@ public class R2dbcFactory {
 		
 		private Mono<Void> close(Connection connection) {
 	    	if (connection != null && context.getData(R2ListenerContextImpl.PARENT_CONTEXT) == null) {
-	    		return closeHandder.apply(connection);
+	    		return closeHandler.apply(connection);
 	    	}
 	    	return Mono.empty();
 	    }
 	}
 
-	public class R2Executeable<T extends SQLContainer,E>{
+	public class R2Executable<T extends SQLContainer,E>{
 		final T clause;
 		private R2ListenerContextImpl context;
-		private RelationalPath<E> entity;
+		private final RelationalPath<E> entity;
 		protected final R2Clause r2Clause;
 
-		public R2Executeable(T clause, RelationalPath<E> entity) {
+		public R2Executable(T clause, RelationalPath<E> entity) {
 			this.clause = clause;
 			this.entity = entity;
 			this.r2Clause = (clause instanceof R2Clause) ? (R2Clause) clause : Dummy.R2Clause;
 		}
 
-		public R2Executeable<T,E> prepare(Consumer<T> consumer) {
+		public R2Executable<T,E> prepare(Consumer<T> consumer) {
 			if(consumer!=null)
 				consumer.accept(clause);
 			return this;
 		}
-		
-//		public QueryBuilder<E,?,R2Executeable<T,E>> where(){
-//			return new QueryBuilder<>(entity,r2Clause.getMetadata(),this);
-//		}
 
 		public Mono<Long> execute() {
 			context = startContext(r2Clause.getMetadata(), entity);
@@ -405,12 +372,12 @@ public class R2dbcFactory {
 			listeners.rendered(context);
 			String action = r2Clause.notifyAction(listeners, context);
 			context.setData(ContextKeyConstants.ACTION, action);
-			return Flux.fromIterable(sqls).flatMap(this::execute).reduce((a, b) -> a + b);
+			return Flux.fromIterable(sqls).flatMap(this::execute).reduce(Long::sum);
 		}
 
 		private Mono<Long> execute(SQLBindings sqls) {
 			return Mono.usingWhen(connection.create(),
-					conn-> Flux.from(createStatement(conn, sqls, context).execute()).flatMap(Result::getRowsUpdated).reduce((a, b) -> a + b).doOnSuccess(this::postExecute),
+					conn-> Flux.from(createStatement(conn, sqls, context).execute()).flatMap(Result::getRowsUpdated).reduce(Long::sum).doOnSuccess(this::postExecute),
 					this::close);
 		}
 		
@@ -427,7 +394,7 @@ public class R2dbcFactory {
 		
 		private Mono<Void> close(Connection connection) {
 	    	if (connection != null && context.getData(R2ListenerContextImpl.PARENT_CONTEXT) == null) {
-	    		return closeHandder.apply(connection);
+	    		return closeHandler.apply(connection);
 	    	}
 	    	return Mono.empty();
 	    }
@@ -435,9 +402,6 @@ public class R2dbcFactory {
 
     protected R2ListenerContextImpl startContext(QueryMetadata metadata,RelationalPath<?> entity) {
         R2ListenerContextImpl context = new R2ListenerContextImpl(metadata, entity);
-        if (parentContext != null) {
-            context.setParentContext(parentContext);
-        }
         listeners.start(context);
         return context;
     }

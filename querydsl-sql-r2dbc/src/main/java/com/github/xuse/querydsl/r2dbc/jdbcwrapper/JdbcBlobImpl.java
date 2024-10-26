@@ -1,16 +1,14 @@
 package com.github.xuse.querydsl.r2dbc.jdbcwrapper;
 
+import com.github.xuse.querydsl.util.ArrayUtils;
+import reactor.core.publisher.Flux;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.sql.Blob;
-import java.sql.SQLException;
-
-import com.github.xuse.querydsl.util.ArrayUtils;
-
-import reactor.core.publisher.Flux;
 
 public class JdbcBlobImpl implements Blob{
 	private static final int MAX_SIZE = 1024 * 1024 * 32;
@@ -36,12 +34,12 @@ public class JdbcBlobImpl implements Blob{
 		data=out.toByteArray();
 	}
 	@Override
-	public long length() throws SQLException {
+	public long length() {
 		return data.length;
 	}
 	
 	@Override
-	public InputStream getBinaryStream(long pos, long length) throws SQLException {
+	public InputStream getBinaryStream(long pos, long length) {
 		return new ByteArrayInputStream(getBytes(pos,(int)length));
 	}
 	
@@ -58,27 +56,27 @@ public class JdbcBlobImpl implements Blob{
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public long position(Blob pattern, long start) throws SQLException {
+	public long position(Blob pattern, long start){
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public int setBytes(long pos, byte[] bytes) throws SQLException {
+	public int setBytes(long pos, byte[] bytes) {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
+	public int setBytes(long pos, byte[] bytes, int offset, int len) {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public OutputStream setBinaryStream(long pos) throws SQLException {
+	public OutputStream setBinaryStream(long pos) {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public void truncate(long len) throws SQLException {
+	public void truncate(long len) {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public void free() throws SQLException {
+	public void free() {
 		this.data = null;
 	}
 }

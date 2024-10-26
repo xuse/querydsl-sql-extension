@@ -131,9 +131,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				}
 				return new QueryResults<T>(results, originalModifiers, total);
 			} else {
-				// 我怎么感觉这两句话是没什么用处的。
-//				 Expression<T> expr = (Expression<T>) queryMixin.getMetadata().getProjection();
-//				 queryMixin.setProjection(expr);
 				long total = fetchCount();
 				if (total > 0) {
 					return new QueryResults<T>(fetch(), originalModifiers, total);
@@ -146,6 +143,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 	}
 	
+	/**
+	 * @deprecated use {@link com.github.xuse.querydsl.sql.SQLQueryAlter.fetchResults()} please.
+	 * @return Pair<Integer,List<T>>
+	 */
 	public Pair<Integer,List<T>> fetchAndCount(){
 		int count=(int)fetchCount();
 		if(count==0) {
@@ -330,10 +331,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		@Override
 		public List<RT> convert(ResultSet rs) throws SQLException {
 			List<RT> result = new ArrayList<>();
-			int argSize = getArgSize();
+			int argSize = rs.getMetaData().getColumnCount();
 			while (rs.next()) {
 				if (getLastCell) {
-					lastCell = rs.getObject(argSize + 1);
+					lastCell = rs.getObject(argSize);
 					getLastCell = false;
 				}
 				result.add(fetch(rs));
@@ -342,8 +343,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 
 		protected abstract RT fetch(ResultSet rs) throws SQLException;
-
-		protected abstract int getArgSize();
 	}
 
 	/*
@@ -384,11 +383,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			}
 			return expr.newInstance(args);
 		}
-
-		@Override
-		protected int getArgSize() {
-			return argSize;
-		}
 	}
 
 	/*
@@ -404,16 +398,12 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		@SuppressWarnings("unchecked")
 		@Override
 		protected final RT fetch(ResultSet rs) throws SQLException {
-			Object[] row = new Object[columnSize];
-			for (int i = 0; i < row.length; i++) {
+			int size=this.columnSize;
+			Object[] row = new Object[size];
+			for (int i = 0; i < size; i++) {
 				row[i] = rs.getObject(i + 1);
 			}
 			return (RT) row;
-		}
-
-		@Override
-		protected int getArgSize() {
-			return columnSize;
 		}
 	}
 	/*
@@ -432,11 +422,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		protected final RT fetch(ResultSet rs) throws SQLException {
 			return configuration.get(rs, path, 1, expr.getType());
 		}
-
-		@Override
-		protected int getArgSize() {
-			return 1;
-		}
 	}
 	/*
 	 * 仅获取结果集第一列的原始数据类型
@@ -446,10 +431,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		@Override
 		protected final RT fetch(ResultSet rs) throws SQLException {
 			return (RT) rs.getObject(1);
-		}
-		@Override
-		protected int getArgSize() {
-			return 1;
 		}
 	}
 

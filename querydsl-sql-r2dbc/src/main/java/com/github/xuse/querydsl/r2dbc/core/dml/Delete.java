@@ -29,7 +29,7 @@ public class Delete<E> extends SQLDeleteClauseAlter implements R2Clause,SQLConta
 	
 	@SuppressWarnings("unchecked")
 	public QueryBuilder<E,?,Delete<E>> where(){
-		DefaultQueryMetadata meta=(DefaultQueryMetadata) super.metadata;
+		DefaultQueryMetadata meta=super.metadata;
 		return new QueryBuilder<>((RelationalPath<E>)super.entity, meta, this);
 	}
 }

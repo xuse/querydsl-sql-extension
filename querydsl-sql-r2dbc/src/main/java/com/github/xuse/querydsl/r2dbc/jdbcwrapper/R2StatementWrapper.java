@@ -1,23 +1,13 @@
 package com.github.xuse.querydsl.r2dbc.jdbcwrapper;
 
+import com.github.xuse.querydsl.util.DateUtils;
+import io.r2dbc.spi.Statement;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Types;
+import java.sql.*;
 import java.util.Calendar;
-
-import com.github.xuse.querydsl.util.DateUtils;
-
-import io.r2dbc.spi.Statement;
 
 /**
  * 使用这个适配器使得 r2dbc的Statement可以使用querydsl的 Type映射。 
@@ -34,295 +24,295 @@ public class R2StatementWrapper extends UnsupportedJdbcStatement{
 		this.stmt = s;
 	}
 
-	public void setNull(int parameterIndex, int sqlType) throws SQLException {
+	public void setNull(int parameterIndex, int sqlType) {
 		stmt.bindNull(parameterIndex - 1, toClass(sqlType));
 	}
 
-	public void setBoolean(int parameterIndex, boolean x) throws SQLException {
+	public void setBoolean(int parameterIndex, boolean x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setByte(int parameterIndex, byte x) throws SQLException {
+	public void setByte(int parameterIndex, byte x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setShort(int parameterIndex, short x) throws SQLException {
+	public void setShort(int parameterIndex, short x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setInt(int parameterIndex, int x) throws SQLException {
+	public void setInt(int parameterIndex, int x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setLong(int parameterIndex, long x) throws SQLException {
+	public void setLong(int parameterIndex, long x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setFloat(int parameterIndex, float x) throws SQLException {
+	public void setFloat(int parameterIndex, float x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setDouble(int parameterIndex, double x) throws SQLException {
+	public void setDouble(int parameterIndex, double x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
+	public void setBigDecimal(int parameterIndex, BigDecimal x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setString(int parameterIndex, String x) throws SQLException {
+	public void setString(int parameterIndex, String x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setBytes(int parameterIndex, byte[] x) throws SQLException {
+	public void setBytes(int parameterIndex, byte[] x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setDate(int parameterIndex, java.sql.Date x) throws SQLException {
+	public void setDate(int parameterIndex, java.sql.Date x) {
 		stmt.bind(parameterIndex-1, DateUtils.toLocalDate(x));
 	}
 
-	public void setTime(int parameterIndex, java.sql.Time x) throws SQLException {
+	public void setTime(int parameterIndex, java.sql.Time x) {
 		stmt.bind(parameterIndex-1, DateUtils.toLocalTime(x));
 	}
 
-	public void setTimestamp(int parameterIndex, java.sql.Timestamp x) throws SQLException {
+	public void setTimestamp(int parameterIndex, java.sql.Timestamp x) {
 		stmt.bind(parameterIndex-1, DateUtils.toLocalDateTime(x));
 	}
 
-	public void setAsciiStream(int parameterIndex, java.io.InputStream x, int length) throws SQLException {
+	public void setAsciiStream(int parameterIndex, java.io.InputStream x, int length) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws SQLException {
+	public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
+	public void setObject(int parameterIndex, Object x, int targetSqlType) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
-	public void setObject(int parameterIndex, Object x) throws SQLException {
+	public void setObject(int parameterIndex, Object x) {
 		stmt.bind(parameterIndex - 1, x);
 	}
 
-	public void setRef(int parameterIndex, Ref x) throws SQLException {
+	public void setRef(int parameterIndex, Ref x) {
 		stmt.bind(parameterIndex - 1, x);
 	}
 
-	public void setBlob(int parameterIndex, Blob x) throws SQLException {
+	public void setBlob(int parameterIndex, Blob x) {
 		stmt.bind(parameterIndex - 1, x);
 	}
 
-	public void setClob(int parameterIndex, Clob x) throws SQLException {
+	public void setClob(int parameterIndex, Clob x) {
 		stmt.bind(parameterIndex - 1, x);
 	}
 
-	public void setArray(int parameterIndex, Array x) throws SQLException {
+	public void setArray(int parameterIndex, Array x) {
 		stmt.bind(parameterIndex - 1, x);
 	}
 
-	public void setDate(int parameterIndex, java.sql.Date x, Calendar cal) throws SQLException {
+	public void setDate(int parameterIndex, java.sql.Date x, Calendar cal) {
 		stmt.bind(parameterIndex-1, DateUtils.toLocalDate(x));
 	}
 
-	public void setTime(int parameterIndex, java.sql.Time x, Calendar cal) throws SQLException {
+	public void setTime(int parameterIndex, java.sql.Time x, Calendar cal) {
 		stmt.bind(parameterIndex-1, DateUtils.toLocalTime(x));
 	}
 
-	public void setTimestamp(int parameterIndex, java.sql.Timestamp x, Calendar cal) throws SQLException {
+	public void setTimestamp(int parameterIndex, java.sql.Timestamp x, Calendar cal) {
 		stmt.bind(parameterIndex-1, DateUtils.toLocalDateTime(x));
 	}
 
-	public void setNull(int paramIndex, int sqlType, String typeName) throws SQLException {
+	public void setNull(int paramIndex, int sqlType, String typeName) {
 		stmt.bindNull(paramIndex, Object.class);
 	}
 
-	public void setURL(int parameterIndex, java.net.URL x) throws SQLException {
+	public void setURL(int parameterIndex, java.net.URL x) {
 		stmt.bind(parameterIndex-1, x);
 	}
 
 
-	public void setNString(int parameterIndex, String value) throws SQLException {
+	public void setNString(int parameterIndex, String value) {
 		stmt.bind(parameterIndex-1, value);
 	}
 
-	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
+	public void setNCharacterStream(int parameterIndex, Reader value, long length) {
 		stmt.bind(parameterIndex-1, value);
 	}
 
-	public void setNClob(int parameterIndex, NClob value) throws SQLException {
+	public void setNClob(int parameterIndex, NClob value) {
 		stmt.bind(parameterIndex-1, value);
 	}
 
-	public void setSQLXML(int parameterIndex, SQLXML value) throws SQLException {
+	public void setSQLXML(int parameterIndex, SQLXML value) {
 		stmt.bind(parameterIndex-1, value);
 	}
 
-	public void setAsciiStream(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream inputStream, long length) {
 		stmt.bind(parameterIndex-1, inputStream);
 	}
 
-	public void setBinaryStream(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream inputStream, long length) {
 		stmt.bind(parameterIndex-1, inputStream);
 	}
 
-	public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setCharacterStream(int parameterIndex, Reader reader, long length) {
 		stmt.bind(parameterIndex-1, reader);
 	}
 
-	public void setAsciiStream(int parameterIndex, InputStream inputStream) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream inputStream) {
 		stmt.bind(parameterIndex-1, inputStream);
 	}
 
-	public void setBinaryStream(int parameterIndex, InputStream inputStream) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream inputStream) {
 		stmt.bind(parameterIndex-1, inputStream);
 	}
 
-	public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
+	public void setCharacterStream(int parameterIndex, Reader reader) {
 		stmt.bind(parameterIndex-1, reader);
 	}
 
-	public void setNCharacterStream(int parameterIndex, Reader reader) throws SQLException {
+	public void setNCharacterStream(int parameterIndex, Reader reader) {
 		stmt.bind(parameterIndex-1, reader);
 	}
 
-	public void setClob(int parameterIndex, Reader reader) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader) {
 		stmt.bind(parameterIndex-1, reader);
 	}
 
-	public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {
+	public void setBlob(int parameterIndex, InputStream inputStream) {
 		stmt.bind(parameterIndex-1, inputStream);
 	}
 
-	public void setNClob(int parameterIndex, Reader reader) throws SQLException {
+	public void setNClob(int parameterIndex, Reader reader) {
 		stmt.bind(parameterIndex-1, reader);
 	}
 
 	@Override
-	public void close() throws SQLException {
+	public void close() {
 		this.closed=true;
 	}
 
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		return maxRows;
 	}
 
 	@Override
-	public void setMaxRows(int max) throws SQLException {
+	public void setMaxRows(int max) {
 		this.maxRows=max;
 	}
 
 	@Override
-	public void setEscapeProcessing(boolean enable) throws SQLException {
+	public void setEscapeProcessing(boolean enable) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int getQueryTimeout() throws SQLException {
+	public int getQueryTimeout() {
 		return 0;
 	}
 
 	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
+	public void setQueryTimeout(int seconds) {
 	}
 
 	@Override
-	public void setFetchSize(int rows) throws SQLException {
+	public void setFetchSize(int rows) {
 		stmt.fetchSize(rows);
 		this.fetchSize=rows;
 	}
 
 	@Override
-	public int getFetchSize() throws SQLException {
+	public int getFetchSize() {
 		return fetchSize;
 	}
 
 	@Override
-	public int getResultSetConcurrency() throws SQLException {
+	public int getResultSetConcurrency() {
 		return ResultSet.CONCUR_READ_ONLY ;
 	}
 
 	@Override
-	public int getResultSetType() throws SQLException {
+	public int getResultSetType() {
 		return ResultSet.TYPE_FORWARD_ONLY;
 	}
 
 	@Override
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		return ResultSet.CLOSE_CURSORS_AT_COMMIT;
 	}
 
-	public void setRowId(int parameterIndex, RowId value) throws SQLException {
+	public void setRowId(int parameterIndex, RowId value) {
 		throw new UnsupportedOperationException();
 	}
 	
 	/** @deprecated */
-	public void setUnicodeStream(int parameterIndex, java.io.InputStream x, int length) throws SQLException {
+	public void setUnicodeStream(int parameterIndex, java.io.InputStream x, int length) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void setBinaryStream(int parameterIndex, java.io.InputStream x, int length) throws SQLException {
+	public void setBinaryStream(int parameterIndex, java.io.InputStream x, int length) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void clearParameters() throws SQLException {
+	public void clearParameters() {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean execute() throws SQLException {
+	public boolean execute() {
 		throw new UnsupportedOperationException();
 	}
 
-	public void addBatch() throws SQLException {
+	public void addBatch() {
 		throw new UnsupportedOperationException();
 	}
 
-	public void setCharacterStream(int parameterIndex, java.io.Reader reader, int length) throws SQLException {
+	public void setCharacterStream(int parameterIndex, java.io.Reader reader, int length) {
 		throw new UnsupportedOperationException();
 	}
 
 
 	
 	@Override
-	public boolean isClosed() throws SQLException {
+	public boolean isClosed() {
 		return closed;
 	}
 
 	@Override
-	public void setPoolable(boolean poolable) throws SQLException {
+	public void setPoolable(boolean poolAble) {
 	}
 
 	@Override
-	public boolean isPoolable() throws SQLException {
+	public boolean isPoolable() {
 		return false;
 	}
 
 	@Override
-	public void closeOnCompletion() throws SQLException {
+	public void closeOnCompletion() {
 	}
 
 	@Override
-	public boolean isCloseOnCompletion() throws SQLException {
+	public boolean isCloseOnCompletion() {
 		return false;
 	}
 
-	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader, long length) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+	public void setBlob(int parameterIndex, InputStream inputStream, long length) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setNClob(int parameterIndex, Reader reader, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
+	public <T> T unwrap(Class<T> iface) {
 		if(iface == Statement.class) {
 			return (T) stmt;
 		}
@@ -330,7 +320,7 @@ public class R2StatementWrapper extends UnsupportedJdbcStatement{
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+	public boolean isWrapperFor(Class<?> iface) {
 		return iface == Statement.class;
 	}
 	
@@ -349,14 +339,12 @@ public class R2StatementWrapper extends UnsupportedJdbcStatement{
 		case Types.NCLOB:
 		case Types.LONGVARCHAR:	
 		case Types.LONGNVARCHAR:
-			return String.class;
 		case Types.SQLXML:
 		case Types.ROWID:
 			return String.class;
 		case Types.BIT:
 		case Types.BOOLEAN:
 			return Boolean.class;
-			
 		case Types.TINYINT:
 		case Types.SMALLINT:
 		case Types.INTEGER:
@@ -370,7 +358,6 @@ public class R2StatementWrapper extends UnsupportedJdbcStatement{
 		case Types.NUMERIC:
 		case Types.REAL:
 			return Double.class; 
-			
 		case Types.DATE:
 			return java.sql.Date.class;
 		case Types.TIME:

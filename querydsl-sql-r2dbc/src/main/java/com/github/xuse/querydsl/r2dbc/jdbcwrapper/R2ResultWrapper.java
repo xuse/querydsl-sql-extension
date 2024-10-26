@@ -1,59 +1,59 @@
 package com.github.xuse.querydsl.r2dbc.jdbcwrapper;
+
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 
 public class R2ResultWrapper extends AbstractR2ResultSet {
 	@Override
-	public boolean next() throws SQLException {
+	public boolean next() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public void close() throws SQLException {
+	public void close() {
 		throw new UnsupportedOperationException();
 	}
 	
 	@Override
-	public ResultSetMetaData getMetaData() throws SQLException {
+	public ResultSetMetaData getMetaData() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean isBeforeFirst() throws SQLException {
+	public boolean isBeforeFirst() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean isAfterLast() throws SQLException {
+	public boolean isAfterLast() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean isFirst() throws SQLException {
+	public boolean isFirst() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean isLast() throws SQLException {
+	public boolean isLast() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public void beforeFirst() throws SQLException {
+	public void beforeFirst() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public void afterLast() throws SQLException {
+	public void afterLast() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean first() throws SQLException {
+	public boolean first() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean last() throws SQLException {
+	public boolean last() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean previous() throws SQLException {
+	public boolean previous() {
 		throw new UnsupportedOperationException();
 	}
 	@Override
-	public boolean isClosed() throws SQLException {
+	public boolean isClosed() {
 		return false;
 	}
 }

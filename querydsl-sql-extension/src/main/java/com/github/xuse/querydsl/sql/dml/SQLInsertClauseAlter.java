@@ -84,7 +84,15 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 
 	private Boolean writeNulls;
 	
-	private boolean unifyBatchValues = true;
+	/**
+	 * In a Batch scenario, parameter normalization (with unspecified columns filled
+	 * with NULL) is performed starting from the second row to ensure consistency
+	 * with the parameters of the first row. Ultimately, ensure that the Batch
+	 * operation consists of a single statement with multiple sets of parameters.
+	 * 
+	 * 在Batch情况下，对第二条开始的数据进行参数归一化（未指定列补NULL），确保与第一条记录的参数一致。最终确保Batch操作仅有一条语句多组参数。
+	 */
+	private boolean normalizeBatchValues = true;
 
 	private transient Collection<Object> populatedBatch = Collections.emptyList();
 
@@ -297,12 +305,12 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
         }
         if(batches.isEmpty()) {
         	batches.add(new SQLInsertBatch(columns, values, subQuery));
-		} else if (unifyBatchValues) {
+		} else if (normalizeBatchValues) {
         	List<Path<?>> columns = this.columns;
 			List<Path<?>> template = batches.get(0).getColumns();
         	List<Expression<?>> batchValues=this.values;
         	if(!fastEquals(template,columns)) {
-				batchValues = unifyValues(template, columns, batchValues);
+				batchValues = normalizeValues(template, columns, batchValues);
     		}
         	batches.add(new SQLInsertBatch(template, batchValues, subQuery));
         }else {
@@ -328,7 +336,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		return true;
 	}
 
-	private List<Expression<?>> unifyValues(List<Path<?>> template, List<Path<?>> columns, List<Expression<?>> values) {
+	private List<Expression<?>> normalizeValues(List<Path<?>> template, List<Path<?>> columns, List<Expression<?>> values) {
 		Map<Path<?>, Expression<?>> valuesMap = new HashMap<>();
 		for (int i = 0; i < columns.size(); i++) {
 			valuesMap.put(columns.get(i), values.get(i));
@@ -838,7 +846,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	// Full Path: Entity的全部列。RelationalPath.getColumns()得到这个列表
 	// SQL Path: 参与到SQL中的列，在SQL Batch中的是是这个列表
 	// Constant Path: 参与绑定变量，即每条数据需要传入的列,在SQLSerializer.getConstantPath()得到这个列表
-	public BatchProcessor createBatch(Object obj) {
+	private BatchProcessor createBatch(Object obj) {
 		List<Path<?>> columns = new ArrayList<>();
 		List<Expression<?>> values = new ArrayList<>();
 		@SuppressWarnings("unchecked")
@@ -856,5 +864,10 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			}
 		}
 		return new BatchProcessor(new SQLInsertBatch(columns, values, null), obj.getClass());
+	}
+	
+	public SQLInsertClauseAlter normalizeBatch(boolean flag) {
+		this.normalizeBatchValues = flag;
+		return this;
 	}
 }

@@ -10,13 +10,13 @@ public class QuerydslR2dbc {
 	/**
 	 * 创建SQLQueryFactory对象
 	 * 
-	 * @param datasource    DataSource
+	 * @param connectionPool    DataSource
 	 * @param configuration 配置
 	 * @return com.github.xuse.querydsl.sql.SQLQueryFactory
 	 */
 	public static R2dbcFactory createSpringR2dbFactory(ConnectionFactory connectionPool,
 			ConfigurationEx configuration) {
-		SpringRectiveTransactionProvider txBinder = new SpringRectiveTransactionProvider(connectionPool);
+		SpringReactiveTransactionProvider txBinder = new SpringReactiveTransactionProvider(connectionPool);
 		return new R2dbcFactory(txBinder, configuration, connection -> {
 			if (connection instanceof UnmanagedR2Connection) {
 				return (Mono<Void>) connection.close();

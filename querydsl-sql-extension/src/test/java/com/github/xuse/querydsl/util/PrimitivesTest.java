@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
+import java.util.TreeMap;
 
 import org.junit.Test;
 
@@ -173,5 +174,23 @@ public class PrimitivesTest {
 			Primitives.defaultValueOfPrimitive(clz);	
 		}
 	}
+	
+	@Test
+	public void testPrimitiveTypeNameDistribution() {
+		String[] ss = new String[] { "byte", "boolean", "char", "int", "short", "long", "float", "double" };
 
+		TreeMap<Integer, String> map = new TreeMap<>();
+		for (String s : ss) {
+			int v = s.length() + s.charAt(0);
+			map.put(v, s);
+		}
+		int min = map.firstKey();
+		int max = map.lastKey();
+		if (map.size() < 8) {
+			System.out.println("发生冲突!");
+		} else {
+			System.out.println("分布宽度" + (max - min + 1));
+		}
+		System.out.println(map);
+	}
 }

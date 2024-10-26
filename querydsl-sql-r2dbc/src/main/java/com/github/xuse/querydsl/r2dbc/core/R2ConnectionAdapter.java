@@ -1,7 +1,8 @@
-package io.github.xuse.querydsl.r2dbc.spring;
+package com.github.xuse.querydsl.r2dbc.core;
 
 import java.time.Duration;
 
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 
 import io.r2dbc.spi.Batch;
@@ -20,32 +21,32 @@ public abstract class R2ConnectionAdapter implements Connection{
 	}
 
 	@Override
-	public Publisher<Void> beginTransaction() {
+	public @NotNull Publisher<Void> beginTransaction() {
 		return wrapped.beginTransaction();
 	}
 
 	@Override
-	public Publisher<Void> beginTransaction(TransactionDefinition definition) {
+	public @NotNull Publisher<Void> beginTransaction(@NotNull TransactionDefinition definition) {
 		return wrapped.beginTransaction(definition);
 	}
 
 	@Override
-	public Publisher<Void> commitTransaction() {
+	public @NotNull Publisher<Void> commitTransaction() {
 		return wrapped.commitTransaction();
 	}
 
 	@Override
-	public Batch createBatch() {
+	public @NotNull Batch createBatch() {
 		return wrapped.createBatch();
 	}
 
 	@Override
-	public Publisher<Void> createSavepoint(String name) {
+	public @NotNull Publisher<Void> createSavepoint(@NotNull String name) {
 		return wrapped.createSavepoint(name);
 	}
 
 	@Override
-	public Statement createStatement(String sql) {
+	public @NotNull Statement createStatement(@NotNull String sql) {
 		return wrapped.createStatement(sql);
 	}
 
@@ -55,52 +56,52 @@ public abstract class R2ConnectionAdapter implements Connection{
 	}
 
 	@Override
-	public ConnectionMetadata getMetadata() {
+	public @NotNull ConnectionMetadata getMetadata() {
 		return wrapped.getMetadata();
 	}
 
 	@Override
-	public IsolationLevel getTransactionIsolationLevel() {
+	public @NotNull IsolationLevel getTransactionIsolationLevel() {
 		return wrapped.getTransactionIsolationLevel();
 	}
 
 	@Override
-	public Publisher<Void> releaseSavepoint(String name) {
+	public @NotNull Publisher<Void> releaseSavepoint(@NotNull String name) {
 		return wrapped.releaseSavepoint(name);
 	}
 
 	@Override
-	public Publisher<Void> rollbackTransaction() {
+	public @NotNull Publisher<Void> rollbackTransaction() {
 		return wrapped.rollbackTransaction();
 	}
 
 	@Override
-	public Publisher<Void> rollbackTransactionToSavepoint(String name) {
+	public @NotNull Publisher<Void> rollbackTransactionToSavepoint(@NotNull String name) {
 		return wrapped.rollbackTransactionToSavepoint(name);
 	}
 
 	@Override
-	public Publisher<Void> setAutoCommit(boolean autoCommit) {
+	public @NotNull Publisher<Void> setAutoCommit(boolean autoCommit) {
 		return wrapped.setAutoCommit(autoCommit);
 	}
 
 	@Override
-	public Publisher<Void> setLockWaitTimeout(Duration timeout) {
+	public @NotNull Publisher<Void> setLockWaitTimeout(@NotNull Duration timeout) {
 		return wrapped.setLockWaitTimeout(timeout);
 	}
 
 	@Override
-	public Publisher<Void> setStatementTimeout(Duration timeout) {
+	public @NotNull Publisher<Void> setStatementTimeout(@NotNull Duration timeout) {
 		return wrapped.setStatementTimeout(timeout);
 	}
 
 	@Override
-	public Publisher<Void> setTransactionIsolationLevel(IsolationLevel isolationLevel) {
+	public @NotNull Publisher<Void> setTransactionIsolationLevel(@NotNull IsolationLevel isolationLevel) {
 		return wrapped.setTransactionIsolationLevel(isolationLevel);
 	}
 
 	@Override
-	public Publisher<Boolean> validate(ValidationDepth depth) {
+	public @NotNull Publisher<Boolean> validate(@NotNull ValidationDepth depth) {
 		return wrapped.validate(depth);
 	}
 }

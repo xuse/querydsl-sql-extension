@@ -34,6 +34,7 @@ import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 
+@SuppressWarnings("AssignmentUsedAsCondition")
 abstract class AbstractR2ResultSet extends UnsupportedJdbcResultSet {
 	protected Row row;
 	protected List<? extends ColumnMetadata> metadatas;
@@ -141,7 +142,7 @@ abstract class AbstractR2ResultSet extends UnsupportedJdbcResultSet {
 	}
 
 	public RowId getRowId(int columnIndex) {
-		//PG和Oracle的rowid实现名称不一样。需要驱动原生支持
+		//PG和Oracle的rowId实现名称不一样。需要驱动原生支持
 		throw new UnsupportedOperationException();
 	}
 
@@ -156,6 +157,7 @@ abstract class AbstractR2ResultSet extends UnsupportedJdbcResultSet {
 
 	public InputStream getBinaryStream(int columnIndex) {
 		byte[] data= row.get(columnIndex-1,byte[].class);
+		if(data==null)data=new byte[0];
 		return new ByteArrayInputStream(data);
 	}
 
@@ -508,7 +510,8 @@ abstract class AbstractR2ResultSet extends UnsupportedJdbcResultSet {
 	
 	private boolean isNumber(String name) {
 		ColumnMetadata metadata=getIndexMap().get(name);
-		return metadata!=null && Number.class.isAssignableFrom(metadata.getJavaType());    
+		Class<?> clz = metadata!=null? metadata.getJavaType():null;
+		return clz!=null && Number.class.isAssignableFrom(clz);
 	}
 	
 	private Map<String,? extends ColumnMetadata> getIndexMap() {
@@ -520,7 +523,8 @@ abstract class AbstractR2ResultSet extends UnsupportedJdbcResultSet {
 	}
 
 	private boolean isNumber(int i) {
-		return Number.class.isAssignableFrom(metadatas.get(i).getJavaType());    
+		Class<?> clz = metadatas.get(i).getJavaType();
+		return clz!=null && Number.class.isAssignableFrom(clz);
 	}
 	
 	private boolean isBool(int i) {

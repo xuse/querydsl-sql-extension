@@ -1,14 +1,14 @@
 package com.github.xuse.querydsl.r2dbc.jdbcwrapper;
 
-import java.io.IOException;
-import java.io.Reader;
-
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
+
+import java.io.Reader;
 
 public class CharSequenceFluxReader extends Reader {
 	private final Flux<CharSequence> flux;
-	private long begin;
-	private long end;
+	private final long begin;
+	private final long end;
 	private long position;
 
 	
@@ -20,7 +20,7 @@ public class CharSequenceFluxReader extends Reader {
 	}
 
 	@Override
-	public int read(char[] cbuf, int off, int len) throws IOException {
+	public int read(char @NotNull [] cbuf, int off, int len){
 		if(position>=end) {
 			return -1;
 		}
@@ -57,6 +57,6 @@ public class CharSequenceFluxReader extends Reader {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 	}
 }
