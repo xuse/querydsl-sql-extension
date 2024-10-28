@@ -56,7 +56,7 @@ public class BenchmarkRunner extends Runner implements Filterable {
 				Options opt = new OptionsBuilder()
 						.include(".*" + benchmarkClass.getName() + "." + benchmarkMethod.getName() + ".*")
 						.jvmArgsAppend("-Djmh.separateClasspathJAR=true")
-						.result(benchmarkClass.getName() + "." + benchmarkMethod.getName() + "_"
+						.result("target/"+benchmarkClass.getName() + "." + benchmarkMethod.getName() + "_"
 								+ DateFormats.DATE_TIME_SHORT_12.format(new Date()) + ".json")
 						.resultFormat(ResultFormatType.JSON)
 						.build();

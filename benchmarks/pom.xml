@@ -4,16 +4,13 @@
 	xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>io.github.xuse</groupId>
-		<artifactId>querydsl-sql-extension-parent</artifactId>
-		<version>5.0.0-r130</version>
-	</parent>
 	<properties>
 		<jmh.version>1.35</jmh.version>
 	</properties>
+	<groupId>io.github.xuse</groupId>
 	<artifactId>benchmarks</artifactId>
 	<name>benchmarks</name>
+	<version>5.0.0-r130</version>
 	<url>http://maven.apache.org</url>
 	<dependencies>
 		<dependency>
@@ -23,8 +20,10 @@
 		</dependency>
 		<!--
 		关于JMH的测试代码生成，有以下注意事项：
-		1. jmh-core 和 jmh-generator-annprocess 都不能是scope=test，至少必须是provided. 很多人在IJ下碰到BenchmarkList资源找不到，都是这个问题。
-		2. 在Eclipse下，会碰到更多问题。需要手工配置注解处理器，如果benchmark类是test类，在Eclipse下不生成META-INF/BenchmarkList资源，需要手工调用一次
+		1. jmh-core 和 jmh-generator-annprocess 都不能是scope=test，至少必须是provided.
+		很多人在IJ下碰到BenchmarkList资源找不到，都是这个问题。
+		2.
+		在Eclipse下，会碰到更多问题。需要手工配置注解处理器，如果benchmark类是test类，在Eclipse下不生成META-INF/BenchmarkList资源，需要手工调用一次
 		compiler:testCompile 才会生成。在IJ下没有这个问题。
 		3. 必须在生成上述资源文件后。使用main方法或maven插件、或junit runner才能正常调用jmh测试。否则都是报找不到资源文件错误。
 	-->

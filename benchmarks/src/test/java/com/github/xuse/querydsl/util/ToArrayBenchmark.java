@@ -2,7 +2,6 @@ package com.github.xuse.querydsl.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.runner.RunWith;
@@ -22,41 +21,20 @@ import org.openjdk.jmh.annotations.Warmup;
 import io.github.xuse.querydsl.sql.extension.BenchmarkRunner;
 
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-@Fork(2)
+//Scope.Thread：默认的State，每个测试线程分配一个实例；
+//Scope.Benchmark：所有测试线程共享一个实例，用于测试有状态实例在多线程共享下的性能；
+//Scope.Group：每个线程组共享一个实例；
+@Fork(1)
 @Warmup(iterations = 1)
 @Measurement(iterations = 2)
 @RunWith(BenchmarkRunner.class)
-public class ToArrayPerformanceTest {
+public class ToArrayBenchmark {
 	private final List<String> list = new ArrayList<>();
 	public volatile Object[] data;
-
-//	public void testPerformanceToArray() {
-//		prepare();
-//		{
-//			long start = System.currentTimeMillis();
-//			testMethodA();
-//			System.out.println("Cost" + (System.currentTimeMillis() - start));
-//		}
-//		{
-//			long start = System.currentTimeMillis();
-//			testMethodB();
-//			System.out.println("Cost" + (System.currentTimeMillis() - start));
-//		}
-//		{
-//			long start = System.currentTimeMillis();
-//			testMethodC();
-//			System.out.println("Cost" + (System.currentTimeMillis() - start));
-//		}
-//		{
-//			long start = System.currentTimeMillis();
-//			testMethodD();
-//			System.out.println("Cost" + (System.currentTimeMillis() - start));
-//		}
-//	}
-
-	@Setup(Level.Trial)
+	
+	@Setup(Level.Trial)	
 	public void prepare() {
 		List<String> list=this.list;
 		for (int i = 0; i < 500; i++) {
@@ -64,8 +42,9 @@ public class ToArrayPerformanceTest {
 		}
 	}
 
-	@TearDown(Level.Trial) // 结束方法，在全部Benchmark运行之后进行
+	@TearDown(Level.Trial) 
 	public void ends() {
+		list.clear();
 	}
 
 	@Benchmark
@@ -104,14 +83,4 @@ public class ToArrayPerformanceTest {
 			data = list.toArray(new String[list.size()]);
 		}
 	}
-
-//	public static void main(String[] args) throws RunnerException, IOException {
-//		String res="/META-INF/BenchmarkList";
-//		Enumeration<URL> urls=ToArrayPerformanceTest.class.getClassLoader().getResources(res);
-//		System.out.println(CollectionUtils.toList(urls));
-//		
-//		
-//		Options options = new OptionsBuilder().include(ToArrayPerformanceTest.class.getSimpleName()).build();
-//		new Runner(options).run();
-//	}
 }

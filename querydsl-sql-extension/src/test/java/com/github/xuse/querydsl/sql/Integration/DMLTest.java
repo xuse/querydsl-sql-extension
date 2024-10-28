@@ -327,8 +327,10 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void testUpdateBatch() {
 		QAaa t1 = QAaa.aaa;
-		long count = factory.update(t1).where(t1.name.eq("1")).set(t1.version, t1.version.add(1)).addBatch()
-				.where(t1.name.eq("2")).set(t1.version, t1.version.add(2)).addBatch().execute();
+		long count = factory.update(t1)
+				.where(t1.name.eq("1")).set(t1.version, t1.version.add(1)).addBatch()
+				.where(t1.name.eq("2")).set(t1.version, t1.version.add(2)).addBatch()
+				.execute();
 		System.err.println(count);
 	}
 
