@@ -2,7 +2,7 @@
 
 **An enhancement for Querydsl based on module 'querydsl-sql'.**
 
-[中文](README_cn.md) | [English](README.md)
+[English](README.md)|[中文](README_cn.md) 
 
 
 本框架是在 Querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅官方文档 [Querying SQL](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html)

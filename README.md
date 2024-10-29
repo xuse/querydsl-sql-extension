@@ -2,7 +2,7 @@
 
 **An enhancement for Querydsl based on module 'querydsl-sql'.**
 
-[中文](README_cn.md) | [English](README.md)
+[English](README.md)| [中文](README_cn.md)
 
 This framework is an extension of [Querydsl-sql](https://github.com/querydsl/querydsl). The usage guide for Querydsl-sql can be found in the official documentation [Querying SQL](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html).
 
@@ -172,7 +172,7 @@ In production environment, it is recommended to use `FORMAT_COMPACT` for output.
   		super.scanClassMetadata();   //Note:This line of code enables the framework scan the annotations on the entity.
   	}
   ```
- 
+
 
 
 ### Database access security
@@ -389,6 +389,8 @@ Online DDL can prevent blocking caused by locks during DDL execution, which can 
 
 When executing DDL on MySQL databases, it automatically uses the Online method to minimize interference with production environment business access.
 The example is as follows: when modifying a data table, the algorithm and lock are specified to ensure that DDL execution does not affect business operations.
+
+Eg.
 
 ```sql
 ALTER TABLE table1
