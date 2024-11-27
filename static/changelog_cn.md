@@ -7,11 +7,10 @@ v{querydsl 版本号} - r(extension version)
 ```
 
 **v5.0.0-r130**
-Eta: 2024-11-11
-
- * r2dbc/r2dbc-spring transaction
- * 支持H2db的DDL操作
- * 单元测试行覆盖85%以上.
+2024-11-27
+ * New module for r2dbc and r2dbc-spring transaction
+ * Supports DDL on H2DB.
+ * Upgerade JUnit to Junit.jupiter
 
 **v5.0.0-r120**
 
@@ -33,7 +32,7 @@ Eta: 2024-11-11
   不支持为已有的表添加/删除分区配置（机制上无法支持，Postgresql分区表在创建时就已明确是是否分区，之后无法修改）
   不支持重组织分区
   上述由数据库机制差异造成的特性差异，暂无支持计划。
-* Postgresql的支持比预想更为复杂，为此重构了Schema获取和DDL部分生成的机制。 主要功能开发完毕，测试中，计划9月初发布。
+* Postgresql的支持比预想更为复杂，为此重构了Schema获取和DDL部分生成的机制。 
 * 优化BatchInsert下的数据插入性能。尤其对MySQL下的批量写入，默认从JDBC Batch更换为Bulk SQL语句，某些场景下性能提升约65倍。
 * QueryDSL Insert Batch功能调整，增加参数一致化处理。
 * 数据初始化增加配置，setPrimaryKeys用于控制主键列是否要写入到数据库。

@@ -41,7 +41,7 @@
 如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
 
 **变更日志**
-[ChangeLogs](changelogs.md)
+[ChangeLogs](static/changelog_cn.md)
 
 **手册 / Manuals**
 参见  [使用说明](static/user_guide_cn.md)

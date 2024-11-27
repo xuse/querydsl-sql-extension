@@ -12,7 +12,7 @@ This framework is an extension of [Querydsl-sql](https://github.com/querydsl/que
   - [Introduction](#introduction)
   - [Features](#features)
     - [Usability Improvments](#usability-improvments)
-    - [Database access security](#database-access-security)
+    - [Database Access Safety](#database-access-safety)
     - [Performance Optimization](#performance-optimization)
     - [R2dbc support](#r2dbc-support)
     - [Other Functionality Enhancements](#other-functionality-enhancements)
@@ -37,8 +37,8 @@ See [Why QueryDSL (Chinese)](static/why_querydsl.md)
 Note: This framework is not based on `querydsl-jpa`, but is an extension of `querydsl-sql`. For a comparison with JPA mode, 
 please refer to [Why QueryDSL](static/why_querydsl.md). If you want to integrate this module into a project with querydsl-jpa, please refer to the following section (Using with query-jpa).
 
-**ChangeLogs**
-[ChangeLogs](changelogs.md)
+**ChangeLog**
+[ChangeLog](ChangeLog.md)
 
 **Manuals**
 See [User Guide](static/user_guide.md)
@@ -174,7 +174,7 @@ In production environment, it is recommended to use `FORMAT_COMPACT` for output.
 
 
 
-### Database access security
+### Database Access Safety
 
 * Preventing some accidental operations: This is actually the normal usage of the official version of custom listener, which listens to SQL statements and blocks some dangerous operations. For example, the interceptor below can prevent Update or Delete operations executed against the entire table (without Where conditions).
 
