@@ -9,9 +9,10 @@ import java.sql.SQLException;
 import javax.annotation.PostConstruct;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.r2dbc.entity.Foo;
@@ -22,7 +23,8 @@ import com.github.xuse.querydsl.sql.routing.TableRouting;
 import reactor.core.publisher.Flux;
 
 @ContextConfiguration(classes = QurerydslR2dbcSpringConfiguration.class)
-public class SpringTransactionTest extends AbstractJUnit4SpringContextTests {
+@ExtendWith(SpringExtension.class)
+public class SpringTransactionTest {
 
 	@Autowired
 	private SpringService service;
