@@ -1,6 +1,6 @@
 # Querydsl-sql-extension
 
-**An enhancement for Querydsl based on module 'querydsl-sql'.**
+An enhancement for Querydsl based on module 'querydsl-sql' with the best memory operation performance.
 
 [English](README.md)| [中文](README_cn.md)
 
@@ -11,9 +11,9 @@ This framework is an extension of [Querydsl-sql](https://github.com/querydsl/que
 - [Querydsl-sql-extension](#querydsl-sql-extension)
   - [Introduction](#introduction)
   - [Features](#features)
+    - [Performance Optimization](#performance-optimization)
     - [Usability Improvments](#usability-improvments)
     - [Database Access Safety](#database-access-safety)
-    - [Performance Optimization](#performance-optimization)
     - [R2dbc support](#r2dbc-support)
     - [Other Functionality Enhancements](#other-functionality-enhancements)
       - [Database Structure Modeling](#database-structure-modeling)
@@ -70,6 +70,61 @@ To use them together, two issues need to be addressed:
 
 
 ## Features
+
+### Performance Optimization
+Significant performance optimization has been carried out on QueryDSL-SQL. The optimized performance is comparable to well-written JDBC operations.
+The following is a partial list. For more related data, please refer to the [Performance guide](static/performance_tunning.md)
+
+**Performance Comparison Test (v5.0.0-r110)**
+
+* MySQL 5.7.26
+* MySQL JDBC Driver 5.1.49
+* URL：postgresql://LAN_HOST:3306/test?useSSL=false
+* jvm version=17
+
+| Case                                                     | Mybatis 3.5.9（ms）                | querydsl-sql-extension<br /> 5.0.0-r110（ms） | A/B     |
+| -------------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
+| Insert 15 batches of 10,000 rows into a table with 7 columns.<br />Total of 150,000 records. | 7203, 7438, 7925<br />Avg.7522        | 2476, 2711, 2834<br /> Avg.2673.67                 | 281.34% |
+| Insert 15 batches of 10,000 rows into a table with 22 columns.<br />Total of 150,000 records.  | 16939, 16870, 16782<br />Avg.16863.67 | 5541, 5609, 5538<br />Avg. 5562.67                | 303.16% |
+| Retrieve 50 records from a table with 22 columns.       | 12, 14, 12<br />Avg. 12.667             | 8, 9, 10<br />Avg. 9                               | 140.7%  |
+| Retrieve 5,000 records from a table with 22 columns.    | 646 , 601, 589<br />Avg. 612            | 79, 75, 82<br />Avg.78.67                         | 777.90% |
+| Retrieve 50,000 records from a table with 22 columns.   | 935, 930, 953<br />Avg. 939.33          | 321, 323, 339<br />Avg. 327.67                     | 286.67% |
+| Retrieve 300,000 records from a table with 22 columns   | 3340，3343, 3577<br />Avg. 3420        | 1832, 1925, 2313<br />Avg. 2023.33                | 169.03% |
+| Retrieve 1,000,000 records from a table with 22 columns | 8478, 9219, 7468<br />Avg. 8388.33     | 6571, 7535, 5271<br />Avg. 6459                   | 129.87% |
+
+Note:
+* All tests were done in single-threaded mode. A simple calculation loop of about 500,000 iterations was run first to boost the CPU frequency.
+* The log level was set to ERROR.
+* Before timing the tests, the same SQL statements are executed once to ensure that the classes on the path are loaded in advance.
+* The same environment, including the database, was used for all tests. The time difference between the two frameworks for the same set of tests should not exceed five minutes.
+* Each test was run three times to calculate the average execution time (in milliseconds).
+* MyBatis was configured fetchSize="5000" for SELECT, and QueryDSL was setFetchSize(5000) during query.
+
+
+**The Secret of High Performance**
+* **No-reflection Access:** The JavaBean-JDBC interaction part in QueryDSL has been rewritten to enhance performance. ASM is used to generate an accessor for each set of query fields corresponding to a Bean as an accelerated substitute for reflection.
+The dynamic class generation scheme generates one accessor for each set of SELECT fields for an SQL query. The accessor is generated and loaded the first time the query is executed. The second time the SQL is executed, the performance is almost equivalent to hardcoding. Reflection and IF branches are eliminated during the process, and all accesses to ResultSet are in the order of indices (consider branch prediction by the CPU), significantly reducing the number of memory operations.
+
+* **Table model and BeanCodec cache:** Cache for table and field models and the codec for each object.
+
+* **Bytecode/JIT friendly:** Programming techniques based on principles such as minimizing memory copying, minimizing bytecode operation, JIT friendliness, and branch prediction. Techniques include stack manipulation, maximizing use of the final keyword, manual inlining, object reuse, one-time memory allocation, using tableswitch instead of complex branches, and more.
+
+* **Tuning API for developers:** Provides fetchSize, maxRows, queryTimeout, and other methods that developers can use to tune performance and security when working with large amounts of data.
+
+  **Example:** Retrieve 1 million IDs at once.
+  ```java
+  List<Integer> list = factory.select(t1.id).from(t1)
+  		.setFetchSisze(10000)
+  		.setMaxRows(1_000_000)
+  		.setQueryTimeout(15)
+  		.fetch();
+  ```
+
+**Compatibility**
+
+* Utilizes dynamic class generation with ASM7, supporting JDK versions 8 through 22, and GraalVM (version 22).
+* When using GraalVM native (AOT) mode, ASM class generation is ineffective, and Java code falls back to reflection-based type accessors, still ensuring normal functionality.
+  (During GraalVM compilation, this part of the logic is essentially compiled into native static code, making ASM acceleration unnecessary.)
 
 ### Usability Improvments
 * Providing the @CustomType annotation to map complex beans to database fields.
@@ -187,62 +242,6 @@ In production environment, it is recommended to use `FORMAT_COMPACT` for output.
   ```java
   configuration.setDefaultQueryTimeout(5); //设置SQL最大执行时间为5秒
   ```
-
-
-### Performance Optimization
-Significant performance optimization has been carried out on QueryDSL-SQL. The optimized performance is comparable to well-written JDBC operations.
-The following is a partial list. For more related data, please refer to the [Performance guide](static/performance_tunning.md)
-
-**Performance Comparison Test (v5.0.0-r110)**
-
-* MySQL 5.7.26
-* MySQL JDBC Driver 5.1.49
-* URL：postgresql://LAN_HOST:3306/test?useSSL=false
-* jvm version=17
-
-| Case                                                     | Mybatis 3.5.9（ms）                | querydsl-sql-extension<br /> 5.0.0-r110（ms） | A/B     |
-| -------------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
-| Insert 15 batches of 10,000 rows into a table with 7 columns.<br />Total of 150,000 records. | 7203, 7438, 7925<br />Avg.7522        | 2476, 2711, 2834<br /> Avg.2673.67                 | 281.34% |
-| Insert 15 batches of 10,000 rows into a table with 22 columns.<br />Total of 150,000 records.  | 16939, 16870, 16782<br />Avg.16863.67 | 5541, 5609, 5538<br />Avg. 5562.67                | 303.16% |
-| Retrieve 50 records from a table with 22 columns.       | 12, 14, 12<br />Avg. 12.667             | 8, 9, 10<br />Avg. 9                               | 140.7%  |
-| Retrieve 5,000 records from a table with 22 columns.    | 646 , 601, 589<br />Avg. 612            | 79, 75, 82<br />Avg.78.67                         | 777.90% |
-| Retrieve 50,000 records from a table with 22 columns.   | 935, 930, 953<br />Avg. 939.33          | 321, 323, 339<br />Avg. 327.67                     | 286.67% |
-| Retrieve 300,000 records from a table with 22 columns   | 3340，3343, 3577<br />Avg. 3420        | 1832, 1925, 2313<br />Avg. 2023.33                | 169.03% |
-| Retrieve 1,000,000 records from a table with 22 columns | 8478, 9219, 7468<br />Avg. 8388.33     | 6571, 7535, 5271<br />Avg. 6459                   | 129.87% |
-
-Note:
-* All tests were done in single-threaded mode. A simple calculation loop of about 500,000 iterations was run first to boost the CPU frequency.
-* The log level was set to ERROR.
-* Before timing the tests, the same SQL statements are executed once to ensure that the classes on the path are loaded in advance.
-* The same environment, including the database, was used for all tests. The time difference between the two frameworks for the same set of tests should not exceed five minutes.
-* Each test was run three times to calculate the average execution time (in milliseconds).
-* MyBatis was configured fetchSize="5000" for SELECT, and QueryDSL was setFetchSize(5000) during query.
-
-
-**The Secret of High Performance**
-* **No-reflection Access:** The JavaBean-JDBC interaction part in QueryDSL has been rewritten to enhance performance. ASM is used to generate an accessor for each set of query fields corresponding to a Bean as an accelerated substitute for reflection.
-The dynamic class generation scheme generates one accessor for each set of SELECT fields for an SQL query. The accessor is generated and loaded the first time the query is executed. The second time the SQL is executed, the performance is almost equivalent to hardcoding. Reflection and IF branches are eliminated during the process, and all accesses to ResultSet are in the order of indices (consider branch prediction by the CPU), significantly reducing the number of memory operations.
-
-* **Table model and BeanCodec cache:** Cache for table and field models and the codec for each object.
-
-* **Bytecode/JIT friendly:** Programming techniques based on principles such as minimizing memory copying, minimizing bytecode operation, JIT friendliness, and branch prediction. Techniques include stack manipulation, maximizing use of the final keyword, manual inlining, object reuse, one-time memory allocation, using tableswitch instead of complex branches, and more.
-
-* **Tuning API for developers:** Provides fetchSize, maxRows, queryTimeout, and other methods that developers can use to tune performance and security when working with large amounts of data.
-
-  **Example:** Retrieve 1 million IDs at once.
-  ```java
-  List<Integer> list = factory.select(t1.id).from(t1)
-  		.setFetchSisze(10000)
-  		.setMaxRows(1_000_000)
-  		.setQueryTimeout(15)
-  		.fetch();
-  ```
-
-**Compatibility**
-
-* Utilizes dynamic class generation with ASM7, supporting JDK versions 8 through 22, and GraalVM (version 22).
-* When using GraalVM native (AOT) mode, ASM class generation is ineffective, and Java code falls back to reflection-based type accessors, still ensuring normal functionality.
-  (During GraalVM compilation, this part of the logic is essentially compiled into native static code, making ASM acceleration unnecessary.)
 
 ### R2dbc support
 For R2dbc datasource

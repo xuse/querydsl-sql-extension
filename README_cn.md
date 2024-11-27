@@ -1,6 +1,6 @@
 # Querydsl-sql-extension
 
-**An enhancement for Querydsl based on module 'querydsl-sql'.**
+**querydsl-sql 扩展，提供了高于原版和所有同类框架的性能。**
 
 [English](README.md)|[中文](README_cn.md) 
 
