@@ -1,23 +1,22 @@
 # Querydsl-sql-extension
 
 **querydsl-sql 扩展，提供了高于原版和所有同类框架的性能。**
+本框架是在 Querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅官方文档 [Querying SQL](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html)
 
 [English](README.md)|[中文](README_cn.md) 
-
-
-本框架是在 Querydsl-sql](https://github.com/querydsl/querydsl) 上的扩展，querydsl-sql的使用手册，可以参阅官方文档 [Querying SQL](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html)
 
 **目录/ Table of Contents**
 
 - [Querydsl-sql-extension](#querydsl-sql-extension)
   - [简介](#简介)
-  - [特性介绍 (对照原版querydsl-sql)](#特性介绍-对照原版querydsl-sql)
+  - [特性介绍](#特性介绍)
+    - [极致性能](#极致性能)
     - [提升使用便利性](#提升使用便利性)
     - [访问安全](#访问安全)
-    - [性能优化](#性能优化)
-    - [功能增强](#功能增强)
-      - [数据库结构建模](#数据库结构建模)
-      - [纯POJO使用 (无QueryClass)](#纯pojo使用-无queryclass)
+    - [自动创建数据库结构](#自动创建数据库结构)
+    - [纯POJO使用](#纯pojo使用)
+    - [R2dbc数据源使用(响应式数据)](#r2dbc数据源使用响应式数据)
+    - [其他功能增强](#其他功能增强)
       - [多种风格的低代码API](#多种风格的低代码api)
       - [数据库结构访问与修改(DDL)](#数据库结构访问与修改ddl)
       - [Record对象作为数据表映射](#record对象作为数据表映射)
@@ -34,11 +33,11 @@
 
 ## 简介
 
-**Querydsl是什么? 为什么选择？/ Introduction**
-介绍:  [Why QueryDSL (Chinese)](static/why_querydsl.md)
+**Querydsl是什么? 为什么选择？**
+介绍:  [为什么选择](static/why_querydsl.md)
 
 注意：本框架不基于`querydsl-jpa`，是基于`querydsl-sql`的扩展。与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。
-如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (Using with query-jpa)
+如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (与 Querydsl-JPA 一起使用)
 
 **变更日志**
 [ChangeLogs](static/changelog_cn.md)
@@ -65,7 +64,7 @@
 </dependency>
 ```
 
-**与 Querydsl-JPA 一起使用 / Using With Querydsl-JPA**
+**与 Querydsl-JPA 一起使用**
 要一起使用，需要解决两个问题。
 
 1. Querydsl-sql中自动生成的表模型（Query class）继承 `com.querydsl.sql.RelationalPath`，但是JPA中的Query class继承 `com.querydsl.core.types.EntityPath` 两者并不一致。
@@ -73,11 +72,75 @@
 2. 事务管理器(Transaction Manager)问题。
    querydsl-jpa默认是使用Hibernate Session或者EntityManager进行操作的，也就是说调用层次在上述框架之上。而QueryDSL-sql是基于DataSource（JDBC）的，也就是俗称的原生SQL查询。如果您在一个业务交易中使用了两个框架，事务器问题需要您自行处理解决。
 
-**R2dbc数据源使用：**
-参见  [querydsl-sql-r2dbc](querydsl-sql-r2dbc/) 和 [querydsl-sql-r2dbc的Spring事务](querydsl-sql-r2dbc-spring) 用法。
 
 
-## 特性介绍 (对照原版querydsl-sql)
+## 特性介绍
+
+### 极致性能
+
+对QueryDSL-SQL的性能进行了较大幅度的优化。优化后的性能基本与编写良好的JDBC操作持平。
+
+下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](static/performance_tunning.md)
+
+**性能对比测试（v5.0.0-r110）**
+
+* MySQL 5.7.26
+* MySQL JDBC Driver 5.1.49
+* URL：postgresql://局域网地址:3306/test?useSSL=false
+* jvm version=17
+
+| Case                                                     | Mybatis 3.5.9（单位ms）                | querydsl-sql-extension<br /> 5.0.0-r110（单位ms） | A/B     |
+| -------------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
+| 7列的表插入数据，15批次，每批10000条。<br />总计15万记录 | 7203, 7438, 7925<br />平均 7522        | 2476, 2711, 2834<br />平均2673.67                 | 281.34% |
+| 22列的表插入数据，15批次，每批10000条<br />总计15万记录  | 16939, 16870, 16782<br />平均 16863.67 | 5541, 5609, 5538<br />平均 5562.67                | 303.16% |
+| 22字段表，查出50记录<br />全部加载到内存中的List内       | 12, 14, 12<br />平均12.667             | 8, 9, 10<br />平均9                               | 140.7%  |
+| 22字段表，查出5000记录<br />全部加载到内存中的List内     | 646 , 601, 589<br />平均612            | 79, 75, 82<br />平均78.67                         | 777.90% |
+| 22字段表，查出5万记录<br />全部加载到内存中的List内      | 935, 930, 953<br />平均939.33          | 321, 323, 339<br />平均327.67                     | 286.67% |
+| 22字段表，查出30万记录<br />全部加载到内存中的List内     | 3340，3343, 3577<br />平均 3420        | 1832, 1925, 2313<br />平均 2023.33                | 169.03% |
+| 22字段表，查出1M记录<br />全部加载到内存中的List内       | 8478, 9219, 7468<br />平均 8388.33     | 6571, 7535, 5271<br />平均 6459                   | 129.87% |
+
+备注：
+
+* 均为单线程测试。会先执行一个50万左右的简单计算循环，使CPU睿频飙高。
+
+* 日志级别到ERROR。
+
+* 测试计时前，相同的SQL语句会先执行一遍，确保路径上的类都事先加载。
+
+* 数据库，环境等均使用相同环境。同一组测试两个框架操作先后时间不超过5分钟。
+
+* 每组用例跑三次，计算平均耗时（单位毫秒）
+
+* MyBatis在SELECT的配置中设置fetchSize="5000"，QueryDSL在查询时设置setFetchSize(5000)
+
+**高性能的秘密**
+
+* **无反射访问**：重写了QueryDSL 中JavaBean与JDBC交互部分以提升性能。使用ASM，为每个需要Bean对应的查询字段组合生成了一个访问器，作为反射的一个加速替代。
+
+动态类生成方案，每个一个SQL查询的SELECT 字段组合对应一个访问器，在第一次查询时生成并加载，第二次执行该SQL时性能就相当于硬编码。过程中去除了反射和IF分支，对ResultSet的全部访问均为按index的顺序访问（考虑CPU分支预测），大幅减少内存操作次数。
+
+* **表模型与BeanCodec缓存**：对表和字段模型。以及每个对象的编解码器进行了缓存。
+
+* **面向字节码 / JIT友好**： 如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
+
+* **向开发者提供Tunning API**： 提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
+
+  **Example**：一次查出一百万ID。
+
+  ```java
+  List<Integer> list = factory.select(t1.id).from(t1)
+  		.setFetchSisze(10000)
+  		.setMaxRows(1_000_000)
+  		.setQueryTimeout(15)
+  		.fetch();
+  ```
+
+**兼容性**
+
+* 使用ASM7的动态类生成，支持JDK 8~ 22，GraalVM（22）。
+
+* 在使用GraalVM native （AOT）模式下，ASM类生成无效，Java代码退化为基于反射的类型访问器，功能可正常使用。
+  （在GraalVM编译期间，实质上这部分逻辑也已编译为本地静态代码，无需再使用ASM加速）
 
 ### 提升使用便利性
 
@@ -205,76 +268,7 @@
   configuration.setDefaultQueryTimeout(5); //设置SQL最大执行时间为5秒
   ```
 
-
-### 性能优化
-
-对QueryDSL-SQL的性能进行了较大幅度的优化。优化后的性能基本与编写良好的JDBC操作持平。
-
-下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](static/performance_tunning.md)
-
-**性能对比测试（v5.0.0-r110）**
-
-* MySQL 5.7.26
-* MySQL JDBC Driver 5.1.49
-* URL：postgresql://局域网地址:3306/test?useSSL=false
-* jvm version=17
-
-| Case                                                     | Mybatis 3.5.9（单位ms）                | querydsl-sql-extension<br /> 5.0.0-r110（单位ms） | A/B     |
-| -------------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
-| 7列的表插入数据，15批次，每批10000条。<br />总计15万记录 | 7203, 7438, 7925<br />平均 7522        | 2476, 2711, 2834<br />平均2673.67                 | 281.34% |
-| 22列的表插入数据，15批次，每批10000条<br />总计15万记录  | 16939, 16870, 16782<br />平均 16863.67 | 5541, 5609, 5538<br />平均 5562.67                | 303.16% |
-| 22字段表，查出50记录<br />全部加载到内存中的List内       | 12, 14, 12<br />平均12.667             | 8, 9, 10<br />平均9                               | 140.7%  |
-| 22字段表，查出5000记录<br />全部加载到内存中的List内     | 646 , 601, 589<br />平均612            | 79, 75, 82<br />平均78.67                         | 777.90% |
-| 22字段表，查出5万记录<br />全部加载到内存中的List内      | 935, 930, 953<br />平均939.33          | 321, 323, 339<br />平均327.67                     | 286.67% |
-| 22字段表，查出30万记录<br />全部加载到内存中的List内     | 3340，3343, 3577<br />平均 3420        | 1832, 1925, 2313<br />平均 2023.33                | 169.03% |
-| 22字段表，查出1M记录<br />全部加载到内存中的List内       | 8478, 9219, 7468<br />平均 8388.33     | 6571, 7535, 5271<br />平均 6459                   | 129.87% |
-
-备注：
-
-* 均为单线程测试。会先执行一个50万左右的简单计算循环，使CPU睿频飙高。
-
-* 日志级别到ERROR。
-
-* 测试计时前，相同的SQL语句会先执行一遍，确保路径上的类都事先加载。
-
-* 数据库，环境等均使用相同环境。同一组测试两个框架操作先后时间不超过5分钟。
-
-* 每组用例跑三次，计算平均耗时（单位毫秒）
-
-* MyBatis在SELECT的配置中设置fetchSize="5000"，QueryDSL在查询时设置setFetchSize(5000)
-
-**高性能的秘密**
-
-* **无反射访问**：重写了QueryDSL 中JavaBean与JDBC交互部分以提升性能。使用ASM，为每个需要Bean对应的查询字段组合生成了一个访问器，作为反射的一个加速替代。
-
-动态类生成方案，每个一个SQL查询的SELECT 字段组合对应一个访问器，在第一次查询时生成并加载，第二次执行该SQL时性能就相当于硬编码。过程中去除了反射和IF分支，对ResultSet的全部访问均为按index的顺序访问（考虑CPU分支预测），大幅减少内存操作次数。
-
-* **表模型与BeanCodec缓存**：对表和字段模型。以及每个对象的编解码器进行了缓存。
-
-* **面向字节码 / JIT友好**： 如栈上操作、尽可能final化、手工内联、对象复用、内存一次分配、用tableswitch代替复杂分支的编程技巧。总体原理基于减少内存拷贝、字节码操作减少、对JIT友好、面向分支预测等一些编程原则。
-
-* **向开发者提供Tunning API**： 提供fetchSize, maxRows，queryTimeout等方法，操作大量数据时可根据业务需要做性能和安全的Tuning。
-
-  **Example**：一次查出一百万ID。
-
-  ```java
-  List<Integer> list = factory.select(t1.id).from(t1)
-  		.setFetchSisze(10000)
-  		.setMaxRows(1_000_000)
-  		.setQueryTimeout(15)
-  		.fetch();
-  ```
-
-**兼容性**
-
-* 使用ASM7的动态类生成，支持JDK 8~ 22，GraalVM（22）。
-
-* 在使用GraalVM native （AOT）模式下，ASM类生成无效，Java代码退化为基于反射的类型访问器，功能可正常使用。
-  （在GraalVM编译期间，实质上这部分逻辑也已编译为本地静态代码，无需再使用ASM加速）
-
-### 功能增强
-
-#### 数据库结构建模
+### 自动创建数据库结构
 
 完整的数据库结构建模：扩展QueryDSL原生的ColumnMetadata，支持在Java(JDBC)模型中描述全部数据库表的特征——包括default value、unsigned、自增、索引、约束（不含外键）。相关模型可以通过元模型API创建，也可以通过注解来定义。
 
@@ -287,11 +281,20 @@ QueryDSL思路是数据库Schema优先，本框架扩展支持了Metadata优先�
 
 > 不支持：外键、物化视图、索引组织表、自定义函数、触发器、存储过程，由于这些特性很少在跨RDBMS应用中用到，暂无支持的必要。
 
-#### 纯POJO使用 (无QueryClass)
+### 纯POJO使用
 
 QueryDSL官方版本中操作数据库需要使用代码生成生成工具生成query class。本框架在该基础上作了一些增强，允许用户不创建QueryClass类，通过纯POJO加上若干注解来替代query class模型。并使用lambda表达式来表示表或列的模型。
 
 该功能主要为降低使用门槛，参见文档`static/USER_GUIDE.md`。
+
+### R2dbc数据源使用(响应式数据)
+
+R2DBC (Reactive Relational Database Connectivity) 是一种为关系型数据库设计的异步非阻塞编程规范，可以替代传统 JDBC 的阻塞编程模式，支持响应式流处理（Reactive Streams）。
+目前较流行的R2dbc框架有spring-data-r2dbc。使用本框架可以代替Spring-data-r2dbc（当然也可以同时使用），配合Spring web-flux可以实现完全无阻塞的流式数据处理。
+
+参见  [querydsl-sql-r2dbc](querydsl-sql-r2dbc/) 和 [querydsl-sql-r2dbc的Spring事务](querydsl-sql-r2dbc-spring) 用法。
+
+### 其他功能增强
 
 #### 多种风格的低代码API
 
