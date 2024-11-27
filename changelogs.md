@@ -7,11 +7,10 @@ v{querydsl 版本号} - r(extension version)
 ```
 
 **v5.0.0-r130**
-Eta: 2024-11-11
-
- * r2dbc/r2dbc-spring transaction
- * 支持H2db的DDL操作
- * 单元测试行覆盖85%以上.
+2024-11-27
+ * New module for r2dbc and r2dbc-spring transaction
+ * Supports DDL on H2DB.
+ * Upgerade JUnit to Junit.jupiter
 
 **v5.0.0-r120**
 
