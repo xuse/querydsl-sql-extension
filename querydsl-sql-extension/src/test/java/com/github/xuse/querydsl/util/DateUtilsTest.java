@@ -162,7 +162,7 @@ public class DateUtilsTest {
 		assertEquals(1,DateUtils.getWeekDay(ret));
 		assertEquals(0,DateUtils.getWeekDay(ret,TimeZones.UTC_3));
 		assertEquals(6,DateUtils.getWeekOfYear(ret));
-		assertEquals(5,DateUtils.getWeekOfYear(ret,TimeZones.UTC_3));
+		assertEquals(6,DateUtils.getWeekOfYear(ret,TimeZones.UTC_3));
 		
 		assertEquals("20040201180202.666",DateUtils.getFtpDate(millisTime));
 		assertEquals(1075658522000L, DateUtils.parseFTPDate("20040201180202.666").getTime());

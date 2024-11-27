@@ -6,11 +6,12 @@ import java.util.Date;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,11 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ContextConfiguration(classes = SpringConfiguration.class)
-public class SpringProviderTest extends AbstractTransactionalJUnit4SpringContextTests {
-	@Resource
+@ExtendWith(SpringExtension.class)
+public class SpringProviderTest {
+	@Autowired
 	private SQLQueryFactory factory;
 	
-	@Resource
+	@Autowired
 	private TestEntityRpository repository;
 
 	@PostConstruct

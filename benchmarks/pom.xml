@@ -14,9 +14,30 @@
 	<url>http://maven.apache.org</url>
 	<dependencies>
 		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>4.8.1</version>
+		</dependency>
+		<dependency>
 			<groupId>io.github.xuse</groupId>
 			<artifactId>querydsl-sql-extension</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		<!--
+		<dependency>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>jna</artifactId>
+			<version>4.5.1</version>
+			<scope>compile</scope>
+		</dependency>
+		-->
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>5.12.1</version>
+			<!--
+            <version>4.2.2</version>
+            -->
 		</dependency>
 		<!--
 		关于JMH的测试代码生成，有以下注意事项：

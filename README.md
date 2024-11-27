@@ -23,9 +23,9 @@ This framework is an extension of [Querydsl-sql](https://github.com/querydsl/que
       - [Record Object mapping to database Relation](#record-object-mapping-to-database-relation)
     - [Runtime Environment and Scope of Application](#runtime-environment-and-scope-of-application)
   - [Experimental Features](#experimental-features)
-    - [Partition Management (Supported for MySQL and PostgreSQL)](#partition-management-supported-for-mysql-and-postgresql)
     - [DDL Support](#ddl-support)
-    - [MySQL Online DDL](#mysql-online-ddl)
+    - [Table Partition Management](#table-partition-management)
+      - [MySQL Online DDL](#mysql-online-ddl)
   - [FAQ](#faq)
 
 
@@ -316,7 +316,20 @@ As same as the original Querydsl framework, Including these databases:
 
 > Experimental features are new functionalities added based on specific use cases or suggestions, intended for user experience and feedback collection.
 
-### Partition Management (Supported for MySQL and PostgreSQL)
+### DDL Support
+
+**Supported databases (For DDL)**
+
+* MySQL v5.6 and above
+* Apache Derby v10.14 and above
+* PostgreSQL v10.3 and above
+* H2 v2.3.232
+
+For related instructions, refer to the quick_start.md document.
+
+> Other databases can write their own SQLTemplatesEx (dialect extension class defined by this framework) for extension. If needed, you can also email me for discussions.
+
+### Table Partition Management
 
 > The example demonstrates functionality on MySQL.
 > The partitioning mechanism of PostgreSQL is significantly different from MySQL. Currently, only partition table creation and partition addition/removal are supported. Due to the differences in database mechanisms, some features are not yet planned to be supported on PostgreSQL.
@@ -373,21 +386,7 @@ metadata.dropPartition(t1)
     .partition("p20200101").execute();
 ```
 
-### DDL Support
-
-**Supported databases (For DDL)**
-
-* MySQL v5.6 and above
-* Apache Derby v10.14 and above
-* PostgreSQL v10.3 and above
-* H2 v2.3.232
-
-For related instructions, refer to the quick_start.md document.
-
-> Other databases can write their own SQLTemplatesEx (dialect extension class defined by this framework) for extension. If needed, you can also email me for discussions.
-
-
-### MySQL Online DDL
+#### MySQL Online DDL
 
 Online DDL can prevent blocking caused by locks during DDL execution, which can affect user DML operations. Online DDL allows users to perform DML operations during the DDL process.
 

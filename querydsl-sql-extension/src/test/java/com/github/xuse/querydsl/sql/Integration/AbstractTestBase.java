@@ -46,7 +46,7 @@ public abstract class AbstractTestBase {
 		
 		String host="localhost";
 		dsMySQL8.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?useSSL=false");
+		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?allowPublicKeyRetrieval=true");
 		dsMySQL8.setUsername("root");
 		dsMySQL8.setPassword(testPws.replace("_", ""));
 		

@@ -12,6 +12,8 @@
 	<description>extension of querdsl-sql, extending its capabilities and
 		providing higher performance.</description>
 	<url>https://github.com/xuse/querydsl-sql-extension</url>
+	<properties>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>javax.annotation</groupId>
@@ -28,6 +30,7 @@
 			<artifactId>querydsl-sql</artifactId>
 			<version>${querydsl.version}</version>
 		</dependency>
+		<!-- Test dependencies -->
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
