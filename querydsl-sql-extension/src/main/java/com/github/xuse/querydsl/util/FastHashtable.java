@@ -28,7 +28,7 @@ import sun.misc.Unsafe;
  * 不支持扩容。大幅超过预定容量后会逐渐退化为链表，性能急剧下降。
  * @param <V> value type
  */
-@SuppressWarnings("restriction")
+@SuppressWarnings({"restriction","rawtypes"})
 public final class FastHashtable<V> implements Map<String, V> {
 
 	private final Object[] table;
@@ -76,7 +76,6 @@ public final class FastHashtable<V> implements Map<String, V> {
 		U.putObject(tab, ((long) i << ASHIFT) + ABASE, obj);
 	}
 
-	@SuppressWarnings("rawtypes")
 	static final void gridSet(Node[] tab, int i, Node node) {
 		U.putObject(tab, ((long) i << ASHIFT) + ABASE, node);
 	}
@@ -96,7 +95,7 @@ public final class FastHashtable<V> implements Map<String, V> {
 		return innerGet(hash(key), key);
 	}
 
-	@SuppressWarnings({"unchecked","rawtypes"})
+	@SuppressWarnings({"unchecked"})
 	public V computeIfAbsent(String key, Function<String, V> func) {
 		int hash = hash(key);
 		int slotPos = (hash >>> 3) & hashTableMask;
@@ -147,7 +146,7 @@ public final class FastHashtable<V> implements Map<String, V> {
 		return newNode.value;
 	}
 
-	@SuppressWarnings({"unchecked","rawtypes"})
+	@SuppressWarnings({"unchecked"})
 	public V put(String key, V value) {
 		int hash = hash(key);
 		int slotPos = (hash >>> 3) & hashTableMask;
@@ -238,7 +237,7 @@ public final class FastHashtable<V> implements Map<String, V> {
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked" })
 	private Node<V> innerGetNode(Object key) {
 		if (key instanceof String) {
 			int hash = hash((String) key);
@@ -554,7 +553,6 @@ public final class FastHashtable<V> implements Map<String, V> {
 			Object obj = tabAt(table, i);
 			if (obj != null) {
 				if (obj instanceof Node[]) {
-					@SuppressWarnings("rawtypes")
 					Node[] grids = (Node[]) obj;
 					for (int j = 0; j < grids.length; j++) {
 						Node<?> node = (Node)tabAt(grids,j);

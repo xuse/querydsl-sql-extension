@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.sql.log;
 
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -14,9 +13,11 @@ import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.DateFormats.TLDateFormat;
 import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLBindings;
@@ -87,10 +88,6 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	public final void rendered(SQLListenerContext context) {
 	}
 
-	@Override
-	public final void prePrepare(SQLListenerContext context) {
-	}
-
 	/**
 	 *  输出格式，全部初始化。根据配置等级输出，当error时输出等级自动+1
 	 */
@@ -128,7 +125,7 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			Iterator<SQLBindings> iter = bs.iterator();
 			SQLBindings binding = iter.next();
 			StringBuilder sb = formatSQL(binding.getSQL());
-			List<Path<?>> constantPaths = ALL_NULL_LIST;
+			List<Path<?>> constantPaths = CollectionUtils.nullElementsList();
 			if (binding instanceof SQLBindingsAlter) {
 				constantPaths = ((SQLBindingsAlter) binding).getPaths();
 			}
@@ -247,7 +244,12 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		protected void append0(StringBuilder sb, Path<?> p, Object value, int count) {
 			sb.append("  ").append(count + 1);
 			if (p != null) {
-				sb.append(") ").append(p);
+				PathMetadata metadata=p.getMetadata();
+				sb.append(") ");
+				if(metadata.getParent()!=null) {
+					sb.append(metadata.getParent().getMetadata().getName()).append('.');
+				}
+				sb.append(metadata.getName());
 			} else {
 				sb.append(") ?");
 			}
@@ -322,23 +324,15 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	}
 
 	@Override
-	public final void preExecute(SQLListenerContext context) {
+	public final void prePrepare(SQLListenerContext context) {
 		if (log.isInfoEnabled()) {
 			log.info(infoFormatter.format(context.getAllSQLBindings()));
 		}
 	}
-
-	private static final List<Path<?>> ALL_NULL_LIST = new AbstractList<Path<?>>() {
-		@Override
-		public Path<?> get(int index) {
-			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-	};
+	
+	@Override
+	public final void preExecute(SQLListenerContext context) {
+	}
 
 	@Override
 	public final void executed(SQLListenerContext context) {

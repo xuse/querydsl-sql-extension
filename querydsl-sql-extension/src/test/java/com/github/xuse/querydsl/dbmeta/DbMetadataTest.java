@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.dbmeta;
 
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -8,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.sql.Integration.AbstractTestBase;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
@@ -41,14 +42,13 @@ public class DbMetadataTest extends AbstractTestBase{
 					assertTrue(list.size()>0);
 					showTables(catalog,schema, list);
 				}
+				break;
 			}
 		}
-		
 		List<SequenceInfo> seqs=meta.getSequenceInfo(namespace, null);
 		for(SequenceInfo s:seqs) {
 			System.out.println(s.toString());
 		}
-		
 	}
 	
 	@Test
@@ -57,6 +57,9 @@ public class DbMetadataTest extends AbstractTestBase{
 		DbType type=meta.getDatabaseInfo().getDbType();
 		
 		URL url = this.getClass().getResource("/test_script_" + type.name + ".sql");
+		if(url==null) {
+			return;
+		}
 		Map<String,RuntimeException> exceptions=new HashMap<>();
 		int size=meta.executeScriptFile(url, StandardCharsets.UTF_8, true, exceptions);
 		System.out.println(size);

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.Mappers;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
@@ -49,7 +50,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 
 	private RoutingStrategy routing;
 
-	public SQLDeleteClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	SQLDeleteClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
 	}
@@ -126,8 +127,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 
 	protected PreparedStatement createStatement() throws SQLException {
 		listeners.preRender(context);
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
-		serializer.setUseLiterals(useLiterals);
+		SQLSerializerAlter serializer = createSerializer();
 		serializer.serializeDelete(metadata, entity);
 		serializer.setRouting(routing);
 		SQLBindings bindings = createBindings(metadata, serializer);
@@ -180,6 +180,17 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		boolean tuple = (bean instanceof Tuple);
 		populatePrimaryKey0(bean, Mappers.getNormal(tuple));
 		return this;
+	}
+	
+	/*
+	 * 父类方法不支持routing参数。
+	 */
+	@Override
+	protected SQLSerializerAlter createSerializer() {
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configEx, true);
+		serializer.setUseLiterals(useLiterals);
+		serializer.setRouting(routing);
+		return serializer;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

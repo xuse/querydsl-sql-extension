@@ -14,7 +14,9 @@ import com.github.xuse.querydsl.util.Assert;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryFlag;
+import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.QueryModifiers;
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
@@ -38,7 +40,7 @@ public class QueryExecutor<T,R> extends QueryWrapper<T,R, QueryExecutor<T,R>> {
 		this.repository = repository;
 	}
 
-	QueryExecutor(RelationalPath<T> table, DefaultQueryMetadata mixin, AbstractCrudRepository<T, ?> repository) {
+	QueryExecutor(RelationalPath<T> table, QueryMetadata mixin, AbstractCrudRepository<T, ?> repository) {
 		super(table, mixin);
 		this.repository = repository;
 	}
@@ -78,12 +80,13 @@ public class QueryExecutor<T,R> extends QueryWrapper<T,R, QueryExecutor<T,R>> {
 		return query;
 	}
 	
-	public Pair<Integer, List<R>> fetchAndCount(){
-		return createQuery(true).fetchAndCount();
+	public QueryResults<R> fetchAndCount(){
+		return createQuery(true).fetchResults();
 	}
 	
 	public Pair<Integer, List<R>> findAndCount(){
-		return createQuery(true).fetchAndCount();
+		QueryResults<R> result=createQuery(true).fetchResults();
+		return new Pair<>((int)result.getTotal(),result.getResults());
 	}
 
 	public List<R> fetch() {

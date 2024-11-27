@@ -53,6 +53,9 @@ final class FieldProperty {
 	}
 
 	private boolean isNotAssignableFrom(Class<?> bindingType) {
+		if(field.getType()==bindingType) {
+			return false;
+		}
 		Class<?> type=Primitives.toWrapperClass(field.getType());
 		return !type.isAssignableFrom(bindingType);
 	}

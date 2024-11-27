@@ -26,7 +26,7 @@ import lombok.Data;
 @TableSpec(name="ca_foo",primaryKeys="id",collate = "utf8mb4_general_ci",
 keys = {
 		@Key(path= {"code"},type=ConstraintType.UNIQUE),
-		@Key(path= {"content"},type=ConstraintType.FULLTEXT),
+		@Key(path= {"content"},type=ConstraintType.FULLTEXT,allowIgnore = true),
 	}
 )
 @Comment("Test table for Foo.")

@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.repository;
 
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.querydsl.core.DefaultQueryMetadata;
+import com.querydsl.core.QueryMetadata;
 import com.querydsl.sql.RelationalPath;
 
 public class LambdaQuery<T,R> extends QueryWrapper<T,R,LambdaQuery<T,R>>{
@@ -14,7 +15,7 @@ public class LambdaQuery<T,R> extends QueryWrapper<T,R,LambdaQuery<T,R>>{
 		super(PathCache.get(clz, null),new DefaultQueryMetadata());
 	}
 
-	protected LambdaQuery(RelationalPath<T> table, DefaultQueryMetadata mixin) {
+	protected LambdaQuery(RelationalPath<T> table, QueryMetadata mixin) {
 		super(table,mixin);
 	}
 

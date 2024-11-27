@@ -44,6 +44,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.DerbyTemplates;
+import com.querydsl.sql.H2Templates;
 import com.querydsl.sql.OracleTemplates;
 import com.querydsl.sql.PostgreSQLTemplates;
 import com.querydsl.sql.RelationalPath;
@@ -106,14 +107,16 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 		if (url.startsWith("jdbc:mysql:")) {
 			return new MySQLWithJSONTemplates();
 		} else if (url.startsWith("jdbc:derby:")) {
-			return DerbyTemplates.builder().build();
+			return DerbyTemplates.builder().newLineToSingleSpace().build();
 		} else if (url.startsWith("jdbc:postgresql:")) {
-			return new PostgreSQLTemplates();
+			return PostgreSQLTemplates.builder().build();
 		} else if (url.startsWith("jdbc:sqlserver")) {
-			return new SQLServer2012Templates();
+			return SQLServer2012Templates.builder().newLineToSingleSpace().build();
 		} else if (url.startsWith("jdbc:oracle:")) {
-			return new OracleTemplates();
-		} 
+			return OracleTemplates.builder().newLineToSingleSpace().build();
+		} else if(url.startsWith("jdbc:h2:")) {
+			return H2Templates.builder().newLineToSingleSpace().build();
+		}
 		throw Exceptions.illegalArgument(url);
 	}
 

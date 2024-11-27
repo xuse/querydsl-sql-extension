@@ -10,6 +10,8 @@ import lombok.SneakyThrows;
 
 
 public class ToStringUtils {
+	private static final int MAX_RECORD_FETCH = 1000;
+	
 	public static CharSequence toString(byte[] data) {
 		return toString("",data);
 	}
@@ -27,8 +29,8 @@ public class ToStringUtils {
 
 	@SneakyThrows
 	public static CharSequence toString(ResultSet rs, int limit){
-		if (limit > 1000) {
-			limit = 1000;
+		if (limit > MAX_RECORD_FETCH) {
+			limit = MAX_RECORD_FETCH;
 		}
 		StringBuilder sb = new StringBuilder(128);
 		ResultSetMetaData meta = rs.getMetaData();

@@ -8,294 +8,374 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.enums.Gender;
 
 public class AssertTest {
 
 	private Object nullObj = null;
-	
-	private Object obj=new Object();
-	
+
+	private Object obj = new Object();
+
 	private String msg = "assert failure";
-	
-	private String a="123";
-	
-	private String b="1".concat("23");
-	
-	private String c="456";
-	
-	private String[] sArray=new String[] {a};
-	
-	private int[] iArray= {1,2,3};
-	
+
+	private String a = "123";
+
+	private String b = "1".concat("23");
+
+	private String c = "456";
+
+	private String[] sArray = new String[] { a };
+
+	private int[] iArray = { 1, 2, 3 };
+
 	private static File file = initFile(AssertTest.class, "test.ini");
 
 	private static File nfile = initFile(AssertTest.class, "test1.ini");
-	
+
 	private List<String> hasEle = Arrays.asList("");
 	private List<String> emptyEle = Collections.emptyList();
-	
-	private Map<String,String> singleMap = Collections.singletonMap("a", a);
-	private Map<String,String> emptyMap = Collections.emptyMap();
-	
-	
+
+	private Map<String, String> singleMap = Collections.singletonMap("a", a);
+	private Map<String, String> emptyMap = Collections.emptyMap();
+
 	@Test
 	public void testAssert() {
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException1() {
-		Assert.nonNull(obj, msg);
-		Assert.nonNull(nullObj, msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.nonNull(obj, msg);
+			Assert.nonNull(nullObj, msg);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException2() {
-		Assert.notNull(obj);
-		Assert.notNull(nullObj);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.notNull(obj);
+			Assert.notNull(nullObj);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException3() {
-		Assert.notNull(obj, " is null");
-		Assert.notNull(nullObj, " is null");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.notNull(obj, " is null");
+			Assert.notNull(nullObj, " is null");
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertException4() {
-		Assert.isNull(nullObj);
-		Assert.isNull(obj);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isNull(nullObj);
+			Assert.isNull(obj);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException5() {
-		Assert.isNull(nullObj," is not null");
-		Assert.isNull(obj, " is not null");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isNull(nullObj, " is not null");
+			Assert.isNull(obj, " is not null");
+		});
 	}
 
-	@Test(expected = ClassCastException.class)
+	@Test
 	public void testAssertException6() {
-		Assert.isType("", String.class);
-		Assert.isType(obj, String.class);
+		Assertions.assertThrows(ClassCastException.class, () -> {
+			Assert.isType("", String.class);
+			Assert.isType(obj, String.class);
+		});
 	}
 
-	@Test(expected = ClassCastException.class)
+	@Test
 	public void testAssertException7() {
-		Assert.isType("",String.class, msg);
-		Assert.isType(obj,String.class, msg);
+		Assertions.assertThrows(ClassCastException.class, () -> {
+			Assert.isType("", String.class, msg);
+			Assert.isType(obj, String.class, msg);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException8() {
-		Assert.isFalse(false);
-		Assert.isFalse(true);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isFalse(false);
+			Assert.isFalse(true);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException9() {
-		Assert.isFalse(false, msg);
-		Assert.isFalse(true, msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isFalse(false, msg);
+			Assert.isFalse(true, msg);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException10() {
-		Assert.isTrue(true, "");
-		Assert.isTrue(false, "");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isTrue(true, "");
+			Assert.isTrue(false, "");
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testAssertException11() {
-		Assert.isTrue(true);
-		Assert.isTrue(false);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isTrue(true);
+			Assert.isTrue(false);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertException12() {
-		Assert.isTrue(Boolean.TRUE);
-		Assert.isTrue(Boolean.FALSE);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isTrue(Boolean.TRUE);
+			Assert.isTrue(Boolean.FALSE);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertException13() {
-		Assert.isTrue(Boolean.TRUE,msg);
-		Assert.isTrue(Boolean.FALSE,msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isTrue(Boolean.TRUE, msg);
+			Assert.isTrue(Boolean.FALSE, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionEQ1() {
-		Assert.equals(a,b,msg);
-		Assert.equals(a,c,msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.equals(a, b, msg);
+			Assert.equals(a, c, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionEQ2() {
-		Assert.equals(a,b);
-		Assert.equals(a,c);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.equals(a, b);
+			Assert.equals(a, c);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionNE1() {
-		Assert.notEquals(a,c);
-		Assert.notEquals(a,b);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.notEquals(a, c);
+			Assert.notEquals(a, b);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionNE2() {
-		Assert.notEquals(a, c, msg);
-		Assert.notEquals(a, b, msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.notEquals(a, c, msg);
+			Assert.notEquals(a, b, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionSame() {
-		Assert.sameObject(a, b, msg);
-		Assert.sameObject(a, b, msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.sameObject(a, b, msg);
+			Assert.sameObject(a, b, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionBetween() {
-		Assert.between(2, 1, 3, msg);
-		Assert.between(5, 1, 3, msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.between(2, 1, 3, msg);
+			Assert.between(5, 1, 3, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionBetween2() {
-		Assert.isEnumOf("MALE", Gender.class, msg);
-		Assert.isEnumOf("MALE1", Gender.class, msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isEnumOf("MALE", Gender.class, msg);
+			Assert.isEnumOf("MALE1", Gender.class, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionEnum1() {
-		Assert.isEnumOf("MALE", Gender.class);
-		Assert.isEnumOf("MALE1", Gender.class);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isEnumOf("MALE", Gender.class);
+			Assert.isEnumOf("MALE1", Gender.class);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void testAssertExceptionEnum2() {
-		Assert.isEnumOf("MALE", Gender.class, msg);
-		Assert.isEnumOf("MALE1", Gender.class, msg);
-	}	
-	
-	@Test(expected = NoSuchElementException.class)
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isEnumOf("MALE", Gender.class, msg);
+			Assert.isEnumOf("MALE1", Gender.class, msg);
+		});
+	}
+
+	@Test
 	public void testAssertExceptionInArray() {
-		Assert.isInArray(a, sArray);
-		Assert.isInArray(c, sArray);
+		Assertions.assertThrows(NoSuchElementException.class, () -> {
+			Assert.isInArray(a, sArray);
+			Assert.isInArray(c, sArray);
+		});
 	}
-	
-	@Test(expected = NoSuchElementException.class)
+
+	@Test
 	public void testAssertExceptionInArray2() {
-		Assert.isInArray(a, sArray, msg);
-		Assert.isInArray(c, sArray, msg);
+		Assertions.assertThrows(NoSuchElementException.class, () -> {
+			Assert.isInArray(a, sArray, msg);
+			Assert.isInArray(c, sArray, msg);
+		});
 	}
-	
-	@Test(expected = NoSuchElementException.class)
+
+	@Test
 	public void testAssertExceptionInArray3() {
-		Assert.isInArray(1, iArray, msg);
-		Assert.isInArray(4, iArray, msg);
+		Assertions.assertThrows(NoSuchElementException.class, () -> {
+			Assert.isInArray(1, iArray, msg);
+			Assert.isInArray(4, iArray, msg);
+		});
 	}
 
-	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void fileExist() {
-		Assert.exist(file);
-		Assert.exist(nfile);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.exist(file);
+			Assert.exist(nfile);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void fileExist2() {
-		Assert.fileExist(file);
-		Assert.fileExist(nfile);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.fileExist(file);
+			Assert.fileExist(nfile);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void folderExist() {
-		File folder=initFile(Assert.class,"com");
-		Assert.folderExist(folder);
-		Assert.folderExist(file);
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void folderExist2() {
-		Assert.folderExist(nfile);
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void exceptionNotEmpty() {
-		Assert.isNotEmpty(a);
-		Assert.isNotEmpty("");
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void exceptionNotEmpty2() {
-		Assert.isNotEmpty(a,msg);
-		Assert.isNotEmpty("",msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			File folder = initFile(Assert.class, "com");
+			Assert.folderExist(folder);
+			Assert.folderExist(file);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
+	public void folderExist2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.folderExist(nfile);
+		});
+	}
+
+	@Test
+	public void exceptionNotEmpty() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isNotEmpty(a);
+			Assert.isNotEmpty("");
+		});
+	}
+
+	@Test
+	public void exceptionNotEmpty2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.isNotEmpty(a, msg);
+			Assert.isNotEmpty("", msg);
+		});
+	}
+
+	@Test
 	public void exceptionNotEmpty3() {
-		Assert.hasLength(a);
-		Assert.hasLength("");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.hasLength(a);
+			Assert.hasLength("");
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionNotEmpty4() {
-		Assert.hasLength(a,msg);
-		Assert.hasLength("",msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.hasLength(a, msg);
+			Assert.hasLength("", msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionHasElements1() {
-		Assert.hasElements(hasEle);
-		Assert.hasElements(emptyEle);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.hasElements(hasEle);
+			Assert.hasElements(emptyEle);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionHasElements2() {
-		Assert.hasElements(hasEle, msg);
-		Assert.hasElements(emptyEle ,msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.hasElements(hasEle, msg);
+			Assert.hasElements(emptyEle, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionHasElements3() {
-		Assert.hasElements(singleMap);
-		Assert.hasElements(emptyMap);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.hasElements(singleMap);
+			Assert.hasElements(emptyMap);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionHasElements4() {
-		Assert.hasElements(singleMap, msg);
-		Assert.hasElements(emptyMap ,msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.hasElements(singleMap, msg);
+			Assert.hasElements(emptyMap, msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionArrayNotEmpty() {
-		Assert.notEmpty(hasEle.toArray(),msg);
-		Assert.notEmpty(emptyEle.toArray(),msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.notEmpty(hasEle.toArray(), msg);
+			Assert.notEmpty(emptyEle.toArray(), msg);
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionArrayNotEmpty2() {
-		Assert.notEmpty(hasEle.toArray());
-		Assert.notEmpty(emptyEle.toArray());
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.notEmpty(hasEle.toArray());
+			Assert.notEmpty(emptyEle.toArray());
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionArrayNoNullEle1() {
-		Assert.noNullElements(new Object[] {a,b});
-		Assert.noNullElements(new Object[] {a,null});
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.noNullElements(new Object[] { a, b });
+			Assert.noNullElements(new Object[] { a, null });
+		});
 	}
-	
-	@Test(expected = IllegalArgumentException.class)
+
+	@Test
 	public void exceptionArrayNoNullEle2() {
-		Assert.noNullElements(new Object[] {a,b},msg);
-		Assert.noNullElements(new Object[] {a,null},msg);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Assert.noNullElements(new Object[] { a, b }, msg);
+			Assert.noNullElements(new Object[] { a, null }, msg);
+		});
 	}
-	
-	
-	private static File initFile(Class<?> clz,String string) {
-		URL url=clz.getResource("/");
-		File file=new File(url.getPath(),string);
+
+	private static File initFile(Class<?> clz, String string) {
+		URL url = clz.getResource("/");
+		File file = new File(url.getPath(), string);
 		return file;
 	}
 }

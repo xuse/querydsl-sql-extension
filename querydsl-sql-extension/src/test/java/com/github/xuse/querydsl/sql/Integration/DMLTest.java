@@ -1,7 +1,8 @@
 package com.github.xuse.querydsl.sql.Integration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -18,10 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
@@ -145,8 +144,16 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 		try (ResultSet rs = factory.selectFrom(t1).getResults()) {
 			String str = SQLTypeUtils.toString(rs);
-			// System.out.println(str);
-			assertTrue(str.startsWith("ID, NAME, CREATED"));
+			System.err.println(str);
+			
+			char c=str.charAt(1);
+			if(Character.isUpperCase(c)){
+				assertTrue(str.startsWith("ID, NAME, CREATED"));	
+			}else {
+				assertTrue(str.startsWith("id, name, created"));
+			}
+			
+			
 		}
 	}
 
@@ -320,8 +327,10 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void testUpdateBatch() {
 		QAaa t1 = QAaa.aaa;
-		long count = factory.update(t1).where(t1.name.eq("1")).set(t1.version, t1.version.add(1)).addBatch()
-				.where(t1.name.eq("2")).set(t1.version, t1.version.add(2)).addBatch().execute();
+		long count = factory.update(t1)
+				.where(t1.name.eq("1")).set(t1.version, t1.version.add(1)).addBatch()
+				.where(t1.name.eq("2")).set(t1.version, t1.version.add(2)).addBatch()
+				.execute();
 		System.err.println(count);
 	}
 
@@ -417,7 +426,6 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			sid = factory.insert(t2).populate(data).executeWithKey(t2.id);
 		}
 		System.err.println(sid);
-
 		CRUDRepository<AvsUserAuthority, Integer> repository = factory.asRepository(t2);
 		AvsUserAuthority obj = repository.load(sid);
 		System.out.println(obj.getCreateTime());
@@ -514,7 +522,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void mysqlInsertOnDuplidateKey() {
-		Assume.assumeTrue("Only for MYSQL", factory.getMetadataFactory().getDatabaseInfo().getDbType() == DbType.mysql);
+		Assumptions.assumeTrue(factory.getMetadataFactory().getDatabaseInfo().getDbType() == DbType.mysql,"Only for MYSQL");
 		QCaAsset t2 = QCaAsset.caAsset;
 		CaAsset a = new CaAsset();
 		a.setCode("a");

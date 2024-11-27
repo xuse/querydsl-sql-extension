@@ -5,13 +5,15 @@
 	<parent>
 		<groupId>io.github.xuse</groupId>
 		<artifactId>querydsl-sql-extension-parent</artifactId>
-		<version>5.0.0-r120</version>
+		<version>5.0.0-r130</version>
 	</parent>
 	<artifactId>querydsl-sql-extension</artifactId>
 	<name>querydsl-sql-extension</name>
 	<description>extension of querdsl-sql, extending its capabilities and
 		providing higher performance.</description>
 	<url>https://github.com/xuse/querydsl-sql-extension</url>
+	<properties>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>javax.annotation</groupId>
@@ -28,6 +30,7 @@
 			<artifactId>querydsl-sql</artifactId>
 			<version>${querydsl.version}</version>
 		</dependency>
+		<!-- Test dependencies -->
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
@@ -44,6 +47,24 @@
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<version>2.3.232</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>2.4.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.7.3</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

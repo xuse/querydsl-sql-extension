@@ -1,7 +1,9 @@
 package com.github.xuse.querydsl.sql.Integration;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import javax.sql.DataSource;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.enums.Gender;
@@ -9,10 +11,12 @@ import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
+import com.github.xuse.querydsl.sql.support.SimpleDataSource;
 import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.github.xuse.querydsl.util.JefBase64;
 import com.querydsl.sql.SQLTemplates;
+import com.zaxxer.hikari.HikariDataSource;
 
 public abstract class AbstractTestBase {
 
@@ -25,6 +29,7 @@ public abstract class AbstractTestBase {
 	private static SimpleDataSource dsMySQL = new SimpleDataSource();
 	private static SimpleDataSource dsMySQL8 = new SimpleDataSource();
 	private static SimpleDataSource dsPg14 = new SimpleDataSource();
+	private static SimpleDataSource dsH2 = new SimpleDataSource();
 	
 
 	static {
@@ -39,9 +44,9 @@ public abstract class AbstractTestBase {
 		dsMySQL.setUsername(System.getProperty("mysql.user"));
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
 		
-		String host=JefBase64.decodeUTF8(AbstractTestBase.host).replace("_", "");
+		String host="localhost";
 		dsMySQL8.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?useSSL=false");
+		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?allowPublicKeyRetrieval=true");
 		dsMySQL8.setUsername("root");
 		dsMySQL8.setPassword(testPws.replace("_", ""));
 		
@@ -51,9 +56,11 @@ public abstract class AbstractTestBase {
 		dsPg14.setUsername("postgres");
 		dsPg14.setPassword(testPws.replace("_", ""));
 		
+		dsH2.setDriverClass("org.h2.Driver");
+		dsH2.setUrl("jdbc:h2:~/h2test");
 	}
 
-	private static final SimpleDataSource effectiveDs = dsDerby;
+	private static final SimpleDataSource effectiveDs = dsH2;
 	
 	
 	public static  SimpleDataSource getEffectiveDs() {
@@ -69,18 +76,24 @@ public abstract class AbstractTestBase {
 	 * 在Junit测试时，每个测试案例都会运行一次创建和注销。但仅在第一次类加载时才会注册驱动类。
 	 * 因此，第二个和之后的测试案例就会因无法获得连接而失败。
 	 */
-	@AfterClass 
+	@AfterAll
 	public static void closeDerby() {
 	}
 	
-	@BeforeClass
+	@BeforeAll
 	public static void doInit() {
 		try {
 			factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),
-					effectiveDs, true);
+					wrapAsPool(effectiveDs), true);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static DataSource wrapAsPool(DataSource ds) {
+		HikariDataSource pool = new HikariDataSource();
+		pool.setDataSource(ds);
+		return pool;
 	}
 	
 	public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
@@ -94,7 +107,7 @@ public abstract class AbstractTestBase {
 		// 如果使用了自定义映射，需要提前注册，或者扫描指定包
 		configuration.allowTableDropAndCreate();
 		configuration.getScanOptions()
-			.setAlterExistTable(true)
+			.setAlterExistTable(false)
 			.allowDrops()
 			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");

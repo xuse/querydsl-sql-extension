@@ -5,10 +5,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.util.Assert;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.SQLTemplates;
+import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 
 public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	protected final TypeNames typeNames = TypeNames.generateDefault();
@@ -32,6 +34,15 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 		}
 	}
 
+	@Override
+	public boolean supportCreateInTableDefinition(ConstraintType type) {
+		return !type.isIndex();
+	}
+
+	public LetterCase getDefaultLetterCase() {
+		return LetterCase.UPPER;
+	}
+	
 	public ColumnDef getColumnDataType(int sqlTypes, int size, int scale) {
 		return typeNames.get(sqlTypes, size, scale);
 	}
