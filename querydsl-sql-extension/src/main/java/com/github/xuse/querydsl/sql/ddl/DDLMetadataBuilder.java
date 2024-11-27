@@ -165,13 +165,13 @@ public class DDLMetadataBuilder {
 	}
 
 	private DDLMetadata addIndependConstraintMeta(Constraint c) {
-		if (configuration.getTemplates().supports(c.getConstraintType().getIndependentCreateOps())) {
+		ConstraintType type = c.getConstraintType();
+		if (type == null) {
+			type = ConstraintType.KEY;
+		}
+		if (configuration.getTemplates().supports(type.getIndependentCreateOps())) {
 			DDLMetadata meta = new DDLMetadata(false, true);
 			result.add(meta);
-			ConstraintType type = c.getConstraintType();
-			if (type == null) {
-				type = ConstraintType.KEY;
-			}
 			Operator ops = type.getIndependentCreateOps();
 			Expression<?> defExp;
 			if (type.isColumnList()) {
@@ -183,8 +183,13 @@ public class DDLMetadataBuilder {
 					(ops == null ? type : ops), table, defExp));
 			return meta;
 		} else {
-			log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.", c);
-			return null;
+			if(c.isAllowIgnore()) {
+				log.warn("[CREATION IGNORED] The constraint {} is not supported on current database.", c);
+				return null;	
+			}else {
+				throw Exceptions.unsupportedOperation("Current database do not support key:{}@{}", type, c, table.getSchemaAndTable());
+			}
+			
 		}
 	}
 
@@ -467,7 +472,7 @@ public class DDLMetadataBuilder {
 			String value = e.getValue();
 			if (op == DDLOps.COMMENT_ON_TABLE) {
 				if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
-					createCommentStatement(ConstantImpl.create(value), null);
+					createCommentStatement(DDLExpressions.createConstant(value), null);
 				} else {
 					tableDefExpressions.add(DDLExpressions.simple(DDLOps.COMMENT_ON_COLUMN, DDLExpressions.empty(),
 							ConstantImpl.create(value)));

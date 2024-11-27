@@ -8,4 +8,5 @@ target/
 hs_err_pid*
 db
 *.log
+*.iml
 test.txt

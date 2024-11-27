@@ -25,7 +25,6 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.Partiti
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.PartitionNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.PartitionNamesContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.PartitionTypeDefContext;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.PartitionValueListContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.TableNameContext;
 
 import com.github.xuse.querydsl.annotation.partition.Partition;

@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.Types;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
 import com.querydsl.core.types.SQLTemplatesEx;

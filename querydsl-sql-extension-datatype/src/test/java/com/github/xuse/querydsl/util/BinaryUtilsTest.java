@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.datatype.util.ToStringUtils;
 import com.github.xuse.querydsl.datatype.util.binary.BeanCodec;

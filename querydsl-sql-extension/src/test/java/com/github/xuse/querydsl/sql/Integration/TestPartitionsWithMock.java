@@ -1,18 +1,20 @@
 package com.github.xuse.querydsl.sql.Integration;
 
-import static org.junit.Assert.assertEquals;
 
-import java.util.Collection;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.partition.AutoTimePartitions;
 import com.github.xuse.querydsl.annotation.partition.HashType;
+import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo1;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo1b;
 import com.github.xuse.querydsl.entity.partition.QPartitionFoo3;
@@ -34,14 +36,18 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	@Test
 	public void test1() {
 		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
-		Collection<String> list = meta.getCatalogs();
-		System.out.println(list);
+		meta.dropTable(QAaa.aaa).ifExists(true).execute();
+		meta.createTable(QAaa.aaa).ifExists().execute();
 	}
 
+	private void ensureDatabaseSupportsPartition() {
+		Assumptions.assumeTrue(factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY),"Only for Database supports Partition");
+	}
+	
 	@Test
 	public void testAdjustPartitionsCount() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionMethod.HASH));
+		ensureDatabaseSupportsPartition();
+		Assumptions.assumeTrue(factory.getConfiguration().supports(PartitionMethod.HASH),"Only for Database supports Partition");
 		
 		QPartitionFoo4 t4 = QPartitionFoo4.partitionFoo4;
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
@@ -72,9 +78,9 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	
 	
 	@Test
-	@Ignore
+	@Disabled
 	public void createTables() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
+		ensureDatabaseSupportsPartition();
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 //		metadata.createTable(QPartitionFoo1.partitionFoo1).reCreate().execute();
 //		metadata.createTable(QPartitionFoo2.partitionFoo2).reCreate().execute();
@@ -88,7 +94,7 @@ public class TestPartitionsWithMock extends MockedTestBase{
 
 	@Test
 	public void testPartitionsAddSimple() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
+		ensureDatabaseSupportsPartition();
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1=QPartitionFoo1.partitionFoo1;
 		metadata.dropTable(t1).execute();
@@ -114,7 +120,7 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	
 	@Test
 	public void testPartitionsAddSimple2() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
+		ensureDatabaseSupportsPartition();
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1b t1=QPartitionFoo1b.partitionFoo1b;
 		metadata.dropTable(t1).execute();
@@ -129,8 +135,8 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	 */
 	@Test
 	public void testPartitionsReorganiztion() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
-		Assume.assumeTrue("Only for Database supports Partition REORGANIZE_PARTITION",factory.getConfiguration().supports(AlterTablePartitionOps.REORGANIZE_PARTITION));
+		ensureDatabaseSupportsPartition();
+		Assumptions.assumeTrue(factory.getConfiguration().supports(AlterTablePartitionOps.REORGANIZE_PARTITION),"Only for Database supports Partition REORGANIZE_PARTITION");
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1=QPartitionFoo1.partitionFoo1;
 		metadata.dropTable(t1).execute();
@@ -165,7 +171,7 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	
 	@Test
 	public void terPartitionsReorganiztionList() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
+		ensureDatabaseSupportsPartition();
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo3 t1 = QPartitionFoo3.partitionFoo3;
 		metadata.dropTable(t1).execute();
@@ -205,8 +211,8 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	 */
 	@Test
 	public void testRemoveAndRebuild() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(AlterTablePartitionOps.REMOVE_PARTITIONING));
+		ensureDatabaseSupportsPartition();
+		Assumptions.assumeTrue(factory.getConfiguration().supports(AlterTablePartitionOps.REMOVE_PARTITIONING),"Only for Database supports Partition");
 		
 		QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
@@ -239,8 +245,8 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	 */
 	@Test
 	public void testAlterTableAddPrimaryKeyColumn() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(AlterTablePartitionOps.REMOVE_PARTITIONING));
+		ensureDatabaseSupportsPartition();
+		Assumptions.assumeTrue(factory.getConfiguration().supports(AlterTablePartitionOps.REMOVE_PARTITIONING),"Only for Database supports Partition");
 		
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		QPartitionFoo1 t1 = QPartitionFoo1.partitionFoo1;
@@ -252,7 +258,7 @@ public class TestPartitionsWithMock extends MockedTestBase{
 		metadata.refreshTable(t1).changePrimaryKey(t1.id,t1.code).execute();
 		Constraint c=metadata.getPrimaryKey(t1.getSchemaAndTable());
 		
-		//assertEquals(Arrays.asList("id","code"), c.getColumnNames());
+		assertEquals(Arrays.asList("id","created"), c.getColumnNames());
 		
 		metadata.createPartitioning(t1).partitionBy(
 				Partitions.byListColumns(t1.code)
@@ -266,7 +272,7 @@ public class TestPartitionsWithMock extends MockedTestBase{
 	
 	@Test
 	public void testFetchPartitions() {
-		Assume.assumeTrue("Only for Database supports Partition",factory.getConfiguration().supports(PartitionDefineOps.PARTITION_BY));
+		ensureDatabaseSupportsPartition();
 		SQLMetadataQueryFactory metadata=factory.getMetadataFactory();
 		List<PartitionInfo> partitions=metadata.getPartitions(new SchemaAndTable(null, "s3"));
 		for(PartitionInfo p:partitions) {

@@ -4,8 +4,8 @@ package com.github.xuse.querydsl.sql.Integration;
 
 import java.io.File;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.entity.QAaa;
@@ -19,7 +19,7 @@ public class TestDataInitialize extends AbstractTestBase{
 	 * 导出数据
 	 */
 	@Test
-	@Ignore
+	@Disabled
 	public void testExport() {
 		new InitDataExporter(factory).writeNullString()
 				.targetDirectory(new File(System.getProperty("user.dir"),"src/test/resources"))

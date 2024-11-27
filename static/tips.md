@@ -1,4 +1,7 @@
-[TOC]
+**Contents**
+- [More tips](#more-tips)
+  - [more about primitive types](#more-about-primitive-types)
+
 
 # More tips
 

@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -18,8 +19,8 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.enums.Gender;
@@ -27,13 +28,13 @@ import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.expression.ClassLoaderAccessor;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadataFactory;
+import com.querydsl.core.types.dsl.ArrayPath;
 import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.DatePath;
 import com.querydsl.core.types.dsl.DateTimePath;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.core.types.dsl.TimePath;
 
@@ -90,7 +91,7 @@ public class TypeUtilsTest {
 
 	@Test
 	public void testRecordAnaly() {
-		Assume.assumeTrue("Only for Database supports Partition",JDKEnvironment.JVM_VERSION>=16);
+		Assumptions.assumeTrue(JDKEnvironment.JVM_VERSION>=16,"Only JDK > 16");
 		URL clzUrl=this.getClass().getResource("/RecordFoo.class");
 		assertNotNull(clzUrl);
 		
@@ -173,7 +174,7 @@ public class TypeUtilsTest {
 		
 		//////////////////////
 		p = TypeUtils.createPathByType(byte[].class, name, parent);
-		assertTrue(p instanceof SimplePath);
+		assertTrue(p instanceof ArrayPath);
 		
 		p = TypeUtils.createPathByType(Gender.class, name, parent);
 		assertTrue(p instanceof EnumPath);

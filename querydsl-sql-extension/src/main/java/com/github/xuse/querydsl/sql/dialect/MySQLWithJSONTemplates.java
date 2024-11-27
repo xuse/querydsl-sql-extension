@@ -10,8 +10,9 @@ import java.util.Set;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.dbmeta.InfomationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
+import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
@@ -46,7 +47,13 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	
 	protected final Set<Operator> unsupports=new HashSet<>();
 	
-	private SchemaReader schemaReader=new InfomationSchemaReader(0) {
+	private SchemaReader schemaReader = new MySQLSchemaReader();
+			
+	static class MySQLSchemaReader extends InformationSchemaReader{
+		public MySQLSchemaReader() {
+			super(0);
+		}
+
 		@Override
 		public List<TableInfo> fetchTables(ConnectionWrapper e, String catalog, String schema, String qMatchName,
 				ObjectType type) {
@@ -84,13 +91,17 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 			info.setAttribute("COLLATE", rs.getString("TABLE_COLLATION"));
 			return info;
 		}
+
+		@Override
+		public List<PartitionInfo> getPartitions(String catalog, String schema, String table, ConnectionWrapper conn) {
+			return mysqlPartitions(catalog, schema, table, conn);
+		}
 	};
 	
 	
     public static MySQLTemplateBuilderEx builder() {
         return new MySQLTemplateBuilderEx();
     }
-    
     
     public static class MySQLTemplateBuilderEx extends Builder{
     	private boolean supportsCheck;
@@ -115,7 +126,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	
 	@Override
 	public boolean checkPermission(SQLQueryFactory factory, String... action) {
-		// TODO Auto-generated method stub
 		return SQLTemplatesEx.super.checkPermission(factory, action);
 	}
 
@@ -285,7 +295,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		SQLTemplatesEx.initDefaultDDLTemplate(template);
 		// add(template, DDLOps.ALTER_COLUMN,"CHANGE {0} {0} {1}");
 	}
-
 
 	@Override
 	public SchemaReader getSchemaAccessor() {

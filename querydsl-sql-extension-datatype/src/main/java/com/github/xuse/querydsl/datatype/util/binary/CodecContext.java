@@ -89,6 +89,7 @@ public class CodecContext {
 		return adjustEncoder(encodeMap.get(clz), clz);
 	}
 
+	@SuppressWarnings("unchecked")
 	private Codec<?> adjustEncoder(Codec codec, Class<?> clz) {
 		if (codec == null) {
 			if (List.class.isAssignableFrom(clz)) {
@@ -272,8 +273,8 @@ public class CodecContext {
 		
 		private final BeanCodec<T> bc;
 		
-		BeanCodecAdapter(BeanCodec<T> bc){
-			this.bc=bc;
+		BeanCodecAdapter(BeanCodec<T> bc) {
+			this.bc = bc;
 		}
 		
 		@SuppressWarnings("unchecked")

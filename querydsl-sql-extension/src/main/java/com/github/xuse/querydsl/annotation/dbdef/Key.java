@@ -22,10 +22,18 @@ public @interface Key {
 	 * @return 索引类型 <p> the type of index of constraint.
 	 */
 	ConstraintType type() default ConstraintType.KEY;
+	
 	/**
 	 * @return 索引或约束中的字段
 	 * <p>
 	 *     Fields in the index or constraint. Note: here is the name of java fields, not the name of database columns.
 	 */
 	String[] path();
+	
+	/**
+	 * @return 建表时如果数据库不支持该类索引/约束，忽略该索引/约束.
+	 * <p>
+	 * If the database does not support the type of index/constraint during table creation, ignore this index/constraint.
+	 */
+	boolean allowIgnore() default false;
 }

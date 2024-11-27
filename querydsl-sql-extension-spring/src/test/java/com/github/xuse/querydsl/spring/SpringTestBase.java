@@ -2,14 +2,14 @@ package com.github.xuse.querydsl.spring;
 
 import javax.sql.DataSource;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.spring.enums.Gender;
 import com.github.xuse.querydsl.spring.enums.Status;
-import com.github.xuse.querydsl.init.DataInitBehavior;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.support.UpdateDeleteProtectListener;
@@ -72,7 +72,7 @@ public abstract class SpringTestBase {
 	 * 在Junit测试时，每个测试案例都会运行一次创建和注销。但仅在第一次类加载时才会注册驱动类。
 	 * 因此，第二个和之后的测试案例就会因无法获得连接而失败。
 	 */
-	@AfterClass 
+	@AfterAll
 	public static void closeDerby() {
 //		// Derby数据库在嵌入模式运行时，最后一定要关闭。
 //		try {
@@ -83,7 +83,7 @@ public abstract class SpringTestBase {
 //		}
 	}
 	
-	@BeforeClass
+	@BeforeAll
 	public static void doInit() {
 		try {
 			factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),

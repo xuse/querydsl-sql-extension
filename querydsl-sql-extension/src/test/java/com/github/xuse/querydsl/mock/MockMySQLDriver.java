@@ -17,14 +17,12 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
 import org.apache.shardingsphere.sql.parser.api.SQLParserEngine;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterPartitionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterStatementContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateTableContext;
 import org.apache.shardingsphere.sql.parser.core.ParseASTNode;
-import org.apache.shardingsphere.sql.parser.mysql.visitor.format.MySQLFormatVisitor;
 import org.h2.Driver;
 
-import com.github.xuse.querydsl.sql.Integration.SimpleDataSource;
+import com.github.xuse.querydsl.sql.support.SimpleDataSource;
 
 /**
  * This is a virtual JDBC driver designed to support database operations using
@@ -56,6 +54,7 @@ public class MockMySQLDriver implements java.sql.Driver, ResultCallback {
 		datasource.setUsername(user);
 		datasource.setPassword(pass);
 		datasource.setDriverClass(driver);
+		@SuppressWarnings("unused")
 		Driver h2 = Driver.load();
 		try {
 			java.sql.DriverManager.registerDriver(getInstance());
@@ -157,7 +156,7 @@ public class MockMySQLDriver implements java.sql.Driver, ResultCallback {
 			if (tree.getChildCount() == 0) {
 				return show(rawSql, null);
 			}
-			MySQLFormatVisitor formatter = new MySQLFormatVisitor();
+			MySQLFormatVisitor formatter =ASTUtils.getDDLFormatter();
 			formatter.init(propDDL);
 			return show(rawSql, tree.accept(formatter));
 		}

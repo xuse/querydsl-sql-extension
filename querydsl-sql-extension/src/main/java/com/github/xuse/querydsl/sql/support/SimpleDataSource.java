@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql.Integration;
+package com.github.xuse.querydsl.sql.support;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -10,18 +10,12 @@ import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
+import com.github.xuse.querydsl.util.StringUtils;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 
-/**
- * 只有SimpleDataSource才支持带properties参数的getConnection()方法。从而获得Oracle的列注释
- * 
- * @author Administrator
- * 
- */
-@Slf4j
 @Setter
 @Getter
 public final class SimpleDataSource  implements DataSource {
@@ -32,7 +26,9 @@ public final class SimpleDataSource  implements DataSource {
 	private String username;
 
 	private String password;
-
+	
+	private PrintWriter logWriter;
+	
 	@Override
 	public String toString() {
 		return url+":"+username;
@@ -76,7 +72,9 @@ public final class SimpleDataSource  implements DataSource {
 
 	@SneakyThrows
 	private void initDriver() {
-		Class.forName(driverClass);
+		if(StringUtils.isNotEmpty(driverClass)) {
+			Class.forName(driverClass);
+		}
 	}
 
 	public String getDriverClass() {
@@ -86,9 +84,6 @@ public final class SimpleDataSource  implements DataSource {
 	public void setDriverClassName(String driverClass) {
 		this.driverClass = driverClass;
 	}
-
-	
-	private PrintWriter logWriter;
 
 	@Override
 	public PrintWriter getLogWriter() throws SQLException {
@@ -123,5 +118,4 @@ public final class SimpleDataSource  implements DataSource {
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
 		return false;
 	}
-
 }

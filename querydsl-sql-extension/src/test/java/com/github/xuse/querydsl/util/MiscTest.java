@@ -1,7 +1,8 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -10,7 +11,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
@@ -77,10 +79,12 @@ public class MiscTest {
 		assertEquals(2, values.size());
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testEnumsException() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		Gender g = Enums.valueOf(Gender.class, 3);
 		assertEquals(Gender.MALE, g);
+		});
 	}
 	
 	@Test
@@ -124,24 +128,32 @@ public class MiscTest {
 		return calendar.getTime();
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSnowFlakeError1() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		new SnowflakeIdWorker(-1);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSnowFlakeError2() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		new SnowflakeIdWorker(260);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSnowFlakeError3() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		new SnowflakeIdWorker(10, 101);
+		});
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSnowFlakeError4() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 		new SnowflakeIdWorker(10, -1);
+		});
 	}
 	
 	@Test

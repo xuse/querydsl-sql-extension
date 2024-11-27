@@ -1,12 +1,13 @@
 package com.github.xuse.querydsl.sql.Integration;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.QAaa;
@@ -30,9 +31,23 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void reCreateTables() {
 		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
+		meta.dropTable(QCaAsset.caAsset).ifExists(true).execute();
+		meta.createTable(QCaAsset.caAsset).ifExists().execute();
 		meta.dropTable(QAaa.aaa).ifExists(true).execute();
 		meta.createTable(QAaa.aaa).execute();
 	}
+	
+	@Test
+	public void testRefreshUnachangedTable() {
+		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
+//		meta.createTable(QCaAsset.caAsset).ifExists().execute();
+//		meta.createTable(QAaa.aaa).ifExists().execute();
+		
+		
+		//meta.refreshTable(QCaAsset.caAsset).execute();
+		meta.refreshTable(QAaa.aaa).execute();
+	}
+	
 	
 	@Test
 	public void testDropConstraints() {

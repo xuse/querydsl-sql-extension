@@ -1,20 +1,33 @@
 package com.github.xuse.querydsl.util;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("unused")
 public class TestLinkedHashMap {
-	private static final int LOOP_TIMES = 100000;
+	private static final int LOOP_TIMES = 5;
+	
+	static List<String> list = new ArrayList<String>();
+	static final int SIZE = 256;
+	
+	@BeforeAll
+	public static void setup() {
+		for (int i = 0; i < SIZE; i++) {
+			list.add(StringUtils.randomString());
+		}
+	}
+	
 
 	@Test
 	public void testLinkedHasdMap() {
-		int SIZE = 256;
 		//基线
 		Map<String, String> map0 = new LinkedHashMap<>(SIZE);
 		//测试目标
@@ -23,10 +36,8 @@ public class TestLinkedHashMap {
 		Map<String, String> map3 = new NoReadLockHashMap<>();
 
 		String s;
-		List<String> list = new ArrayList<String>();
-		for (int i = 0; i < SIZE; i++) {
-			list.add(StringUtils.randomString());
-		}
+		
+	
 		{
 			long time = System.currentTimeMillis();
 			Map<String, String> map = map0;
@@ -128,4 +139,30 @@ public class TestLinkedHashMap {
 		System.out.println(map1.getMaxDepth());
 	}
 
+	
+	@Test
+	public void assertCorrect() {
+		Map<String, String> map0 =  new LinkedHashMap<>(SIZE);
+		{
+			map0.clear();
+			for (int i = 0; i < list.size(); i++) {
+				final String str = String.valueOf(i);
+				map0.computeIfAbsent(list.get(i), (e) -> str);
+			}
+		}
+		FastHashtable<String> map1 = new FastHashtable<>(SIZE);
+		{
+			map1.clear();
+			for (int i = 0; i < list.size(); i++) {
+				final String str = String.valueOf(i);
+				map1.computeIfAbsent(list.get(i), (e) -> str);
+			}
+		}
+		System.out.println(map0.size());
+		System.out.println(map1.size());
+		if (SIZE < 1024) {
+			assertEquals(map1.toString(), map0.toString());
+		}
+		System.out.println(map1.getMaxDepth());
+	}
 }

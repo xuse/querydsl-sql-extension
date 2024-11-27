@@ -122,8 +122,7 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 		addMetadata(dataDouble, ColumnMetadata.named("C_DOUBLE").withIndex(10).ofType(Types.DOUBLE).notNull()).defaultValue(1d).comment("DOUBLE");
 		addMetadata(dataShort, ColumnMetadata.named("C_SHORT").withIndex(11).ofType(Types.SMALLINT).notNull()).defaultValue((short)1).comment("SMALL");
 		addMetadata(dataBigint, ColumnMetadata.named("C_BIGINT").withIndex(12).ofType(Types.BIGINT).notNull()).defaultValue(1L).comment("长整型");
-		addMetadata(dataDecimal, ColumnMetadata.named("C_DECIMAL").withIndex(13).ofType(Types.DECIMAL).withSize(12).withDigits(2).notNull())
-			.defaultValue(new BigDecimal("1.99")).comment("版本");
+		addMetadata(dataDecimal, ColumnMetadata.named("C_DECIMAL").withIndex(13).ofType(Types.DECIMAL).withSize(12).withDigits(2).notNull()).defaultValue(new BigDecimal("1.99")).comment("版本");
 		addMetadata(dataBool, ColumnMetadata.named("C_BOOL").withIndex(14).ofType(Types.BOOLEAN).notNull()).defaultValue(true).comment("BOOLEAN字段");
 		addMetadata(dataBit, ColumnMetadata.named("C_BIT").withIndex(15).ofType(Types.BIT).notNull()).defaultValue(false).comment("BIT字段");
 		addMetadata(dataDate, ColumnMetadata.named("C_DATE").withIndex(16).ofType(Types.DATE).notNull()).defaultValueInString("2023-01-01").comment("字段DATE");

@@ -30,6 +30,7 @@ import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Assert;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.Path;
@@ -329,7 +330,8 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			select.offsetIf(offset.intValue());
 		}
 		if(fetchTotal==null || fetchTotal) {
-			return select.fetchAndCount();
+			QueryResults<T> results=select.fetchResults();
+			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
 		}
 		return Pair.of(-1, select.fetch());
 	}

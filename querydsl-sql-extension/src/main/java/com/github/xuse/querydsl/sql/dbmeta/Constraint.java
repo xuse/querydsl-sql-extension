@@ -159,6 +159,11 @@ public class Constraint {
 	 */
 	private String comment;
 	
+	/*
+	 * 内部使用，创建时允许忽略
+	 */
+	private boolean allowIgnore;
+	
 	
 	//内部使用，小写的列名，用于比较
 	private transient volatile List<String> lowerColumnNames;

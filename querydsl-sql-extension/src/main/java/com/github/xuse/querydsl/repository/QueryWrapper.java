@@ -9,7 +9,7 @@ import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.sql.column.UnsavedValuePredicateFactory;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
-import com.querydsl.core.DefaultQueryMetadata;
+import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.support.QueryMixin.Role;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -33,12 +33,12 @@ import com.querydsl.sql.RelationalPath;
 public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 	RelationalPath<T> table;
 
-	final DefaultQueryMetadata mixin;
+	final QueryMetadata mixin;
 	
 	private transient final Chain typedThis;
 
 	@SuppressWarnings("unchecked")
-	protected QueryWrapper(RelationalPath<T> table, DefaultQueryMetadata mixin) {
+	protected QueryWrapper(RelationalPath<T> table, QueryMetadata mixin) {
 		this.table = table;
 		this.mixin = mixin;
 		typedThis = (Chain) this;

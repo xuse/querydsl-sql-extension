@@ -159,6 +159,7 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 				log.warn("the field {} will not writeback since value is a SimpleExpression.", this);
 			}
 			if (customType != null) {
+				//将自动生成值转换回用户自定义的Java数据类型。
 				value = customType.getValue(new DummyResultSet(value), 1);
 			}
 			field.set(bean, value);
