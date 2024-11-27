@@ -12,7 +12,7 @@ This framework is an extension of [Querydsl-sql](https://github.com/querydsl/que
   - [Introduction](#introduction)
   - [Features](#features)
     - [Usability Improvments](#usability-improvments)
-    - [Database access security](#database-access-security)
+    - [Database access safety](#database-access-safety)
     - [Performance Optimization](#performance-optimization)
     - [R2dbc support](#r2dbc-support)
     - [Other Functionality Enhancements](#other-functionality-enhancements)
@@ -174,7 +174,7 @@ In production environment, it is recommended to use `FORMAT_COMPACT` for output.
 
 
 
-### Database access security
+### Database access safety
 
 * Preventing some accidental operations: This is actually the normal usage of the official version of custom listener, which listens to SQL statements and blocks some dangerous operations. For example, the interceptor below can prevent Update or Delete operations executed against the entire table (without Where conditions).
 
