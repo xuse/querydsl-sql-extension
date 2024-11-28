@@ -28,12 +28,12 @@ public enum JsonOps implements Operator {
 	/**
 	 * 查询数据
 	 */
-	JSON_SEARCH(Boolean.class),
+	JSON_SEARCH(String.class),
 
 	/**
 	 * 查询数据
 	 */
-	JSON_SEARCH_WITH_PATH(Boolean.class),
+	JSON_SEARCH_WITH_PATH(String.class),
 
 	/**
 	 * 提取数据
