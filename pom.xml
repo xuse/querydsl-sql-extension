@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension-parent</artifactId>
-	<version>5.0.0-r130</version>
+	<version>5.0.0-r140</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>querydsl-sql-extension</module>

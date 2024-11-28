@@ -5,9 +5,8 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>io.github.xuse</groupId>
-		<artifactId>querydsl-sql-extension-parent</artifactId>
-		<version>5.0.0-r130</version>
+		<groupId>io.github.xuse</groupId>	<artifactId>querydsl-sql-extension-parent</artifactId>
+		<version>5.0.0-r140</version>
 	</parent>
 	<artifactId>querydsl-sql-extension-spring</artifactId>
 
