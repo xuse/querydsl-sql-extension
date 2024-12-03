@@ -19,7 +19,6 @@ public class TestDataInitialize extends AbstractTestBase{
 	 * 导出数据
 	 */
 	@Test
-	@Disabled
 	public void testExport() {
 		new InitDataExporter(factory).writeNullString()
 				.targetDirectory(new File(System.getProperty("user.dir"),"src/test/resources"))

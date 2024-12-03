@@ -748,6 +748,19 @@ public class DateUtils {
 		calendar.set(Calendar.MILLISECOND, 0);
 		return new java.sql.Date(calendar.getTime().getTime());
 	}
+	
+	/**
+	 * 获取一个时间对象(java.sql.Time)
+	 * @param hour hour
+	 * @param min minute
+	 * @param sec seconds
+	 * @param millis mill seconds.
+	 * @return java.sql.Time
+	 */
+	public static final java.sql.Time getSqlTime(int hour, int min, int sec, int millis) {
+		return new java.sql.Time(TimeUnit.HOURS.toMillis(hour) + TimeUnit.MINUTES.toMillis(min)
+				+ TimeUnit.SECONDS.toMillis(sec) + millis);
+	}
 
 	/**
 	 * 获得一个UTC时间

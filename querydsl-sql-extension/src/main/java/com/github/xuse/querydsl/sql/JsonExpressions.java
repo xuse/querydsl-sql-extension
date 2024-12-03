@@ -399,7 +399,7 @@ public class JsonExpressions {
 	 */
 	public static NumberOperation<Integer> jsonLength(Expression<String> jsonDoc, String path) {
 		path = path == null || path.isEmpty() ? "$" : path;
-		return Expressions.numberOperation(Integer.class,JsonOps.JSON_TYPE, jsonDoc, ConstantImpl.create(path));
+		return Expressions.numberOperation(Integer.class,JsonOps.JSON_LENGTH, jsonDoc, ConstantImpl.create(path));
 	}
 
 	/**

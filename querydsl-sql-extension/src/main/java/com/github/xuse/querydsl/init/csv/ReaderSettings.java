@@ -1,52 +1,57 @@
 package com.github.xuse.querydsl.init.csv;
 
-final class ReaderSettings {
-	public static final int MAX_BUFFER_SIZE = 1024;
-
-	public static final int MAX_FILE_BUFFER_SIZE = 4 * 1024;
-
-	public static final int INITIAL_COLUMN_COUNT = 10;
-
-	public static final int INITIAL_COLUMN_BUFFER_SIZE = 50;
+public final class ReaderSettings {
+	/**
+	 * Check the Qualifier character or not.
+	 */
+	public boolean useTextQualifier;
 	
+	/**
+	 * Qualifier char. 
+	 */
+	public char textQualifier;
+	
+	/**
+	 * Trim values or not.
+	 */
+	public boolean trimWhitespace;
 
-		// having these as publicly accessible members will prevent
-		public boolean caseSensitive;
+	/**
+	 * Delimiter between two fields.
+	 */
+	public char delimiter;
 
-		public char textQualifier;
+	/**
+	 * Enable the comment parse.
+	 */
+	public boolean useComments;
 
-		public boolean trimWhitespace;
+	/**
+	 * Comment delimiter char.
+	 */
+	public char comment;
 
-		public boolean useTextQualifier;
+	/**
+	 * If the qualifier character contains in field value. how to escape.
+	 */
+	public EscapeMode escapeMode;
 
-		public char delimiter;
+	/**
+	 * Prepare value for 
+	 */
+	public boolean captureRawRecord;
 
-		public char recordDelimiter;
-
-		public boolean useComments;
+	public ReaderSettings() {
+		trimWhitespace = true;
+		delimiter = Characters.COMMA;
 		
-		public char comment;
-
-		public int escapeMode;
-
-		public boolean safetySwitch;
-
-		public boolean skipEmptyRecords;
-
-		public boolean captureRawRecord;
-
-		public ReaderSettings() {
-			caseSensitive = true;
-			textQualifier = Characters.QUOTE;
-			trimWhitespace = true;
-			useTextQualifier = true;
-			delimiter = Characters.COMMA;
-			recordDelimiter = Characters.NULL;
-			comment = Characters.POUND;
-			useComments = false;
-			escapeMode = CsvFileReader.ESCAPE_MODE_DOUBLED;
-			safetySwitch = true;
-			skipEmptyRecords = true;
-			captureRawRecord = true;
-		}
+		useTextQualifier = true;
+		textQualifier = Characters.QUOTE;
+		
+		useComments = false;
+		comment = Characters.POUND;
+		
+		escapeMode = EscapeMode.DOUBLED;
+		captureRawRecord = true;
 	}
+}

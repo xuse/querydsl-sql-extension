@@ -4,6 +4,10 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.Temporal;
 import java.util.Date;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -134,9 +138,19 @@ public abstract class DateFormats {
 		private final String pattern;
 		private final double hoursOffset;
 		private final int millisOffset;
+		/**
+		 * 暴露出只读的DateTimeFormatter对象，供{@link LocalTime#parse(CharSequence, DateTimeFormatter)}
+		 * {@link LocalDateTime#parse(CharSequence, DateTimeFormatter)}等使用
+		 * <p>
+		 * Expose a read-only DateTimeFormatter object for use with
+		 * {@link LocalTime#parse(CharSequence, DateTimeFormatter)},
+		 * {@link LocalDateTime#parse(CharSequence, DateTimeFormatter)}, etc.
+		 */
+		public final DateTimeFormatter df;
 
 		public TLDateFormat(String p) {
 			this.pattern = p;
+			this.df = DateTimeFormatter.ofPattern(p);
 			TimeZone defaultTz = TimeZone.getDefault();
 			millisOffset = defaultTz.getRawOffset();
 			hoursOffset = defaultTz.getRawOffset() / 3600_000d;
@@ -169,7 +183,16 @@ public abstract class DateFormats {
 		public String format(Instant date) {
 			return date == null ? null : get().format(Date.from(date));
 		}
-
+		
+		/**
+		 * 格式化java time框架下的日期时间。
+		 * @param date data
+		 * @return text 
+		 */
+		public String format(Temporal date) {
+			return date == null ? null : df.format(date);
+		}
+		
 		/**
 		 * 格式化日期，返回Optional对象
 		 * 

@@ -1,30 +1,26 @@
 package com.github.xuse.querydsl.init.csv;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.NumberFormat;
 import java.util.HashMap;
+
+import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.IOUtils;
+
+import lombok.SneakyThrows;
 
 public class CsvFileReader implements Closeable {
 
 	private Reader reader = null;
 
-	private File fileName = null;
-
 	private final ReaderSettings config = new ReaderSettings();
-
-	private Charset charset = null;
-
-	private boolean useCustomRecordDelimiter = false;
 
 	private final Buffer dataBuffer = new Buffer();
 
@@ -52,16 +48,9 @@ public class CsvFileReader implements Closeable {
 
 	private long currentRecord = 0;
 
-	private String[] values = new String[ReaderSettings.INITIAL_COLUMN_COUNT];
+	private String[] values = new String[INITIAL_COLUMN_COUNT];
 
-	private boolean initialized = false;
-
-	private boolean closed = false;
-
-	public static final int ESCAPE_MODE_DOUBLED = 1;
-
-	public static final int ESCAPE_MODE_BACKSLASH = 2;
-
+	@SneakyThrows
 	public CsvFileReader(File fileName, char delimiter, Charset charset) {
 		if (fileName == null) {
 			throw new IllegalArgumentException("Parameter fileName can not be null.");
@@ -72,9 +61,8 @@ public class CsvFileReader implements Closeable {
 		if (!fileName.exists()) {
 			throw new IllegalArgumentException("File " + fileName + " does not exist.");
 		}
-		this.fileName = fileName;
+		this.reader=new InputStreamReader(new FileInputStream(fileName),charset);
 		this.config.delimiter = delimiter;
-		this.charset = charset;
 		isQualified = new boolean[values.length];
 	}
 
@@ -82,126 +70,29 @@ public class CsvFileReader implements Closeable {
 		this(fileName, Characters.COMMA, charset);
 	}
 
-	public CsvFileReader(String fileName) {
-		this(new File(fileName), StandardCharsets.UTF_8);
-	}
-
-	public CsvFileReader(Reader inputStream, char delimiter) {
-		if (inputStream == null) {
-			throw new IllegalArgumentException("Parameter inputStream can not be null.");
+	@SneakyThrows
+	public CsvFileReader(URL url, Charset charset) {
+		if (url == null) {
+			throw new IllegalArgumentException("Parameter url can not be null.");
 		}
-		this.reader = inputStream;
-		this.config.delimiter = delimiter;
-		initialized = true;
+		this.reader = new InputStreamReader(url.openStream(),charset);
 		isQualified = new boolean[values.length];
 	}
 
 	public CsvFileReader(Reader inputStream) {
-		this(inputStream, Characters.COMMA);
+		if (inputStream == null) {
+			throw new IllegalArgumentException("Parameter reader can not be null.");
+		}
+		this.reader = inputStream;
+		isQualified = new boolean[values.length];
 	}
-
-	public CsvFileReader(InputStream inputStream, char delimiter, Charset charset) {
-		this(new InputStreamReader(inputStream, charset), delimiter);
-	}
-
-	public CsvFileReader(InputStream inputStream, Charset charset) {
-		this(new InputStreamReader(inputStream, charset));
-	}
-
-	public boolean getCaptureRawRecord() {
-		return config.captureRawRecord;
-	}
-
-	public void setCaptureRawRecord(boolean captureRawRecord) {
-		config.captureRawRecord = captureRawRecord;
+	
+	public ReaderSettings getSettings() {
+		return config;
 	}
 
 	public String getRawRecord() {
 		return rawRecord;
-	}
-
-	public boolean getTrimWhitespace() {
-		return config.trimWhitespace;
-	}
-
-	public void setTrimWhitespace(boolean trimWhitespace) {
-		config.trimWhitespace = trimWhitespace;
-	}
-
-	public char getDelimiter() {
-		return config.delimiter;
-	}
-
-	public void setDelimiter(char delimiter) {
-		config.delimiter = delimiter;
-	}
-
-	public char getRecordDelimiter() {
-		return config.recordDelimiter;
-	}
-
-	public void setRecordDelimiter(char recordDelimiter) {
-		useCustomRecordDelimiter = true;
-		config.recordDelimiter = recordDelimiter;
-	}
-
-	public char getTextQualifier() {
-		return config.textQualifier;
-	}
-
-	public void setTextQualifier(char textQualifier) {
-		config.textQualifier = textQualifier;
-	}
-
-	public boolean getUseTextQualifier() {
-		return config.useTextQualifier;
-	}
-
-	public void setUseTextQualifier(boolean useTextQualifier) {
-		config.useTextQualifier = useTextQualifier;
-	}
-
-	public char getComment() {
-		return config.comment;
-	}
-
-	public void setComment(char comment) {
-		config.comment = comment;
-	}
-
-	public boolean getUseComments() {
-		return config.useComments;
-	}
-
-	public void setUseComments(boolean useComments) {
-		config.useComments = useComments;
-	}
-
-	public int getEscapeMode() {
-		return config.escapeMode;
-	}
-
-	public void setEscapeMode(int escapeMode) throws IllegalArgumentException {
-		if (escapeMode != ESCAPE_MODE_DOUBLED && escapeMode != ESCAPE_MODE_BACKSLASH) {
-			throw new IllegalArgumentException("Parameter escapeMode must be a valid value.");
-		}
-		config.escapeMode = escapeMode;
-	}
-
-	public boolean getSkipEmptyRecords() {
-		return config.skipEmptyRecords;
-	}
-
-	public void setSkipEmptyRecords(boolean skipEmptyRecords) {
-		config.skipEmptyRecords = skipEmptyRecords;
-	}
-
-	public boolean getSafetySwitch() {
-		return config.safetySwitch;
-	}
-
-	public void setSafetySwitch(boolean safetySwitch) {
-		config.safetySwitch = safetySwitch;
 	}
 
 	public int getColumnCount() {
@@ -292,17 +183,20 @@ public class CsvFileReader implements Closeable {
 						fieldStarted = true;
 						dataBuffer.fieldStart = dataBuffer.index + 1;
 						startedWithQualifier = true;
+						
 						boolean lastLetterWasQualifier = false;
 						char escapeChar = config.textQualifier;
-						if (config.escapeMode == ESCAPE_MODE_BACKSLASH) {
+						if (config.escapeMode == EscapeMode.BACKSLASH) {
 							escapeChar = Characters.BACKSLASH;
 						}
+						
 						boolean eatingTrailingJunk = false;
 						boolean lastLetterWasEscape = false;
 						boolean readingComplexEscape = false;
 						ComplexEscape escape = ComplexEscape.UNICODE;
 						int escapeLength = 0;
 						char escapeValue = (char) 0;
+						
 						dataBuffer.index++;
 						do {
 							if (dataBuffer.index == dataBuffer.Count) {
@@ -314,7 +208,7 @@ public class CsvFileReader implements Closeable {
 									dataBuffer.fieldStart = dataBuffer.index + 1;
 									if (currentLetter == config.delimiter) {
 										endField();
-									} else if ((!useCustomRecordDelimiter && (currentLetter == Characters.CR || currentLetter == Characters.LF)) || (useCustomRecordDelimiter && currentLetter == config.recordDelimiter)) {
+									} else if ((currentLetter == Characters.CR || currentLetter == Characters.LF)) {
 										endField();
 										endRecord();
 									}
@@ -361,12 +255,12 @@ public class CsvFileReader implements Closeable {
 										lastLetterWasQualifier = false;
 									} else {
 										updateCurrentValue();
-										if (config.escapeMode == ESCAPE_MODE_DOUBLED) {
+										if (config.escapeMode == EscapeMode.DOUBLED) {
 											lastLetterWasEscape = true;
 										}
 										lastLetterWasQualifier = true;
 									}
-								} else if (config.escapeMode == ESCAPE_MODE_BACKSLASH && lastLetterWasEscape) {
+								} else if (config.escapeMode == EscapeMode.BACKSLASH && lastLetterWasEscape) {
 									switch(currentLetter) {
 										case 'n':
 											appendLetter(Characters.LF);
@@ -449,7 +343,7 @@ public class CsvFileReader implements Closeable {
 									if (lastLetterWasQualifier) {
 										if (currentLetter == config.delimiter) {
 											endField();
-										} else if ((!useCustomRecordDelimiter && (currentLetter == Characters.CR || currentLetter == Characters.LF)) || (useCustomRecordDelimiter && currentLetter == config.recordDelimiter)) {
+										} else if ((currentLetter == Characters.CR || currentLetter == Characters.LF)) {
 											endField();
 											endRecord();
 										} else {
@@ -466,27 +360,15 @@ public class CsvFileReader implements Closeable {
 								lastLetter = currentLetter;
 								if (fieldStarted) {
 									dataBuffer.index++;
-									if (config.safetySwitch && dataBuffer.index - dataBuffer.fieldStart + fieldBuffer.index > 100000) {
-										close();
-										throw new IOException("Maximum column length of 100,000 exceeded in column " + NumberFormat.getIntegerInstance().format(columnsCount) + " in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting column lengths greater than 100,000 characters to" + " avoid this error.");
-									}
 								}
 							}
 						} while (hasMoreData && fieldStarted);
 					} else if (currentLetter == config.delimiter) {
 						lastLetter = currentLetter;
 						endField();
-					} else if (useCustomRecordDelimiter && currentLetter == config.recordDelimiter) {
-						if (fieldStarted || columnsCount > 0 || !config.skipEmptyRecords) {
-							endField();
-							endRecord();
-						} else {
-							dataBuffer.recordStart = dataBuffer.index + 1;
-						}
-						lastLetter = currentLetter;
-					} else if (!useCustomRecordDelimiter && (currentLetter == Characters.CR || currentLetter == Characters.LF)) {
+					} else if (currentLetter == Characters.CR || currentLetter == Characters.LF) {
 						// this will skip blank lines
-						if (fieldStarted || columnsCount > 0 || (!config.skipEmptyRecords && (currentLetter == Characters.CR || lastLetter != Characters.CR))) {
+						if (fieldStarted || columnsCount > 0) {
 							endField();
 							endRecord();
 						} else {
@@ -516,7 +398,7 @@ public class CsvFileReader implements Closeable {
 									// grab the current letter as a char
 									currentLetter = dataBuffer.buffer[dataBuffer.index];
 								}
-								if (!config.useTextQualifier && config.escapeMode == ESCAPE_MODE_BACKSLASH && currentLetter == Characters.BACKSLASH) {
+								if (!config.useTextQualifier && config.escapeMode == EscapeMode.BACKSLASH && currentLetter == Characters.BACKSLASH) {
 									if (lastLetterWasBackslash) {
 										lastLetterWasBackslash = false;
 									} else {
@@ -560,7 +442,7 @@ public class CsvFileReader implements Closeable {
 									} else {
 										dataBuffer.fieldStart = dataBuffer.index + 1;
 									}
-								} else if (config.escapeMode == ESCAPE_MODE_BACKSLASH && lastLetterWasBackslash) {
+								} else if (config.escapeMode == EscapeMode.BACKSLASH && lastLetterWasBackslash) {
 									switch(currentLetter) {
 										case 'n':
 											appendLetter(Characters.LF);
@@ -638,7 +520,7 @@ public class CsvFileReader implements Closeable {
 								} else {
 									if (currentLetter == config.delimiter) {
 										endField();
-									} else if ((!useCustomRecordDelimiter && (currentLetter == Characters.CR || currentLetter == Characters.LF)) || (useCustomRecordDelimiter && currentLetter == config.recordDelimiter)) {
+									} else if (currentLetter == Characters.CR || currentLetter == Characters.LF) {
 										endField();
 										endRecord();
 									}
@@ -649,10 +531,6 @@ public class CsvFileReader implements Closeable {
 								firstLoop = false;
 								if (fieldStarted) {
 									dataBuffer.index++;
-									if (config.safetySwitch && dataBuffer.index - dataBuffer.fieldStart + fieldBuffer.index > 100000) {
-										close();
-										throw new IOException("Maximum column length of 100,000 exceeded in column " + NumberFormat.getIntegerInstance().format(columnsCount) + " in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting column lengths greater than 100,000 characters to" + " avoid this error.");
-									}
 								}
 							}
 						} while (hasMoreData && fieldStarted);
@@ -684,13 +562,6 @@ public class CsvFileReader implements Closeable {
 	}
 
 	private void checkDataLength() throws IOException {
-		if (!initialized) {
-			if (fileName != null) {
-				reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), charset), ReaderSettings.MAX_FILE_BUFFER_SIZE);
-			}
-			charset = null;
-			initialized = true;
-		}
 		updateCurrentValue();
 		if (config.captureRawRecord && dataBuffer.Count > 0) {
 			if (rawBuffer.buffer.length - rawBuffer.index < dataBuffer.Count - dataBuffer.recordStart) {
@@ -776,10 +647,6 @@ public class CsvFileReader implements Closeable {
 		}
 		fieldBuffer.index = 0;
 		fieldStarted = false;
-		if (columnsCount >= 100000 && config.safetySwitch) {
-			close();
-			throw new IOException("Maximum column count of 100,000 exceeded in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting more than 100,000 columns per record to" + " avoid this error.");
-		}
 		if (columnsCount == values.length) {
 			// holder array needs to grow to be able to hold another column
 			int newLength = values.length * 2;
@@ -878,42 +745,21 @@ public class CsvFileReader implements Closeable {
 	}
 
 	public void close() {
-		if (!closed) {
-			close(true);
-			closed = true;
-		}
-	}
-
-	private void close(boolean closing) {
-		if (!closed) {
-			if (closing) {
-				charset = null;
-				headersHolder.Headers = null;
-				headersHolder.IndexByName = null;
-				dataBuffer.buffer = null;
-				fieldBuffer.buffer = null;
-				rawBuffer.buffer = null;
-			}
-			try {
-				if (initialized) {
-					reader.close();
-				}
-			} catch (Exception e) {
-			// just eat the exception
-			}
-			reader = null;
-			closed = true;
+		if(reader!=null) {
+			IOUtils.closeQuietly(reader);
+			reader=null;
+			headersHolder.Headers = null;
+			headersHolder.IndexByName = null;
+			dataBuffer.buffer = null;
+			fieldBuffer.buffer = null;
+			rawBuffer.buffer = null;
 		}
 	}
 
 	private void checkClosed() throws IOException {
-		if (closed) {
+		if (reader==null) {
 			throw new IOException("This instance of the CsvReader class has already been closed.");
 		}
-	}
-
-	protected void finalize() {
-		close(false);
 	}
 
 	private enum ComplexEscape {
@@ -948,7 +794,7 @@ public class CsvFileReader implements Closeable {
 		public int recordStart;
 
 		public Buffer() {
-			buffer = new char[ReaderSettings.MAX_BUFFER_SIZE];
+			buffer = new char[2048];
 			index = 0;
 			Count = 0;
 			fieldStart = 0;
@@ -956,6 +802,10 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
+
+	public static final int INITIAL_COLUMN_COUNT = 10;
+
+	public static final int INITIAL_COLUMN_BUFFER_SIZE = 50;
 	private static class BufferDataField {
 
 		public char[] buffer;
@@ -963,7 +813,7 @@ public class CsvFileReader implements Closeable {
 		public int index;
 
 		public BufferDataField() {
-			buffer = new char[ReaderSettings.INITIAL_COLUMN_BUFFER_SIZE];
+			buffer = new char[INITIAL_COLUMN_BUFFER_SIZE];
 			index = 0;
 		}
 	}
@@ -975,7 +825,7 @@ public class CsvFileReader implements Closeable {
 		public int index;
 
 		public BufferDataRawRecord() {
-			buffer = new char[ReaderSettings.INITIAL_COLUMN_BUFFER_SIZE * ReaderSettings.INITIAL_COLUMN_COUNT];
+			buffer = new char[INITIAL_COLUMN_BUFFER_SIZE * INITIAL_COLUMN_COUNT];
 			index = 0;
 		}
 	}

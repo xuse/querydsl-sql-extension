@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.entity;
 
+import java.io.Serializable;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.Date;
@@ -30,7 +31,7 @@ keys = {
 	}
 )
 @Comment("Test table for Foo.")
-public class Foo {
+public class Foo implements Serializable {
 	
 	@ColumnSpec(autoIncrement = true,type = Types.INTEGER,unsigned = true,nullable = false)
 	@Comment("primary key，auto increment.")

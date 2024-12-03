@@ -11,6 +11,7 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.BooleanOperation;
+import com.querydsl.core.types.dsl.NumberOperation;
 import com.querydsl.core.types.dsl.SimpleOperation;
 import com.querydsl.core.types.dsl.StringOperation;
 
@@ -53,12 +54,17 @@ public class JsonExpressionTest {
 		Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
 		BooleanOperation operation = JsonExpressions.jsonContainsPath(jsonDoc, true, "$.key");
 		assertNotNull(operation);
+		
+		operation = JsonExpressions.jsonContainsPath(jsonDoc, false, "$.key");
+		assertNotNull(operation);
 	}
 
 	@Test
 	public void testJsonExtract() {
 		Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
 		StringOperation operation = JsonExpressions.jsonExtract(jsonDoc, true, "$.key");
+		assertNotNull(operation);
+		operation = JsonExpressions.jsonExtract(jsonDoc, false, "$.key");
 		assertNotNull(operation);
 	}
 
@@ -81,12 +87,18 @@ public class JsonExpressionTest {
 		Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
 		StringOperation operation = JsonExpressions.jsonSearch(jsonDoc, true, "value");
 		assertNotNull(operation);
+		
+		operation = JsonExpressions.jsonSearch(jsonDoc, false, "value");
+		assertNotNull(operation);
 	}
 
 	@Test
 	public void testJsonSearchWithPath() {
 		Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
 		StringOperation operation = JsonExpressions.jsonSearch(jsonDoc, false, "value", '\\', "$.key");
+		assertNotNull(operation);
+		
+		operation = JsonExpressions.jsonSearch(jsonDoc, true, "value", '\\', "$.key");
 		assertNotNull(operation);
 	}
 
@@ -134,4 +146,33 @@ public class JsonExpressionTest {
 		assertNotNull(operation);
 	}
 
+    @Test
+    public void testJsonLengthWithPath() {
+        Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
+        NumberOperation<Integer> operation = JsonExpressions.jsonLength(jsonDoc, "$.key");
+        assertNotNull(operation);
+    }
+
+    @Test
+    public void testJsonLengthWithoutPath() {
+        Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
+        NumberOperation<Integer> operation = JsonExpressions.jsonLength(jsonDoc, "");
+        assertNotNull(operation);
+    }
+
+    @Test
+    public void testMemberOfWithExpressions() {
+        Expression<String> keyword = ConstantImpl.create("value");
+        Expression<String> jsonDoc = ConstantImpl.create("[\"value\", \"other\"]");
+        BooleanOperation operation = JsonExpressions.memberOf(keyword, jsonDoc);
+        assertNotNull(operation);
+    }
+
+    @Test
+    public void testMemberOfWithStringAndExpression() {
+        String keyword = "value";
+        Expression<String> jsonDoc = ConstantImpl.create("[\"value\", \"other\"]");
+        BooleanOperation operation = JsonExpressions.memberOf(keyword, jsonDoc);
+        assertNotNull(operation);
+    }
 }
