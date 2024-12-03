@@ -82,14 +82,23 @@ public abstract class AbstractTestBase {
 	
 	@BeforeAll
 	public static void doInit() {
-		try {
-			factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),
-					wrapAsPool(effectiveDs), true);
-		} catch (Exception e) {
-			e.printStackTrace();
+		if(factory==null) {
+			getSqlFactory();			
 		}
 	}
 	
+	protected static SQLQueryFactory getSqlFactory() {
+		if(factory==null) {
+			try {
+				return factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),
+						wrapAsPool(effectiveDs), true);
+			} catch (Exception e) {
+				throw new IllegalStateException(e);
+			}	
+		}
+		return factory;
+	}
+
 	private static DataSource wrapAsPool(DataSource ds) {
 		HikariDataSource pool = new HikariDataSource();
 		pool.setDataSource(ds);
