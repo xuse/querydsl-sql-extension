@@ -12,29 +12,28 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.TimeZone;
 
-
 /**
  * Used to provide various thread-safe date and time formats.
  * <h2>Chinese:</h2> 用于提供各种线程安全的时间日期格式
  * <ul>
- * <li>G 年代标志符</li>
- * <li>y 年</li>
- * <li>M 月</li>
- * <li>d 日</li>
- * <li>h 时 在上午或下午 (1~12)</li>
- * <li>H 时 在一天中 (0~23)</li>
- * <li>m 分</li>
- * <li>s 秒</li>
- * <li>S 毫秒</li>
- * <li>E 星期</li>
- * <li>D 一年中的第几天</li>
- * <li>F 一月中第几个星期几</li>
- * <li>w 一年中第几个星期</li>
- * <li>W 一月中第几个星期</li>
- * <li>a 上午 / 下午 标记符</li>
- * <li>k 时 在一天中 (1~24)</li>
- * <li>K 时 在上午或下午 (0~11)</li>
- * <li>z 时区</li>
+ * <li>G - Era designator</li>
+ * <li>y - Year</li>
+ * <li>M - Month</li>
+ * <li>d - Day</li>
+ * <li>h - Hour in AM/PM (1~12)</li>
+ * <li>H - Hour in day (0~23)</li>
+ * <li>m - Minute</li>
+ * <li>s - Second</li>
+ * <li>S - Millisecond</li>
+ * <li>E - Day of the week</li>
+ * <li>D - Day of the year</li>
+ * <li>F - Day of the week in the month</li>
+ * <li>w - Week of the year</li>
+ * <li>W - Week of the month</li>
+ * <li>a - AM/PM marker</li>
+ * <li>k - Hour in day (1~24)</li>
+ * <li>K - Hour in AM/PM (0~11)</li>
+ * <li>z - Time zone</li>
  * </ul>
  * 
  * @author Joey
@@ -131,8 +130,6 @@ public abstract class DateFormats {
 
 	/**
 	 * 线程安全的日期格式转换。 注意本类比较重，建议设计为全局变量或静态变量，不要频繁的进行构造和回收。
-	 * 
-	 * 
 	 */
 	public static final class TLDateFormat extends java.lang.ThreadLocal<DateFormat> {
 		private final String pattern;
@@ -163,6 +160,7 @@ public abstract class DateFormats {
 
 		/**
 		 * 格式化时间
+		 * 
 		 * @param time time
 		 * @return String
 		 */
@@ -179,20 +177,21 @@ public abstract class DateFormats {
 		public String format(Date date) {
 			return date == null ? null : get().format(date);
 		}
-		
+
 		public String format(Instant date) {
 			return date == null ? null : get().format(Date.from(date));
 		}
-		
+
 		/**
 		 * 格式化java time框架下的日期时间。
+		 * 
 		 * @param date data
-		 * @return text 
+		 * @return text
 		 */
 		public String format(Temporal date) {
 			return date == null ? null : df.format(date);
 		}
-		
+
 		/**
 		 * 格式化日期，返回Optional对象
 		 * 
@@ -253,7 +252,7 @@ public abstract class DateFormats {
 		/**
 		 * 格式化日期，按指定的时区进行输出
 		 *
-		 * @param date      如果传入null返回null(Null-safety.)
+		 * @param date           如果传入null返回null(Null-safety.)
 		 * @param utcHoursOffset 相对国际原子时的时差，从-12到+14(中国为8)，可以传小数
 		 * @return 指定时区内的时间
 		 */
@@ -283,7 +282,7 @@ public abstract class DateFormats {
 		/**
 		 * 解析日期
 		 * 
-		 * @param text      text
+		 * @param text           text
 		 * @param utcHoursOffset 相对国际原子时的时差，单位小时，从-12到+14(中国为8)，涉及半时区可以传入0.5/0.75等
 		 * @throws IllegalArgumentException If encounter IllegalArgumentException
 		 * @return Date

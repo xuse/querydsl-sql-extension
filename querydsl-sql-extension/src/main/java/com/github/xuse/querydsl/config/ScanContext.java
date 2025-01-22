@@ -50,7 +50,6 @@ public class ScanContext {
 			if (!resource.isReadable()) {
 				continue;
 			}
-			//已经加载 过了
 			if(resource.getFilename().startsWith("Q") && !whitelist.contains(resource)) {
 				continue;
 			}

@@ -17,6 +17,11 @@ import java.util.zip.CRC32;
 
 import lombok.SneakyThrows;
 
+/**
+ * Some methods are ported from the Apache commons-lang library with slightly
+ * modified —— Except for the {@link #lowerCase(String)}, {@link #upperCase(String)} and {@link #repeat(String, int)} methods, all
+ * other methods no longer return null.
+ */
 public class StringUtils {
 	private static final int INDEX_NOT_FOUND = -1;
 
@@ -638,7 +643,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.rightPad(null, *)   = null
+	 * StringUtils.rightPad(null, 3)   = "   " //Alternative to Apache commons. null was treated as "".
 	 * StringUtils.rightPad("", 3)     = "   "
 	 * StringUtils.rightPad("bat", 3)  = "bat"
 	 * StringUtils.rightPad("bat", 5)  = "bat  "
@@ -649,7 +654,7 @@ public class StringUtils {
 	 * @param str  the String to pad out, may be null
 	 * @param size the size to pad to
 	 * @return right padded String or original String if no padding is necessary,
-	 *         {@code null} if null String input
+	 *         {@code null} was treated as "".
 	 */
 	public static String rightPad(final String str, final int size) {
 		return rightPad(str, size, ' ');
@@ -680,9 +685,9 @@ public class StringUtils {
 	 *         {@code null} if null String input
 	 * @since 2.0
 	 */
-	public static String rightPad(final String str, final int size, final char padChar) {
+	public static String rightPad(String str, final int size, final char padChar) {
 		if (str == null) {
-			return null;
+			str = "";
 		}
 		final int pads = size - str.length();
 		if (pads <= 0) {
@@ -701,7 +706,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.rightPad(null, *, *)      = null
+	 * StringUtils.rightPad(null, 3, "*")      = "***" //Alternative to Apache commons, null was treated as "".
 	 * StringUtils.rightPad("", 3, "z")      = "zzz"
 	 * StringUtils.rightPad("bat", 3, "yz")  = "bat"
 	 * StringUtils.rightPad("bat", 5, "yz")  = "batyz"
@@ -716,11 +721,11 @@ public class StringUtils {
 	 * @param size   the size to pad to
 	 * @param padStr the String to pad with, null or empty treated as single space
 	 * @return right padded String or original String if no padding is necessary,
-	 *         {@code null} if null String input
+	 *         {@code null} was treated as "".
 	 */
-	public static String rightPad(final String str, final int size, String padStr) {
+	public static String rightPad(String str, final int size, String padStr) {
 		if (str == null) {
-			return null;
+			str = "";
 		}
 		if (isEmpty(padStr)) {
 			padStr = SPACE;
@@ -758,7 +763,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.leftPad(null, *)   = null
+	 * StringUtils.leftPad(null, *)   = "   "   //Alternative to Apache commons, null was treated as "".
 	 * StringUtils.leftPad("", 3)     = "   "
 	 * StringUtils.leftPad("bat", 3)  = "bat"
 	 * StringUtils.leftPad("bat", 5)  = "  bat"
@@ -769,7 +774,7 @@ public class StringUtils {
 	 * @param str  the String to pad out, may be null
 	 * @param size the size to pad to
 	 * @return left padded String or original String if no padding is necessary,
-	 *         {@code null} if null String input
+	 *         {@code null} was treated as "".
 	 */
 	public static String leftPad(final String str, final int size) {
 		return leftPad(str, size, ' ');
@@ -800,9 +805,9 @@ public class StringUtils {
 	 *         {@code null} if null String input
 	 * @since 2.0
 	 */
-	public static String leftPad(final String str, final int size, final char padChar) {
+	public static String leftPad(String str, final int size, final char padChar) {
 		if (str == null) {
-			return null;
+			str = "";
 		}
 		final int pads = size - str.length();
 		if (pads <= 0) {
@@ -821,7 +826,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.leftPad(null, *, *)      = null
+	 * StringUtils.leftPad(null, 3, "*")      = "***" //Alternative to Apache commons, null was treated as "".
 	 * StringUtils.leftPad("", 3, "z")      = "zzz"
 	 * StringUtils.leftPad("bat", 3, "yz")  = "bat"
 	 * StringUtils.leftPad("bat", 5, "yz")  = "yzbat"
@@ -836,11 +841,11 @@ public class StringUtils {
 	 * @param size   the size to pad to
 	 * @param padStr the String to pad with, null or empty treated as single space
 	 * @return left padded String or original String if no padding is necessary,
-	 *         {@code null} if null String input
+	 *         {@code null} was treated as "".
 	 */
-	public static String leftPad(final String str, final int size, String padStr) {
+	public static String leftPad(String str, final int size, String padStr) {
 		if (str == null) {
-			return null;
+			str = "";
 		}
 		if (isEmpty(padStr)) {
 			padStr = SPACE;
@@ -1043,7 +1048,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.split(null)       = null
+	 * StringUtils.split(null)       = []   //Alternative to Apache-commons, But null-safe
 	 * StringUtils.split("")         = []
 	 * StringUtils.split("abc def")  = ["abc", "def"]
 	 * StringUtils.split("abc  def") = ["abc", "def"]
@@ -1074,7 +1079,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.split(null, *)         = null
+	 * StringUtils.split(null, *)         = [] //Alternative to Apache-commons, But null-safe
 	 * StringUtils.split("", *)           = []
 	 * StringUtils.split("a.b.c", '.')    = ["a", "b", "c"]
 	 * StringUtils.split("a..b.c", '.')   = ["a", "b", "c"]
@@ -1084,7 +1089,7 @@ public class StringUtils {
 	 *
 	 * @param str           the String to parse, may be null
 	 * @param separatorChar the character used as the delimiter
-	 * @return an array of parsed Strings, {@code null} if null String input
+	 * @return an array of parsed Strings, {@code []} if null String input
 	 * @since 2.0
 	 */
 	public static String[] split(final String str, final char separatorChar) {
@@ -1109,7 +1114,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.split(null, *)         = null
+	 * StringUtils.split(null, *)         = [] //Alternative to Apache-commons, But null-safe
 	 * StringUtils.split("", *)           = []
 	 * StringUtils.split("abc def", null) = ["abc", "def"]
 	 * StringUtils.split("abc def", " ")  = ["abc", "def"]
@@ -1149,7 +1154,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.split(null, *, *)            = null
+	 * StringUtils.split(null, *, *)            = []//Alternative to Apache-commons, But null-safe
 	 * StringUtils.split("", *, *)              = []
 	 * StringUtils.split("ab cd ef", null, 0)   = ["ab", "cd", "ef"]
 	 * StringUtils.split("ab   cd ef", null, 0) = ["ab", "cd", "ef"]
@@ -1218,7 +1223,7 @@ public class StringUtils {
 	 * </p>
 	 *
 	 * <pre>
-	 * StringUtils.splitByWholeSeparator(null, *, *)               = null
+	 * StringUtils.splitByWholeSeparator(null, *, *)               = [] //Alternative to Apache commons, null is treated as "".
 	 * StringUtils.splitByWholeSeparator("", *, *)                 = []
 	 * StringUtils.splitByWholeSeparator("ab de fg", null, 0)      = ["ab", "de", "fg"]
 	 * StringUtils.splitByWholeSeparator("ab   de fg", null, 0)    = ["ab", "de", "fg"]
@@ -1232,7 +1237,7 @@ public class StringUtils {
 	 *                  {@code null} splits on whitespace
 	 * @param max       the maximum number of elements to include in the returned
 	 *                  array. A zero or negative value implies no limit.
-	 * @return an array of parsed Strings, {@code null} if null String was input
+	 * @return an array of parsed Strings, {@code []} if null String was input
 	 */
 	public static String[] splitByWholeSeparator(final String str, final String separator, final int max) {
 		return splitByWholeSeparatorWorker(str, separator, max);
@@ -1251,16 +1256,15 @@ public class StringUtils {
 	 * @param preserveAllTokens if {@code true}, adjacent separators are treated as
 	 *                          empty token separators; if {@code false}, adjacent
 	 *                          separators are treated as one separator.
-	 * @return an array of parsed Strings, {@code null} if null String input
+	 * @return an array of parsed Strings, {@code empty array} if null String input
 	 * @since 2.4
 	 */
 	private static String[] splitByWholeSeparatorWorker(final String str, final String separator, final int max) {
 		if (str == null) {
-			return null;
+			return ArrayUtils.EMPTY_STRING_ARRAY;
 		}
 
 		final int len = str.length();
-
 		if (len == 0) {
 			return ArrayUtils.EMPTY_STRING_ARRAY;
 		}
@@ -1318,13 +1322,11 @@ public class StringUtils {
 	 * @param preserveAllTokens if {@code true}, adjacent separators are treated as
 	 *                          empty token separators; if {@code false}, adjacent
 	 *                          separators are treated as one separator.
-	 * @return an array of parsed Strings, {@code null} if null String input
+	 * @return an array of parsed Strings, [] if null String input
 	 */
 	private static String[] splitWorker(final String str, final char separatorChar) {
-		// Performance tuned for 2.0 (JDK1.4)
-
 		if (str == null) {
-			return null;
+			return EMPTY_STRING_ARRAY;
 		}
 		final int len = str.length();
 		if (len == 0) {
@@ -1356,7 +1358,7 @@ public class StringUtils {
 
 	private static String[] splitWorker(final String str, final String separatorChars, final int max) {
 		if (str == null) {
-			return null;
+			return ArrayUtils.EMPTY_STRING_ARRAY;
 		}
 		final int len = str.length();
 		if (len == 0) {
@@ -1986,12 +1988,12 @@ public class StringUtils {
 	 * @param iterable  the {@code Iterable} providing the values to join together,
 	 *                  may be null
 	 * @param separator the separator character to use, null treated as ""
-	 * @return the joined String, {@code null} if null iterator input
+	 * @return the joined String, {@code ""} if null iterator input
 	 * @since 2.3
 	 */
 	public static String join(final Iterable<?> iterable, final String separator) {
 		if (iterable == null) {
-			return null;
+			return "";
 		}
 		StringBuilder sb = new StringBuilder();
 		joinTo(iterable, separator, sb);
@@ -2314,9 +2316,8 @@ public class StringUtils {
 	 */
 	public static String[] tokenizeToStringArray(String str, String delimiters, boolean trimTokens,
 			boolean ignoreEmptyTokens) {
-
 		if (str == null) {
-			return null;
+			return EMPTY_STRING_ARRAY;
 		}
 		StringTokenizer st = new StringTokenizer(str, delimiters);
 		List<String> tokens = new ArrayList<String>();

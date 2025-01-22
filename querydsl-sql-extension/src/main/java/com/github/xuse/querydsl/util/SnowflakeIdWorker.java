@@ -1,111 +1,122 @@
 package com.github.xuse.querydsl.util;
+
 /**
-  * Twitter_Snowflake<br>
-  * SnowFlake的结构如下(每部分用-分开):<br>
-  * 0 - 0000000000 0000000000 0000000000 0000000000 0 - 00000 - 00000 - 000000000000 <br>
-  * 1位标识，由于long基本类型在Java中是带符号的，最高位是符号位，正数是0，负数是1，所以id一般是正数，最高位是0<br>
-  * 41位时间截(毫秒级)，注意，41位时间截不是存储当前时间的时间截，而是存储时间截的差值（当前时间截 - 开始时间截)
-  * 得到的值），这里的的开始时间截，一般是我们的id生成器开始使用的时间，由我们程序来指定的（如下下面程序IdWorker类的startTime属性）。
-  * 41位的时间截，可以使用69年，年T = (1L &lt;&lt; 41) / (1000L * 60 * 60 * 24 * 365) = 69<br>
-  * 10位的数据机器位，可以部署在1024个节点，包括5位datacenterId和5位workerId<br>
-  * 12位序列，毫秒内的计数，12位的计数顺序号支持每个节点每毫秒(同一机器，同一时间截)产生4096个ID序号<br>
-  * 加起来刚好64位，为一个Long型。<p>
-  * SnowFlake的优点是，整体上按照时间自增排序，并且整个分布式系统内不会产生ID碰撞(由数据中心ID和机器ID作区分)，并且效率较高，经测试，SnowFlake每秒能够产生26万ID左右。
-  */
- public class SnowflakeIdWorker implements SnowFlakeParams{
- 
-     /** 工作机器ID(0~255) */
-     private int workerId;
- 
-     /** 数据中心ID(0~3) */
-     private int datacenterId;
- 
-     /** 毫秒内序列(0~4095) */
-     private long sequence = 0L;
- 
-     /** 上次生成ID的时间截 */
-     private long lastTimestamp = -1L;
- 
-     /**
-      * 构造
-      * @param workerId 工作ID (0~255)
-      */
-     public SnowflakeIdWorker(int workerId) {
-    	 this(workerId,0);
-     }
-     
-     /**
-      * 构造
-      * @param workerId 工作ID (0~255)
-      * @param datacenterId 数据中心ID (0~3)
-      */
-     public SnowflakeIdWorker(int workerId, int datacenterId) {
-         if (workerId > maxWorkerId || workerId < 0) {
-             throw new IllegalArgumentException(String.format("worker Id can't be greater than %d or less than 0", maxWorkerId));
-         }
-         if (datacenterId > maxDatacenterId || datacenterId < 0) {
-             throw new IllegalArgumentException(String.format("datacenter Id can't be greater than %d or less than 0", maxDatacenterId));
-         }
-         this.workerId = workerId;
-         this.datacenterId = datacenterId;
-     }
- 
-     // ==============================Methods==========================================
-     /**
-      * 获得下一个ID (该方法是线程安全的)
-      * @return SnowflakeId
-      */
-     public synchronized long nextId() {
-         long timestamp = timeGen();
- 
-         //如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过这个时候应当抛出异常
-         if (timestamp < lastTimestamp) {
-             throw new RuntimeException(
-                     String.format("Clock moved backwards.  Refusing to generate id for %d milliseconds", lastTimestamp - timestamp));
-         }
- 
-         //如果是同一时间生成的，则进行毫秒内序列
-         if (lastTimestamp == timestamp) {
-             sequence = (sequence + 1) & sequenceMask;
-             //毫秒内序列溢出
-             if (sequence == 0) {
-                 //阻塞到下一个毫秒,获得新的时间戳
-                 timestamp = tilNextMillis(lastTimestamp);
-             }
-         }
-         //时间戳改变，毫秒内序列重置
-         else {
-             sequence = 0L;
-         }
- 
-         //上次生成ID的时间截
-         lastTimestamp = timestamp;
- 
-         //移位并通过或运算拼到一起组成64位的ID
-         return ((timestamp - twepoch) << timestampLeftShift) //
-                 | (datacenterId << datacenterIdShift) //
-                 | (workerId << workerIdShift) //
-                 | sequence;
-     }
- 
-     /**
-      * 阻塞到下一个毫秒，直到获得新的时间戳
-      * @param lastTimestamp 上次生成ID的时间截
-      * @return 当前时间戳
-      */
-     protected long tilNextMillis(long lastTimestamp) {
-         long timestamp = timeGen();
-         while (timestamp <= lastTimestamp) {
-             timestamp = timeGen();
-         }
-         return timestamp;
-     }
- 
-     /**
-      * 返回以毫秒为单位的当前时间
-      * @return 当前时间(毫秒)
-      */
-     protected long timeGen() {
-         return System.currentTimeMillis();
-     }
- }
+ * Twitter_Snowflake<br>
+ * The structure of SnowFlake is as follows (each part is separated by -):<br>
+ * 0 - 0000000000 0000000000 0000000000 0000000000 0 - 00000 - 00000 -
+ * 000000000000 <br>
+ * 1 bit sign, since the long basic type in Java is signed, the highest bit is
+ * the sign bit, positive numbers are 0, negative numbers are 1, so the ID is
+ * generally positive, and the highest bit is 0<br>
+ * 41 bits for the timestamp (millisecond level). Note that the 41-bit timestamp
+ * does not store the current time's timestamp, but stores the difference in the
+ * timestamp (current timestamp - start timestamp) which is the start timestamp
+ * when our ID generator starts using time specified by our program (such as the
+ * startTime attribute of the IdWorker class below). 41 bits of the timestamp
+ * can be used for 69 years. The year T = (1L << 41) / (1000L * 60 * 60 * 24 *
+ * 365) = 69<br>
+ * 10 bits for machine data, which can be deployed in 1024 nodes, including 5
+ * bits for datacenterId and 5 bits for workerId<br>
+ * 12 bits for sequence, which is the count within the millisecond. The 12-bit
+ * counting sequence number supports generating 4096 ID sequences per
+ * millisecond per node (same machine, same timestamp)<br>
+ * This adds up exactly to 64 bits, which is a Long type.
+ * <p>
+ * The advantages of SnowFlake are that it is incrementally ordered overall, and
+ * there will be no ID collisions in the distributed system (distinguished by
+ * datacenterId and workerId), and it is highly efficient. Tests have shown that
+ * SnowFlake can generate approximately 260,000 IDs per second.
+ * 
+ * @author Joey
+ */
+public final class SnowflakeIdWorker implements SnowFlakeParams {
+
+	/**  worker ID(0~255) */
+	private int workerId;
+
+	/** Data Center ID(0~3) */
+	private int datacenterId;
+
+	/** sequence in same mills(0~4095) */
+	private long sequence = 0L;
+
+	/** The time stamp of last generation */
+	private long lastTimestamp = -1L;
+
+	/**
+	 * @param workerId worker ID (0~255)
+	 */
+	public SnowflakeIdWorker(int workerId) {
+		this(workerId, 0);
+	}
+
+	/**
+	 * @param workerId     worker ID (0~255)
+	 * @param datacenterId data center ID (0~3)
+	 */
+	public SnowflakeIdWorker(int workerId, int datacenterId) {
+		if (workerId > maxWorkerId || workerId < 0) {
+			throw new IllegalArgumentException(
+					String.format("worker Id can't be greater than %d or less than 0", maxWorkerId));
+		}
+		if (datacenterId > maxDatacenterId || datacenterId < 0) {
+			throw new IllegalArgumentException(
+					String.format("datacenter Id can't be greater than %d or less than 0", maxDatacenterId));
+		}
+		this.workerId = workerId;
+		this.datacenterId = datacenterId;
+	}
+
+	// ==============================Methods==========================================
+	/**
+	 * Get the next ID (This method is thread-safe)
+	 * 
+	 * @return SnowflakeId
+	 */
+	public synchronized long nextId() {
+		long timestamp = timeGen();
+
+		// If the current time is less than the timestamp of the previous ID generation,
+		// it indicates that the system clock has moved backward, and an exception
+		// should be thrown at this time.
+		if (timestamp < lastTimestamp) {
+			throw new RuntimeException(String.format(
+					"Clock moved backwards.  Refusing to generate id for %d milliseconds", lastTimestamp - timestamp));
+		}
+		if (lastTimestamp == timestamp) {
+			sequence = (sequence + 1) & sequenceMask;
+			if (sequence == 0) {
+				// When the sequence is exhausted, block until the next millisecond to get a new timestamp.
+				timestamp = tilNextMillis(lastTimestamp);
+			}
+		}else {
+			sequence = 0L;
+		}
+		lastTimestamp = timestamp;
+		return ((timestamp - twepoch) << timestampLeftShift) //
+				| (datacenterId << datacenterIdShift) //
+				| (workerId << workerIdShift) //
+				| sequence;
+	}
+
+	/**
+	 * Spin block until the next millisecond, until a new timestamp is obtained.
+	 * @param lastTimestamp the last time stamp.
+	 * @return the time stamp.
+	 */
+	protected long tilNextMillis(long lastTimestamp) {
+		long timestamp = timeGen();
+		while (timestamp <= lastTimestamp) {
+			timestamp = timeGen();
+		}
+		return timestamp;
+	}
+
+	/**
+	 * Return the current time in milliseconds.
+	 * @return  time stamp in milliseconds
+	 */
+	private long timeGen() {
+		return System.currentTimeMillis();
+	}
+}

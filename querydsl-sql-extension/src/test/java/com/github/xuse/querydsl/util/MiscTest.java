@@ -112,12 +112,7 @@ public class MiscTest {
 
 	@Test
 	public void snowFlake() {
-		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) {
-			@Override
-			protected long timeGen() {
-				return get(2050,1,10,12,0,0).getTime();
-			}
-		};
+		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) ;
 		System.out.println(worker.nextId());
 	}
 	

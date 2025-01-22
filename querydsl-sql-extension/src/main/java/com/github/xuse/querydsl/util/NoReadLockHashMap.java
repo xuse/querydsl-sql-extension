@@ -3,7 +3,7 @@ package com.github.xuse.querydsl.util;
 import java.util.HashMap;
 
 /**
- * 线程安全的HashMap，读取无锁，但失去扩容能力。
+ * A thread-safe HashMap with lock-free reads, but loses the ability to resize.
  * 
  */
 public final class NoReadLockHashMap<K, V> extends HashMap<K, V> {

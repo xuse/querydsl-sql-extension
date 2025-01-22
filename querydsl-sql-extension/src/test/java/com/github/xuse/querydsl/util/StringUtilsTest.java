@@ -85,7 +85,7 @@ public class StringUtilsTest {
 		assertEquals("48 65 6C 6C 6F 2C 20 57 6F 72 6C 64",StringUtils.joinUpper(hello.getBytes(StandardCharsets.UTF_8), ' ', 0, 12));
 		assertEquals("",StringUtils.join((List<String>)null, ' '));
 		assertEquals("",StringUtils.join(Collections.emptyList(), ' '));
-		assertEquals(null,StringUtils.join((List<String>)null, " "));
+		assertEquals("",StringUtils.join((List<String>)null, " "));
 		assertEquals("",StringUtils.join(Collections.emptyList(), " "));
 		assertEquals("Hello World",StringUtils.join(Arrays.asList("Hello","World"), " "));
 		assertEquals("Hello World",StringUtils.join(Arrays.asList("Hello","World"), ' '));
@@ -110,24 +110,24 @@ public class StringUtilsTest {
 		assertNull(StringUtils.upperCase(null));
 		
 
-		assertEquals(null,StringUtils.leftPad(null, 3));
+		assertEquals("   ",StringUtils.leftPad(null, 3));
 		assertEquals("   ",StringUtils.leftPad(blank, 3));
 		assertEquals("00 ",StringUtils.leftPad(blank, 3, '0'));
 		assertEquals("00 ",StringUtils.leftPad(blank, 3, "0"));
 		assertEquals("00 ",StringUtils.leftPad(blank, 3, "00"));
 		assertEquals("000 ",StringUtils.leftPad(blank, 4, "00"));
-		assertEquals(null,StringUtils.leftPad(null, 4, "00"));
+		assertEquals("0000",StringUtils.leftPad(null, 4, "00"));
 		assertEquals(hello,StringUtils.leftPad(hello, 3, "00"));
 		assertEquals(hello,StringUtils.leftPad(hello, 3, '0'));
 		assertEquals(hello,StringUtils.leftPad(hello, 5, ""));
 		assertEquals("ab"+hello,StringUtils.leftPad(hello, 14, "abcd"));
 		
-		assertEquals(null,StringUtils.rightPad(null, 3));
+		assertEquals("   ",StringUtils.rightPad(null, 3));
 		assertEquals("   ",StringUtils.rightPad(blank, 3));
 		assertEquals(" 00",StringUtils.rightPad(blank, 3, '0'));
 		assertEquals(" 00",StringUtils.rightPad(blank, 3, "0"));
 		assertEquals(" 00",StringUtils.rightPad(blank, 3, "00"));
-		assertEquals(null,StringUtils.rightPad(null, 3, "00"));
+		assertEquals("000",StringUtils.rightPad(null, 3, "00"));
 		assertEquals(" 000",StringUtils.rightPad(blank, 4, "00"));
 		assertEquals(hello,StringUtils.rightPad(hello, 3, "00"));
 		assertEquals(hello,StringUtils.rightPad(hello, 3, '0'));
@@ -218,10 +218,11 @@ public class StringUtilsTest {
 				StringUtils.replaceEach("a",new String[] {null}, new String[] {null})
 		);
 		
-		assertArrayEquals(null,	StringUtils.split(null));
+		assertArrayEquals(new String[0],	StringUtils.split(null));
+		assertArrayEquals(new String[0] ,	StringUtils.split(null,' '));
+		assertArrayEquals(new String[0],	StringUtils.split(""));
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c"));
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c",' '));
-		assertArrayEquals(null,	StringUtils.split(null,' '));
 		assertArrayEquals(new String[0],	StringUtils.split("",' '));
 		
 		assertArrayEquals(new String[] {"a","b","c"},	StringUtils.split("a b c"," "));
@@ -231,7 +232,7 @@ public class StringUtilsTest {
 		
 		assertArrayEquals(new String[] {"a","c"},		StringUtils.splitByWholeSeparator("a b c", " b "));
 		assertArrayEquals(new String[] {"a","c d"},		StringUtils.splitByWholeSeparator("a b c d", " b ",2));
-		assertArrayEquals(null,		StringUtils.splitByWholeSeparator(null, " b ",2));
+		assertArrayEquals(new String[0],		StringUtils.splitByWholeSeparator(null, " b ",2));
 		assertArrayEquals(new String[] {" a","c d"},		StringUtils.splitByWholeSeparator(" a b c d", " b ",2));
 		assertArrayEquals(new String[0],		StringUtils.splitByWholeSeparator("", " b ",2));
 		assertArrayEquals(new String[] {"a","b"},		StringUtils.splitByWholeSeparator("a b", null));
@@ -244,7 +245,7 @@ public class StringUtilsTest {
 		assertArrayEquals(new String[] {"a","b","c"},		StringUtils.tokenizeToStringArray(" a b  c", " ", false, true));
 		assertArrayEquals(new String[] {"a","b","c"},		StringUtils.tokenizeToStringArray(" a b  c ", " ", true, false));
 		assertArrayEquals(new String[] {"a","b","c"},		StringUtils.tokenizeToStringArray(" a b c ", " ", false, false));
-		assertNull(StringUtils.tokenizeToStringArray(null, " "));
+		assertArrayEquals(new String[0], StringUtils.tokenizeToStringArray(null, " "));
 		
 		assertTrue(StringUtils.startsWithIgnoreCase(china, 0, "hello"));
 		assertTrue(StringUtils.startsWithIgnoreCaseAndWs(china, "hello"));

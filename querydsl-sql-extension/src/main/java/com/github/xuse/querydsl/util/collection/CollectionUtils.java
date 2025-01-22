@@ -36,6 +36,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.jetbrains.annotations.Nullable;
+
 import com.github.xuse.querydsl.util.Assert;
 
 /**
@@ -267,7 +269,7 @@ public class CollectionUtils {
 	 * @return find result.
 	 * @param <T> The type of target object.
 	 */
-	public static <T> T findFirst(Collection<T> collection, Predicate<T> filter) {
+	public static <T> @Nullable T findFirst(Collection<T> collection, Predicate<T> filter) {
 		if (collection == null || collection.isEmpty())
 			return null;
 		for (T obj : collection) {
@@ -287,7 +289,7 @@ public class CollectionUtils {
 	 * @param <T> The type of target object.
 	 * @param <V> The type of target object.
 	 */
-	public static <T, V> T findFirst(Collection<T> collection, Function<T, V> f, V value) {
+	public static <T, V> @Nullable T findFirst(Collection<T> collection, Function<T, V> f, V value) {
 		if (collection == null || collection.isEmpty())
 			return null;
 		return findFirst(collection, t -> Objects.equals(f.apply(t), value));
@@ -645,7 +647,7 @@ public class CollectionUtils {
 	 * @return last
 	 * @param <T> The type of target object.
 	 */
-	public static <T> T last(List<T> collection) {
+	public static <T> @Nullable T last(List<T> collection) {
 		if (collection == null || collection.isEmpty()) {
 			return null;
 		}

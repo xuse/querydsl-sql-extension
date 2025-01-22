@@ -16,9 +16,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 跟进程相关的以及环境相关的若干工具方法
- * 
- * 这个工具类中还有若干和网络地址相关方法，比如获取本机的网络信息，空闲端口等
+ * Several tools related to processes and environments, such as obtaining the network information of the local machine, finding available ports, etc
  */
 @Slf4j
 public class ProcessUtil {
@@ -35,19 +33,20 @@ public class ProcessUtil {
 	}
 
 	/**
-	 * @return 获取进程号
+	 * @return Get the process id.
 	 */
 	public static int getPid() {
 		return processId;
 	}
 
 	/**
-	 * 网络适配器信息
+	 * Class of a network interface.
 	 *
 	 */
 	public static class NetworkInfo {
-		NetworkInterface net;
-		InetAddress addr;
+		private static final String[] IP_MASK = new String[] { "0", "128", "192", "224", "240", "248", "252", "254", "255" };
+		final NetworkInterface net;
+		final InetAddress addr;
 
 		NetworkInfo(NetworkInterface t) {
 			this.net = t;
@@ -74,15 +73,14 @@ public class ProcessUtil {
 		public String getMaskAddress() {
 			InterfaceAddress addr = net.getInterfaceAddresses().get(0);
 			int add = addr.getNetworkPrefixLength();
-			String[] s = new String[] { "0", "128", "192", "224", "240", "248", "252", "254", "255" };
 			if (add > 24) {
-				return "255.255.255." + s[add - 24];
+				return "255.255.255." + IP_MASK[add - 24];
 			} else if (add > 16) {
-				return "255.255." + s[add - 16] + ".0";
+				return "255.255." + IP_MASK[add - 16] + ".0";
 			} else if (add > 8) {
-				return "255." + s[add - 8] + ".0.0";
+				return "255." + IP_MASK[add - 8] + ".0.0";
 			} else {
-				return s[add] + ".0.0.0";
+				return IP_MASK[add] + ".0.0.0";
 			}
 		}
 
@@ -125,14 +123,14 @@ public class ProcessUtil {
 		}
 
 		/**
-		 * @return 获得名称
+		 * @return The name of the network adapter.
 		 */
 		public String getName() {
 			return net.getName();
 		}
 
 		/**
-		 * @return 获得适配器名称
+		 * @return The display name of the network adapter. 
 		 */
 		public String getDisplayName() {
 			return net.getDisplayName();
@@ -182,7 +180,7 @@ public class ProcessUtil {
 	 * @return 获取一个空闲端口
 	 */
 	public static int getFreePort() {
-		try (ServerSocket serverSocket = new ServerSocket(0)){
+		try (ServerSocket serverSocket = new ServerSocket(0,1)){
 			int port = serverSocket.getLocalPort();
 			return port;
 		} catch (Exception e) {
@@ -213,11 +211,7 @@ public class ProcessUtil {
 	}
 
 	/**
-	 * <p>
-	 * 方法 getLocalIp
-	 * </p>
-	 * 
-	 * @return 获取本机ip地址
+	 * @return local ip address for the first network adpater.
 	 */
 	public static String getLocalIp() {
 		String localIp = null;

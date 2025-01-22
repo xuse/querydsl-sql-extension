@@ -538,9 +538,9 @@ public class ArrayUtils {
 	 *  @since 2.1
 	 *  @see Arrays#copyOfRange(byte[], int, int)
 	 */
-	public static byte[] subArray(final byte[] array, int startIndexInclusive, int endIndexExclusive) {
+	public static byte[] subArray(byte[] array, int startIndexInclusive, int endIndexExclusive) {
 		if (array == null) {
-			return null;
+			array = EMPTY_BYTE_ARRAY;
 		}
 		if (startIndexInclusive < 0) {
 			startIndexInclusive = 0;
@@ -978,8 +978,8 @@ public class ArrayUtils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] minus(T[] ls, T[] ls2) {
-		if(ls==null) {
-			return null;
+		if(ls==null || ls2==null) {
+			return ls;
 		}
 		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
 		set.removeAll(Arrays.asList(ls2));
