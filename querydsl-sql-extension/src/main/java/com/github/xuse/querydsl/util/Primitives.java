@@ -11,7 +11,7 @@ public final class Primitives {
 	}
 
 	/**
-	 * 返回八个原生类型的默认数值(的装箱类型)
+	 * Return the default values of the eight primitive types (as their boxed instance).
 	 *
 	 * @param javaClass javaClass
 	 *            数据类型
@@ -47,7 +47,7 @@ public final class Primitives {
 	}
 
 	/**
-	 * 包装类转换为原生类
+	 * Convert boxed class to primitive class.
 	 *
 	 * @param wrapperClass wrapperClass
 	 * @return 如果不能转换，则返回输入的类

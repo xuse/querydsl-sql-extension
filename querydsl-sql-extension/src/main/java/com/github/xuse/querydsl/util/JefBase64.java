@@ -15,10 +15,19 @@
  */
 package com.github.xuse.querydsl.util;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+/**
+ * <b>Chinese</b><p>
+ * 高性能Base64工具，并支持用户自定义码表
+ * <b>English</b><p>
+ * Base64 Encoder/Decoder with high performance, and supports user custom code table.
+ * @author Joey
+ */
 public final class JefBase64 {
 
 	/**
@@ -114,27 +123,50 @@ public final class JefBase64 {
 		return encode(data, 0, data.length, STANDARD);
 	}
 
-	public static String encode(ByteBuffer s, Base64Context context) {
-		return encode(s.array(), s.arrayOffset(), s.limit(), context);
+	public static String encode(ByteBuffer s, Base64Context codeTable) {
+		return encode(s.array(), s.arrayOffset(), s.limit(), codeTable);
 	}
 
+	private static final ByteDataFunction<String> toAsciiString = (b, o, l) -> new String(b, o, l,
+			StandardCharsets.US_ASCII);
+
 	/**
-	 * 不带换行的Base64编码
-	 * 
+	 * Base64 encode without line wrap.
 	 * @param data bytes to encode.
-	 * @return 编码后文本
-	 * @param offset  从第几个字节开始编码
+	 * @param offset  the offset of source data.
 	 * @param length  int
-	 * @param context Base64Context
+	 * @param codeTable Base64 code table.
+	 * @return base64 text
 	 */
-	public static String encode(byte[] data, int offset, int length, Base64Context context) {
+	public static String encode(byte[] data, int offset, int length, Base64Context codeTable) {
+		return encode0(data, offset, length, codeTable,toAsciiString);
+	}
+	
+	/**
+	 * Base64 encode, result write to the output stream.
+	 * @param data
+	 * @param codeTable
+	 * @param out The output stream.
+	 */
+	public static void encodeTo(byte[] data, Base64Context codeTable,OutputStream out) {
+		encode0(data, 0, data.length, codeTable,(b, o, l) ->{
+			try {
+				out.write(b, o, l);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return null;
+		});
+	}
+	
+	private static <R> R encode0(byte[] data, int offset, int length, Base64Context codeTable,ByteDataFunction<R> func) {
 		if (data == null || data.length < (offset + length)) {
 			throw new IllegalArgumentException();
 		}
-		byte[] ENCODE_TABLE = context.ENCODE_TABLE;
+		byte[] ENCODE_TABLE = codeTable.ENCODE_TABLE;
 		int fullGroups = length / 3;
 		int resultBytes = 4 * ((length + 2) / 3);
-		if (context.wrap) {
+		if (codeTable.wrap) {
 			resultBytes = resultBytes * 78 / 76 + 1;
 		}
 
@@ -149,7 +181,7 @@ public final class JefBase64 {
 			result[resultIndex++] = ENCODE_TABLE[(temp >> 12) & 0x3f];
 			result[resultIndex++] = ENCODE_TABLE[(temp >> 6) & 0x3f];
 			result[resultIndex++] = ENCODE_TABLE[temp & 0x3f];
-			if (context.wrap) {
+			if (codeTable.wrap) {
 				wrapIndex += 4;
 				if (wrapIndex >= 76) {
 					result[resultIndex++] = 13;
@@ -164,7 +196,7 @@ public final class JefBase64 {
 			temp <<= 8;
 			temp |= data[dataIndex++] & 0xff;
 		}
-		byte pad = context.PAD;
+		byte pad = codeTable.PAD;
 		switch (length % 3) {
 		case 1:
 			temp <<= 8;
@@ -184,7 +216,7 @@ public final class JefBase64 {
 		default:
 			break;
 		}
-		return new String(result, 0, resultIndex);
+		return func.apply(result, 0, resultIndex);
 	}
 
 	/**
@@ -199,12 +231,12 @@ public final class JefBase64 {
 		return decodeFast(bytes, 0, bytes.length, STANDARD);
 	}
 
-	public static final byte[] decodeFast(byte[] chars, int offset, int charsLen, Base64Context context) {
+	public static final byte[] decodeFast(byte[] chars, int offset, int charsLen, Base64Context codeTable) {
 		// Check special case
 		if (charsLen == 0) {
 			return new byte[0];
 		}
-		int[] IA = context.IA;
+		int[] IA = codeTable.IA;
 		// Start and end index
 		int sIx = offset, eIx = offset + charsLen - 1;
 		// Trim illegal chars from start
@@ -215,7 +247,7 @@ public final class JefBase64 {
 			eIx--;
 		// get the padding count (=) (0, 1 or 2)
 		// Count
-		int pad = chars[eIx] == context.PAD ? (chars[eIx - 1] == context.PAD ? 2 : 1) : 0;
+		int pad = chars[eIx] == codeTable.PAD ? (chars[eIx - 1] == codeTable.PAD ? 2 : 1) : 0;
 		// '='
 		// at
 		// end.
@@ -272,12 +304,12 @@ public final class JefBase64 {
 		return decodeFast(s, STANDARD);
 	}
 
-	public static final byte[] decodeFast(CharSequence s, Base64Context context) {
+	public static final byte[] decodeFast(CharSequence s, Base64Context codeTable) {
 		// Check special case
 		int sLen = s.length();
 		if (sLen == 0)
 			return new byte[0];
-		int[] IA = context.IA;
+		int[] IA = codeTable.IA;
 		// Start and end index after trimming.
 		int sIx = 0, eIx = sLen - 1;
 		// Trim illegal chars from start
@@ -287,7 +319,7 @@ public final class JefBase64 {
 		while (eIx > 0 && IA[s.charAt(eIx) & 0xff] < 0)
 			eIx--;
 		// get the padding count (=) (0, 1 or 2)
-		byte PAD = context.PAD;
+		byte PAD = codeTable.PAD;
 		// Count
 		int pad = s.charAt(eIx) == PAD ? (s.charAt(eIx - 1) == PAD ? 2 : 1) : 0;
 		// '='
@@ -342,29 +374,29 @@ public final class JefBase64 {
 	 * Decode into a UTF-8 string
 	 * 
 	 * @param encoded The Base64 encoded string
-	 * @param context The context.
+	 * @param codeTable The base64 code table.
 	 * @return The decoded string re-encoded with UTF-8
 	 */
-	public static String decodeUTF8(CharSequence encoded, Base64Context context) {
-		return new String(decodeFast(encoded, context), StandardCharsets.UTF_8);
+	public static String decodeUTF8(CharSequence encoded, Base64Context codeTable) {
+		return new String(decodeFast(encoded, codeTable), StandardCharsets.UTF_8);
 	}
 
 	/**
-	 * 字符串按UTF8进行base64编码
+	 * Encode the input string in Base64 after being encoded in UTF-8.
 	 *
-	 * @param s 字符串
-	 * @return base64编码
+	 * @param s Input string
+	 * @return base64 string
 	 */
 	public static String encodeUTF8(String s) {
-		return encode(s.getBytes(StandardCharsets.UTF_8));
+		byte[] data = s.getBytes(StandardCharsets.UTF_8);
+		return encode(data, 0, data.length, STANDARD);
 	}
 
 	/**
-	 * 字符串按UTF8进行base64编码
-	 * 
-	 * @param s    字符串
-	 * @param wrap 输出是否换行
-	 * @return base64编码
+	 * Encode the input string in Base64 after being encoded in UTF-8.
+	 * @param s Input string
+	 * @param wrap has line wrap.
+	 * @return base64 string
 	 */
 	public static String encodeUTF8(String s, boolean wrap) {
 		byte[] data = s.getBytes(StandardCharsets.UTF_8);
@@ -372,17 +404,17 @@ public final class JefBase64 {
 	}
 
 	/**
-	 * Special feature: decoding the first byte of a Base64 string
+	 * Special feature: decoding the first byte of a Base64 content.
 	 * 
-	 * @param s       s
-	 * @param offset  index
-	 * @param context context
-	 * @return 第一个字节
+	 * @param s       String contains base64 content.
+	 * @param offset  The begin offset of the base64 content.
+	 * @param codeTable The base64 code table.
+	 * @return First byte decoded.
 	 */
-	public static final byte decodeFirstByte(CharSequence s, int offset, Base64Context context) {
+	public static final byte decodeFirstByte(CharSequence s, int offset, Base64Context codeTable) {
 		if (s.length() < offset)
 			throw new IllegalArgumentException("Length not enough");
-		int[] IA = context.IA;
+		int[] IA = codeTable.IA;
 		int sIx = offset;
 		int i = IA[s.charAt(sIx++)] << 18 | IA[s.charAt(sIx++)] << 12 | IA[s.charAt(sIx++)] << 6 | IA[s.charAt(sIx++)];
 		return (byte) (i >> 16);

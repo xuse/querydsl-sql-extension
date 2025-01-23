@@ -30,8 +30,7 @@ public class DigitBaseTest {
 		assertEquals("FFFFFF9C", Radix.D16.encodeIntWithPadding(-100, 5));
 		assertEquals("00064", Radix.D16.encodeWithPadding(100L, 5));
 		
-		//FIXME ME 这个case有点问题
-		assertEquals("00-64", Radix.D16.encodeWithPadding(-100L, 5));
+		assertEquals("-0064", Radix.D16.encodeWithPadding(-100L, 5));
 		assertEquals("$$$0Z", Radix.D64.encodeWithPadding(100L, 5));
 
 		
@@ -49,10 +48,21 @@ public class DigitBaseTest {
 		assertEquals(100, Radix.D10C.decodeInt("一零零"));
 		assertEquals(-100, Radix.D10C.decodeInt("四二九四九六七一九六"));
 		assertEquals("壹零零", Radix.D10CT.encode(100L));
-		assertEquals("-壹零零", Radix.D10CT.encode(-100L));
+		assertEquals("负壹零零", Radix.D10CT.encode(-100L));
 		assertEquals(100L, Radix.D10CT.decode("壹零零"));
-		assertEquals(-100L, Radix.D10CT.decode("-壹零零"));
+		assertEquals(-100L, Radix.D10CT.decode("负壹零零"));
 	}
+	
+	@Test
+	public void testRadix16() {
+		assertEquals(Radix.D16.encode(100),Integer.toHexString(100).toUpperCase());
+		assertEquals(Radix.D16.encode(0),Integer.toHexString(0).toUpperCase());
+		assertEquals(Radix.D16.encodeInt(-2),Integer.toHexString(-2).toUpperCase());
+		assertEquals(Radix.D16.encodeInt(-10),Integer.toHexString(-10).toUpperCase());
+		assertEquals(Radix.D16.encodeInt(-16),Integer.toHexString(-16).toUpperCase());
+		assertEquals(Radix.D16.encodeInt(-100),Integer.toHexString(-100).toUpperCase());
+	}
+	
 
 	@Test
 	public void testAll() {

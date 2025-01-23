@@ -1,7 +1,7 @@
 package com.github.xuse.querydsl.util;
 
 /**
- * 进制转换工具
+ * Radix compute utility.
  *
  * Use {@link #encode(long)} {@link #encodeInt(int)} to convert a decimal number
  * to a N-module number. Use {@link #decodeInt(String)} {@link #decode(String)}
@@ -12,22 +12,21 @@ package com.github.xuse.querydsl.util;
 public enum Radix {
 
 	/**
-	 *  二进制
+	 *  二进制 Binary
 	 */
-	D2("01".toCharArray(), 64),
+	D2("01".toCharArray(), 64, '-'),
 	/**
-	 *  三进制
+	 *  三进制 Ternary
 	 */
-	D3("012".toCharArray(), 40),
+	D3("012".toCharArray(), 40, '-'),
 	/**
-	 *  七进制
+	 *  七进制 Septenary
 	 */
-	D7("0123456".toCharArray(), 30),
+	D7("0123456".toCharArray(), 30, '-'),
 	/**
-	 *  八进制
+	 *  八进制 Octal
 	 */
-	D8("01234567".toCharArray(), 21) {
-
+	D8("01234567".toCharArray(), 21, '-') {
 		@Override
 		protected void encode0(long num, StringBuilder sb) {
 			while (num >= scale) {
@@ -40,26 +39,25 @@ public enum Radix {
 	}
 	,
 	/**
-	 *  九进制
+	 *  九进制 Nonary
 	 */
-	D9("012345678".toCharArray(), 20),
+	D9("012345678".toCharArray(), 20, '-'),
 	/**
-	 *  10进制
+	 *  10进制 Decimal
 	 */
-	D10("0123456789".toCharArray(), 19),
+	D10("0123456789".toCharArray(), 19, '-'),
 	/**
-	 *  十进制中文
+	 *  十进制中文, Decimal in Chinese characters.
 	 */
-	D10C("零一二三四五六七八九".toCharArray(), 19),
+	D10C("零一二三四五六七八九".toCharArray(), 19, '负'),
 	/**
-	 *  十进制中文2
+	 *  十进制中文2, Decimal in Chinese characters.
 	 */
-	D10CT("零壹贰叁肆伍陆柒捌玖".toCharArray(), 19),
-	/**
-	 *  16进制
+	D10CT("零壹贰叁肆伍陆柒捌玖".toCharArray(), 19, '负'),
+	/** 
+	 *  16进制 Hexadecimal
 	 */
-	D16("0123456789ABCDEF".toCharArray(), 16) {
-
+	D16("0123456789ABCDEF".toCharArray(), 16, '-') {
 		@Override
 		protected void encode0(long num, StringBuilder sb) {
 			while (num >= scale) {
@@ -69,20 +67,19 @@ public enum Radix {
 			}
 			sb.append(codeTable[(int) num]);
 		}
-	}
-	,
+	},
 	/**
-	 *  36进制
+	 *  36进制 Base36
 	 */
-	D36("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray(), 14),
+	D36("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray(), 14, '-'),
 	/**
-	 *  62进制
+	 *  62进制 Base62
 	 */
-	D62("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray(), 12),
+	D62("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray(), 12, '-'),
 	/**
-	 *  64进制
+	 *  64进制 Base64，
 	 */
-	D64("$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".toCharArray(), 11) {
+	D64("$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".toCharArray(), 11, '-') {
 
 		@Override
 		protected void encode0(long num, StringBuilder sb) {
@@ -96,13 +93,13 @@ public enum Radix {
 	}
 	,
 	/**
-	 *  七十二进制
+	 *  七十二进制 Base72
 	 */
-	D72("$0123456789=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{}~".toCharArray(), 11),
+	D72("$0123456789=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{}~".toCharArray(), 11, '-'),
 	/**
-	 *  八十四进制
+	 *  八十四进制 Base84
 	 */
-	D84("!#$%&()*+.0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~".toCharArray(), 11);
+	D84("!#$%&()*+.0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~".toCharArray(), 11, '-');
 
 	/**
 	 *  进制
@@ -119,6 +116,7 @@ public enum Radix {
 	 */
 	private final long[] powTable;
 
+	private final char minusChar;
 	/**
 	 *  字符码表是否符合编码顺序
 	 */
@@ -131,13 +129,17 @@ public enum Radix {
 	private static final int INDEXOF = 2;
 
 	/**
-	 * NOTE:乘方计算，不能用Math.pow()会丢失精度。 例如Math.pow(3,39) = {@code 4052555153018976256}
-	 * 正确结果为 {@code 4052555153018976267}
-	 * 这造成3进制和7进制等计算结果总是错误，直到反复核对才发现Math.pow对大整数的计算是不准确的。
+	 * @implNote Exponentiation cannot use Math.pow(), as it will lose
+	 *           precision. For example, Math.pow(3,39) =
+	 *           {@code 4052555153018976256} The correct result should be
+	 *           {@code 4052555153018976267} This causes computation errors in
+	 *           base-3 and base-7 systems, among others, and it is only after
+	 *           repeated verification that we discovered that Math.pow is
+	 *           inaccurate for large integer calculations.
 	 *
 	 * @param base base
-	 * @param pow pow
-	 * @return 乘方结果
+	 * @param pow  pow
+	 * @return Exponentiation result
 	 */
 	public static long pow(long base, int pow) {
 		long n = 1;
@@ -148,12 +150,11 @@ public enum Radix {
 	}
 
 	/**
-	 * 构造
-	 *
 	 * @param cs cs
 	 * @param powerTableSize int
 	 */
-	Radix(char[] cs, int powerTableSize) {
+	Radix(char[] cs, int powerTableSize,char minusChar) {
+		this.minusChar=minusChar;
 		this.scale = cs.length;
 		this.codeTable = cs;
 		// 计算乘方表
@@ -204,14 +205,13 @@ public enum Radix {
 	 */
 	public String encodeWithPadding(long num, int minDigit) {
 		StringBuilder sb = new StringBuilder();
-		if (num < 0) {
-			encode0(-num, sb);
-			sb.append('-');
-		} else {
-			encode0(num, sb);
-		}
-		for (int i = sb.length(); i < minDigit; i++) {
+		boolean minus = num < 0;
+		encode0(minus ? -num : num, sb);
+		for (int i = sb.length()+(minus?1:0); i < minDigit; i++) {
 			sb.append(codeTable[0]);
+		}
+		if(minus) {
+			sb.append(minusChar);
 		}
 		return sb.reverse().toString();
 	}
@@ -252,7 +252,7 @@ public enum Radix {
 		StringBuilder sb = new StringBuilder();
 		if (num < 0) {
 			encode0(-num, sb);
-			sb.append('-');
+			sb.append(minusChar);
 		} else {
 			encode0(num, sb);
 		}
@@ -269,7 +269,7 @@ public enum Radix {
 		if (str == null || str.isEmpty()) {
 			return 0;
 		}
-		boolean minus = str.charAt(0) == '-';
+		boolean minus = str.charAt(0) == minusChar;
 		long num = decode0(str, minus ? 1 : 0);
 		return minus ? -num : num;
 	}
