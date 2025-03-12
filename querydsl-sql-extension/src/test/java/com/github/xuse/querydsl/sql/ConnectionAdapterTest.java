@@ -116,6 +116,7 @@ public class ConnectionAdapterTest {
         verify(mockConnection, times(1)).clearWarnings();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testSetTypeMap() throws SQLException {
         Map<String, Class<?>> map = mock(Map.class);

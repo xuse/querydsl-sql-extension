@@ -6,11 +6,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<properties>
 		<jmh.version>1.35</jmh.version>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>benchmarks</artifactId>
 	<name>benchmarks</name>
-	<version>5.0.0-r140</version>
+	<version>5.0.0-r130</version>
 	<url>http://maven.apache.org</url>
 	<dependencies>
 		<dependency>
@@ -84,6 +86,11 @@
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
+					 <compilerArgs>
+                        <arg>-parameters</arg>
+                        <arg>--add-modules=jdk.incubator.vector</arg>
+                        <arg>--add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED</arg>
+                    </compilerArgs>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>

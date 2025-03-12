@@ -382,7 +382,7 @@ public class TableDataInitializer {
 	/*
 	 * Use stream processing to prevent high memory usage caused by large files.
 	 */
-	class CSVObjectReader implements CloseableIterator<Object>, AutoCloseable {
+	class CSVObjectReader implements CloseableIterator<Object> {
 
 		private final CsvFileReader reader;
 

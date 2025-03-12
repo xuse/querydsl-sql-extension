@@ -11,7 +11,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
-import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 
 import lombok.SneakyThrows;

@@ -18,6 +18,7 @@ import com.github.xuse.querydsl.util.StringUtils;
  */
 public class ChineseNumberReader {
 	private static final int FLAG_REMOVE_ZERO_TAIL = 1;
+	private static final int FLAG_REMOVE_HEAD_ONE = 2;
 
 	private static final char[] CHINESE_DIGITS1 = { '零', '一', '二', '三', '四', '五', '六', '七', '八', '九' };
 	private static final char[] CHINESE_DIGITS2 = { '零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖' };
@@ -37,7 +38,7 @@ public class ChineseNumberReader {
 	 * 常规中文读法。如{@code 100}读作"一百".
 	 */
 	public static final ChineseNumberReader DEFAULT = new ChineseNumberReader(CHINESE_DIGITS1, CHINESE_UNITS1,
-			NO_CURRENCY, "", FLAG_REMOVE_ZERO_TAIL);
+			NO_CURRENCY, "", FLAG_REMOVE_ZERO_TAIL | FLAG_REMOVE_HEAD_ONE);
 
 	/**
 	 * Chinese characters in uppercase. For example, {@code 100} is read as "壹佰".
@@ -45,12 +46,12 @@ public class ChineseNumberReader {
 	 * 汉字数字大写。如{@code 100}读作"壹佰".
 	 */
 	public static final ChineseNumberReader FINANCE = new ChineseNumberReader(CHINESE_DIGITS2, CHINESE_UNITS2,
-			NO_CURRENCY, "", FLAG_REMOVE_ZERO_TAIL);
+			NO_CURRENCY, "", FLAG_REMOVE_ZERO_TAIL | FLAG_REMOVE_HEAD_ONE);
 
 	/**
-	 * Renminbi reading. For example, {@code 100.38} is read as "壹佰元叁角捌分".
+	 * Renminbi reading. For example: {@code 100} as "壹佰元整"; {@code 100.38} as "壹佰元叁角捌分".
 	 * <p>
-	 * 人民币读法。如{@code 100.38}读作"壹佰元叁角捌分".
+	 * 人民币读法。如{@code 100}读作"壹佰元整".如{@code 100.38}读作"壹佰元叁角捌分".
 	 */
 	public static final ChineseNumberReader CURRENCE = new ChineseNumberReader(CHINESE_DIGITS2, CHINESE_UNITS2,
 			CHINESE_CURRENCY, "整", FLAG_REMOVE_ZERO_TAIL);
@@ -63,7 +64,7 @@ public class ChineseNumberReader {
 	 * {@code 0.007} is read as "零点洞洞拐".
 	 */
 	public static final ChineseNumberReader MILITARY = new ChineseNumberReader(CHINESE_DIGITS3, CHINESE_UNITS1,
-			NO_CURRENCY, "", 0);
+			NO_CURRENCY, "", FLAG_REMOVE_HEAD_ONE);
 
 	/*
 	 * Code tables. 
@@ -81,7 +82,10 @@ public class ChineseNumberReader {
 	 * The Character '元整' in the end of the currency format.
 	 */
 	private final String rmbSuffix;
-
+	
+	/*
+	 *The minus character. 
+	 */
 	private String minus = "负";
 	
 	/*
@@ -99,31 +103,35 @@ public class ChineseNumberReader {
 		this.currencyTable = currency;
 		this.rmbSuffix = StringUtils.isEmpty(suffix) ? "" : currencyTable[0] + suffix;
 		this.removeDigitZeroTail = (flags & FLAG_REMOVE_ZERO_TAIL) > 0;
-		specialOmit = chineseDigits[1] + chineseUnits[1];
+		if((flags & FLAG_REMOVE_HEAD_ONE)>0) {
+			specialOmit = chineseDigits[1] + chineseUnits[1];
+		}else {
+			specialOmit="x";
+		}
 	}
 
 	/**
 	 * Convert the number to Chinese numeric reading.
 	 * 
-	 * @param num the number (integer or long).
+	 * @param number the number (integer or long).
 	 * @return Chinese numeric reading.
 	 */
-	public String forNumber(long num) {
-		return forNumber0(num).append(rmbSuffix).toString();
+	public String forNumber(long number) {
+		return forNumber0(number).append(rmbSuffix).toString();
 	}
 
 	/**
 	 * Convert the number to Chinese numeric reading.
 	 * 
-	 * @param num the number (float or double).
+	 * @param number The number (float or double).
 	 * @return Chinese numeric reading.
 	 */
-	public String forDouble(double num) {
-		String v = String.valueOf(num);
+	public String forDouble(double number) {
+		String v = String.valueOf(number);
 		int index = v.lastIndexOf('.');
 		if (v.endsWith(".0")) {
 			// 是整数
-			return forNumber0(Double.valueOf(num).longValue()).append(rmbSuffix).toString();
+			return forNumber0(Double.valueOf(number).longValue()).append(rmbSuffix).toString();
 		}
 		return forNumber0(Long.valueOf(v.substring(0, index))).append(forDigitsWithUnit(v.substring(index + 1)))
 				.toString();
@@ -132,46 +140,46 @@ public class ChineseNumberReader {
 	/**
 	 * Convert the number to Chinese numeric reading.
 	 * 
-	 * @param num the number (float or double, string parameter to avoid loss of
+	 * @param number The number (float or double, string parameter to avoid loss of
 	 *            precision).
 	 * @return Chinese numeric reading.
 	 */
-	public String forDouble(String num) {
+	public String forDouble(String number) {
 		boolean noDigits = true;
-		int index = num.lastIndexOf('.');
+		int index = number.lastIndexOf('.');
 		String afterDot = null;
 		if (index > -1) {
-			afterDot = num.substring(index + 1);
-			num = num.substring(0, index);
+			afterDot = number.substring(index + 1);
+			number = number.substring(0, index);
 			noDigits = afterDot.chars().filter(e -> e > 48).count() == 0;
 		}
 		if (noDigits) {
-			return forNumber0(Double.valueOf(num).longValue()).append(rmbSuffix).toString();
+			return forNumber0(Double.valueOf(number).longValue()).append(rmbSuffix).toString();
 		}
 		if (removeDigitZeroTail) {
 			afterDot = removeZeroTail(afterDot);
 		}
-		return forNumber0(Long.valueOf(num.substring(0, index))).append(forDigitsWithUnit(afterDot)).toString();
+		return forNumber0(Long.valueOf(number.substring(0, index))).append(forDigitsWithUnit(afterDot)).toString();
 	}
 
 	/**
 	 * Convert the number to Chinese reading by each digits, and without unit.
 	 * 
-	 * @param num
+	 * @param number The number as String.
 	 * @return Chinese numeric reading.
 	 */
-	public String forDigits(String num) {
-		if (num == null || num.length() == 0) {
+	public String forDigits(String number) {
+		if (number == null || number.length() == 0) {
 			return "";
 		}
 		StringBuilder sb = new StringBuilder();
 		int offset = 0;
-		if (num.charAt(0) == '-') {
+		if (number.charAt(0) == '-') {
 			offset = 1;
 			sb.append(minus);
 		}
-		for (int i = offset; i < num.length(); i++) {
-			char c = num.charAt(i);
+		for (int i = offset; i < number.length(); i++) {
+			char c = number.charAt(i);
 			switch (c) {
 			case '.':
 				sb.append(currencyTable[0]);
@@ -179,7 +187,7 @@ public class ChineseNumberReader {
 			default:
 				int index = c - 48;
 				if (index < 0 || index > 9) {
-					throw new IllegalArgumentException("'" + num + "' is not a valid number.");
+					throw new IllegalArgumentException("'" + number + "' is not a valid number.");
 				}
 				sb.append(numberTable[c - 48]);
 			}
@@ -211,13 +219,13 @@ public class ChineseNumberReader {
 		}
 		StringBuilder sb = new StringBuilder();
 		int unitIndex = 0;
-		boolean hasUnitSingel = false;
+		boolean hasUnitSignal = false;
 		while (num > 0) {
 			int digit = (int) (num % 10);
 			int level = unitIndex / 4;
 			int newLevel = unitIndex % 4;
 			if (newLevel == 0 && level < 3) {
-				hasUnitSingel = false;
+				hasUnitSignal = false;
 			}
 			if (digit == 0) {
 				if (sb.length() > 0 && sb.charAt(0) != zero) {
@@ -225,7 +233,7 @@ public class ChineseNumberReader {
 				}
 			} else {
 				String unit = unitTable[unitIndex];
-				if (unit.length() > 1 && hasUnitSingel) {
+				if (unit.length() > 1 && hasUnitSignal) {
 					if (unit.length() >= 3) {
 						sb.insert(0, unit.subSequence(0, unit.length() - 1));
 					} else {
@@ -235,7 +243,7 @@ public class ChineseNumberReader {
 					sb.insert(0, unit);
 				}
 				sb.insert(0, numberTable[digit]);
-				hasUnitSingel = true;
+				hasUnitSignal = true;
 			}
 			unitIndex++;
 			num /= 10;
