@@ -10,7 +10,7 @@ import com.querydsl.sql.types.AbstractType;
 
 /**
  * 扩展类型：Java类中Integer映射数据库Varchar
- * @author Administrator
+ * @author Joey
  *
  */
 public class IntegerASVarcharType extends AbstractType<Integer> {

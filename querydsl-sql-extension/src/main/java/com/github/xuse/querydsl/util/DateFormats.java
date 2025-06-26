@@ -65,6 +65,9 @@ public abstract class DateFormats {
 	 */
 	public static final TLDateFormat DATE_TIME_CS = new TLDateFormat("yyyy-MM-dd HH:mm:ss");
 
+	/**
+	 *  定义一个线程局部变量的日期格式常量，用于日期时间的格式化，包括时区信息
+	 */
 	public static final TLDateFormat DATE_TIME_CS_WITH_ZONE = new TLDateFormat("yyyy-MM-dd HH:mm:ss Z");
 
 	/**

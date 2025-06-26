@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -57,7 +59,7 @@ public class CSVFileWriterTest {
 	@Test
 	public void testStaticParse() throws IOException, URISyntaxException {
 		URL url = this.getClass().getResource("/csv_escape.csv");
-		Files.lines(Path.of(url.toURI())).forEach(CsvFileReader::parse);
+		Files.lines(Paths.get(url.toURI())).forEach(CsvFileReader::parse);
 	}
 
 	@Test

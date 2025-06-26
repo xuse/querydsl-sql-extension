@@ -17,47 +17,59 @@ import com.querydsl.sql.RelationalPath;
  * @author Joey
  * @param <T> the type of entity
  */
-public interface RelationalPathEx<T> extends RelationalPath<T>{
+public interface RelationalPathEx<T> extends RelationalPath<T> {
 
 	/**
-	 *  @return 获得Bean转换器。
+	 * @return 获得Bean转换器。
 	 */
 	BeanCodec getBeanCodec();
 
 	/**
-	 *  @param path path of column
-	 *  @return 获得指定列（字段）的元数据描述
+	 * @param path path of column
+	 * @return 获得指定列（字段）的元数据描述
 	 */
 	ColumnMapping getColumnMetadata(Path<?> path);
 
 	/**
-	 *  根据名称获得path
-	 *  @param name of the path.(not column name)
-	 *  @return Path
+	 * 根据名称获得path
+	 * 
+	 * @param name of the path.(not column name)
+	 * @return Path
 	 */
 	Path<?> getColumn(String name);
 
 	/**
-	 *  获得各类约束(含索引)
-	 *  @return collection of Constraint
+	 * 获得各类约束(含索引)
+	 * 
+	 * @return collection of Constraint
 	 */
 	Collection<Constraint> getConstraints();
 
 	/**
-	 *  @return 表的字符集
+	 * @return 表的字符集
 	 */
 	Collate getCollate();
 
 	/**
-	 *  @return 表注释
+	 * @return 表注释
 	 */
 	String getComment();
 
 	/**
-	 *  @return 表分区配置
+	 * @return 表分区配置
 	 */
 	PartitionBy getPartitionBy();
 
-
+	/**
+	 * Retrieves the instance of initialization data.
+	 * <p>
+	 * This method is designed to provide access to shared initialization data that
+	 * may be required by various parts of the application.
+	 * The specific content and structure of the initialization data are
+	 * encapsulated within the returned {@link InitializeData} object.
+	 * 
+	 * @return An {@link InitializeData} object containing the initialization data /
+	 *         返回包含初始化数据的{@link InitializeData}对象
+	 */
 	InitializeData getInitializeData();
 }

@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.init;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <h2>Database Operation Control Accompanied with the Entity Scanning</h2>
@@ -34,6 +35,7 @@ import lombok.Getter;
  * </ul>
  */
 @Getter
+@Setter
 public class ScanOptions {
 
 	private static final String DEFAULT_DISTRIBUTED_LOCK_NAME = "lock#table_initialize";
