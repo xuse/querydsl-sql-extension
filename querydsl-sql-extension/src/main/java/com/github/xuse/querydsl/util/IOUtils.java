@@ -57,7 +57,6 @@ public class IOUtils {
 	 * 
 	 * @param file file
 	 * @param data data
-	 * @throws IOException If encounter IOException
 	 */
 	public static void saveAsFile(File file, byte[] data) {
 		saveAsFile(file, false, data);
@@ -97,7 +96,6 @@ public class IOUtils {
 	 * @param url     资源位置
 	 * @param charset 字符编码，可以传入null
 	 * @return 读到的文本
-	 * @throws IOException IO操作异常
 	 */
 	@SneakyThrows
 	public static String toString(URL url, Charset charset) {
@@ -179,7 +177,6 @@ public class IOUtils {
 	/**
 	 * @param file file
 	 * @param iss  iss
-	 * @throws IOException If encounter IOException
 	 */
 	@SneakyThrows
 	public static void saveAsFile(File file, InputStream... iss) {
@@ -196,7 +193,6 @@ public class IOUtils {
 	 * 
 	 * @param texts texts
 	 * @param file  file
-	 * @throws IOException If encounter IOException
 	 */
 	public static void saveAsFile(File file, String... texts) {
 		saveAsFile(file, Charset.defaultCharset(), texts);
@@ -306,7 +302,6 @@ public class IOUtils {
 	 * 
 	 * @param obj    obj
 	 * @param output output
-	 * @return boolean
 	 */
 	@SneakyThrows
 	public static void saveObject(Serializable obj, OutputStream output) {
@@ -319,7 +314,6 @@ public class IOUtils {
 	 * 
 	 * @param obj  obj
 	 * @param file file
-	 * @return boolean
 	 */
 	@SneakyThrows
 	public static void saveObject(Serializable obj, File file) {
@@ -546,7 +540,6 @@ public class IOUtils {
 	 * Save the specified stream as a temporary file.
 	 * 
 	 * @param is is
-	 * @throws IOException If encounter IOException
 	 * @return File
 	 */
 	@SneakyThrows

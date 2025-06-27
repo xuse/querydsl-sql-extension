@@ -68,7 +68,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 
 	private static final long serialVersionUID = -3451422354253107107L;
 
-	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION, ", count(*) over() ");
+	private static final QueryFlag rowCountFlag = new QueryFlag(QueryFlag.Position.AFTER_PROJECTION,
+			", count(*) over() ");
 
 	private final ConfigurationEx configEx;
 
@@ -142,14 +143,14 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			endContext(parentContext);
 		}
 	}
-	
+
 	/**
-	 * @deprecated use {@link com.github.xuse.querydsl.sql.SQLQueryAlter.fetchResults()} please.
-	 * @return Pair<Integer,List<T>>
+	 * @deprecated use {@link #fetchResults()} instead.
+	 * @return Pair of Integer,List&lt;T&gt;
 	 */
-	public Pair<Integer,List<T>> fetchAndCount(){
-		int count=(int)fetchCount();
-		if(count==0) {
+	public Pair<Integer, List<T>> fetchAndCount() {
+		int count = (int) fetchCount();
+		if (count == 0) {
 			return Pair.of(count, Collections.emptyList());
 		}
 		return Pair.of(count, fetch());
@@ -369,7 +370,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 
 		protected final RT fetch(ResultSet rs) throws SQLException {
-			int argSize= this.argSize;
+			int argSize = this.argSize;
 			Configuration configuration = SQLQueryAlter.this.configuration;
 			Object[] args = new Object[argSize];
 			for (int i = 0; i < argSize; i++) {
@@ -390,6 +391,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 */
 	final class WildcardAllResult<RT> extends AbstractProjection<RT> {
 		private final int columnSize;
+
 		public WildcardAllResult(int columnSize) {
 			super();
 			this.columnSize = columnSize;
@@ -398,7 +400,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		@SuppressWarnings("unchecked")
 		@Override
 		protected final RT fetch(ResultSet rs) throws SQLException {
-			int size=this.columnSize;
+			int size = this.columnSize;
 			Object[] row = new Object[size];
 			for (int i = 0; i < size; i++) {
 				row[i] = rs.getObject(i + 1);
@@ -406,6 +408,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			return (RT) row;
 		}
 	}
+
 	/*
 	 * 仅获取结果集第一列的Path数据类型
 	 */
@@ -423,6 +426,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			return configuration.get(rs, path, 1, expr.getType());
 		}
 	}
+
 	/*
 	 * 仅获取结果集第一列的原始数据类型
 	 */
@@ -444,7 +448,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 */
 	public SQLQueryAlter<T> setMaxRows(int maxRows) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(), options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), maxRows, options.getQueryTimeout(),
+				options.getFetchSize()));
 		return this;
 	}
 
@@ -468,7 +473,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 */
 	public SQLQueryAlter<T> setFetchSize(int fetchSize) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), options.getQueryTimeout(), fetchSize));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(),
+				options.getQueryTimeout(), fetchSize));
 		return this;
 	}
 
@@ -480,7 +486,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	 */
 	public SQLQueryAlter<T> setQueryTimeout(int queryTimeout) {
 		StatementOptions options = this.statementOptions;
-		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout, options.getFetchSize()));
+		setStatementOptions(new StatementOptions(options.getMaxFieldSize(), options.getMaxRows(), queryTimeout,
+				options.getFetchSize()));
 		return this;
 	}
 
@@ -552,9 +559,9 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 *  Get the results as a JDBC ResultSet
+	 * Get the results as a JDBC ResultSet
 	 *
-	 *  @return results as ResultSet
+	 * @return results as ResultSet
 	 */
 	public ResultSet getResults() {
 		Connection conn;
@@ -617,10 +624,10 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 		return new SQLBindingsAlter(serializer.toString(), args, serializer.getConstantPaths());
 	}
-	
-    public SQLBindings getSQL(boolean forCount) {
-        return getSQL(serialize(forCount));
-    }
+
+	public SQLBindings getSQL(boolean forCount) {
+		return getSQL(serialize(forCount));
+	}
 
 	@Override
 	public SQLQueryAlter<T> clone() {
@@ -696,6 +703,19 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		return queryMixin.offset(offset);
 	}
 
+	/**
+	 * 设置查询路由策略并返回当前实例，支持链式调用。
+	 * <p>
+	 * Sets the query routing strategy and returns the current instance to support
+	 * method chaining.
+	 * 
+	 * @param routing 要应用的路由策略。
+	 *                <p>
+	 *                The routing strategy to apply.
+	 * @return 当前SQL查询修改器实例。
+	 *         <p>
+	 *         The current SQL query alter instance.
+	 */
 	public SQLQueryAlter<T> withRouting(RoutingStrategy routing) {
 		this.routing = routing;
 		return this;

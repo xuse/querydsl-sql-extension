@@ -3,7 +3,6 @@ package com.github.xuse.querydsl.util;
 import java.lang.reflect.InvocationTargetException;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -13,8 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * 异常处理工具
  *
@@ -23,21 +20,15 @@ import lombok.extern.slf4j.Slf4j;
 public class Exceptions {
 	/**
 	 * Retry executing the specified function until it returns true or the maximum
-	 * number of retries is reached. If an exception is thrown during execution, the
-	 * process will be interrupted.
+	 * number of attempts is reached. 
 	 * @param times Retry times.
 	 * @param input The parameter.
-	 * @param The specified function
+	 * @param retryInvoke The specified function
 	 * @return Success  or not.
 	 * @param <T> The type of target object.
 	 */
 	public static <T> boolean retry(int times, T input, Predicate<T> retryInvoke) {
-		for (int i = 0; i < times; i++) {
-			if (retryInvoke.test(input)) {
-				return true;
-			}
-		}
-		return false;
+		return RetryPolicy.newBuilder().nowait().maxAttempts(times).build().executeUntilReturnTrue(retryInvoke, input);
 	}
 
 	/**

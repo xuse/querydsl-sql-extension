@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.util;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -107,7 +106,7 @@ public class StringUtils {
 
 	////////////
 	/**
-	 * @param has   space character between bytes.
+	 * @param hasSpace Has space character between bytes.
 	 * @param bytes bytes
 	 * @return Get hex string from byte array(lower cases).
 	 */
@@ -119,8 +118,8 @@ public class StringUtils {
 	}
 
 	/**
-	 * @param has   space character between bytes.
 	 * @param bytes bytes
+	 * @param hasSpace  Has space character between bytes.
 	 * @return Get hex string from byte array(upper cases).
 	 */
 	public final static String toHexStringUppercase(byte[] bytes, boolean hasSpace) {
@@ -1844,7 +1843,7 @@ public class StringUtils {
 	/**
 	 * 计算MD5摘要
 	 * 
-	 * @param file file
+	 * @param in file data
 	 * @return 32位十六进制数的MD5值
 	 */
 	public final static String getMD5(InputStream in) {
@@ -2062,7 +2061,6 @@ public class StringUtils {
 	 * 
 	 * @param hexString hexString
 	 * @param hasSpace  hasSpace
-	 * @throws IOException If encounter IOException
 	 * @return byte[] value
 	 */
 	public static byte[] fromHex(char[] hexString, boolean hasSpace){

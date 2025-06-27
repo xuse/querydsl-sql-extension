@@ -192,7 +192,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 			}
 		}
 		// Calc names and range.
-		if (effected.isEmpty()) {
+		if (lastEffected==null) {
 			return null;
 		}
 		String firstName = effected.firstKey();

@@ -163,7 +163,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 					}
 					return oldValue;
 				}
-				Assert.isTrue(entries != null, "No entries segment");
+				Assert.notNull(entries, "No entries segment");
 				entries.add(value);
 				return null;
 			}

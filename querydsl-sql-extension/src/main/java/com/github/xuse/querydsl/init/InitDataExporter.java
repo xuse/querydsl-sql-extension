@@ -119,11 +119,11 @@ public class InitDataExporter {
 					break;
 				}
 			}
-			InitializeData anno = modelClass.getAnnotation(InitializeData.class);
-			if (anno == null) {
-				anno = obj.getType().getAnnotation(InitializeData.class);
-			}
 			if (obj != null) {
+				InitializeData anno = modelClass.getAnnotation(InitializeData.class);
+				if (anno == null) {
+					anno = obj.getType().getAnnotation(InitializeData.class);
+				}
 				export0(obj, anno);
 			}
 		} catch (SQLException e) {

@@ -125,12 +125,12 @@ public class CsvFileReader implements Closeable {
 		headersHolder.IndexByName.clear();
 		if (headers != null) {
 			headersHolder.Length = headers.length;
+			// use headersHolder.Length here in case headers is null
+			for (int i = 0; i < headersHolder.Length; i++) {
+				headersHolder.IndexByName.put(headers[i], Integer.valueOf(i));
+			}
 		} else {
 			headersHolder.Length = 0;
-		}
-		// use headersHolder.Length here in case headers is null
-		for (int i = 0; i < headersHolder.Length; i++) {
-			headersHolder.IndexByName.put(headers[i], Integer.valueOf(i));
 		}
 	}
 
