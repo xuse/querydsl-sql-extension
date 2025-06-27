@@ -280,7 +280,7 @@ public class ArrayUtilsTest {
 
 		bytes = ArrayUtils.subArray(BYTE_ARRAY, 3);
 		assertEquals(3, bytes.length);
-		assertNull(ArrayUtils.subArray((byte[]) null, 1, 3));
+		assertArrayEquals(new byte[0],ArrayUtils.subArray((byte[]) null, 1, 3));
 		assertArrayEquals(new byte[] { 0x01, 0x02, 0x03 }, ArrayUtils.subArray(BYTE_ARRAY, -1, 4));
 		assertArrayEquals(new byte[0], ArrayUtils.subArray(BYTE_ARRAY, 2, 1));
 

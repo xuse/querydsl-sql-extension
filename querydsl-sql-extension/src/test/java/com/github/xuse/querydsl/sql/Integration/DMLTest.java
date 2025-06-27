@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.sql.Integration;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
@@ -455,20 +456,19 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void testConditionBean() {
 		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
-		AvsAuthParams p = new AvsAuthParams();
-		p.setAuthContent("123");
-//		p.setAuthType(0);
-		p.setLimit(100);
-		p.setOffset(2);
-//		p.setDateGt(new Date());
-//		p.setDateLoe(new Date());
-//		p.setCreateTime(new Date[] { new Date(0), new Date() });
-		p.setOrder("authType");
-		p.setOrderAsc(true);
-		p.setFetchTotal(false);
-		Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(p);
-		System.err.println(result.getFirst());
-		System.err.println(result.getSecond());
+		assertThrows(IllegalArgumentException.class,()->factory.asRepository(t).findByCondition(new Aaa()));
+		
+		Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+			AvsAuthParams.builder().authContent("123").limit(100).offset(2).order("authType").orderAsc(true).fetchTotal(false).build()
+		);
+		
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).build()
+		);
+		
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).fetchTotal(true).build()
+		);
 	}
 
 	@Test

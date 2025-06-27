@@ -5,7 +5,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,7 +52,7 @@ public class RetryPolicy {
 	private final Class<? extends Throwable> retryFor;
 
 	/** 当前重试次数 The current retry attempt count */
-	private int attempts = 0;
+	private int attempts;
 
 	final RetryDelayCalculator delay;
 
@@ -64,6 +63,11 @@ public class RetryPolicy {
 		Assert.notNull(retryFor);
 	}
 
+	
+	public int getAttempts() {
+		return attempts;
+	}
+	
 	/**
 	 * Execute the retry task until it returns true.
 	 * <p>
@@ -77,6 +81,11 @@ public class RetryPolicy {
 	 *         the task succeeded after all retries
 	 */
 	public <P> boolean executeUntilReturnTrue(Predicate<P> task, P input) {
+		attempts = 0;
+		return executeUntilReturnTrue0(task,input);
+	}
+		
+	private <P> boolean executeUntilReturnTrue0(Predicate<P> task, P input) {
 		attempts++;
 		try {
 			boolean result = task.test(input);
@@ -90,7 +99,7 @@ public class RetryPolicy {
 				if (wait > 0) {
 					doSleep(wait);
 				}
-				return executeUntilReturnTrue(task, input);
+				return executeUntilReturnTrue0(task, input);
 			} else {
 				throw t;
 			}
@@ -101,7 +110,7 @@ public class RetryPolicy {
 			if (wait > 0) {
 				doSleep(wait);
 			}
-			return executeUntilReturnTrue(task, input);
+			return executeUntilReturnTrue0(task, input);
 		} else {
 			return false;
 		}
@@ -115,6 +124,11 @@ public class RetryPolicy {
 	 * @param task 重试任务 / The retry task
 	 */
 	public void execute(Runnable task) {
+		attempts = 0;
+		execute0(task);
+	}
+	
+	private void execute0(Runnable task) {
 		attempts++;
 		try {
 			task.run();
@@ -125,7 +139,7 @@ public class RetryPolicy {
 				if (wait > 0) {
 					doSleep(wait);
 				}
-				execute(task);
+				execute0(task);
 			} else {
 				throw t;
 			}
@@ -142,6 +156,11 @@ public class RetryPolicy {
 	 * @return 返回值 / The return value
 	 */
 	public <T> T execute(Callable<T> task) {
+		attempts = 0;
+		return execute0(task);
+	}
+	
+	private <T> T execute0(Callable<T> task) {
 		attempts++;
 		try {
 			return task.call();
@@ -152,7 +171,7 @@ public class RetryPolicy {
 				if (wait > 0) {
 					doSleep(wait);
 				}
-				return execute(task);
+				return execute0(task);
 			} else {
 				if (t instanceof Error) {
 					throw (Error) t;
@@ -168,33 +187,6 @@ public class RetryPolicy {
 	 * <p>
 	 * 执行重试任务。
 	 * 
-	 * @param task 重试任务 / The retry task
-	 * @param <T>  返回值类型 / The return type
-	 * @return 返回值 / The return value
-	 */
-	public <T> T execute(Supplier<T> task) {
-		attempts++;
-		try {
-			return task.get();
-		} catch (Throwable t) {
-			if (attempts <= maxAttempts && retryFor.isInstance(t)) {
-				long wait = delay.getDelay(attempts);
-				log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
-				if (wait > 0) {
-					doSleep(wait);
-				}
-				return execute(task);
-			} else {
-				throw t;
-			}
-		}
-	};
-
-	/**
-	 * Execute the retry task.
-	 * <p>
-	 * 执行重试任务。
-	 * 
 	 * @param task  重试任务 / The retry task
 	 * @param <T>   返回值类型 / The return type
 	 * @param <P>   参数类型 / The type of the parameter
@@ -202,6 +194,11 @@ public class RetryPolicy {
 	 * @return 返回值 / The return value
 	 */
 	public <T, P> T execute(Function<P, T> task, P param) {
+		attempts = 0;
+		return execute0(task,param);
+	}
+	
+	private <T, P> T execute0(Function<P, T> task, P param) {
 		attempts++;
 		try {
 			return task.apply(param);
@@ -212,7 +209,7 @@ public class RetryPolicy {
 				if (wait > 0) {
 					doSleep(wait);
 				}
-				return execute(task, param);
+				return execute0(task, param);
 			} else {
 				throw t;
 			}
@@ -220,7 +217,7 @@ public class RetryPolicy {
 	};
 
 	/** 线程等待 / Thread waiting */
-	private static final boolean doSleep(long l) {
+	static final boolean doSleep(long l) {
 		try {
 			Thread.sleep(l);
 			return true;

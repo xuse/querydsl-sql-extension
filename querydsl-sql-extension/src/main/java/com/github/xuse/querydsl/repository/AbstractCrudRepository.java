@@ -290,7 +290,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			}
 			Condition condition = field.getAnnotation(Condition.class);
 			Order order=field.getAnnotation(Order.class);
-			if(order!=null) {
+			if(order!=null && value!=null) {
 				List<Pair<Path<?>, Boolean>> orders = processOrder(value, order, fields, values, bindings);
 				for (Pair<Path<?>, Boolean> pair : orders) {
 					ComparableExpressionBase<?> expr = (ComparableExpressionBase<?>) pair.getFirst();
@@ -338,6 +338,9 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 
 	private List<Pair<Path<?>,Boolean>> processOrder(Object value, Order order,Field[] fields,Object[] values,Map<String, Path<?>> bindings) {
 		String fieldNames=String.valueOf(value);
+		if(StringUtils.isBlank(fieldNames)) {
+			return Collections.emptyList();
+		}
 		Object sortValue = null;
 		if(StringUtils.isNotEmpty(order.sortField())) {
 			for(int i=0;i<fields.length;i++) {
@@ -353,7 +356,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		for(String pathName:StringUtils.split(fieldNames,',')) {
 			Path<?> path=bindings.get(pathName);
 			if (path == null) {
-				throw Exceptions.illegalArgument("Not found path {}", pathName);
+				throw Exceptions.illegalArgument("Not found path {}", fieldNames);
 			}
 			result.add(Pair.of(path, asc));
 		}

@@ -1,17 +1,25 @@
 package com.github.xuse.querydsl.entity;
 
 import java.util.Date;
+import java.util.List;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.annotation.query.Order;
 import com.querydsl.core.types.Ops;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 /**
  *  满足这样一种场景。有一些固定的组合条件查询。（比如从前端页面传入若干字段）其中一些字段可以为空，即不作为过滤条件。凡是传入有效数值的条件，都要参与查询过滤。
  * 为此，可以定义一个Bean，将查询条件固定下来。通过@Condition注解，配置每个条件的运算操作符。
  * @author jiyi
 */
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @ConditionBean(limitField = "limit",offsetField = "offset",isRequireTotalField = "fetchTotal")
 public class AvsAuthParams {
 	
@@ -32,6 +40,9 @@ public class AvsAuthParams {
 	
 	@Condition(value=Ops.LOE,path="createTime")
 	private Date dateLoe;
+	
+	@Condition(value=Ops.IN,path="id")
+	private List<Integer> ids;
 	
 	@Order(sortField = "orderAsc")
 	private String order;
