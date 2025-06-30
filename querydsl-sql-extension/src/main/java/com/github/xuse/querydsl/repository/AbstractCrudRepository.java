@@ -1,7 +1,9 @@
 package com.github.xuse.querydsl.repository;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +27,7 @@ import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.github.xuse.querydsl.sql.expression.FieldCollector;
+import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Assert;
@@ -435,6 +438,9 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 				}
 			}
 			return false;
+		} else if(operator==Ops.IS_NULL || operator==Ops.IS_NOT_NULL) {
+			//Only if input value is TRUE or '1', the condition will take effect.
+			return !(Boolean.TRUE.equals(value) || "1".equals(value));
 		} else {
 			return cm.test(value);
 		}
@@ -443,12 +449,16 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void appendCondition(SQLQueryAlter<T> select, Object value, Path<?> path, Ops ops) {
 		if (ops == Ops.IN) {
-			if (!hasElements(value, 1)) {
+			if (value == null || elements(value)<1) {
 				return;
 			}
 		} else if (ops == Ops.BETWEEN) {
-			if (!hasElements(value, 2)) {
+			int paramCount=elements(value);
+			if (value == null || paramCount==0) {
 				return;
+			}
+			if (paramCount != 2) {
+				throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
 			}
 		}
 		switch(ops) {
@@ -457,8 +467,8 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 					SimpleExpression exp = (SimpleExpression) path;
 					if (value instanceof Collection<?>) {
 						select.where(exp.in((Collection<?>) value));
-					} else if (value instanceof Object[]) {
-						select.where(exp.in((Object[]) value));
+					} else if (value.getClass().isArray()) {
+						select.where(exp.in(Arrays.asList(ArrayUtils.toWrapped(value))));	
 					}
 					break;
 				}
@@ -477,7 +487,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 					if (path instanceof NumberExpression) {
 						NumberExpression exp = (NumberExpression) path;
 						select.where(exp.lt((Number) value));
-					} else {
+					} else if(value!=null){
 						ComparableExpression exp = (ComparableExpression) path;
 						select.where(exp.lt((Comparable) value));
 					}
@@ -488,7 +498,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 					if (path instanceof NumberExpression) {
 						NumberExpression exp = (NumberExpression) path;
 						select.where(exp.loe((Number) value));
-					} else {
+					} else if(value!=null){
 						ComparableExpression exp = (ComparableExpression) path;
 						select.where(exp.loe((Comparable) value));
 					}
@@ -499,7 +509,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 					if (path instanceof NumberExpression) {
 						NumberExpression exp = (NumberExpression) path;
 						select.where(exp.gt((Number) value));
-					} else {
+					} else if(value!=null){
 						ComparableExpression exp = (ComparableExpression) path;
 						select.where(exp.gt((Comparable) value));
 					}
@@ -510,7 +520,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 					if (path instanceof NumberExpression) {
 						NumberExpression exp = (NumberExpression) path;
 						select.where(exp.goe((Number) value));
-					} else {
+					} else if(value!=null){
 						ComparableExpression exp = (ComparableExpression) path;
 						select.where(exp.goe((Comparable) value));
 					}
@@ -521,15 +531,9 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 					ComparableExpression exp = (ComparableExpression) path;
 					if (value instanceof Collection<?>) {
 						List<? extends Comparable> list = toList((Collection<Comparable>) value);
-						if (list.size() < 2) {
-							throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
-						}
 						select.where(exp.between(list.get(0), list.get(1)));
 					} else if (value instanceof Object[]) {
 						Object[] binValues = (Object[]) value;
-						if (binValues.length < 2) {
-							throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
-						}
 						select.where(exp.between((Comparable) binValues[0], (Comparable) binValues[1]));
 					}
 					break;
@@ -600,17 +604,14 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@SuppressWarnings({ "rawtypes" })
-	private boolean hasElements(Object value, int minElement) {
-		if (value == null) {
-			return false;
-		}
+	private int elements(Object value) {
 		if (value instanceof Collection) {
-			return ((Collection) value).size() >= minElement;
+			return ((Collection) value).size();
 		}
-		if (value instanceof Object[]) {
-			return ((Object[]) value).length >= minElement;
+		if(value.getClass().isArray()) {
+			return Array.getLength(value);
 		}
-		return false;
+		return -1;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

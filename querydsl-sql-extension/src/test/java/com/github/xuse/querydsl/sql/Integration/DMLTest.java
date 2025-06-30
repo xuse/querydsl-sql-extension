@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.AvsAuthParams;
+import com.github.xuse.querydsl.entity.AvsAuthParamsEr;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.CaAsset;
 import com.github.xuse.querydsl.entity.Foo;
@@ -452,23 +453,92 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		System.err.println("返回:" + count);
 
 	}
+	@Test
+	public void testConditionBeanException() {
+		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
+		assertThrows(UnsupportedOperationException.class, ()->{
+			Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+					AvsAuthParamsEr.builder().authContent("a").build()
+			);
+		});
+		assertThrows(IllegalArgumentException.class, ()->{
+			Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+					AvsAuthParams.builder().createTime(new Date[] {new Date()}).build()
+			);
+		});
+	}
 
 	@Test
 	public void testConditionBean() {
 		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
+		
+		factory.getMetadataFactory().truncate(t).execute();
+		
+		
 		assertThrows(IllegalArgumentException.class,()->factory.asRepository(t).findByCondition(new Aaa()));
 		
 		Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
 			AvsAuthParams.builder().authContent("123").limit(100).offset(2).order("authType").orderAsc(true).fetchTotal(false).build()
 		);
+		assertTrue(result.getSecond().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
-				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).build()
+				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).authTypeGoe(1).devId(null).build()
 		);
+		assertTrue(result.getSecond().isEmpty());
+		System.out.println("--------------");
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).authType(2).fetchTotal(true).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
-				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).fetchTotal(true).build()
+				AvsAuthParams.builder().ids2(new int[] {1,2,3,4}).channelNo(2).authTypeLt(2).devId("001").fetchTotal(true).build()
 		);
+		assertTrue(result.getSecond().isEmpty());
+		
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList()).createTime(new Date[3]).devIdGoe("001").devIdLoe("005").fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+		
+		
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList()).createTime2(Arrays.asList(new Date(),new Date())).devIdGoe("001").devIdLoe("005").fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+		
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList()).createTime(new Date[3]).devIdGt("003").devIdLt("005").fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+		
+		
+		System.out.println("======");
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().ids(Arrays.asList()).channelNo(0).createTime(new Date[0]).authTypeLoe(2).fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+		
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().devIdEndWith("z").devIdStartWith("a").fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().devIdEndWithIC("z").devIdStartWithIC("a").fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+		System.out.println("======");
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().devIdLike("z%z").devIdIsNotNull(true).fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().devIdLikeIC("z").devIdIsNull(true).fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
 	}
 
 	@Test
