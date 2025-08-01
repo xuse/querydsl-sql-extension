@@ -12,6 +12,7 @@ import com.github.xuse.querydsl.util.SnowflakeIdWorker;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.sql.PrimaryKey;
 import com.querydsl.sql.RelationalPath;
 
@@ -75,6 +76,22 @@ public abstract class AbstractMapperSupport {
 					return uuid2String32(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
 				}
 				break;
+			case VERSION:
+				if (scenario == SCENARIO_INSERT) {
+					Class<?> type= metadata.getType();
+					if(type==Long.class || type==Long.TYPE) {
+						return 1L;
+					}else {
+						return 1;
+					}
+				}else if(scenario==SCENARIO_UPDATE){
+					Path<?> path= metadata.getPath();
+					if(path instanceof NumberPath) {
+						return ((NumberPath<?>)path).add(Expressions.ONE);
+					}else {
+						throw Exceptions.illegalArgument("A 'Version' field must be defined as a NumberPath. field={}", metadata.getColumn());
+					}
+				}
 			case SNOWFLAKE:
 				if (scenario == SCENARIO_INSERT) {
 					SnowflakeIdWorker worker;

@@ -20,6 +20,7 @@ import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.annotation.partition.HashPartition;
 import com.github.xuse.querydsl.annotation.partition.ListPartition;
 import com.github.xuse.querydsl.annotation.partition.RangePartition;
+import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.column.ColumnBuilder;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.PathMapping;
@@ -71,7 +72,9 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 
 	final Map<Path<?>, ColumnMapping> columnMetadata = new LinkedHashMap<>();
 
-	private transient Path<?>[] columns;
+	private volatile transient List<Path<?>> columns;
+	
+	private volatile transient List<ColumnMapping> autoColumns;
 
 	/**
 	 * path name &lt;-&gt; path
@@ -274,10 +277,10 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		}
 	}
 
-	protected Path<?>[] initColumns(){
+	protected void initColumns(){
 		List<Entry<Path<?>, ColumnMetadata>> list = new ArrayList<>();
-		for (Path<?> p : columnMetadata.keySet()) {
-			list.add(new Entry<>(p, getMetadata(p)));
+		for (Map.Entry<Path<?>, ColumnMapping> e : columnMetadata.entrySet()) {
+			list.add(new Entry<>(e.getKey(), e.getValue().getColumn()));
 		}
 		list.sort((a, b) -> {
 			ColumnMetadata ma = a.getValue();
@@ -295,8 +298,18 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 			}
 			return Integer.compare(indexA, indexB);
 		});
-		Path<?>[] columns=list.stream().map(Entry::getKey).toArray(Path<?>[]::new);
-		return columns;
+		int size=list.size();
+		Path<?>[] columns=new Path<?>[size];
+		List<ColumnMapping> autoColumns=new ArrayList<>();
+		for(int i=0;i<size;i++) {
+			Entry<Path<?>, ColumnMetadata> e=list.get(i);
+			ColumnMapping column=getColumnMetadata(columns[i]=e.getKey());
+			if(column.getGenerated()!=null) {
+				autoColumns.add(column);
+			}
+		}
+		this.autoColumns = autoColumns.isEmpty() ? Collections.emptyList() : autoColumns;
+		this.columns = Arrays.asList(columns);
 	}
 
 	protected <P extends Path<?>> P addMetadata(P path, ColumnMapping metadata) {
@@ -307,6 +320,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	
 	protected void clearColumnsCache() {
 		this.columns=null;
+		this.autoColumns=null;
 	}
 
 	@Override
@@ -422,19 +436,20 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		return ((QBeanEx<T>) getProjection()).getBeanCodec();
 	}
 
-	public Path<?>[] all() {
+	@Override
+	public List<Path<?>> getColumns() {
 		if(columns==null) {
-			return columns = initColumns();
+			initColumns();
 		}
 		return columns;
 	}
 
 	@Override
-	public List<Path<?>> getColumns() {
-		if(columns==null) {
-			return Arrays.asList(columns=initColumns());
+	public List<ColumnMapping> getAutoColumns() {
+		if (autoColumns == null) {
+			initColumns();
 		}
-		return Arrays.asList(columns);
+		return autoColumns;
 	}
 
 	@Override
@@ -481,7 +496,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		Class<?> QClz = this.getClass();
 		try {
 			int count = 1;
-			for (Field field : QClz.getDeclaredFields()) {
+			for (Field field : Util.getDeclaredFields(QClz)) {
 				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}
@@ -667,8 +682,8 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		t.partitionBy = this.partitionBy;
 		t.primaryKey = this.primaryKey;
 		t.columnMetadata.putAll(this.columnMetadata);
-		Path<?>[] columns = all();
-		t.columns = Arrays.copyOf(columns, columns.length);
+		t.columns = new ArrayList<>(getColumns());
+		t.autoColumns=new ArrayList<>(getAutoColumns());
 		t.bindingsMap.putAll(this.bindingsMap);
 		t.constraints.addAll(this.constraints);
 		t.foreignKeys.addAll(this.foreignKeys);
@@ -684,20 +699,27 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		t.partitionBy = this.partitionBy;
 		
 		Map<Path<?>,Path<?>> pathMapping=new HashMap<>();
-		Path<?>[] columns=all();
-		Path<?>[] newColumns=new Path<?>[columns.length];
-		t.columns = newColumns;
-		for (int i = 0; i < columns.length; i++) {
+		List<Path<?>> columns=getColumns();
+		int size=columns.size();
+		Path<?>[] newColumns=new Path<?>[size];
+		t.columns = Arrays.asList(newColumns);
+		List<ColumnMapping> autoColumns=new ArrayList<>();
+		for (int i = 0; i < size; i++) {
 			// 重建Path
-			Path<?> p = columns[i];
+			Path<?> p = columns.get(i);
 			String name=p.getMetadata().getName();
 			Path<?> newPath = TypeUtils.createPathByType(p.getType(), name, t);
 			newColumns[i] = newPath;
 			pathMapping.put(p, newPath);
 			t.bindingsMap.put(name, newPath);
-			t.columnMetadata.put(newPath, ((PathMapping) this.columnMetadata.get(p)).copyForPath(newPath));
 			
+			PathMapping newMapping = ((PathMapping) this.columnMetadata.get(p)).copyForPath(newPath);
+			t.columnMetadata.put(newPath, newMapping);
+			if(newMapping.getGenerated()!=null) {
+				autoColumns.add(newMapping);
+			}
 		}
+		t.autoColumns = autoColumns.isEmpty() ? Collections.emptyList() : autoColumns;
 		t.primaryKey = t.createPrimaryKey(replace(pathMapping,primaryKey.getLocalColumns()).toArray(new Path<?>[0]));
 		//约束是在DDL中用的，用旧的Path没有问题，不重建了
 		t.constraints.addAll(this.constraints);

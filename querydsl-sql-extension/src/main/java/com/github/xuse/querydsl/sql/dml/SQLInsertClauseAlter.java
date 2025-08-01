@@ -298,6 +298,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 	}
 	
+	@Override
     public SQLInsertClauseAlter addBatch() {
         if (subQueryBuilder != null) {
             subQuery = subQueryBuilder.select(values.toArray(new Expression[0])).clone();

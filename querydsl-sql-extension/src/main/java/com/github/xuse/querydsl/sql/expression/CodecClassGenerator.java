@@ -80,11 +80,16 @@ public class CodecClassGenerator implements Opcodes {
 		if(record){
 			try{
 				generateRecordInstance(beanType,cw,methods);
+				
+				
+				//TODO
+				
 			}catch(Exception e) {
 				throw Exceptions.toRuntime(e);
 			}
 		}else{
 			generateInstance(beanType,cw,methods);
+			generateCopy(beanType,cw,methods);
 		}
 		{
 			// 生成values方法
@@ -229,13 +234,15 @@ public class CodecClassGenerator implements Opcodes {
 
 
 	private void generateInstance(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) {
+		String type=getType(beanType);
+		
 		MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "newInstance", getMethodDesc(Object.class, Object[].class), null,
 				null);
-		mw.visitTypeInsn(NEW, getType(beanType));// S1
+		mw.visitTypeInsn(NEW, type);// S1
 		// 运行空构造方法
 		if (TypeUtils.getDeclaredConstructor(beanType) != null) {
 			mw.visitInsn(DUP);
-			mw.visitMethodInsn(INVOKESPECIAL, getType(beanType), "<init>", "()V", false);
+			mw.visitMethodInsn(INVOKESPECIAL, type, "<init>", "()V", false);
 		}
 		mw.visitVarInsn(ASTORE, 2);// 存入 V2
 		int index = 0;
@@ -264,12 +271,45 @@ public class CodecClassGenerator implements Opcodes {
 					ASMUtils.doWrap(mw, Primitives.toPrimitiveClass(target), target);
 				}
 			}
-			mw.visitMethodInsn(INVOKEVIRTUAL, getType(beanType), setter.getName(), getDesc(setter), false);
+			mw.visitMethodInsn(INVOKEVIRTUAL, type, setter.getName(), getDesc(setter), false);
 		}
 
 		mw.visitVarInsn(ALOAD, 2);// 创建对象并存入 S0
 		mw.visitInsn(ARETURN);
 		mw.visitMaxs(3, 3);
+		mw.visitEnd();
+	}
+
+	private void generateCopy(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) {
+		String type=getType(beanType);
+		//L0=this,L1=source,L2=target,L3=casted source,L4=casted target
+		MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "copy", getMethodDesc(void.class, Object.class,Object.class),null,null);
+		mw.visitVarInsn(ALOAD, 1);// stack1,  
+		mw.visitTypeInsn(CHECKCAST, type);// 类型转换
+		mw.visitVarInsn(ASTORE, 3);// stack1,
+		
+		mw.visitVarInsn(ALOAD, 2);// stack1,  
+		mw.visitTypeInsn(CHECKCAST, type);// 类型转换
+		mw.visitVarInsn(ASTORE, 4);// stack1,
+		
+		for (FieldProperty property : methods) {
+			Method setter = property.getSetter();
+			if (setter == null) {
+				// 轮空
+				continue;
+			}
+			Method getter = property.getGetter();
+			if(getter==null) {
+				continue;
+			}
+			
+			mw.visitVarInsn(ALOAD, 4);// S1,
+			mw.visitVarInsn(ALOAD, 3);// S2,
+			mw.visitMethodInsn(INVOKEVIRTUAL, type, getter.getName(), getDesc(getter), false);//S2
+			mw.visitMethodInsn(INVOKEVIRTUAL, type, setter.getName(), getDesc(setter), false);//S0
+		}
+		mw.visitInsn(RETURN);
+		mw.visitMaxs(1, 4);
 		mw.visitEnd();
 	}
 

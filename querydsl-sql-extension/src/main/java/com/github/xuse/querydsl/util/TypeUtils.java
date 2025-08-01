@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -19,10 +20,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import com.github.xuse.querydsl.spring.core.resource.Util;
+import com.github.xuse.querydsl.sql.expression.BeanCodec;
+import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.PathMetadataFactory;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.sql.RelationalPath;
+
+import lombok.SneakyThrows;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class TypeUtils {
@@ -103,6 +110,11 @@ public class TypeUtils {
 	private TypeUtils() {
 	}
 
+	private static volatile Class RECORD_CLASS;
+	private static volatile Method RECORD_GET_RECORD_COMPONENTS;
+	private static volatile Method RECORD_COMPONENT_GET_NAME;
+
+
 	/**
 	 * If it can be converted to type of class, convert it; otherwise, return
 	 * `null`.
@@ -122,11 +134,7 @@ public class TypeUtils {
 		}
 		return null;
 	}
-
-	private static volatile Class RECORD_CLASS;
-	private static volatile Method RECORD_GET_RECORD_COMPONENTS;
-	private static volatile Method RECORD_COMPONENT_GET_NAME;
-
+	
 	public static boolean isRecord(Class objectClass) {
 		Class superclass = objectClass.getSuperclass();
 		if (superclass == Object.class) {
@@ -204,16 +212,20 @@ public class TypeUtils {
 		}
 	}
 	
-    public static List<Field> getFields(Class<?> clazz) {
+    public static List<Field> getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<Field>();
         Class<?> c = clazz;
         while (c != Object.class) {
-            fields.addAll(Arrays.asList(c.getDeclaredFields()));
+            fields.addAll(Arrays.asList(Util.getDeclaredFields(c)));
             c = c.getSuperclass();
         }
         return fields;
     }
     
+    public static <T> void copyProperties(T a, T b, Class<T> type) {
+    	BeanCodec codec=BeanCodecManager.getInstance().getCodec(type);
+    	codec.copy(a, b);
+    }
 
 	/*
 	 * crate the path object according to the java type.
@@ -229,4 +241,16 @@ public class TypeUtils {
 		}
 		return SimpleCreator.apply(type, metadata);
 	}
+	
+	@SneakyThrows
+	public static RelationalPath<?> getMetaModel(Class<?> clz){
+		for (Field field : Util.getDeclaredFields(clz)) {
+			if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {
+				RelationalPath<?> obj = (RelationalPath<?>) field.get(null);
+				return obj;
+			}
+		}
+		return null;
+	}
+	
 }

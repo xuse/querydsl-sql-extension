@@ -12,7 +12,7 @@ import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.types.AbstractType;
 
 /**
- * 允许使用一个USIGNED INT或 BIGINT数据来存储IPv4地址.
+ * 允许使用一个USIGNED INT或 BIGINT数据来存储IPv4地址。这个算法和MySQL中的'INET_ATON' / 'INET_NTOA'函数兼容。
  * Note: In MySQL，it is able to use 'INET_ATON' / 'INET_NTOA' to convert between integer and ip string.   
  * @author Joey
  *

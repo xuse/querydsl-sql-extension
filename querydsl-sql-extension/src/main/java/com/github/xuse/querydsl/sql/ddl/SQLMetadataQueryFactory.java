@@ -66,7 +66,7 @@ public interface SQLMetadataQueryFactory {
 	/**
 	 *  Create a table deletion query.
 	 *  <p>
-	 *  生成删除表请求
+	 *  生成删除表请求。需要调用{@link DropTableQuery#execute()}才会实际操作。
 	 *
 	 *  @param <T>  the type of the table model.
 	 *  @param path  path of the table.
@@ -77,7 +77,7 @@ public interface SQLMetadataQueryFactory {
 	/**
 	 * Create a table truncation query.
 	 * <p>
-	 * 截断表（删除所有数据）
+	 * 截断表（删除所有数据）。需要调用{@link TruncateTableQuery#execute()}才会实际操作。
 	 * @param <T>  the type of the table model.
 	 * @param path path
 	 * @return TruncateTableQuery
@@ -85,7 +85,7 @@ public interface SQLMetadataQueryFactory {
 	<T> TruncateTableQuery truncate(RelationalPath<T> path);
 	
 	/**
-	 * Create a table truncation query.
+	 * Create a table truncation query. 需要调用{@link TruncateTableQuery#execute()}才会实际操作。
 	 * <p>
 	 * 截断表（删除所有数据）
 	 * @param <T>  the type of the table model.

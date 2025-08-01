@@ -16,17 +16,21 @@ import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.Foo;
+import com.github.xuse.querydsl.entity.FooHistory;
 import com.github.xuse.querydsl.entity.FooWith2ColumnPK;
 import com.github.xuse.querydsl.entity.FooWithoutPK;
 import com.github.xuse.querydsl.entity.StateMachine;
+import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.repository.LambdaQueryWrapper;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.ComparableExpression;
@@ -50,6 +54,7 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 	
 	@Test
 	public void testLoadBatchError() {
+		LambdaTable<FooWithoutPK> table=() -> FooWithoutPK.class;
 		CRUDRepository<FooWithoutPK, String> repo = factory.asRepository(() -> FooWithoutPK.class);
 		int count = 0;
 		try {
@@ -152,8 +157,9 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 				// .set(Foo::getVolume).to(Foo::getId, id-> id.multiply(100))
 
 				// 相当于 set volume = volume * id
-				.set(Foo::getVolume).to(Foo::getId, (volume, id) -> volume.multiply(id.add(2))).set(Foo::getCode)
-				.concat("_suffix").execute();
+				.set(Foo::getVolume).to(Foo::getId, (volume, id) -> volume.multiply(id.add(2)))
+				.set(Foo::getCode).concat("_suffix")
+				.execute();
 	}
 
 	/**
@@ -379,5 +385,45 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 			System.out.println(f);
 		}
 
+	}
+	
+	/**
+	 * 通过继承关系，实现A表变化的每个版本数据都写入到B表。
+	 * daiyanzyheng
+	 */
+	@Test
+	public void testExtendsBean() {
+		LambdaTable<Foo> t=()->Foo.class;
+		StringLambdaColumn<Foo> cCode=Foo::getCode;
+		LambdaColumn<Foo,Gender> cGender=Foo::getGender;
+		
+		factory.getMetadataFactory().truncate(t).execute();
+		factory.getMetadataFactory().truncate(()->FooHistory.class).execute();
+		
+		{
+			Foo foo=new Foo();
+			foo.setCode("AAA");
+			foo.setContent("Comments");
+			foo.setGender(Gender.MALE);
+			foo.setName("Test object");
+			foo.setVolume(100);
+			factory.insert(t).populate(foo).execute();	
+		}
+		{
+			Foo data=factory.selectFrom(t).where(cCode.eq("AAA")).fetchFirst();
+			
+			FooHistory history=new FooHistory();
+			TypeUtils.copyProperties(data, history, Foo.class);
+			System.out.println(history);
+			history.setAction("更新 gender=FEMALE");
+			history.setSource("业务10000需要");
+			
+			//记录历史的数据更新
+			factory.insert(()->FooHistory.class).populate(history).execute();
+			factory.update(t).set(cGender, Gender.FEMALE)
+			.where(cCode.eq("AAA"))
+			.execute();
+		}
+		
 	}
 }

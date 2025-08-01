@@ -55,7 +55,8 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		this.configEx = configuration;
 	}
 
-	public SQLDeleteClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration, RelationalPath<?> entity) {
+	public SQLDeleteClauseAlter(Supplier<Connection> connection, ConfigurationEx configuration,
+			RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
 	}
@@ -181,9 +182,11 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		populatePrimaryKey0(bean, Mappers.getNormal(tuple));
 		return this;
 	}
-	
+
 	/*
-	 * 父类方法不支持routing参数。
+	 * The method in super class did not support routing parameter.
+	 * So override it. /
+	 * 父类方法不支持routing参数。故覆盖
 	 */
 	@Override
 	protected SQLSerializerAlter createSerializer() {
@@ -195,7 +198,9 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void populatePrimaryKey0(Object bean, Mapper mapper) {
-		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null ? entity.getPrimaryKey().getLocalColumns() : Collections.emptyList();
+		Collection<? extends Path<?>> primaryKeyColumns = entity.getPrimaryKey() != null
+				? entity.getPrimaryKey().getLocalColumns()
+				: Collections.emptyList();
 		if (primaryKeyColumns.isEmpty()) {
 			return;
 		}
@@ -212,7 +217,9 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		int totalPK = primaryKeyColumns.size();
 		// 如果主键条件不完整，可能导致update范围扩大甚至全表更新。为避免出现这种危险，检查主键条件的完整性。
 		if (pkConditionFilled < totalPK) {
-			throw Exceptions.illegalArgument("There is null value on some primary key columns. ({}/{}) entity:{},where:{}", pkConditionFilled, totalPK, entity.getClass().getName(), metadata.getWhere());
+			throw Exceptions.illegalArgument(
+					"There is null value on some primary key columns. ({}/{}) entity:{},where:{}", pkConditionFilled,
+					totalPK, entity.getClass().getName(), metadata.getWhere());
 		}
 	}
 }

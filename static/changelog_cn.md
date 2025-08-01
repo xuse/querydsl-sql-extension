@@ -6,15 +6,20 @@
 v{querydsl 版本号} - r(extension version)
 ```
 
-**v5.0.0-r130**
-2024-11-27
- * New module for r2dbc and r2dbc-spring transaction
+**v5.0.0-r140**  (2025-7-30)
+
+* Revise Javadoc by via translations.
+* Some fix on function `findByConditionBean`
+* Utilities update.
+* Unit test coverage to 75%.
+
+**v5.0.0-r130**  (2024-11-27)
+
+ * New modules for r2dbc and r2dbc-spring transaction , supports reactive programming
  * Supports DDL on H2DB.
  * Upgerade JUnit to Junit.jupiter
 
-**v5.0.0-r120**
-
-2024-10-01
+**v5.0.0-r120** (2024-10-01)
 
 * 工程拆分，将核心不使用的类拆分到其他工程中。拆分出querydsl-sql-extension-spring，用于Spring下集成。querydsl-sql-extension不再依赖任何Spring Framework和FastJSON。
 * 构建期自动执行单元测试并输出报告，目前行覆盖65%，下个版本继续改进。
@@ -22,9 +27,7 @@ v{querydsl 版本号} - r(extension version)
 * 对工具类的单元测试，修复几处边界数值下的小错误。
 * AlterTableQuery功能增强，支持列修改、更名等操作。
 
-**v5.0.0-r110**
-
-2024-09-01
+**v5.0.0-r110**  (2024-09-01)
 
 * PostgreSQL DDL支持。基于PostgreSQL 10.3测试。常规DDL操作已经支持完成。
 * PostgreSQL表分区功能支持，但PostgreSQL分区机制与MySQL差异很大，目前仅支持创建分区表，添加/删除分区。
@@ -37,16 +40,12 @@ v{querydsl 版本号} - r(extension version)
 * QueryDSL Insert Batch功能调整，增加参数一致化处理。
 * 数据初始化增加配置，setPrimaryKeys用于控制主键列是否要写入到数据库。
 
-**v5.0.0-r104**
-
-2024-08-08
+**v5.0.0-r104**  (2024-08-08)
 
 * 支持GraalVM的Native模式使用
 * 支持在java 16以上环境使用record类型作为实体。
 
-**v5.0.0-r102**
-
-2024-07-24
+**v5.0.0-r102** (2024-07-24)
 
 * 按包整理javadoc，部分类更换包位置。补充重要类的双语javadoc。
 * 支持外部扩展自行实现Facade。通过自行实现ExtensionQueryFactory接口，扩展各种查询API。

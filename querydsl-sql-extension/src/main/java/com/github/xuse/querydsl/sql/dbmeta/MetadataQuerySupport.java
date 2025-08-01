@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
@@ -411,7 +412,7 @@ public abstract class MetadataQuerySupport {
 			throw getConfiguration().get().translate(e);
 		}
 		List<FieldOrder> result = new ArrayList<>();
-		for (Field field : clz.getDeclaredFields()) {
+		for (Field field : Util.getDeclaredFields(clz)) {
 			if (Modifier.isStatic(field.getModifiers())) {
 				continue;
 			}

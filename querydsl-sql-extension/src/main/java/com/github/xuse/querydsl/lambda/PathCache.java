@@ -117,7 +117,7 @@ public class PathCache {
 		Class<?> clazz = pair.getFirst();
 		String fieldName = pair.getSecond();
 		Path<T> p = path.getColumn(fieldName);
-		log.info("Generate column path for {}::{} from {}", clazz.getName(), fieldName, path.getClass());
+		log.debug("Generate column path for {}::{} from {}", clazz.getName(), fieldName, func);
 		return p;
 	}
 	

@@ -21,6 +21,13 @@ public abstract class BeanCodec {
 	 * @return 所有字段值（按元数据顺序排列）
 	 */
 	public abstract Object[] values(Object bean);
+	
+	/**
+	 * 相同类型间字段浅拷贝。
+	 * @param from soruce
+	 * @param target target
+	 */
+	public abstract void copy(Object from, Object target);
 
 	private Field[] fields;
 	

@@ -5,11 +5,11 @@ package com.github.xuse.querydsl.sql.column;
  * @param <T> The type of target object.
  * @param <Q> The type of target object.
  */
-public class ColumnBuilderHandler<T, Q> extends ColumnBuilderBase<T, ColumnBuilderHandler<T, Q>> {
+public class ColumnPathHandler<T, Q> extends ColumnBuilderBase<T, ColumnPathHandler<T, Q>> {
 
 	private final Q mixin;
 
-	public ColumnBuilderHandler(PathMapping p, Q mixin) {
+	public ColumnPathHandler(PathMapping p, Q mixin) {
 		super(p);
 		super.q = this;
 		this.mixin = mixin;

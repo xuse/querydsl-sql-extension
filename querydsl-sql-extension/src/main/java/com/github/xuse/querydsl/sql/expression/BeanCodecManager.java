@@ -75,6 +75,11 @@ public class BeanCodecManager {
 		CacheKey key = CacheKey.of(target, fieldNames);
 		return beanCodecs.computeIfAbsent(key, (k) -> generateAccessor(k, bindings));
 	}
+	
+	public BeanCodec getCodec(Class<?> target) {
+		CacheKey key = CacheKey.of(target, FieldCollector.ALL_FIELDS);
+		return beanCodecs.computeIfAbsent(key, (k) -> generateAccessor(k, new FieldCollector()));
+	}
 
 	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings){
 		BeanCodecProvider provider;
@@ -92,8 +97,6 @@ public class BeanCodecManager {
 		BeanCodec bc= provider.generateAccessor(key, bindings, cl);
 		return bc;
 	}
-	
-
 
 	public static BeanCodecManager getInstance() {
 		return INSTANCE;

@@ -3,15 +3,20 @@ package com.github.xuse.querydsl.spring.core.resource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 
-public class Util {
+public final class Util {
+	private static final Map<Class<?>, Field[]> declaredFieldsCache = new ConcurrentReferenceHashMap<Class<?>, Field[]>(256);
 
+	private static final Map<Class<?>, Method[]> declaredMethodsCache = new ConcurrentReferenceHashMap<Class<?>, Method[]>(256);
+	
 	public static final Method[] NO_METHODS = {};
 
 	public static final Field[] NO_FIELDS = {};
@@ -38,8 +43,28 @@ public class Util {
 		}
 	}
 
-	private static final Map<Class<?>, Field[]> declaredFieldsCache = new ConcurrentReferenceHashMap<Class<?>, Field[]>(256);
+	public static Type getMethodType(Class<?> clazz, String methodName) {
+		try {
+			Method method = clazz.getMethod(methodName);
+			return method.getGenericReturnType();
+		} catch (Exception ex) {
+			return null;
+		}
+	}
 
+	public static Type getFieldType(Class<?> clazz, String fieldName) {
+		Class<?> clz = clazz;
+		while (clz != Object.class) {
+			try {
+				Field field = clazz.getDeclaredField(fieldName);
+				return field.getGenericType();
+			} catch (Exception ex) {
+			}
+			clz = clz.getSuperclass();
+		}
+		return null;
+	}
+	
 	/**
 	 * @param clazz class to analysis.
 	 * @param name field name
@@ -72,17 +97,14 @@ public class Util {
 		return null;
 	}
 
-	private static Field[] getDeclaredFields(Class<?> clazz) {
+	public static Field[] getDeclaredFields(Class<?> clazz) {
 		Assert.notNull(clazz, "Class must not be null");
-		Field[] result = declaredFieldsCache.get(clazz);
-		if (result == null) {
-			result = clazz.getDeclaredFields();
-			declaredFieldsCache.put(clazz, (result.length == 0 ? NO_FIELDS : result));
-		}
+		Field[] result = declaredFieldsCache.computeIfAbsent(clazz, (clz)->{
+			Field[] fields= clz.getDeclaredFields();
+			return fields.length == 0 ? NO_FIELDS : fields;
+		});
 		return result;
 	}
-
-	private static final Map<Class<?>, Method[]> declaredMethodsCache = new ConcurrentReferenceHashMap<Class<?>, Method[]>(256);
 
 	public static Method findMethod(Class<?> clazz, String name) {
 		return findMethod(clazz, name, NO_CLASSES);

@@ -5,12 +5,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public final class FieldCollector implements BindingProvider {
+final class FieldCollector implements BindingProvider {
+	static final List<String> ALL_FIELDS = Collections.singletonList("*");
+	
 	private List<String> fieldNames;
 
 	@Override
 	public List<String> fieldNames() {
-		return Collections.singletonList("*");
+		return ALL_FIELDS;
 	}
 
 	@Override

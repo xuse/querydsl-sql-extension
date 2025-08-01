@@ -12,7 +12,7 @@ import java.util.Objects;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
-import com.github.xuse.querydsl.sql.column.ColumnBuilderHandler;
+import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
@@ -173,11 +173,11 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	 * @param type Java数据类型
 	 * @return ColumnBuilderHandler，可配置该列的缺省值等信息。
 	 */
-	public <A> ColumnBuilderHandler<A, AlterTableQuery> addColumn(ColumnMetadata column, Class<A> type) {
+	public <A> ColumnPathHandler<A, AlterTableQuery> addColumn(ColumnMetadata column, Class<A> type) {
 		String name = column.getName();
 		Path<A> path = table.createPath(name, type);
 		PathMapping cb = table.addMetadataDynamic(path, column);
-		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
+		return new ColumnPathHandler<A, AlterTableQuery>(cb, this);
 	}
 	
 	/**
@@ -188,7 +188,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	 * @param type type 
 	 * @return ColumnBuilderHandler，可配置该列的缺省值等信息。
 	 */
-	public <A> ColumnBuilderHandler<A, AlterTableQuery> changeColumn(Path<?> path, Class<A> type, ColumnMetadata column) {
+	public <A> ColumnPathHandler<A, AlterTableQuery> changeColumn(Path<?> path, Class<A> type, ColumnMetadata column) {
 		ColumnMapping mapping = table.removeColumn(path);
 		if(mapping==null) {
 			throw new IllegalArgumentException("The path '"+column+"' is not belong to current table.");
@@ -200,7 +200,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			path=TypeUtils.createPathByType(type, path.getMetadata().getName(), table);
 		}
 		PathMapping cb = table.addMetadataDynamic(path, column);
-		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
+		return new ColumnPathHandler<A, AlterTableQuery>(cb, this);
 	}
 	
 	/**

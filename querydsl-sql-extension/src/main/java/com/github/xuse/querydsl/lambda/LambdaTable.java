@@ -72,6 +72,10 @@ public interface LambdaTable<T> extends Supplier<Class<T>>,RelationalPathEx<T>{
 	default List<Path<?>> getColumns(){
 		return PathCache.getPath(this, null).getColumns();
 	}
+	
+	default List<ColumnMapping> getAutoColumns(){
+		return PathCache.getPath(this, null).getAutoColumns();
+	}
 
     default PrimaryKey<T> getPrimaryKey(){
     	return PathCache.getPath(this, null).getPrimaryKey();

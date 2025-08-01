@@ -2,16 +2,14 @@ package com.github.xuse.querydsl.config;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
+import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.Opcodes;
-import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
@@ -20,6 +18,7 @@ import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.sql.RelationalPath;
 
 import lombok.extern.slf4j.Slf4j;
@@ -152,23 +151,11 @@ public class ScanContext {
 			log.error("class {} load error.", name, e);
 			return null;
 		}
-		for (Field field : clz.getDeclaredFields()) {
-			if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {
-				try {
-					RelationalPath<?> obj = (RelationalPath<?>) field.get(null);
-					return obj;
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					log.error("register class {}", name, e);
-					throw Exceptions.toRuntime(e);
-				}
-			}
-		}
-		return null;
+		return TypeUtils.getMetaModel(clz);
 	}
 	
 	public int getCount() {
-		// TODO Auto-generated method stub
-		return 0;
+		return count;
 	}
 
 }

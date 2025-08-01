@@ -997,7 +997,7 @@ ALTER TABLE table1
 
 ```java
 //定义一个动态的表模型
-DynamicRelationlPath table = new DynamicRelationlPath("t1", null, key);
+DynamicRelationalPath table = new DynamicRelationalPath("t1", null, table_name);
 //创建各列的模型
 Path<Long> id=table.addColumn(Long.class, ColumnMetadata.named("id").ofType(Types.BIGINT).notNull())
 		.with(ColumnFeature.AUTO_INCREMENT).unsigned().comment("主键ID")
@@ -1027,14 +1027,14 @@ table.createIndex("idx_table_name_status", name, status);
 2. DDL：建表
 
 ```java
-DynamicRelationlPath table=getModel("dyn_entity_apple");
+DynamicRelationalPath table=getModel("dyn_entity_apple");
 factory.getMetadataFactory().createTable(table).ifExists().execute();
 ```
 
 2. DML：数据访问
 
 ```java
-DynamicRelationlPath table=getModel("dyn_entity_apple");
+DynamicRelationalPath table=getModel("dyn_entity_apple");
 Tuple o = table.newTuple(null,"张三",2,null);
 //Add
 factory.insert(table).populate(o).execute();

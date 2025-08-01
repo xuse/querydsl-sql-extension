@@ -9,7 +9,9 @@ public class NumberUtils {
 	private static final double SIZE_1K = 1024;
 	private static final double SIZE_1M = 1048576;
 	private static final double SIZE_1G = 1_073_741_824;
-	private static final long SIZE_1T = 1099511627776L;
+	private static final long SIZE_1T = 1_099_511_627_776L;
+	private static final long SIZE_1P = 1_125_899_906_842_624L;
+	
 
 	private static final DecimalFormat[] COMMON_FORMATS = new DecimalFormat[] { new DecimalFormat("#"),
 			new DecimalFormat("#.#"), new DecimalFormat("#.##"), new DecimalFormat("#.###"),
@@ -47,10 +49,14 @@ public class NumberUtils {
 			return df.format(size / SIZE_1M).concat("M");
 		} else if (size < SIZE_1T) {
 			return df.format(size / SIZE_1G).concat("G");
-		} else {
+		} else if (size < SIZE_1P) {
 			BigDecimal b = new BigDecimal(size);
 			b = b.divide(new BigDecimal(SIZE_1T), digits, RoundingMode.HALF_UP);
 			return b.toString().concat("T");
+		} else {
+			BigDecimal b = new BigDecimal(size);
+			b = b.divide(new BigDecimal(SIZE_1P), digits, RoundingMode.HALF_UP);
+			return b.toString().concat("P");
 		}
 	}
 

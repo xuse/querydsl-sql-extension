@@ -432,6 +432,8 @@ public class StringUtilsTest {
 
 	@Test
 	public void testNumbers() {
+		assertEquals("2G", NumberUtils.formatSize(Integer.MAX_VALUE));
+		assertEquals("8192P", NumberUtils.formatSize(Long.MAX_VALUE,0));
 		assertEquals("965.14M", NumberUtils.formatSize(1012023432L));
 		assertEquals("2G", NumberUtils.formatSize(Integer.MAX_VALUE));
 		assertEquals("2.932T", NumberUtils.formatSize(3223372037758L, 3));

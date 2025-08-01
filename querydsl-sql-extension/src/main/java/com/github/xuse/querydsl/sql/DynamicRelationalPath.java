@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.sql.column.ColumnBuilderHandler;
+import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.querydsl.core.Tuple;
@@ -36,7 +36,7 @@ public class DynamicRelationalPath extends RelationalPathExImpl<Tuple>{
 	 * @return ColumnBuilderHandler
 	 */
 	@SuppressWarnings("unchecked")
-	public <A> ColumnBuilderHandler<A,Path<A>> addColumn(Class<A> type,ColumnMetadata column) {
+	public <A> ColumnPathHandler<A,Path<A>> addColumn(Class<A> type,ColumnMetadata column) {
 		String name=column.getName();
 		Path<A> path;
 		if(String.class==type){
@@ -49,7 +49,7 @@ public class DynamicRelationalPath extends RelationalPathExImpl<Tuple>{
 			path = createSimple(name, type);
 		}
 		PathMapping cb= addMetadataDynamic(path, column);
-		return new ColumnBuilderHandler<>(cb,path);
+		return new ColumnPathHandler<>(cb,path);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })

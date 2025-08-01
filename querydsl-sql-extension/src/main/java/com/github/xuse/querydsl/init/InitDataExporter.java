@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.init;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -12,9 +10,9 @@ import java.util.List;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.asm.ASMUtils;
+import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.Opcodes;
-import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.init.csv.Codecs;
 import com.github.xuse.querydsl.init.csv.CsvFileWriter;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
@@ -24,7 +22,9 @@ import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.types.Path;
+import com.querydsl.sql.RelationalPath;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -112,25 +112,21 @@ public class InitDataExporter {
 	 */
 	public InitDataExporter export(Class<?> modelClass) {
 		try {
-			RelationalPathEx<?> obj = null;
-			for (Field field : modelClass.getDeclaredFields()) {
-				if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == modelClass) {
-					obj = (RelationalPathEx<?>) field.get(null);
-					break;
-				}
-			}
+			RelationalPath<?> obj = TypeUtils.getMetaModel(modelClass);
 			if (obj != null) {
-				InitializeData anno = modelClass.getAnnotation(InitializeData.class);
-				if (anno == null) {
-					anno = obj.getType().getAnnotation(InitializeData.class);
+				if(obj instanceof RelationalPathEx<?>) {
+					InitializeData anno = modelClass.getAnnotation(InitializeData.class);
+					if (anno == null) {
+						anno = obj.getType().getAnnotation(InitializeData.class);
+					}
+					export0((RelationalPathEx<?>)obj, anno);	
+				}else {
+					throw Exceptions.illegalArgument("{} is not a subtype of com.github.xuse.querydsl.sql.RelationalPathEx.",modelClass);
 				}
-				export0(obj, anno);
 			}
 		} catch (SQLException e) {
 			throw new IllegalArgumentException(e);
 		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException(e);
 		}
 		return this;

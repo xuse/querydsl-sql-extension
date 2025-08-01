@@ -94,6 +94,9 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		return super.createCheck(name, checkExpression);
 	}
 
+	/*
+	 * This method is for internal use, do not call it from your application.
+	 */
 	public <P> PathMapping addMetadataDynamic(Path<P> path, ColumnMetadata cMetadata) {
 		PathMapping metadata = new PathMapping(path, new DynamicField(path), cMetadata);
 		addMetadata(path, metadata);
@@ -179,7 +182,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
 		t.scanClassMetadata(() -> {
 			List<Path<?>> paths = new ArrayList<>();
-			for (Field field : TypeUtils.getFields(beanType)) {
+			for (Field field : TypeUtils.getAllFields(beanType)) {
 				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}

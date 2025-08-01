@@ -48,7 +48,6 @@ public class ReflectCodecRecord extends BeanCodec {
 		for (String name:names) {
 			Pair<Integer,FieldProperty> entry=map.get(name);
 			if(entry==null) {
-				//本次没有查询该字段，需要生成一个默认值入栈
 				Field field=targetClass.getDeclaredField(name);
 				exprs.add(new Pair<>(-1, new FieldProperty(null, null, field)));
 			}else {
@@ -95,5 +94,10 @@ public class ReflectCodecRecord extends BeanCodec {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void copy(Object from, Object target) {
+		//All fields in Record in final value. unable to be updated.
 	}
 }

@@ -19,7 +19,8 @@ import lombok.extern.slf4j.Slf4j;
  * Threads and thread pool utilities. Resolves issues related to anomaly
  * handling and InterruptedException throw.
  * <p>
- * Provides a thread pool implementation that starts expanding early, rather than waiting until the task queue is full.
+ * Provides a thread pool implementation that starts expanding early, rather
+ * than waiting until the task queue is full.
  * 
  * <p>
  * 线程和线程池工具。解决异常和InterruptedException抛出的问题。
@@ -48,10 +49,9 @@ public abstract class Threads {
 	 *            <p>
 	 *            锁所在的对象
 	 * @return `true` if the wait ends normally, `false` if it ends due to an
-	 *         InterruptedException 
+	 *         InterruptedException
 	 *         <p>
 	 *         等待正常结束返回true，异常结束返回false
-	 * @return
 	 */
 	public static final boolean doWait(Object obj) {
 		synchronized (obj) {
@@ -67,10 +67,15 @@ public abstract class Threads {
 
 	/**
 	 * Call wait method of a object.
-	 * <p>调用对象的wait方法，并设置超时时间
+	 * <p>
+	 * 调用对象的wait方法，并设置超时时间
 	 * 
-	 * @param obj      the object on which the lock is held<p>锁所在的对象
-	 * @param timeout  timeout in milliseconds<p>超时时间，单位毫秒
+	 * @param obj     the object on which the lock is held
+	 *                <p>
+	 *                锁所在的对象
+	 * @param timeout timeout in milliseconds
+	 *                <p>
+	 *                超时时间，单位毫秒
 	 * @return 超时返回 {@link #WAIT_TIMEOUT}; 正常唤醒{@link #WAIT_NOTIFIED};
 	 *         异常打断{@link #WAIT_INTERRUPTED }.
 	 * @implNote WAIT_TIMEOUT和WAIT_NOTIFIED这两个状态判断是不准确的。一般来说，应当使用
@@ -103,12 +108,14 @@ public abstract class Threads {
 	/**
 	 * 
 	 * do {@link Thread#sleep(long)} method without exception throw.
-	 * <p>当前线程等待若干毫秒
+	 * <p>
+	 * 当前线程等待若干毫秒
 	 * 
 	 * @param l milliseconds. 毫秒数
 	 * @return `true` if the wait ends normally, `false` if it ends due to an
-	 *         InterruptedException 
-	 *         <p>如果是正常休眠后返回的true，因为InterruptedException被打断的返回false
+	 *         InterruptedException
+	 *         <p>
+	 *         如果是正常休眠后返回的true，因为InterruptedException被打断的返回false
 	 */
 	public static final boolean doSleep(long l) {
 		if (l <= 0)
@@ -124,13 +131,15 @@ public abstract class Threads {
 	/**
 	 * Wait on a CountDownLatch.
 	 * `true` if the wait ends normally, `false` if it ends due to an
-	 *         InterruptedException
-	 *  <p>对CountDownLatch进行等待。 
+	 * InterruptedException
+	 * <p>
+	 * 对CountDownLatch进行等待。
 	 * 
 	 * @param cl CountDownLatch
 	 * @return `true` if the wait ends normally, `false` if it ends due to an
-	 *         InterruptedException 
-	 *         <p>如果是正常休眠后返回的true，因为InterruptedException被打断的返回false
+	 *         InterruptedException
+	 *         <p>
+	 *         如果是正常休眠后返回的true，因为InterruptedException被打断的返回false
 	 */
 	public static boolean doAwait(CountDownLatch cl) {
 		try {
@@ -147,10 +156,13 @@ public abstract class Threads {
 	 * 对CountDownLatch进行等待。
 	 * 
 	 * @param cl          CountDownLatch
-	 * @param millseconds timeout in milliseconds<p>超时时间，单位毫秒
+	 * @param millseconds timeout in milliseconds
+	 *                    <p>
+	 *                    超时时间，单位毫秒
 	 * @return `true` if the wait ends normally, `false` if it ends due to an
 	 *         InterruptedException or reaches the timeout.
-	 *         <p>如果正常退出true。 如果超时或异常退出false
+	 *         <p>
+	 *         如果正常退出true。 如果超时或异常退出false
 	 */
 	public static boolean doAwait(CountDownLatch cl, long millseconds) {
 		try {
@@ -190,8 +202,9 @@ public abstract class Threads {
 
 	/**
 	 * Execute the runnable in a new thread.
-	 * <p> 
+	 * <p>
 	 * 在新的线程中运行指定的任务
+	 * 
 	 * @param runnable Runnable
 	 */
 	public static final Thread doTask(Runnable runnable) {
@@ -204,10 +217,12 @@ public abstract class Threads {
 	/**
 	 * 
 	 * Create a thread pool with assigned core size and thread name prefix.
-	 * <p> 
+	 * <p>
 	 * 用默认策略创建一个线程池
-	 * @param coreSize core size of the thread pool.
+	 * 
+	 * @param coreSize         core size of the thread pool.
 	 * @param threadNamePrefix the prefix of thread names in the thread pool.
+	 * @return ExecutorService
 	 */
 	public static ExecutorService newFixedThreadPool(int coreSize, String threadNamePrefix) {
 		return new ThreadPoolExecutor(coreSize, coreSize, 0L, TimeUnit.MILLISECONDS,
@@ -244,9 +259,9 @@ public abstract class Threads {
 	 *           <p>
 	 *           针对短时间内突发的大量任务的场景，这一设计可以提前线程池扩容的时机，提升业务平滑程度。
 	 * 
-	 * @param minimum        The minimum thread count / 最小线程数
-	 * @param maximum        The maximum thread count /    最大线程数
-	 * @param queueSize      The size of task queue / 最大队列数
+	 * @param minimum          The minimum thread count / 最小线程数
+	 * @param maximum          The maximum thread count / 最大线程数
+	 * @param queueSize        The size of task queue / 最大队列数
 	 * @param threadNamePrefix the prefix of thread names / 线程名前缀
 	 * @return thread pool builded. 线程池
 	 */
@@ -264,6 +279,9 @@ public abstract class Threads {
 		return new ThreadPoolBuilder();
 	}
 
+	/**
+	 * 构造器，用于创建一个在任务队列未满前开始扩容的线程池。
+	 */
 	public static class ThreadPoolBuilder {
 		private String namePrefix;
 		private int coreSize;
@@ -292,14 +310,18 @@ public abstract class Threads {
 					new TempQueuedPolicy(queue, rejectionHandler));
 		}
 
+		/**
+		 * @param namePrefix 线程名前缀 / Thread name prefix
+		 * @return ThreadPoolBuilder / 线程池构造器
+		 */
 		public ThreadPoolBuilder namePrefix(String namePrefix) {
 			this.namePrefix = namePrefix;
 			return this;
 		}
 
 		/**
-		 * @param coreSize 最小线程数
-		 * @return ThreadPoolBuilder
+		 * @param coreSize 最小线程数 / Minimum thread count
+		 * @return ThreadPoolBuilder / 线程池构造器
 		 */
 		public ThreadPoolBuilder coreSize(int coreSize) {
 			this.coreSize = coreSize;
@@ -307,8 +329,8 @@ public abstract class Threads {
 		}
 
 		/**
-		 * @param maximumSize 最大线程数
-		 * @return ThreadPoolBuilder
+		 * @param maximumSize 最大线程数 / Maximum thread count
+		 * @return ThreadPoolBuilder / 线程池构造器
 		 */
 		public ThreadPoolBuilder maximumSize(int maximumSize) {
 			this.maximumSize = maximumSize;
@@ -317,13 +339,16 @@ public abstract class Threads {
 
 		/**
 		 * Assign the queue pressure size of the building thread pool
+		 * 指定构建的线程池任务队列的压力值
+		 * 
 		 * 
 		 * @param queuePressureSize Thread pool expansion threshold. When the task queue
 		 *                          reaches the size of `queuePressureSize`, new tasks
 		 *                          will cause the number of threads to increase. The
 		 *                          `queuePressureSize` should be smaller than
-		 *                          {@link #queueSize}.
-		 * @return ThreadPoolBuilder
+		 *                          {@link #queueSize(int)}. / 线程池扩容阈值。当任务队列达到`queuePressureSize`的大小时，新的任务将导致线程数增加。
+		 *                          `queuePressureSize`应该小于{@link #queueSize(int)}。
+		 * @return ThreadPoolBuilder / 线程池构造器
 		 */
 		public ThreadPoolBuilder queuePressureSize(int queuePressureSize) {
 			this.queuePressureSize = queuePressureSize;
@@ -334,7 +359,7 @@ public abstract class Threads {
 		 * Assign the queue size of the building thread pool
 		 * 
 		 * @param queueSize 任务队列最大值
-		 * @return ThreadPoolBuilder
+		 * @return ThreadPoolBuilder / 线程池构造器
 		 */
 		public ThreadPoolBuilder queueSize(int queueSize) {
 			this.queueSize = queueSize;
@@ -343,10 +368,11 @@ public abstract class Threads {
 
 		/**
 		 * RejectedExecutionHandler of the building thread pool
+		 * <p>
+		 * 当任务队列满后的拒绝策略。
 		 * 
-		 * <p>当任务队列满后的拒绝策略。
 		 * @param rejectionHandler
-		 * @return ThreadPoolBuilder
+		 * @return ThreadPoolBuilder / 线程池构造器
 		 */
 		public ThreadPoolBuilder onReject(RejectedExecutionHandler rejectionHandler) {
 			this.rejectionHandler = rejectionHandler;
@@ -354,7 +380,7 @@ public abstract class Threads {
 		}
 	}
 
-	public static final class FrontPressureBlockingQueue<E> extends LinkedBlockingQueue<E> {
+	static final class FrontPressureBlockingQueue<E> extends LinkedBlockingQueue<E> {
 		private final int pressureSize;
 
 		public FrontPressureBlockingQueue(int queueSize, int pressureSize) {
@@ -374,7 +400,7 @@ public abstract class Threads {
 		}
 	}
 
-	public static final class TempQueuedPolicy implements RejectedExecutionHandler {
+	static final class TempQueuedPolicy implements RejectedExecutionHandler {
 		private final FrontPressureBlockingQueue<Runnable> queue;
 		private final RejectedExecutionHandler nextRejectHandler;
 
@@ -396,6 +422,7 @@ public abstract class Threads {
 	 * 创建ThreadFactory对象
 	 * 
 	 * @param name
+	 * @return ThreadFactory
 	 */
 	public static ThreadFactory threadFactory(String name) {
 		return new DefaultThreadFactory(name);
