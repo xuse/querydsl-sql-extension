@@ -7,9 +7,6 @@ import java.lang.reflect.Field;
  * @author Joey
  */
 public abstract class BeanCodec {
-	
-	public static @interface Ignore{}
-
 	/**
 	 * 根据字段值（按元数据顺序排列）拼装成对象
 	 * @param fields fields
