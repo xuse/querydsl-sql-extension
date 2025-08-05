@@ -101,7 +101,7 @@ public class BeanCodecDefaultProvider implements BeanCodecProvider {
 			}
 			
 			List<FieldProperty> properties = new ArrayList<>(len);
-			for (String property : bindings.names(maps.keySet())) {
+			for (String property : bindings.names(maps)) {
 				FieldProperty prop = maps.get(property);
 				if (prop != null) {
 					count++;

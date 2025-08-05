@@ -21,7 +21,7 @@ import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import lombok.Data;
 
 /**
- * 这是一个没有QueryClass的数据库对象
+ * A database object without Q* class.
  */
 @Data
 @TableSpec(name="ca_foo",primaryKeys="id",collate = "utf8mb4_general_ci",

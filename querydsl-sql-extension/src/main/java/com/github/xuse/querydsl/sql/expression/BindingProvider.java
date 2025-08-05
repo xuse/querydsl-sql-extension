@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,7 @@ public interface BindingProvider {
 	 */
 	int size();
 
-	List<String> names(Collection<String> fieldOrder);
+	List<String> names(Map<String, FieldProperty> fieldOrder);
 
 	Class<?> getType(String name,FieldProperty property);
 	
@@ -52,7 +51,7 @@ public interface BindingProvider {
 		}
 
 		@Override
-		public List<String> names(Collection<String> fieldOrder) {
+		public List<String> names(Map<String, FieldProperty> fieldOrder) {
 			return fieldNames;
 		}
 
@@ -80,7 +79,7 @@ public interface BindingProvider {
 			return fieldNames.size();
 		}
 		@Override
-		public List<String> names(Collection<String> fieldOrder) {
+		public List<String> names(Map<String, FieldProperty> fieldOrder) {
 			return fieldNames;
 		}
 		@Override

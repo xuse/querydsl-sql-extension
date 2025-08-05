@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.datatype.util.binary;
 
 import java.nio.ByteBuffer;
 
-public interface BeanCodec<T> {
+public interface BinaryCodec<T> {
 	
 	Class<T> getType();
 	

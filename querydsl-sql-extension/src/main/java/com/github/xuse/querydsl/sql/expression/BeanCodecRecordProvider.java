@@ -3,7 +3,6 @@ package com.github.xuse.querydsl.sql.expression;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,7 @@ public class BeanCodecRecordProvider implements BeanCodecProvider{
 			}
 		}
 		List<FieldProperty> properties = new ArrayList<>(len);
-		for (String property : bindings.names(Arrays.asList(fields))) {
+		for (String property : bindings.names(map)) {
 			FieldProperty prop = map.get(property);
 			if (prop != null) {
 				count++;

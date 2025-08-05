@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +26,7 @@ final class DefaultBindingProvider implements BindingProvider{
 	}
 
 	@Override
-	public List<String> names(Collection<String> fieldOrder) {
+	public List<String> names(Map<String, FieldProperty> fieldOrder) {
 		return fieldNames;
 	}
 
