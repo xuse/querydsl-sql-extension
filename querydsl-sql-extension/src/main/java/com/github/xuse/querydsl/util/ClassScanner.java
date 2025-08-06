@@ -26,7 +26,7 @@ public class ClassScanner {
 	 * @param packages packages 基础包
 	 * @return List of resources
 	 */
-	public List<Resource> scan(String[] packages) {
+	public List<Resource> scan(String... packages) {
 		boolean allPackages = packages.length == 0;
 		URLClassLoader cl = rootClasspath == null ? null : new URLClassLoader(new URL[] { rootClasspath }, null);
 		try {

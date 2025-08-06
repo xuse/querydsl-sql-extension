@@ -114,7 +114,7 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 			@SuppressWarnings("rawtypes")
 			Class<? extends Type> clz = anno.value();
 			try {
-				customType = SQLTypeUtils.createInstance(clz, anno.parameters(), path.getType());
+				customType = SQLTypeUtils.createInstance(clz, anno.parameters(), path.getType(),field.getGenericType());
 				setCustomType(customType);
 			} catch (Exception e) {
 				log.error("customType on {} error", path, e);

@@ -6,6 +6,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 
+import com.github.xuse.querydsl.asm.ClassReader;
+import com.github.xuse.querydsl.util.IOUtils;
+
 public interface Resource {
 
 	InputStream getInputStream() throws IOException;
@@ -33,4 +36,15 @@ public interface Resource {
 	String getDescription();
 
 	boolean isFile();
+	
+	default ClassReader toClassReader() {
+		try(InputStream in=getInputStream()){
+			ClassReader cl = new ClassReader(IOUtils.toByteArray(in));
+			return cl;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	
 }

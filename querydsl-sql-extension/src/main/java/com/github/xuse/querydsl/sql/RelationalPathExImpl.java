@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.sql;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -137,6 +138,11 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 
 		@Override
 		public void set(Object bean, Object value) {
+		}
+
+		@Override
+		public Type getGenericType() {
+			return path.getType();
 		}
 	}
 

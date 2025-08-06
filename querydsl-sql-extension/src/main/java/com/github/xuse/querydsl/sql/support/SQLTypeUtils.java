@@ -12,7 +12,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.FilteredClause;
 import com.querydsl.core.types.ConstantImpl;
@@ -197,27 +196,66 @@ public class SQLTypeUtils {
 	 * @param clz        the class
 	 * @param parameters parameters
 	 * @param fieldType  fieldType
+	 * @param type Generic type
 	 * @return instance of the clz;
 	 * @throws InstantiationException    InstantiationException
 	 * @throws IllegalAccessException    IllegalAccessException
 	 * @throws InvocationTargetException InvocationTargetException
 	 */
 	@SuppressWarnings("rawtypes")
-	public static Type<?> createInstance(Class<? extends Type> clz, String[] parameters, Class<?> fieldType)
+	public static Type<?> createInstance(Class<? extends Type> clz, String[] parameters, Class<?> fieldType,java.lang.reflect.Type type)
 			throws InstantiationException, IllegalAccessException, InvocationTargetException {
-		Constructor<?>[] constructors = clz.getConstructors();
 		int size = parameters.length;
-		for (Constructor<?> c : constructors) {
-			if (size == 0 && c.getParameterCount() == 1 && c.getParameterTypes()[0] == Class.class) {
-				return (Type<?>) c.newInstance(fieldType);
-			} else if (c.getParameterCount() == size && isStringType(c.getParameterTypes())) {
-				return (Type<?>) c.newInstance((Object[]) parameters);
-			} else if (c.getParameterCount() == size + 1
-					&& isStringType(ArrayUtils.subArray(c.getParameterTypes(), 1, c.getParameterCount()))) {
-				return (Type<?>) c.newInstance(ArrayUtils.addAllElement(new Object[] { fieldType }, parameters));
-			}
+		
+		if(type==null) {
+			type=fieldType;
 		}
-		throw new IllegalArgumentException("Unable to Instant type " + clz.getName() + ".");
+		
+		Class[] ptypes=new Class[size];
+		for(int i=0;i<size;i++) {
+			ptypes[i]=String.class;
+		}
+		Type o=null;
+		
+		//Step1.
+		Object[] mixedParams=new Object[size+1];
+		System.arraycopy(parameters, 0, mixedParams, 1, size);
+		{
+			Class[] ptypesWithType=new Class[size+1];
+			ptypesWithType[0]=java.lang.reflect.Type.class;
+			System.arraycopy(ptypes, 0, ptypesWithType, 1, size);
+
+			mixedParams[0]=type;
+			createWith(clz,ptypesWithType,mixedParams);
+		}
+		//Step2.
+		if(o==null) {
+			Class[] ptypesWithClass=new Class[size+1];
+			ptypesWithClass[0]=java.lang.Class.class;
+			System.arraycopy(ptypes, 0, ptypesWithClass, 1, size);
+			
+			mixedParams[0]=fieldType;
+			o=createWith(clz,ptypesWithClass,mixedParams);
+		}
+		//Step3.
+		if(o==null) {
+			o=createWith(clz,ptypes,parameters);
+		}
+		if(o==null) {
+			throw new IllegalArgumentException("Unable to Instant type " + clz.getName() + ".");	
+		}
+		return o;
+	}
+
+	@SuppressWarnings("rawtypes")
+	private static Type createWith(Class<? extends Type> clz, Class[] types, Object[] params) {
+		try {
+			Constructor<? extends Type> c= clz.getDeclaredConstructor(types);
+			c.setAccessible(true);
+			return c.newInstance(params);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public static void setWhere(List<Path<?>> mergeKey, FilteredClause<?> select, Map<Path<?>, Object> values) {
@@ -233,15 +271,6 @@ public class SQLTypeUtils {
 		}
 	}
 
-	private static boolean isStringType(Class<?>[] parameterTypes) {
-		for (int i = 0; i < parameterTypes.length; i++) {
-			if (parameterTypes[i] != String.class) {
-				return false;
-			}
-		}
-		return true;
-	}
-	
 	public static void close(ResultSet rs) {
 		try {
 			rs.close();

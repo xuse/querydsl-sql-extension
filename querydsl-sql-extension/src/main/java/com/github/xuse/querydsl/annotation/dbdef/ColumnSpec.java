@@ -29,13 +29,13 @@ public @interface ColumnSpec {
 	int type() default Types.NULL;
 
 	/**
-	 *  @return 字段长度。当用在数值类型时，表示数字长度，当用在time和timestamp类型时，表示秒以下小数位数精度。<p>
+	 *  @return 字段长度。当用在数值类型时表示数字长度，当用在time和timestamp类型时表示秒以下小数位数精度。<p>
 	 *  Length of column. When used with numeric types, it indicates the length of the number; when used with `time` and `timestamp` types, it indicates the precision of fractional seconds.
 	 */
 	int size() default -1;
 
 	/**
-	 *  @return 小数位数 / Number of decimal places
+	 *  @return 小数位数，仅当列类型为浮点数时需要指定。 / Number of decimal places
 	 */
 	int digits() default -1;
 
@@ -50,7 +50,7 @@ public @interface ColumnSpec {
 	boolean unsigned() default false;
 
 	/**
-	 *  @return 缺省值表达式 <p> the default value of column.
+	 *  @return 缺省值表达式。例如，空字符串需要写成'' <p> the default value of column.
 	 */
 	String defaultValue() default "";
 

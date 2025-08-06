@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.init;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -49,15 +50,15 @@ public class InitDataExporter {
 	private boolean writeNullString = false;
 
 	/**
-	 *  @param session 数据库客户端
+	 * @param session 数据库客户端
 	 */
 	public InitDataExporter(SQLQueryFactory session) {
 		this.session = session;
 	}
 
 	/**
-	 *  @param session 数据库客户端
-	 *  @param target  生成的资源文件路径
+	 * @param session 数据库客户端
+	 * @param target  生成的资源文件路径
 	 */
 	public InitDataExporter(SQLQueryFactory session, File target) {
 		this.session = session;
@@ -65,9 +66,10 @@ public class InitDataExporter {
 	}
 
 	/**
-	 *  由于CSV文件存储的特性，对于varchar等数据库字段，导出数据无法区分null和""。
-	 *  开启此选项后，null值将用特殊字符串表示，从而在数据导入时可以区分null和""。
-	 *  @return this
+	 * 由于CSV文件存储的特性，对于varchar等数据库字段，导出数据无法区分null和""。
+	 * 开启此选项后，null值将用特殊字符串表示，从而在数据导入时可以区分null和""。
+	 * 
+	 * @return this
 	 */
 	public InitDataExporter writeNullString() {
 		this.writeNullString = true;
@@ -76,9 +78,10 @@ public class InitDataExporter {
 
 	/**
 	 * 作为初始化数据导出到src/main/resources下。
+	 * 
 	 * @param packageName packageName
 	 * @throws ClassNotFoundException If encounter ClassNotFoundException
-	 * @throws IOException If encounter IOException
+	 * @throws IOException            If encounter IOException
 	 */
 	public void exportPackage(String... packageName) throws ClassNotFoundException, IOException {
 		ClassLoader classLoader = this.getClass().getClassLoader();
@@ -87,7 +90,7 @@ public class InitDataExporter {
 			if (!resource.isReadable()) {
 				continue;
 			}
-			ClassReader cl = new ClassReader(IOUtils.toByteArray(resource.getInputStream()));
+			ClassReader cl = resource.toClassReader();
 			if ((cl.getAccess() & Opcodes.ACC_PUBLIC) == 0) {
 				// 非公有跳过
 				continue;
@@ -107,6 +110,7 @@ public class InitDataExporter {
 
 	/**
 	 * 导出制定的实体类数据
+	 * 
 	 * @param modelClass modelClass
 	 * @return this
 	 */
@@ -114,14 +118,15 @@ public class InitDataExporter {
 		try {
 			RelationalPath<?> obj = TypeUtils.getMetaModel(modelClass);
 			if (obj != null) {
-				if(obj instanceof RelationalPathEx<?>) {
+				if (obj instanceof RelationalPathEx<?>) {
 					InitializeData anno = modelClass.getAnnotation(InitializeData.class);
 					if (anno == null) {
 						anno = obj.getType().getAnnotation(InitializeData.class);
 					}
-					export0((RelationalPathEx<?>)obj, anno);	
-				}else {
-					throw Exceptions.illegalArgument("{} is not a subtype of com.github.xuse.querydsl.sql.RelationalPathEx.",modelClass);
+					export0((RelationalPathEx<?>) obj, anno);
+				} else {
+					throw Exceptions.illegalArgument(
+							"{} is not a subtype of com.github.xuse.querydsl.sql.RelationalPathEx.", modelClass);
 				}
 			}
 		} catch (SQLException e) {
