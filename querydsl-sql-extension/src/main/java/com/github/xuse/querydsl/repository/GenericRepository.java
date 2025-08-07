@@ -1,7 +1,5 @@
 package com.github.xuse.querydsl.repository;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 

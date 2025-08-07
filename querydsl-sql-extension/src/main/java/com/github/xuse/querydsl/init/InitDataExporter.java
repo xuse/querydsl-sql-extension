@@ -2,7 +2,6 @@ package com.github.xuse.querydsl.init;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -22,7 +21,6 @@ import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.types.Path;
 import com.querydsl.sql.RelationalPath;
