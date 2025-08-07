@@ -7,11 +7,11 @@ v{querydsl 版本号} - r(extension version)
 ```
 
 **v5.0.0-r140**  (2025-7-30)
-
 * Revise Javadoc by via translations.
 * Some fix on function `findByConditionBean`
 * Utilities update.
 * Unit test coverage to 75%.
+* Update语句在更新记录时，默认会更新指定为自动生成数值的列。
 
 **v5.0.0-r130**  (2024-11-27)
 

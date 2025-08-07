@@ -109,7 +109,7 @@ The dynamic class generation scheme generates one accessor for each set of SELEC
 
 * **Bytecode/JIT friendly:** Programming techniques based on principles such as minimizing memory copying, minimizing bytecode operation, JIT friendliness, and branch prediction. Techniques include stack manipulation, maximizing use of the final keyword, manual inlining, object reuse, one-time memory allocation, using tableswitch instead of complex branches, and more.
 
-* **Tuning API for developers:** Provides fetchSize, maxRows, queryTimeout, and other methods that developers can use to tune performance and security when working with large amounts of data.
+* **Tuning API for developers:** Provides fetchSize, maxRows, queryTimeout, and other methods that developers can use to tune performance and safety when working with large amounts of data.
 
   **Example:** Retrieve 1 million IDs at once.
   ```java

@@ -14,6 +14,8 @@ v{querydsl version} - r(extension version)
 * Utilities update.
 * Unit test coverage to 75%.
 * Revise Javadoc via AI translations.
+* The UPDATE statement, when updating records, will by default update columns designated to auto-generate values.
+
 * **v5.0.0-r130** (2024-11-27)
 
  * New modules for r2dbc and r2dbc-spring transaction, supports reactive programming. 
