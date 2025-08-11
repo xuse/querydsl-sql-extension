@@ -23,11 +23,14 @@ import java.util.function.BiFunction;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
+import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.PathMetadataFactory;
+import com.querydsl.core.types.Templates;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.RelationalPath;
+import com.querydsl.sql.SQLTemplates;
 
 import lombok.SneakyThrows;
 
@@ -113,7 +116,20 @@ public class TypeUtils {
 	private static volatile Class RECORD_CLASS;
 	private static volatile Method RECORD_GET_RECORD_COMPONENTS;
 	private static volatile Method RECORD_COMPONENT_GET_NAME;
-
+	public static Method TEMPLATE_ADD;
+	static {
+		try {
+			TEMPLATE_ADD=Templates.class.getDeclaredMethod("add", Operator.class,String.class);	
+			TEMPLATE_ADD.setAccessible(true);	
+		}catch(Exception ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+	
+	@SneakyThrows
+	public static void add(SQLTemplates templates, Operator op, String template) {
+		TEMPLATE_ADD.invoke(templates, op, template);
+	}
 
 	/**
 	 * If it can be converted to type of class, convert it; otherwise, return

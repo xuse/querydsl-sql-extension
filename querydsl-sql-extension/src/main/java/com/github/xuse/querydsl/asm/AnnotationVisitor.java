@@ -38,38 +38,59 @@ package com.github.xuse.querydsl.asm;
 public abstract class AnnotationVisitor {
 
   /**
-   * The ASM API version implemented by this visitor. The value of this field must be one of {@link
-   * Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or {@link Opcodes#ASM7}.
+   * The ASM API version implemented by this visitor. The value of this field must be one of the
+   * {@code ASM}<i>x</i> values in {@link Opcodes}.
    */
   protected final int api;
 
-  /** The annotation visitor to which this visitor must delegate method calls. May be null. */
+  /**
+   * The annotation visitor to which this visitor must delegate method calls. May be {@literal
+   * null}.
+   */
   protected AnnotationVisitor av;
 
   /**
    * Constructs a new {@link AnnotationVisitor}.
    *
-   * @param api the ASM API version implemented by this visitor. Must be one of {@link
-   *     Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or {@link Opcodes#ASM7}.
+   * @param api the ASM API version implemented by this visitor. Must be one of the {@code
+   *     ASM}<i>x</i> values in {@link Opcodes}.
    */
-  public AnnotationVisitor(final int api) {
+  protected AnnotationVisitor(final int api) {
     this(api, null);
   }
 
   /**
    * Constructs a new {@link AnnotationVisitor}.
    *
-   * @param api the ASM API version implemented by this visitor. Must be one of {@link
-   *     Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or {@link Opcodes#ASM7}.
+   * @param api the ASM API version implemented by this visitor. Must be one of the {@code
+   *     ASM}<i>x</i> values in {@link Opcodes}.
    * @param annotationVisitor the annotation visitor to which this visitor must delegate method
-   *     calls. May be null.
+   *     calls. May be {@literal null}.
    */
-  public AnnotationVisitor(final int api, final AnnotationVisitor annotationVisitor) {
-    if (api != Opcodes.ASM6 && api != Opcodes.ASM5 && api != Opcodes.ASM4 && api != Opcodes.ASM7) {
-      throw new IllegalArgumentException();
+  protected AnnotationVisitor(final int api, final AnnotationVisitor annotationVisitor) {
+    if (api != Opcodes.ASM9
+        && api != Opcodes.ASM8
+        && api != Opcodes.ASM7
+        && api != Opcodes.ASM6
+        && api != Opcodes.ASM5
+        && api != Opcodes.ASM4
+        && api != Opcodes.ASM10_EXPERIMENTAL) {
+      throw new IllegalArgumentException("Unsupported api " + api);
     }
+    // SPRING PATCH: no preview mode check for ASM experimental
     this.api = api;
     this.av = annotationVisitor;
+  }
+
+  /**
+   * The annotation visitor to which this visitor must delegate method calls. May be {@literal
+   * null}.
+   *
+   * @return the annotation visitor to which this visitor must delegate method calls, or {@literal
+   *     null}.
+   */
+  public AnnotationVisitor getDelegate() {
+    return av;
   }
 
   /**
@@ -119,9 +140,9 @@ public abstract class AnnotationVisitor {
   }
 
   /**
-   * Visits an array value of the annotation. Note that arrays of primitive types (such as byte,
+   * Visits an array value of the annotation. Note that arrays of primitive values (such as byte,
    * boolean, short, char, int, long, float or double) can be passed as value to {@link #visit
-   * visit}. This is what {@link ClassReader} does.
+   * visit}. This is what {@link ClassReader} does for non empty arrays of primitive values.
    *
    * @param name the value name.
    * @return a visitor to visit the actual array value elements, or {@literal null} if this visitor

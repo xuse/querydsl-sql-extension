@@ -18,6 +18,7 @@ import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.sql.dialect.SimpleDetector;
 import com.github.xuse.querydsl.sql.dialect.SizeParser;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
+import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
 
@@ -31,7 +32,7 @@ public interface SQLTemplatesEx {
 	default String getIfExists() {
 		return null;
 	}
-
+	
 	/**
 	 * 获得表结构的列定义
 	 * @param sqlTypes sqlTypes
@@ -76,67 +77,69 @@ public interface SQLTemplatesEx {
 	 * Adding the extension Operator into the default SQLTemplates.
 	 */
 	static void initDefaultDDLTemplate(SQLTemplates templates) {
-		templates.add(Basic.SELECT_VALUES, "select {0}");
-		templates.add(Basic.TIME_EQ, "{0} = {1}");
-		templates.add(AlterTableOps.ADD_COLUMN, "ADD COLUMN {0}");
-		templates.add(AlterTableOps.DROP_COLUMN, "DROP COLUMN {0} {1}");
-		templates.add(AlterTableOps.ALTER_COLUMN, "ALTER COLUMN {0} {1}");
-		templates.add(AlterTableOps.RENAME_KEY, "RENAME KEY {0} TO {1}");
-		templates.add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}");
-		templates.add(DDLOps.COLUMN_SPEC, "{0} {1} {2}");
-		templates.add(DDLOps.DATA_TYPE, "{0} {1} {2}");
-		templates.add(DDLOps.UNSIGNED, "{0} UNSIGNED");
-		templates.add(DDLOps.DEFAULT, "DEFAULT {0}");
-		templates.add(DDLOps.COMMENT_ON_COLUMN, "{0}");
-		templates.add(DDLOps.COMMENT_ON_TABLE, "{0}");
-		templates.add(DDLOps.CHARSET, "{0} CHARSET = {1}");
-		templates.add(DDLOps.COLLATE, "{0} COLLATE = {1}");
-		templates.add(DDLOps.COLUMN_ALLOW_NULL, "NULL");
-		templates.add(DDLOps.TABLE_DEFINITIONS, "{0},\n  {1}");
-		templates.add(DDLOps.DEF_LIST, "{0} {1}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CHECK, "DROP CHECK {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_FOREIGNKEY, "DROP FOREIGN KEY {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP CONSTRAINT {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY, "DROP PRIMARY KEY");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT, "DROP CONSTRAINT {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP, "DROP INDEX {0}");
-		templates.add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP INDEX {0}");
-		templates.add(DropStatement.DROP_TABLE, "DROP TABLE {0}");
-		templates.add(DropStatement.DROP_INDEX, "DROP INDEX {0}");
+		TypeUtils.add(templates, Basic.SELECT_VALUES, "select {0}");
+		TypeUtils.add(templates, Basic.TIME_EQ, "{0} = {1}");
+		TypeUtils.add(templates, AlterTableOps.ADD_COLUMN, "ADD COLUMN {0}");
+		TypeUtils.add(templates, AlterTableOps.DROP_COLUMN, "DROP COLUMN {0} {1}");
+		TypeUtils.add(templates, AlterTableOps.ALTER_COLUMN, "ALTER COLUMN {0} {1}");
+		TypeUtils.add(templates, AlterTableOps.RENAME_KEY, "RENAME KEY {0} TO {1}");
+		TypeUtils.add(templates, AlterTableOps.ALTER_TABLE_ADD, "ADD {0}");
+		TypeUtils.add(templates, DDLOps.COLUMN_SPEC, "{0} {1} {2}");
+		TypeUtils.add(templates, DDLOps.DATA_TYPE, "{0} {1} {2}");
+		TypeUtils.add(templates, DDLOps.UNSIGNED, "{0} UNSIGNED");
+		TypeUtils.add(templates, DDLOps.DEFAULT, "DEFAULT {0}");
+		TypeUtils.add(templates, DDLOps.COMMENT_ON_COLUMN, "{0}");
+		TypeUtils.add(templates, DDLOps.COMMENT_ON_TABLE, "{0}");
+		TypeUtils.add(templates, DDLOps.CHARSET, "{0} CHARSET = {1}");
+		TypeUtils.add(templates, DDLOps.COLLATE, "{0} COLLATE = {1}");
+		TypeUtils.add(templates, DDLOps.COLUMN_ALLOW_NULL, "NULL");
+		TypeUtils.add(templates, DDLOps.TABLE_DEFINITIONS, "{0},\n  {1}");
+		TypeUtils.add(templates, DDLOps.DEF_LIST, "{0} {1}");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_CHECK, "DROP CHECK {0}");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_FOREIGNKEY, "DROP FOREIGN KEY {0}");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP CONSTRAINT {0}");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_PRIMARYKEY, "DROP PRIMARY KEY");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_CONSTRAINT, "DROP CONSTRAINT {0}");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_BITMAP, "DROP INDEX {0}");
+		TypeUtils.add(templates, AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP INDEX {0}");
+		TypeUtils.add(templates, DropStatement.DROP_TABLE, "DROP TABLE {0}");
+		TypeUtils.add(templates, DropStatement.DROP_INDEX, "DROP INDEX {0}");
 		// all constraint create def
-		templates.add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH");
-		templates.add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}");
-		templates.add(CreateStatement.CREATE_BITMAP, "CREATE BITMAP INDEX {1} ON {0} {2}");
+		TypeUtils.add(templates, CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}");
+		TypeUtils.add(templates, CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}");
+		TypeUtils.add(templates, CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH");
+		TypeUtils.add(templates, CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}");
+		TypeUtils.add(templates, CreateStatement.CREATE_BITMAP, "CREATE BITMAP INDEX {1} ON {0} {2}");
 		// All Constraint inline def
-		templates.add(ConstraintType.CHECK, "CONSTRAINT {1} CHECK ({2})");
-		templates.add(ConstraintType.UNIQUE, "UNIQUE KEY {1} {2}");
-		templates.add(ConstraintType.FOREIGN_KEY, "CONSTRAINT {1} FOREIGN KEY {2}");
-		templates.add(ConstraintType.KEY, "KEY {1} {2}");
-		templates.add(ConstraintType.HASH, "KEY {1} {2} USING HASH");
-		templates.add(ConstraintType.PRIMARY_KEY, "PRIMARY KEY {2}");
+		TypeUtils.add(templates, ConstraintType.CHECK, "CONSTRAINT {1} CHECK ({2})");
+		TypeUtils.add(templates, ConstraintType.UNIQUE, "UNIQUE KEY {1} {2}");
+		TypeUtils.add(templates, ConstraintType.FOREIGN_KEY, "CONSTRAINT {1} FOREIGN KEY {2}");
+		TypeUtils.add(templates, ConstraintType.KEY, "KEY {1} {2}");
+		TypeUtils.add(templates, ConstraintType.HASH, "KEY {1} {2} USING HASH");
+		TypeUtils.add(templates, ConstraintType.PRIMARY_KEY, "PRIMARY KEY {2}");
 		// all alter table columns
-		templates.add(AlterColumnOps.RESTART_WITH, "RESTART WITH {0}");
-		templates.add(AlterColumnOps.SET_INCREMENT_BY, "SET INCREMENT BY {0}");
-		templates.add(AlterColumnOps.SET_DEFAULT, "SET DEFAULT {0}");
-		templates.add(AlterColumnOps.DROP_DEFAULT, "DROP DEFAULT");
-		templates.add(AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0}");
-		templates.add(AlterColumnOps.SET_GENERATED, "SET GENERATED {0}");
-		templates.add(AlterColumnOps.SET_NOTNULL, "SET NOT NULL");
-		templates.add(AlterColumnOps.SET_NULL, "SET NULL");
+		TypeUtils.add(templates, AlterColumnOps.RESTART_WITH, "RESTART WITH {0}");
+		TypeUtils.add(templates, AlterColumnOps.SET_INCREMENT_BY, "SET INCREMENT BY {0}");
+		TypeUtils.add(templates, AlterColumnOps.SET_DEFAULT, "SET DEFAULT {0}");
+		TypeUtils.add(templates, AlterColumnOps.DROP_DEFAULT, "DROP DEFAULT");
+		TypeUtils.add(templates, AlterColumnOps.SET_DATATYPE, "SET DATA TYPE {0}");
+		TypeUtils.add(templates, AlterColumnOps.SET_GENERATED, "SET GENERATED {0}");
+		TypeUtils.add(templates, AlterColumnOps.SET_NOTNULL, "SET NOT NULL");
+		TypeUtils.add(templates, AlterColumnOps.SET_NULL, "SET NULL");
 	/*
 		 * if you dialect supports FULLTEXT INDEX (such as MySQL), add these statment to you SQLTemplates
-		 * templates.add(ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");Just for mysql
-		 * templates.add(IndexConstraintOps.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}"); 
+		 * add(templates, ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");Just for mysql
+		 * add(templates, IndexConstraintOps.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}"); 
 		 */
 	}
+	
+	
 
 	/*
 	 * for dialects.
 	 */
 	default void add(SQLTemplates templates, Operator op, String template) {
-		templates.add(op, template);
+		TypeUtils.add(templates, op, template);
 	}
 
 	/**

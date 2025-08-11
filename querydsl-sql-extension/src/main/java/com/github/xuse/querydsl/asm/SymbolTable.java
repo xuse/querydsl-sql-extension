@@ -31,11 +31,11 @@ package com.github.xuse.querydsl.asm;
  * The constant pool entries, the BootstrapMethods attribute entries and the (ASM specific) type
  * table entries of a class.
  *
+ * @author Eric Bruneton
  * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.4">JVMS
  *     4.4</a>
  * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.23">JVMS
  *     4.7.23</a>
- * @author Eric Bruneton
  */
 final class SymbolTable {
 
@@ -108,10 +108,34 @@ final class SymbolTable {
    * An ASM specific type table used to temporarily store internal names that will not necessarily
    * be stored in the constant pool. This type table is used by the control flow and data flow
    * analysis algorithm used to compute stack map frames from scratch. This array stores {@link
-   * Symbol#TYPE_TAG} and {@link Symbol#UNINITIALIZED_TYPE_TAG}) Symbol. The type symbol at index
-   * {@code i} has its {@link Symbol#index} equal to {@code i} (and vice versa).
+   * Symbol#TYPE_TAG}, {@link Symbol#UNINITIALIZED_TYPE_TAG},{@link
+   * Symbol#FORWARD_UNINITIALIZED_TYPE_TAG} and {@link Symbol#MERGED_TYPE_TAG} entries. The type
+   * symbol at index {@code i} has its {@link Symbol#index} equal to {@code i} (and vice versa).
    */
   private Entry[] typeTable;
+
+  /**
+   * The actual number of {@link LabelEntry} in {@link #labelTable}. These elements are stored from
+   * index 0 to labelCount (excluded). The other array entries are empty. These label entries are
+   * also stored in the {@link #labelEntries} hash set.
+   */
+  private int labelCount;
+
+  /**
+   * The labels corresponding to the "forward uninitialized" types in the ASM specific {@link
+   * typeTable} (see {@link Symbol#FORWARD_UNINITIALIZED_TYPE_TAG}). The label entry at index {@code
+   * i} has its {@link LabelEntry#index} equal to {@code i} (and vice versa).
+   */
+  private LabelEntry[] labelTable;
+
+  /**
+   * A hash set of all the {@link LabelEntry} elements in the {@link #labelTable}. Each {@link
+   * LabelEntry} instance is stored at the array index given by its hash code modulo the array size.
+   * If several entries must be stored at the same array index, they are linked together via their
+   * {@link LabelEntry#next} field. The {@link #getOrAddLabelEntry(Label)} method ensures that this
+   * table does not contain duplicated entries.
+   */
+  private LabelEntry[] labelEntries;
 
   /**
    * Constructs a new, empty SymbolTable for the given ClassWriter.
@@ -139,7 +163,7 @@ final class SymbolTable {
     this.sourceClassReader = classReader;
 
     // Copy the constant pool binary content.
-    byte[] inputBytes = classReader.b;
+    byte[] inputBytes = classReader.classFileBuffer;
     int constantPoolOffset = classReader.getItem(1) - 1;
     int constantPoolLength = classReader.header - constantPoolOffset;
     constantPoolCount = classReader.getItemCount();
@@ -197,7 +221,9 @@ final class SymbolTable {
               classReader.readByte(itemOffset),
               classReader.readClass(memberRefItemOffset, charBuffer),
               classReader.readUTF8(nameAndTypeItemOffset, charBuffer),
-              classReader.readUTF8(nameAndTypeItemOffset + 2, charBuffer));
+              classReader.readUTF8(nameAndTypeItemOffset + 2, charBuffer),
+              classReader.readByte(memberRefItemOffset - 1)
+                  == Symbol.CONSTANT_INTERFACE_METHODREF_TAG);
           break;
         case Symbol.CONSTANT_DYNAMIC_TAG:
         case Symbol.CONSTANT_INVOKE_DYNAMIC_TAG:
@@ -242,7 +268,7 @@ final class SymbolTable {
    */
   private void copyBootstrapMethods(final ClassReader classReader, final char[] charBuffer) {
     // Find attributOffset of the 'bootstrap_methods' array.
-    byte[] inputBytes = classReader.b;
+    byte[] inputBytes = classReader.classFileBuffer;
     int currentAttributeOffset = classReader.getFirstAttributeOffset();
     for (int i = classReader.readUnsignedShort(currentAttributeOffset - 2); i > 0; --i) {
       String attributeName = classReader.readUTF8(currentAttributeOffset, charBuffer);
@@ -806,14 +832,15 @@ final class SymbolTable {
       final String descriptor,
       final boolean isInterface) {
     final int tag = Symbol.CONSTANT_METHOD_HANDLE_TAG;
+    final int data = getConstantMethodHandleSymbolData(referenceKind, isInterface);
     // Note that we don't need to include isInterface in the hash computation, because it is
     // redundant with owner (we can't have the same owner with different isInterface values).
-    int hashCode = hash(tag, owner, name, descriptor, referenceKind);
+    int hashCode = hash(tag, owner, name, descriptor, data);
     Entry entry = get(hashCode);
     while (entry != null) {
       if (entry.tag == tag
           && entry.hashCode == hashCode
-          && entry.data == referenceKind
+          && entry.data == data
           && entry.owner.equals(owner)
           && entry.name.equals(name)
           && entry.value.equals(descriptor)) {
@@ -827,8 +854,7 @@ final class SymbolTable {
       constantPool.put112(
           tag, referenceKind, addConstantMethodref(owner, name, descriptor, isInterface).index);
     }
-    return put(
-        new Entry(constantPoolCount++, tag, owner, name, descriptor, referenceKind, hashCode));
+    return put(new Entry(constantPoolCount++, tag, owner, name, descriptor, data, hashCode));
   }
 
   /**
@@ -842,16 +868,36 @@ final class SymbolTable {
    * @param owner the internal name of a class of interface.
    * @param name a field or method name.
    * @param descriptor a field or method descriptor.
+   * @param isInterface whether owner is an interface or not.
    */
   private void addConstantMethodHandle(
       final int index,
       final int referenceKind,
       final String owner,
       final String name,
-      final String descriptor) {
+      final String descriptor,
+      final boolean isInterface) {
     final int tag = Symbol.CONSTANT_METHOD_HANDLE_TAG;
-    int hashCode = hash(tag, owner, name, descriptor, referenceKind);
-    add(new Entry(index, tag, owner, name, descriptor, referenceKind, hashCode));
+    final int data = getConstantMethodHandleSymbolData(referenceKind, isInterface);
+    int hashCode = hash(tag, owner, name, descriptor, data);
+    add(new Entry(index, tag, owner, name, descriptor, data, hashCode));
+  }
+
+  /**
+   * Returns the {@link Symbol#data} field for a CONSTANT_MethodHandle_info Symbol.
+   *
+   * @param referenceKind one of {@link Opcodes#H_GETFIELD}, {@link Opcodes#H_GETSTATIC}, {@link
+   *     Opcodes#H_PUTFIELD}, {@link Opcodes#H_PUTSTATIC}, {@link Opcodes#H_INVOKEVIRTUAL}, {@link
+   *     Opcodes#H_INVOKESTATIC}, {@link Opcodes#H_INVOKESPECIAL}, {@link
+   *     Opcodes#H_NEWINVOKESPECIAL} or {@link Opcodes#H_INVOKEINTERFACE}.
+   * @param isInterface whether owner is an interface or not.
+   */
+  private static int getConstantMethodHandleSymbolData(
+      final int referenceKind, final boolean isInterface) {
+    if (referenceKind > Opcodes.H_PUTSTATIC && isInterface) {
+      return referenceKind << 8;
+    }
+    return referenceKind;
   }
 
   /**
@@ -1046,8 +1092,10 @@ final class SymbolTable {
     // bootstrap methods. We must therefore add the bootstrap method arguments to the constant pool
     // and BootstrapMethods attribute first, so that the BootstrapMethods attribute is not modified
     // while adding the given bootstrap method to it, in the rest of this method.
-    for (Object bootstrapMethodArgument : bootstrapMethodArguments) {
-      addConstant(bootstrapMethodArgument);
+    int numBootstrapArguments = bootstrapMethodArguments.length;
+    int[] bootstrapMethodArgumentIndexes = new int[numBootstrapArguments];
+    for (int i = 0; i < numBootstrapArguments; i++) {
+      bootstrapMethodArgumentIndexes[i] = addConstant(bootstrapMethodArguments[i]).index;
     }
 
     // Write the bootstrap method in the BootstrapMethods table. This is necessary to be able to
@@ -1062,10 +1110,10 @@ final class SymbolTable {
                 bootstrapMethodHandle.getDesc(),
                 bootstrapMethodHandle.isInterface())
             .index);
-    int numBootstrapArguments = bootstrapMethodArguments.length;
+
     bootstrapMethodsAttribute.putShort(numBootstrapArguments);
-    for (Object bootstrapMethodArgument : bootstrapMethodArguments) {
-      bootstrapMethodsAttribute.putShort(addConstant(bootstrapMethodArgument).index);
+    for (int i = 0; i < numBootstrapArguments; i++) {
+      bootstrapMethodsAttribute.putShort(bootstrapMethodArgumentIndexes[i]);
     }
 
     // Compute the length and the hash code of the bootstrap method.
@@ -1128,6 +1176,18 @@ final class SymbolTable {
   }
 
   /**
+   * Returns the label corresponding to the "forward uninitialized" type table element whose index
+   * is given.
+   *
+   * @param typeIndex the type table index of a "forward uninitialized" type table element.
+   * @return the label corresponding of the NEW instruction which created this "forward
+   *     uninitialized" type.
+   */
+  Label getForwardUninitializedLabel(final int typeIndex) {
+    return labelTable[(int) typeTable[typeIndex].data].label;
+  }
+
+  /**
    * Adds a type in the type table of this symbol table. Does nothing if the type table already
    * contains a similar type.
    *
@@ -1147,13 +1207,13 @@ final class SymbolTable {
   }
 
   /**
-   * Adds an {@link Frame#ITEM_UNINITIALIZED} type in the type table of this symbol table. Does
-   * nothing if the type table already contains a similar type.
+   * Adds an uninitialized type in the type table of this symbol table. Does nothing if the type
+   * table already contains a similar type.
    *
    * @param value an internal class name.
-   * @param bytecodeOffset the bytecode offset of the NEW instruction that created this {@link
-   *     Frame#ITEM_UNINITIALIZED} type value.
-   * @return the index of a new or already existing type Symbol with the given value.
+   * @param bytecodeOffset the bytecode offset of the NEW instruction that created this
+   *     uninitialized type value.
+   * @return the index of a new or already existing type #@link Symbol} with the given value.
    */
   int addUninitializedType(final String value, final int bytecodeOffset) {
     int hashCode = hash(Symbol.UNINITIALIZED_TYPE_TAG, value, bytecodeOffset);
@@ -1172,6 +1232,32 @@ final class SymbolTable {
   }
 
   /**
+   * Adds a "forward uninitialized" type in the type table of this symbol table. Does nothing if the
+   * type table already contains a similar type.
+   *
+   * @param value an internal class name.
+   * @param label the label of the NEW instruction that created this uninitialized type value. If
+   *     the label is resolved, use the {@link #addUninitializedType} method instead.
+   * @return the index of a new or already existing type {@link Symbol} with the given value.
+   */
+  int addForwardUninitializedType(final String value, final Label label) {
+    int labelIndex = getOrAddLabelEntry(label).index;
+    int hashCode = hash(Symbol.FORWARD_UNINITIALIZED_TYPE_TAG, value, labelIndex);
+    Entry entry = get(hashCode);
+    while (entry != null) {
+      if (entry.tag == Symbol.FORWARD_UNINITIALIZED_TYPE_TAG
+          && entry.hashCode == hashCode
+          && entry.data == labelIndex
+          && entry.value.equals(value)) {
+        return entry.index;
+      }
+      entry = entry.next;
+    }
+    return addTypeInternal(
+        new Entry(typeCount, Symbol.FORWARD_UNINITIALIZED_TYPE_TAG, value, labelIndex, hashCode));
+  }
+
+  /**
    * Adds a merged type in the type table of this symbol table. Does nothing if the type table
    * already contains a similar type.
    *
@@ -1183,8 +1269,10 @@ final class SymbolTable {
    *     corresponding to the common super class of the given types.
    */
   int addMergedType(final int typeTableIndex1, final int typeTableIndex2) {
-    // TODO sort the arguments? The merge result should be independent of their order.
-    long data = typeTableIndex1 | (((long) typeTableIndex2) << 32);
+    long data =
+        typeTableIndex1 < typeTableIndex2
+            ? typeTableIndex1 | (((long) typeTableIndex2) << 32)
+            : typeTableIndex2 | (((long) typeTableIndex1) << 32);
     int hashCode = hash(Symbol.MERGED_TYPE_TAG, typeTableIndex1 + typeTableIndex2);
     Entry entry = get(hashCode);
     while (entry != null) {
@@ -1219,6 +1307,59 @@ final class SymbolTable {
     }
     typeTable[typeCount++] = entry;
     return put(entry).index;
+  }
+
+  /**
+   * Returns the {@link LabelEntry} corresponding to the given label. Creates a new one if there is
+   * no such entry.
+   *
+   * @param label the {@link Label} of a NEW instruction which created an uninitialized type, in the
+   *     case where this NEW instruction is after the &lt;init&gt; constructor call (in bytecode
+   *     offset order). See {@link Symbol#FORWARD_UNINITIALIZED_TYPE_TAG}.
+   * @return the {@link LabelEntry} corresponding to {@code label}.
+   */
+  private LabelEntry getOrAddLabelEntry(final Label label) {
+    if (labelEntries == null) {
+      labelEntries = new LabelEntry[16];
+      labelTable = new LabelEntry[16];
+    }
+    int hashCode = System.identityHashCode(label);
+    LabelEntry labelEntry = labelEntries[hashCode % labelEntries.length];
+    while (labelEntry != null && labelEntry.label != label) {
+      labelEntry = labelEntry.next;
+    }
+    if (labelEntry != null) {
+      return labelEntry;
+    }
+
+    if (labelCount > (labelEntries.length * 3) / 4) {
+      int currentCapacity = labelEntries.length;
+      int newCapacity = currentCapacity * 2 + 1;
+      LabelEntry[] newLabelEntries = new LabelEntry[newCapacity];
+      for (int i = currentCapacity - 1; i >= 0; --i) {
+        LabelEntry currentEntry = labelEntries[i];
+        while (currentEntry != null) {
+          int newCurrentEntryIndex = System.identityHashCode(currentEntry.label) % newCapacity;
+          LabelEntry nextEntry = currentEntry.next;
+          currentEntry.next = newLabelEntries[newCurrentEntryIndex];
+          newLabelEntries[newCurrentEntryIndex] = currentEntry;
+          currentEntry = nextEntry;
+        }
+      }
+      labelEntries = newLabelEntries;
+    }
+    if (labelCount == labelTable.length) {
+      LabelEntry[] newLabelTable = new LabelEntry[2 * labelTable.length];
+      System.arraycopy(labelTable, 0, newLabelTable, 0, labelTable.length);
+      labelTable = newLabelTable;
+    }
+
+    labelEntry = new LabelEntry(labelCount, label);
+    int index = hashCode % labelEntries.length;
+    labelEntry.next = labelEntries[index];
+    labelEntries[index] = labelEntry;
+    labelTable[labelCount++] = labelEntry;
+    return labelEntry;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -1271,7 +1412,7 @@ final class SymbolTable {
    *
    * @author Eric Bruneton
    */
-  private static class Entry extends Symbol {
+  private static final class Entry extends Symbol {
 
     /** The hash code of this entry. */
     final int hashCode;
@@ -1295,24 +1436,50 @@ final class SymbolTable {
     }
 
     Entry(final int index, final int tag, final String value, final int hashCode) {
-      super(index, tag, /* owner = */ null, /* name = */ null, value, /* data = */ 0);
+      super(index, tag, /* owner= */ null, /* name= */ null, value, /* data= */ 0);
       this.hashCode = hashCode;
     }
 
     Entry(final int index, final int tag, final String value, final long data, final int hashCode) {
-      super(index, tag, /* owner = */ null, /* name = */ null, value, data);
+      super(index, tag, /* owner= */ null, /* name= */ null, value, data);
       this.hashCode = hashCode;
     }
 
     Entry(
         final int index, final int tag, final String name, final String value, final int hashCode) {
-      super(index, tag, /* owner = */ null, name, value, /* data = */ 0);
+      super(index, tag, /* owner= */ null, name, value, /* data= */ 0);
       this.hashCode = hashCode;
     }
 
     Entry(final int index, final int tag, final long data, final int hashCode) {
-      super(index, tag, /* owner = */ null, /* name = */ null, /* value = */ null, data);
+      super(index, tag, /* owner= */ null, /* name= */ null, /* value= */ null, data);
       this.hashCode = hashCode;
+    }
+  }
+
+  /**
+   * A label corresponding to a "forward uninitialized" type in the ASM specific {@link
+   * SymbolTable#typeTable} (see {@link Symbol#FORWARD_UNINITIALIZED_TYPE_TAG}).
+   *
+   * @author Eric Bruneton
+   */
+  private static final class LabelEntry {
+
+    /** The index of this label entry in the {@link SymbolTable#labelTable} array. */
+    final int index;
+
+    /** The value of this label entry. */
+    final Label label;
+
+    /**
+     * Another entry (and so on recursively) having the same hash code (modulo the size of {@link
+     * SymbolTable#labelEntries}}) as this one.
+     */
+    LabelEntry next;
+
+    LabelEntry(final int index, final Label label) {
+      this.index = index;
+      this.label = label;
     }
   }
 }
