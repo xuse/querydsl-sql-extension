@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.github.xuse.querydsl.types.CodeEnum;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.FilteredClause;
 import com.querydsl.core.types.ConstantImpl;
@@ -85,6 +86,9 @@ public class SQLTypeUtils {
 			return Types.TIMESTAMP_WITH_TIMEZONE;
 		case "[B":
 			return Types.VARBINARY;
+		}
+		if(CodeEnum.class.isAssignableFrom(type)) {
+			return Types.TINYINT;
 		}
 		throw Exceptions.illegalArgument("Please assign the jdbc data type of field {}, type={}", field, name);
 	}
