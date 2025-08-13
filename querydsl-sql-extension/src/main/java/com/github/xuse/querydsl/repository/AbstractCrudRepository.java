@@ -39,6 +39,7 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.ComparableExpressionBase;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.core.types.dsl.StringExpression;
@@ -302,27 +303,39 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			if (condition == null) {
 				continue;
 			}
-			String pathName = condition.path();
-			if (StringUtils.isEmpty(pathName)) {
-				pathName = field.getName();
-			}
-			Path<?> path = bindings.get(pathName);
-			if (path == null) {
-				throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
-			}
-			if (condition.ignoreUnsavedValue()) {
-				java.util.function.Predicate<Object> tester;
-				if (beanPathEx != null) {
-					ColumnMapping cm = beanPathEx.getColumnMetadata(path);
-					tester = cm::isUnsavedValue;
-				} else {
-					tester = UnsavedValuePredicateFactory.Null;
-				}
-				if(isUnsavedValue(tester, value, condition.value())) {
-					continue;
+			
+			Predicate where = null;
+			if (condition.otherPaths().length > 0) {
+				for (String op : condition.otherPaths()) {
+					if (StringUtils.isEmpty(op)) {
+						continue;
+					}
+					Path<?> path = bindings.get(op);
+					if (path == null) {
+						throw Exceptions.illegalArgument("Not found path {} in bean {}", op, beanPath);
+					}
+					if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx, path, condition.value())) {
+					}else {
+						where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));
+					}
 				}
 			}
-			appendCondition(select, value, path, condition.value());
+			{
+				String pathName = condition.path();
+				if (StringUtils.isEmpty(pathName)) {
+					pathName = field.getName();
+				}
+				Path<?> path = bindings.get(pathName);
+				if (path == null) {
+					throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
+				}
+				if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx,path,condition.value())) {
+				}else {
+					where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));				
+				}
+				select.where(where);
+			}
+					
 		}
 		if (limit != null && limit.intValue() >= 0) {
 			select.limit(limit.intValue());
@@ -335,6 +348,27 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
 		}
 		return Pair.of(-1, select.fetch());
+	}
+
+	private Predicate appendOr(Predicate p1, Predicate p2) {
+		if(p1==null) {
+			return p2;
+		}
+		if(p2==null) {
+			return p1;
+		}
+		return  Expressions.booleanOperation(Ops.OR, p1, p2);
+	}
+
+	private boolean isUnsaved(Object value,RelationalPathEx<T> beanPathEx,Path<?> path,Ops op) {
+		java.util.function.Predicate<Object> tester;
+		if (beanPathEx != null) {
+			ColumnMapping cm = beanPathEx.getColumnMetadata(path);
+			tester = cm::isUnsavedValue;
+		} else {
+			tester = UnsavedValuePredicateFactory.Null;
+		}
+		return isUnsavedValue(tester, value, op); 
 	}
 
 	private List<Pair<Path<?>,Boolean>> processOrder(Object value, Order order,Field[] fields,Object[] values,Map<String, Path<?>> bindings) {
@@ -445,160 +479,139 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void appendCondition(SQLQueryAlter<T> select, Object value, Path<?> path, Ops ops) {
-		if (ops == Ops.IN) {
+	private Predicate toPredicate(Object value, Path<?> path, Ops operator, String fieldName) {
+		try {
+			
+		
+		if (operator == Ops.IN) {
 			if (value == null || elements(value)<1) {
-				return;
+				return null;
 			}
-		} else if (ops == Ops.BETWEEN) {
+		} else if (operator == Ops.BETWEEN) {
 			int paramCount=elements(value);
 			if (value == null || paramCount==0) {
-				return;
+				return null;
 			}
 			if (paramCount != 2) {
 				throw new IllegalArgumentException("Invalid param, the value for between condition must be 2 elements.");
 			}
 		}
-		switch(ops) {
-			case IN:
-				{
-					SimpleExpression exp = (SimpleExpression) path;
-					if (value instanceof Collection<?>) {
-						select.where(exp.in((Collection<?>) value));
-					} else if (value.getClass().isArray()) {
-						select.where(exp.in(Arrays.asList(ArrayUtils.toWrapped(value))));	
-					}
-					break;
-				}
-			case EQ:
-				{
-					SimpleExpression exp = (SimpleExpression) path;
-					if (value == null) {
-						select.where(exp.isNull());
-					} else {
-						select.where(exp.eq(value));
-					}
-					break;
-				}
-			case LT:
-				{
-					if (path instanceof NumberExpression) {
-						NumberExpression exp = (NumberExpression) path;
-						select.where(exp.lt((Number) value));
-					} else if(value!=null){
-						ComparableExpression exp = (ComparableExpression) path;
-						select.where(exp.lt((Comparable) value));
-					}
-					break;
-				}
-			case LOE:
-				{
-					if (path instanceof NumberExpression) {
-						NumberExpression exp = (NumberExpression) path;
-						select.where(exp.loe((Number) value));
-					} else if(value!=null){
-						ComparableExpression exp = (ComparableExpression) path;
-						select.where(exp.loe((Comparable) value));
-					}
-					break;
-				}
-			case GT:
-				{
-					if (path instanceof NumberExpression) {
-						NumberExpression exp = (NumberExpression) path;
-						select.where(exp.gt((Number) value));
-					} else if(value!=null){
-						ComparableExpression exp = (ComparableExpression) path;
-						select.where(exp.gt((Comparable) value));
-					}
-					break;
-				}
-			case GOE:
-				{
-					if (path instanceof NumberExpression) {
-						NumberExpression exp = (NumberExpression) path;
-						select.where(exp.goe((Number) value));
-					} else if(value!=null){
-						ComparableExpression exp = (ComparableExpression) path;
-						select.where(exp.goe((Comparable) value));
-					}
-					break;
-				}
-			case BETWEEN:
-				{
-					ComparableExpression exp = (ComparableExpression) path;
-					if (value instanceof Collection<?>) {
-						List<? extends Comparable> list = toList((Collection<Comparable>) value);
-						select.where(exp.between(list.get(0), list.get(1)));
-					} else if (value instanceof Object[]) {
-						Object[] binValues = (Object[]) value;
-						select.where(exp.between((Comparable) binValues[0], (Comparable) binValues[1]));
-					}
-					break;
-				}
-			case STARTS_WITH:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.startsWith(String.valueOf(value)));
-					break;
-				}
-			case STARTS_WITH_IC:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.startsWithIgnoreCase(String.valueOf(value)));
-					break;
-				}
-			case ENDS_WITH:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.endsWith(String.valueOf(value)));
-					break;
-				}
-			case ENDS_WITH_IC:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.endsWithIgnoreCase(String.valueOf(value)));
-					break;
-				}
-			case STRING_CONTAINS:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.contains(String.valueOf(value)));
-					break;
-				}
-			case STRING_CONTAINS_IC:
-			{
-				StringExpression exp = (StringExpression) path;
-				select.where(exp.containsIgnoreCase(String.valueOf(value)));
-				break;
+		switch (operator) {
+		case IN: {
+			SimpleExpression exp = (SimpleExpression) path;
+			if (value instanceof Collection<?>) {
+				return exp.in((Collection<?>) value);
+			} else if (value.getClass().isArray()) {
+				return exp.in(Arrays.asList(ArrayUtils.toWrapped(value)));
 			}
-			case LIKE:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.like(String.valueOf(value)));
-					break;
-				}
-			case LIKE_IC:
-				{
-					StringExpression exp = (StringExpression) path;
-					select.where(exp.likeIgnoreCase(String.valueOf(value)));
-					break;
-				}
-			case IS_NULL:
-				{
-					SimpleExpression exp = (SimpleExpression) path;
-					select.where(exp.isNull());
-					break;
-				}
-			case IS_NOT_NULL:
-				{
-					SimpleExpression exp = (SimpleExpression) path;
-					select.where(exp.isNotNull());
-					break;
-				}
-			default:
-				throw new UnsupportedOperationException("Ops." + ops + " is not supported on field " + path);
+			break;
 		}
+		case EQ: {
+			SimpleExpression exp = (SimpleExpression) path;
+			if (value == null) {
+				return exp.isNull();
+			} else {
+				return exp.eq(value);
+			}
+		}
+		case LT: {
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				return exp.lt((Number) value);
+			} else if (value != null) {
+				ComparableExpression exp = (ComparableExpression) path;
+				return exp.lt((Comparable) value);
+			}
+			break;
+		}
+		case LOE: {
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				return exp.loe((Number) value);
+			} else if (value != null) {
+				ComparableExpression exp = (ComparableExpression) path;
+				return exp.loe((Comparable) value);
+			}
+			break;
+		}
+		case GT: {
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				return exp.gt((Number) value);
+			} else if (value != null) {
+				ComparableExpression exp = (ComparableExpression) path;
+				return exp.gt((Comparable) value);
+			}
+			break;
+		}
+		case GOE: {
+			if (path instanceof NumberExpression) {
+				NumberExpression exp = (NumberExpression) path;
+				return exp.goe((Number) value);
+			} else if (value != null) {
+				ComparableExpression exp = (ComparableExpression) path;
+				return exp.goe((Comparable) value);
+			}
+			break;
+		}
+		case BETWEEN: {
+			ComparableExpression exp = (ComparableExpression) path;
+			if (value instanceof Collection<?>) {
+				List<? extends Comparable> list = toList((Collection<Comparable>) value);
+				return exp.between(list.get(0), list.get(1));
+			} else if (value instanceof Object[]) {
+				Object[] binValues = (Object[]) value;
+				return exp.between((Comparable) binValues[0], (Comparable) binValues[1]);
+			}
+			break;
+		}
+		case STARTS_WITH: {
+			StringExpression exp = (StringExpression) path;
+			return exp.startsWith(String.valueOf(value));
+		}
+		case STARTS_WITH_IC: {
+			StringExpression exp = (StringExpression) path;
+			return exp.startsWithIgnoreCase(String.valueOf(value));
+		}
+		case ENDS_WITH: {
+			StringExpression exp = (StringExpression) path;
+			return exp.endsWith(String.valueOf(value));
+		}
+		case ENDS_WITH_IC: {
+			StringExpression exp = (StringExpression) path;
+			return exp.endsWithIgnoreCase(String.valueOf(value));
+		}
+		case STRING_CONTAINS: {
+			StringExpression exp = (StringExpression) path;
+			return exp.contains(String.valueOf(value));
+		}
+		case STRING_CONTAINS_IC: {
+			StringExpression exp = (StringExpression) path;
+			return exp.containsIgnoreCase(String.valueOf(value));
+		}
+		case LIKE: {
+			StringExpression exp = (StringExpression) path;
+			return exp.like(String.valueOf(value));
+		}
+		case LIKE_IC: {
+			StringExpression exp = (StringExpression) path;
+			return exp.likeIgnoreCase(String.valueOf(value));
+		}
+		case IS_NULL: {
+			SimpleExpression exp = (SimpleExpression) path;
+			return exp.isNull();
+		}
+		case IS_NOT_NULL: {
+			SimpleExpression exp = (SimpleExpression) path;
+			return exp.isNotNull();
+		}
+		default:
+			throw new UnsupportedOperationException("Ops." + operator + " is not supported on field " + path);
+		}
+		}catch(Exception ex) {
+			throw Exceptions.illegalArgument("Setting condition [{}] on path {} error", fieldName, path,ex);
+		}
+		return null;
 	}
 
 	@SuppressWarnings({ "rawtypes" })

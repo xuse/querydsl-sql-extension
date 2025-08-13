@@ -113,4 +113,7 @@ public class AvsAuthParams {
 	
 	@Condition(value=Ops.IS_NOT_NULL,path="devId")
 	private boolean devIdIsNotNull;
+	
+	@Condition(value=Ops.STRING_CONTAINS,path="devId",otherPaths = {"userId","authContent"})
+	private String mixField;
 }

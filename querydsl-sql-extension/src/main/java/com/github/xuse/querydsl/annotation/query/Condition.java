@@ -25,6 +25,11 @@ public @interface Condition {
 	 * 只有当查询条件类中字段名和数据表映射类的字段名不同时，此处才需要设置；同时还需要设置@ConditionBean中的additional。
 	 */
 	String path() default "";
+	
+	/**
+	 * 某些场合需要多个字段匹配用户输入条件，例如  User.phone=? OR User.email=?，需要增加其他匹配字段
+	 */
+	String[] otherPaths() default{};
 
 	/**
 	 * @return 当未设置值(为null)时，忽略该条件

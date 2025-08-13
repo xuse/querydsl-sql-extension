@@ -539,6 +539,12 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 				AvsAuthParams.builder().devIdLikeIC("z").devIdIsNull(true).fetchTotal(false).build()
 		);
 		assertTrue(result.getSecond().isEmpty());
+		
+		System.out.println("++++");
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().mixField("z").fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
 	}
 
 	@Test
