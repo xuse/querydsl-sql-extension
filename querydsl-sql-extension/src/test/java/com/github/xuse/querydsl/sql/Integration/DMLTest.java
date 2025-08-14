@@ -520,6 +520,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		);
 		assertTrue(result.getSecond().isEmpty());
 		
+		System.out.println("===Test EndWith===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdEndWith("z").devIdStartWith("a").fetchTotal(false).build()
 		);
@@ -529,7 +530,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 				AvsAuthParams.builder().devIdEndWithIC("z").devIdStartWithIC("a").fetchTotal(false).build()
 		);
 		assertTrue(result.getSecond().isEmpty());
-		System.out.println("======");
+		System.out.println("===Test Like===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdLike("z%z").devIdIsNotNull(true).fetchTotal(false).build()
 		);
@@ -540,11 +541,18 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		);
 		assertTrue(result.getSecond().isEmpty());
 		
-		System.out.println("++++");
+		System.out.println("===Test MixedField===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().mixField("z").fetchTotal(false).build()
 		);
 		assertTrue(result.getSecond().isEmpty());
+		
+		System.out.println("++++");
+		result =factory.asRepository(t).findByCondition(
+				AvsAuthParams.builder().caseType(3).fetchTotal(false).build()
+		);
+		assertTrue(result.getSecond().isEmpty());
+		
 	}
 
 	@Test

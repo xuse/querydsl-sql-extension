@@ -5,7 +5,9 @@ import java.util.List;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
+import com.github.xuse.querydsl.annotation.query.IntCase;
 import com.github.xuse.querydsl.annotation.query.Order;
+import com.github.xuse.querydsl.annotation.query.When;
 import com.querydsl.core.types.Ops;
 
 import lombok.AllArgsConstructor;
@@ -116,4 +118,11 @@ public class AvsAuthParams {
 	
 	@Condition(value=Ops.STRING_CONTAINS,path="devId",otherPaths = {"userId","authContent"})
 	private String mixField;
+	
+	@When(path="devId",ignoreIfNoMatchCase = false,forInt = {
+			@IntCase(is=1,ops = Ops.ENDS_WITH, value = "123"),
+			@IntCase(is=2,ops = Ops.ENDS_WITH, value = "456"),
+			@IntCase(is=3,ops = Ops.ENDS_WITH, value = "456")
+	})
+	private Integer caseType;
 }

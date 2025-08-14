@@ -12,9 +12,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.github.xuse.querydsl.annotation.query.BoolCase;
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
+import com.github.xuse.querydsl.annotation.query.IntCase;
 import com.github.xuse.querydsl.annotation.query.Order;
+import com.github.xuse.querydsl.annotation.query.StringCase;
+import com.github.xuse.querydsl.annotation.query.When;
+import com.github.xuse.querydsl.init.csv.Codecs;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
@@ -291,7 +296,11 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 				continue;
 			}
 			Condition condition = field.getAnnotation(Condition.class);
+			When when=field.getAnnotation(When.class);
 			Order order=field.getAnnotation(Order.class);
+			if(ArrayUtils.countNonNull(condition,when,order)>1) {
+				throw Exceptions.illegalArgument("These annotation (@Condition @When @Order) must appear once on a field. {}", field);
+			}
 			if(order!=null && value!=null) {
 				List<Pair<Path<?>, Boolean>> orders = processOrder(value, order, fields, values, bindings);
 				for (Pair<Path<?>, Boolean> pair : orders) {
@@ -300,42 +309,75 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 				}
 				continue;
 			}
-			if (condition == null) {
-				continue;
-			}
-			
-			Predicate where = null;
-			if (condition.otherPaths().length > 0) {
-				for (String op : condition.otherPaths()) {
-					if (StringUtils.isEmpty(op)) {
-						continue;
-					}
-					Path<?> path = bindings.get(op);
-					if (path == null) {
-						throw Exceptions.illegalArgument("Not found path {} in bean {}", op, beanPath);
-					}
-					if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx, path, condition.value())) {
-					}else {
-						where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));
+			if (condition != null) {
+				Predicate where = null;
+				if (condition.otherPaths().length > 0) {
+					for (String op : condition.otherPaths()) {
+						if (StringUtils.isEmpty(op)) {
+							continue;
+						}
+						Path<?> path = bindings.get(op);
+						if (path == null) {
+							throw Exceptions.illegalArgument("Not found path {} in bean {}", op, beanPath);
+						}
+						if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx, path, condition.value())) {
+						}else {
+							where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));
+						}
 					}
 				}
+				{
+					String pathName = condition.path();
+					if (StringUtils.isEmpty(pathName)) {
+						pathName = field.getName();
+					}
+					Path<?> path = bindings.get(pathName);
+					if (path == null) {
+						throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
+					}
+					if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx,path,condition.value())) {
+					}else {
+						where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));				
+					}
+					select.where(where);
+				}
 			}
-			{
-				String pathName = condition.path();
+			if(when!=null) {
+				Class<?> fieldType=field.getType();
+				if(fieldType.isPrimitive()) {
+					throw Exceptions.illegalArgument("@When must not on a field of primitive type. {}", field);
+				}
+				String pathName = when.path();
 				if (StringUtils.isEmpty(pathName)) {
 					pathName = field.getName();
 				}
 				Path<?> path = bindings.get(pathName);
-				if (path == null) {
-					throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
+				if(value!=null) {
+					Pair<Ops,Object> matchExpr;
+					if(field.getType()==Boolean.class) {
+						matchExpr = getMatchExpr(value, when.forBool(),path.getType());
+					} else if (field.getType() == Integer.class) {
+						matchExpr = getMatchExpr(value, when.forInt(),path.getType());
+					} else if (field.getType() == String.class) {
+						matchExpr = getMatchExpr(value, when.value(),path.getType());
+					}else {
+						throw Exceptions.illegalArgument("@When only supports field in these types('Integer','Boolean','String'), the field {}", field);
+					}
+					if(matchExpr==null) {
+						if(!when.ignoreIfNoMatchCase()) {
+							throw Exceptions.illegalArgument("@When has no match case for value {}, on the field {}", value, field);	
+						}
+					}else {
+						Predicate where;
+						if(matchExpr.getFirst()==null) {
+							where=Expressions.booleanTemplate((String)matchExpr.getSecond());	
+						}else {
+							where = toPredicate(matchExpr.getSecond(), path, matchExpr.getFirst(),field.getName());
+						}
+						select.where(where);
+					}
 				}
-				if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx,path,condition.value())) {
-				}else {
-					where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));				
-				}
-				select.where(where);
 			}
-					
 		}
 		if (limit != null && limit.intValue() >= 0) {
 			select.limit(limit.intValue());
@@ -348,6 +390,54 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
 		}
 		return Pair.of(-1, select.fetch());
+	}
+
+	private Pair<Ops, Object> getMatchExpr(Object value, StringCase[] cases,Class<?> pathType) {
+		String v=String.valueOf(value);
+		for(StringCase c:cases) {
+			if(v.equals(c.is())) {
+				return toConditionExpr(c.ops(),c.value(),pathType,c.expression());
+			}
+		}
+		return null;
+	}
+
+	private Pair<Ops, Object> getMatchExpr(Object value, IntCase[] cases,Class<?> pathType) {
+		int v = ((Number) value).intValue();
+		for(IntCase c:cases) {
+			if(v==c.is()) {
+				return toConditionExpr(c.ops(),c.value(),pathType,c.expression());
+			}
+		}
+		return null;
+	}
+
+	private Pair<Ops, Object> getMatchExpr(Object value, BoolCase[] cases,Class<?> pathType) {
+		boolean v = ((Boolean) value).booleanValue();
+		for(BoolCase c:cases) {
+			if(v==c.is()) {
+				return toConditionExpr(c.ops(),c.value(),pathType,c.expression());
+			}
+		}
+		return null;
+	}
+	
+	private Pair<Ops, Object> toConditionExpr(Ops ops, String value, Class<?> pathType, String expression) {
+		if(StringUtils.isNotBlank(expression)) {
+			return Pair.of(null, expression);
+		}
+		if(ops==Ops.IN || ops==Ops.BETWEEN) {
+			//to array
+			String[] strs=StringUtils.split(expression,',');
+			Object[] v=new Object[strs.length];
+			for(int i=0;i<strs.length;i++) {
+				v[i] = Codecs.fromString(strs[i], pathType);
+			}
+			return Pair.of(ops, v);
+		}else {
+			Object v=Codecs.fromString(value, pathType);
+			return Pair.of(ops, v);
+		}
 	}
 
 	private Predicate appendOr(Predicate p1, Predicate p2) {
@@ -481,8 +571,6 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Predicate toPredicate(Object value, Path<?> path, Ops operator, String fieldName) {
 		try {
-			
-		
 		if (operator == Ops.IN) {
 			if (value == null || elements(value)<1) {
 				return null;

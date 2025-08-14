@@ -1202,4 +1202,13 @@ public class ArrayUtils {
 	public static Stream<Double> stream(double[] array) {
 		return StreamSupport.stream(Spliterators.spliterator(array, Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
 	}
+	
+
+	public static int countNonNull(Object... objs) {
+		int result = 0;
+		for(Object o:objs) {
+			if(o!=null)result++;
+		}
+		return result;
+	}
 }
