@@ -29,6 +29,8 @@ public class StringUtils {
 	private static final String invalidCharsInFilename = "\t\\/|\"*?:<>\t\n\r";// 文件名中禁用的字符
 
 	public static final char NULL_CHAR = (char) 0;
+	
+	public static final String CRLF_STR = "\r\n";
 
 	/**
 	 *
