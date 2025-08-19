@@ -1,5 +1,6 @@
 package io.github.xuse.querydsl.sql.extension.code.generate;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -10,38 +11,139 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.SimpleName;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.Type;
-import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.ArrayPath;
+import com.querydsl.core.types.dsl.BooleanPath;
+import com.querydsl.core.types.dsl.DatePath;
+import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.EnumPath;
+import com.querydsl.core.types.dsl.NumberPath;
+import com.querydsl.core.types.dsl.SimplePath;
+import com.querydsl.core.types.dsl.StringPath;
+import com.querydsl.core.types.dsl.TimePath;
 
 public class PropertyPathCreater {
-	
 	static interface PathGenerator{
-		ClassOrInterfaceType pathType(Class<?> type); 
-		MethodCallExpr pathValue(Class<?> type);
+		ClassOrInterfaceType pathType(Type type,CompilationUnitBuilder builder); 
+		MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder);
 	}
 	
-	//	public final ArrayPath<String[],String> ext111 = createArray("ext", String[].class);
 	private static final PathGenerator ArrayCreator=new PathGenerator(){
 		@Override
-		public ClassOrInterfaceType pathType(Class<?> type) {
-			
-			
-			ClassOrInterfaceType type=new ClassOrInterfaceType()
-			
-			return new ClassOrInterfaceType(null,new SimpleName("ArrayPath"),new NodeList<Type>());
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(ArrayPath.class, type, ((Class<?>)type).getComponentType());
 		}
 		@Override
-		public MethodCallExpr pathValue(Class<?> type) {
-			// TODO Auto-generated method stub
-			return null;
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createArray", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
 		}
 	};
 	
+	private static final PathGenerator StringCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createClassType(StringPath.class);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createString", new StringLiteralExpr(name));
+			return createCall;
+		}
+	};
 	
+	private static final PathGenerator NumberCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(NumberPath.class, type);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createNumber", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
+		}
+	};
+	
+	private static final PathGenerator DateTimeCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(DateTimePath.class, type);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createDateTime", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
+		}
+	};
+	
+	private static final PathGenerator DateCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(DatePath.class, type);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createDate", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
+		}
+	};
+	
+	private static final PathGenerator TimeCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(TimePath.class, type);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createTime", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
+		}
+	};
+	
+	private static final PathGenerator BooleanCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createClassType(BooleanPath.class);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			return new MethodCallExpr("createBoolean", new StringLiteralExpr(name));
+		}
+	};
+	
+	private static final PathGenerator EnumCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(EnumPath.class, type);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createEnum", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
+		}
+	};
+	
+	private static final PathGenerator SimpleCreator=new PathGenerator(){
+		@Override
+		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			return builder.createType(SimplePath.class, type);
+		}
+		@Override
+		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			MethodCallExpr createCall = new MethodCallExpr("createSimple", new StringLiteralExpr(name),
+					new ClassExpr(builder.createType(type)));
+			return createCall;
+		}
+	};
 	
 	private static final Map<Class<?>,PathGenerator> PathCreators = new HashMap<>();
 	
@@ -75,31 +177,36 @@ public class PropertyPathCreater {
 		PathCreators.put(BigInteger.class, NumberCreator);
 		PathCreators.put(BigDecimal.class, NumberCreator);
 
-		PathCreators.put(Long.TYPE, PrimitiveNumberCreator);
-		PathCreators.put(Short.TYPE, PrimitiveNumberCreator);
-		PathCreators.put(Integer.TYPE, PrimitiveNumberCreator);
-		PathCreators.put(Float.TYPE, PrimitiveNumberCreator);
-		PathCreators.put(Double.TYPE, PrimitiveNumberCreator);
+		PathCreators.put(Long.TYPE, NumberCreator);
+		PathCreators.put(Short.TYPE, NumberCreator);
+		PathCreators.put(Integer.TYPE, NumberCreator);
+		PathCreators.put(Float.TYPE, NumberCreator);
+		PathCreators.put(Double.TYPE, NumberCreator);
 
 		PathCreators.put(java.sql.Date.class, DateCreator);
-		PathCreators.put(LocalDate.class, (a, b) -> Expressions.datePath(a.asSubclass(LocalDate.class), b));
+		PathCreators.put(LocalDate.class,DateCreator);
 
 		PathCreators.put(java.sql.Time.class, TimeCreator);
-		PathCreators.put(LocalTime.class, (a, b) ->Expressions.timePath(a.asSubclass(LocalTime.class), b));
-
+		PathCreators.put(LocalTime.class, TimeCreator);
 		
-		PathCreators.put(Instant.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(Instant.class), b));
+		PathCreators.put(Instant.class, DateTimeCreator);
 		PathCreators.put(java.util.Date.class, DateTimeCreator);
 		PathCreators.put(java.sql.Timestamp.class, DateTimeCreator);
-		PathCreators.put(ZonedDateTime.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(ZonedDateTime.class), b));
-		PathCreators.put(LocalDateTime.class, (a, b) -> Expressions.dateTimePath(a.asSubclass(LocalDateTime.class), b));
+		PathCreators.put(ZonedDateTime.class, DateTimeCreator);
+		PathCreators.put(LocalDateTime.class, DateTimeCreator);
 
 		PathCreators.put(Boolean.class, BooleanCreator);
 		PathCreators.put(Boolean.TYPE, BooleanCreator);
 	}
 
 	public static PathGenerator getGenerator(Class<?> type) {
-		// TODO Auto-generated method stub
-		return null;
+		PathGenerator g=PathCreators.get(type);
+		if(g!=null) {
+			return g;
+		}
+		if(type.isEnum()) {
+			return EnumCreator;
+		}
+		return SimpleCreator;
 	}
 }

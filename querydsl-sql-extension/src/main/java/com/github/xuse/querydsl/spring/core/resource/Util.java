@@ -6,8 +6,11 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -126,20 +129,19 @@ public final class Util {
 		return null;
 	}
 
-	private static Method[] getDeclaredMethods(Class<?> clazz) {
+	public static Method[] getDeclaredMethods(Class<?> clazz) {
 		Assert.notNull(clazz, "Class must not be null");
 		Method[] result = declaredMethodsCache.get(clazz);
 		if (result == null) {
 			Method[] declaredMethods = clazz.getDeclaredMethods();
 			List<Method> defaultMethods = findConcreteMethodsOnInterfaces(clazz);
 			if (defaultMethods != null) {
-				result = new Method[declaredMethods.length + defaultMethods.size()];
-				System.arraycopy(declaredMethods, 0, result, 0, declaredMethods.length);
-				int index = declaredMethods.length;
-				for (Method defaultMethod : defaultMethods) {
-					result[index] = defaultMethod;
-					index++;
-				}
+				Method[] array2 = defaultMethods.toArray(new Method[0]);
+				int len1 = declaredMethods.length;
+				int len2 = array2.length;
+				result = new Method[len1 + len2];
+				System.arraycopy(declaredMethods, 0, result, 0, len1);
+				System.arraycopy(array2, 0, result, len1, len2);
 			} else {
 				result = declaredMethods;
 			}
@@ -161,5 +163,21 @@ public final class Util {
 			}
 		}
 		return result;
+	}
+	
+	public static Set<Class> getAllInterfacesForClassAsSet(Class<?> clazz) {
+		Assert.notNull(clazz, "Class must not be null");
+		if (clazz.isInterface()) {
+			return Collections.singleton(clazz);
+		}
+		Set<Class> interfaces = new LinkedHashSet<Class>();
+		while (clazz != null) {
+			Class<?>[] ifcs = clazz.getInterfaces();
+			for (Class<?> ifc : ifcs) {
+				interfaces.addAll(getAllInterfacesForClassAsSet(ifc));
+			}
+			clazz = clazz.getSuperclass();
+		}
+		return interfaces;
 	}
 }

@@ -227,9 +227,19 @@ public class TypeUtils {
 			return null;
 		}
 	}
+
+	public static List<Method> getAllDeclaredMethods(Class<?> clazz) {
+		List<Method> methods = new ArrayList<>();
+		Class<?> c = clazz;
+        while (c != Object.class) {
+        	methods.addAll(Arrays.asList(Util.getDeclaredMethods(c)));
+            c = c.getSuperclass();
+        }
+        return methods;
+	}
 	
-    public static List<Field> getAllFields(Class<?> clazz) {
-        List<Field> fields = new ArrayList<Field>();
+    public static List<Field> getAllDeclaredFields(Class<?> clazz) {
+        List<Field> fields = new ArrayList<>();
         Class<?> c = clazz;
         while (c != Object.class) {
             fields.addAll(Arrays.asList(Util.getDeclaredFields(c)));
@@ -268,5 +278,4 @@ public class TypeUtils {
 		}
 		return null;
 	}
-	
 }

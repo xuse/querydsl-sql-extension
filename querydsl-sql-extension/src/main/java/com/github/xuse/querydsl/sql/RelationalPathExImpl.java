@@ -188,7 +188,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
 		t.scanClassMetadata(() -> {
 			List<Path<?>> paths = new ArrayList<>();
-			for (Field field : TypeUtils.getAllFields(beanType)) {
+			for (Field field : TypeUtils.getAllDeclaredFields(beanType)) {
 				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}

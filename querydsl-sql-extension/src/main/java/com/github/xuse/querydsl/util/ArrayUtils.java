@@ -584,6 +584,19 @@ public class ArrayUtils {
 		System.arraycopy(array, 0, data, 0, len);
 		return data;
 	}
+	
+	public static char[] subArray(char[] array, int offset, int len) {
+		if (offset ==0 && array.length == len) {
+			return array;
+		}
+		len = Math.min(array.length - offset, len);
+		if(len==0) {
+			return new char[0];
+		}
+		char[] data = new char[len];
+		System.arraycopy(array, offset, data, 0, len);
+		return data;
+	}
 
 	/**
 	 *  泛型的subArray.如果使用非泛型的方法，a小写

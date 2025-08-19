@@ -58,7 +58,7 @@ public class TypeUtilsTest {
 		cons= TypeUtils.getDeclaredConstructor(SQLQueryFactory.class);
 		assertNull(cons);
 		
-		List<Field> fields=TypeUtils.getAllFields(Foo.class);
+		List<Field> fields=TypeUtils.getAllDeclaredFields(Foo.class);
 		assertTrue(fields.size()>0);
 		
 		assertFalse(TypeUtils.isRecord(SQLQueryFactory.class));
