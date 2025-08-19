@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.extension.code.generate.util;
+package io.github.xuse.querydsl.sql.code.generate.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -225,7 +225,7 @@ public class MethodEx {
 	 * @return return type
 	 */
 	public Class<?> getReturnType() {
-		return GenericUtils.getRawClass(getGenericReturnType());
+		return GenericTypes.getRawClass(getGenericReturnType());
 	}
 
 	/**
@@ -246,7 +246,7 @@ public class MethodEx {
 		Type[] types = getGenericParameterTypes();
 		Class<?>[] result = new Class<?>[types.length];
 		for (int i = 0; i < types.length; i++) {
-			result[i] = GenericUtils.getRawClass(types[i]);
+			result[i] = GenericTypes.getRawClass(types[i]);
 		}
 		return result;
 	}

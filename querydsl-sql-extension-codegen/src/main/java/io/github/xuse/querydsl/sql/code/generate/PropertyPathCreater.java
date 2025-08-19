@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.extension.code.generate;
+package io.github.xuse.querydsl.sql.code.generate;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -15,6 +15,7 @@ import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.xuse.querydsl.util.Primitives;
 import com.querydsl.core.types.dsl.ArrayPath;
 import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.DatePath;
@@ -24,6 +25,8 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.core.types.dsl.TimePath;
+
+import io.github.xuse.querydsl.sql.code.generate.util.GenericTypes;
 
 public class PropertyPathCreater {
 	static interface PathGenerator{
@@ -59,6 +62,9 @@ public class PropertyPathCreater {
 	private static final PathGenerator NumberCreator=new PathGenerator(){
 		@Override
 		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			if(type instanceof Class) {
+				type=Primitives.toWrapperClass((Class<?>)type);
+			}
 			return builder.createType(NumberPath.class, type);
 		}
 		@Override
@@ -111,6 +117,9 @@ public class PropertyPathCreater {
 	private static final PathGenerator BooleanCreator=new PathGenerator(){
 		@Override
 		public ClassOrInterfaceType pathType(Type type, CompilationUnitBuilder builder) {
+			if(type instanceof Class) {
+				type=Primitives.toWrapperClass((Class<?>)type);
+			}
 			return builder.createClassType(BooleanPath.class);
 		}
 		@Override
@@ -139,8 +148,9 @@ public class PropertyPathCreater {
 		}
 		@Override
 		public MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder) {
+			Class<?> raw=GenericTypes.getRawClass(type);
 			MethodCallExpr createCall = new MethodCallExpr("createSimple", new StringLiteralExpr(name),
-					new ClassExpr(builder.createType(type)));
+					new ClassExpr(builder.createType(raw)));
 			return createCall;
 		}
 	};

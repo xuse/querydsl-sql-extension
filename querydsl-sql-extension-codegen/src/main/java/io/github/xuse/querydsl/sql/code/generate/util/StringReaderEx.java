@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.extension.code.generate.util;
+package io.github.xuse.querydsl.sql.code.generate.util;
 
 import java.io.IOException;
 import java.io.Reader;

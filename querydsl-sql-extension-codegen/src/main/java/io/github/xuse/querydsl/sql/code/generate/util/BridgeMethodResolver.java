@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.extension.code.generate.util;
+package io.github.xuse.querydsl.sql.code.generate.util;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
@@ -141,7 +141,7 @@ public abstract class BridgeMethodResolver {
 		}
 
 		// Search interfaces.
-		Collection<Class> interfaces = Util.getAllInterfacesForClassAsSet(bridgeMethod.getDeclaringClass());
+		Collection<Class<?>> interfaces = Util.getAllInterfacesForClassAsSet(bridgeMethod.getDeclaringClass());
 		for (Class ifc : interfaces) {
 			Method method = searchForMatch(ifc, bridgeMethod);
 			if (method != null && !method.isBridge()) {

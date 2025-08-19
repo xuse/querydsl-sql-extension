@@ -1,13 +1,11 @@
-package io.github.xuse.querydsl.sql.extension.code.generate;
+package io.github.xuse.querydsl.sql.code.generate;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
@@ -22,8 +20,8 @@ import com.github.javaparser.ast.type.ReferenceType;
 import com.github.xuse.querydsl.util.Exceptions;
 
 public class CompilationUnitBuilder {
-	private List<Class<?>> imports = new ArrayList<>();
-	private Set<String> simpleNames = new HashSet<>();
+//	private List<Class<?>> imports = new LinkedHashSet<>();
+	private Map<String,Class<?>> simpleNames = new HashMap<>();
 
 	private final JavaParser parser;
 	private final CompilationUnit unit;
@@ -91,20 +89,23 @@ public class CompilationUnitBuilder {
 	}
 
 	public ClassOrInterfaceType createClassType(Class<?> t) {
-		imports.add(t);
+		addImport(t);
 		return new ClassOrInterfaceType(null, t.getSimpleName());
 	}
 
 	public void addImport(Class<?> t) {
-		if(imports.add(t)){
-			if (!simpleNames.add(t.getSimpleName())) {
-				throw new UnsupportedOperationException("not support duplicate simple name of classes.");
-			}	
+		if(t.isPrimitive()) {
+			return;
+		}
+		Class<?> old = simpleNames.put(t.getSimpleName(), t);
+		if (old!=null && old != t) {
+			throw new UnsupportedOperationException(
+					"not support duplicate simple name of classes." + t.getName() + " - " + old.getName());
 		}
 	}
 	
 	public CompilationUnit build() {
-		for(Class<?> c:imports) {
+		for(Class<?> c:simpleNames.values()) {
 			unit.addImport(c);
 		}
 		return unit;

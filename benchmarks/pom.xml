@@ -22,11 +22,6 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-	 		<groupId>org.apache.commons</groupId>
-  			<artifactId>commons-lang3</artifactId>
-  			<version>3.12.0</version>
-    	</dependency>
-		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp</artifactId>
 			<version>4.8.1</version>
@@ -46,11 +41,6 @@
 			<artifactId>querydsl-sql-extension-spring</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-<dependency>
-    <groupId>com.github.javaparser</groupId>
-    <artifactId>javaparser-core</artifactId>
-    <version>3.24.10</version>
-</dependency>
 		<!--
 		<dependency>
 			<groupId>org.elasticsearch</groupId>

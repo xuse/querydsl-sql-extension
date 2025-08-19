@@ -165,12 +165,12 @@ public final class Util {
 		return result;
 	}
 	
-	public static Set<Class> getAllInterfacesForClassAsSet(Class<?> clazz) {
+	public static Set<Class<?>> getAllInterfacesForClassAsSet(Class<?> clazz) {
 		Assert.notNull(clazz, "Class must not be null");
 		if (clazz.isInterface()) {
 			return Collections.singleton(clazz);
 		}
-		Set<Class> interfaces = new LinkedHashSet<Class>();
+		Set<Class<?>> interfaces = new LinkedHashSet<>();
 		while (clazz != null) {
 			Class<?>[] ifcs = clazz.getInterfaces();
 			for (Class<?> ifc : ifcs) {
