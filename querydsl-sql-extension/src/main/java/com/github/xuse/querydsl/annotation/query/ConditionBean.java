@@ -14,11 +14,13 @@ import java.lang.annotation.Target;
 public @interface ConditionBean {
 
 	/**
+	 * @deprecated Please use method parameter to pass by limit value. 
 	 * @return 指定Limit字段名
 	 */
 	String limitField() default "";
 
 	/**
+	 * @deprecated Please use method parameter to pass by offset value.
 	 * @return 指定Offset字段名
 	 */
 	String offsetField() default "";

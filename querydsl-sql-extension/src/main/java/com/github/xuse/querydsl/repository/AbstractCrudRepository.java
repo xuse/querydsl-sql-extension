@@ -247,52 +247,89 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		}
 		return pk.getLocalColumns();
 	}
-
-
+	
 	/**
-	 * 支持使用一个参数Bean自动拼装查询条件。
-	 *
-	 * @param <X> type of bean
-	 * @param conditionBean conditionBean
-	 * @return SQLQueryAlter
+	 * Fetch count for a condition bean
+	 * @param conditionBean
+	 * @return count
 	 */
-	@SuppressWarnings({ "unchecked" })
-	public final <X> Pair<Integer,List<T>> findByCondition(X conditionBean) {
-		SQLQueryAlter<T> select= getFactory().selectFrom(getPath());
-		RelationalPath<T> beanPath= getPath();
-		RelationalPathEx<T> beanPathEx=null;
-		if(beanPath instanceof RelationalPathEx) {
-			beanPathEx=(RelationalPathEx<T>)beanPath;
-		}
-		Class<X> clz = (Class<X>) conditionBean.getClass();
+	public final int countByCondition(Object conditionBean) {
+		Class<?> clz = conditionBean.getClass();
 		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
 		if (cb == null) {
 			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
 		}
-		BeanCodec codec = BeanCodecManager.getInstance().getCodec(clz);
+		SQLQueryAlter<T> select = createSelectQuery(conditionBean,cb,null);
+		return (int)select.fetchCount();
+	}
+	
+	public final Pair<Integer,List<T>> findByCondition(Object conditionBean, int limit, int offset) {
+		Class<?> clz = conditionBean.getClass();
+		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
+		if (cb == null) {
+			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
+		}
+		Params p=new Params();
+		SQLQueryAlter<T> select = createSelectQuery(conditionBean,cb,p);
+		if(limit>0) {
+			select.limit(limit);
+		}else if(p.limit !=null && p.limit.intValue()>0){
+			select.limit(p.limit.intValue());
+		}
+		if(offset>0) {
+			select.offset(offset);
+		}else if(p.offset!=null && p.offset.intValue()>0) {
+			select.offset(p.offset.intValue());
+		}
+		if(p.fetchTotal==null || p.fetchTotal) {
+			QueryResults<T> results=select.fetchResults();
+			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
+		}
+		return Pair.of(-1, select.fetch());
+	}
+	
+	static class Params{
+		Number limit;
+		Number offset;
+		Boolean fetchTotal;
+	}
+
+	@SuppressWarnings("deprecation")
+	private SQLQueryAlter<T> createSelectQuery(Object conditionBean,ConditionBean cb, Params params) {
+		RelationalPath<T> beanPath= getPath();
+		SQLQueryAlter<T> select= getFactory().selectFrom(beanPath);
+		RelationalPathEx<T> beanPathEx=null;
+		if(beanPath instanceof RelationalPathEx) {
+			beanPathEx=(RelationalPathEx<T>)beanPath;
+		}
+		
+		BeanCodec codec = BeanCodecManager.getInstance().getCodec(conditionBean.getClass());
 		Field[] fields = codec.getFields();
 		Object[] values = codec.values(conditionBean);
 		Map<String, Path<?>> bindings = new HashMap<>();
 		for (Path<?> p : beanPath.getColumns()) {
 			bindings.put(p.getMetadata().getName(), p);
 		}
-		Number limit = null;
-		Number offset = null;
-		Boolean fetchTotal = null;
 		for (int i = 0; i < fields.length; i++) {
 			Field field = fields[i];
 			Object value = values[i];
 			String fieldName=field.getName();
 			if (fieldName.equals(cb.limitField())) {
-				limit = (Number) value;
+				if(params!=null){
+					params.limit = (Number) value; 
+				}
 				continue;
 			}
 			if (fieldName.equals(cb.offsetField())) {
-				offset = (Number) value;
+				if(params!=null){
+					params.offset = (Number) value; 
+				}
 				continue;
 			}
 			if(fieldName.equals(cb.isRequireTotalField())) {
-				fetchTotal=(Boolean)value;
+				if(params!=null){
+					params.fetchTotal=(Boolean)value;
+				}
 				continue;
 			}
 			Condition condition = field.getAnnotation(Condition.class);
@@ -379,17 +416,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 				}
 			}
 		}
-		if (limit != null && limit.intValue() >= 0) {
-			select.limit(limit.intValue());
-		}
-		if (offset != null && offset.intValue() >= 0) {
-			select.offsetIf(offset.intValue());
-		}
-		if(fetchTotal==null || fetchTotal) {
-			QueryResults<T> results=select.fetchResults();
-			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
-		}
-		return Pair.of(-1, select.fetch());
+		return select;
 	}
 
 	private Pair<Ops, Object> getMatchExpr(Object value, StringCase[] cases,Class<?> pathType) {

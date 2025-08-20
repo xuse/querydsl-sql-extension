@@ -225,9 +225,17 @@ public interface CRUDRepository<T, ID> {
 	 * 传入一个带有@ConditionBean注解的类，使用该对象作为查询条件
 	 * <h2>English:</h2>
 	 * Pass in a class annotated with @ConditionBean and use this object as the query condition.
-	 * @param <X>           condition bean的类型 / the type of condition bean.
 	 * @param conditionBean conditionBean
+	 * @param offset <=0 for unset
+	 * @param limit <=0 for unset
 	 * @return SQLQueryAlter
 	 */
-	<X> Pair<Integer, List<T>> findByCondition(X conditionBean);
+	Pair<Integer, List<T>> findByCondition(Object conditionBean, int limit, int offset);
+	
+	
+	default Pair<Integer, List<T>> findByCondition(Object conditionBean){
+		return findByCondition(conditionBean,0,0);
+	}
+	
+	int countByCondition(Object conditionBean);
 }

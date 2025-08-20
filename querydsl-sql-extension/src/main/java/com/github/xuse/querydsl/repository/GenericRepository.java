@@ -33,7 +33,7 @@ public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T,
 	@Resource
 	protected SQLQueryFactory factory;
 	
-	private final RelationalPath<T> path;
+	protected final RelationalPath<T> path;
 	
 	public GenericRepository() {
 		path = initPath();
