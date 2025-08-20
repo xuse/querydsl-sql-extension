@@ -23,6 +23,7 @@ import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.querydsl.core.util.StringUtils;
 import com.querydsl.sql.Column;
 
 import io.github.xuse.querydsl.sql.code.generate.PropertyPathCreater.PathGenerator;
@@ -36,10 +37,14 @@ public class QCalssGenerator {
 	public static final String DIR_MAIN="src/main/java/";
 	public static final String DIR_TEST="src/test/java/";
 	
-	private Function<String,String> tableAliascalcutor = this::calcAlias;
+	private Function<String,String> tableAliasCalcutor = QCalssGenerator::calcAlias;
+	
+	private Function<String,String> tableFieldCalculator =QCalssGenerator::clacField;
 	
 	private String outputDir=DIR_MAIN;
 
+	
+	
 	/**
 	 * Generate q class for entity class.
 	 * @param entityClz 
@@ -69,10 +74,10 @@ public class QCalssGenerator {
 		
 		// 创建全局表模型实例
 		ClassOrInterfaceType thisType = new ClassOrInterfaceType(null, className);
-		FieldDeclaration table = clazz.addField(thisType, "t", Keyword.PUBLIC, Keyword.FINAL, Keyword.STATIC);
+		FieldDeclaration table = clazz.addField(thisType,tableFieldCalculator.apply(entityClz.getSimpleName()), Keyword.PUBLIC, Keyword.FINAL, Keyword.STATIC);
 		ObjectCreationExpr objectCreationExpr = new ObjectCreationExpr();
 		objectCreationExpr.setType(thisType);
-		String alias =  this.tableAliascalcutor.apply(entityClz.getSimpleName());
+		String alias =  this.tableAliasCalcutor.apply(entityClz.getSimpleName());
 		objectCreationExpr.addArgument(new StringLiteralExpr(alias));
 		table.getVariables().get(0).setInitializer(objectCreationExpr);
 
@@ -112,7 +117,11 @@ public class QCalssGenerator {
 		return file;
 	}
 
-	private String calcAlias(String simpleName) {
+	public static String clacField(String simpleName) {
+		return StringUtils.uncapitalize(simpleName);
+	}
+	
+	public static String calcAlias(String simpleName) {
 		StringBuilder sb = new StringBuilder();
 		for (char c : simpleName.toCharArray()) {
 			if (Character.isUpperCase(c)) {

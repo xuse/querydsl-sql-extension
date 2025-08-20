@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.spring.core.resource.PathMatchingResourcePatternResolver;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.spring.core.resource.ResourcePatternResolver;
@@ -79,9 +80,14 @@ public class ClassScanner {
 		this.rootClasspath = rootClasspath;
 		return this;
 	}
-
+	
+	public ClassScanner filterWithClassReader(Predicate<ClassReader> filter) {
+		filterWith((r) -> r.isReadable() && filter.test(r.toClassReader()));
+		return this;
+	}
+	
 	public ClassScanner filterWith(Predicate<Resource> filter) {
-		this.filter = filter;
+		this.filter = this.filter==null? filter: this.filter.and(filter);
 		return this;
 	}
 	

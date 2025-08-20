@@ -2,6 +2,9 @@ package com.github.xuse.querydsl.repository;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -38,17 +41,33 @@ public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T,
 
 	@SuppressWarnings("unchecked")
 	private RelationalPath<T> initPath() {
-		Class<?> c=this.getClass();
+		Class<?> c= this.getClass();
+		Map<TypeVariable<?>,Type> context=new LinkedHashMap<>();
 		while (c != Object.class) {
-			Type s = this.getClass().getGenericSuperclass();
+			Type s = c.getGenericSuperclass();
 			if (s instanceof ParameterizedType) {
 				ParameterizedType p = (ParameterizedType) s;
+				TypeVariable<?>[] vars = c.getSuperclass().getTypeParameters();
+				Type[] typeArgs = p.getActualTypeArguments();
+				//维护泛型变量上下文
+				for (int i = 0; i < vars.length; i++) {
+					TypeVariable<?> key = vars[i];
+					Type value = typeArgs[i];
+					if (value instanceof TypeVariable<?>) {
+						value = typeArgs[i] = context.get((TypeVariable<?>) value);
+						context.put(key, value);
+					} else {
+						context.put(key, value);
+					}
+				}
 				if (p.getRawType() == GenericRepository.class) {
-					Type gT = p.getActualTypeArguments()[0];
+					Type gT = typeArgs[0];
 					if (gT instanceof Class) {
 						return getPath((Class<T>) gT);
 					}
 				}
+				
+				
 			}
 			c = c.getSuperclass();
 		}
