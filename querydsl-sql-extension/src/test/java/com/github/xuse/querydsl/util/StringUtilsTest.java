@@ -347,6 +347,20 @@ public class StringUtilsTest {
 		assertEquals("http://a>b.com",StringUtils.urlDecode("http%3A%2F%2Fa%3Eb.com"));
 		assertEquals("http://a>b.com",StringUtils.urlDecode("http%3A%2F%2Fa%3Eb.com",StandardCharsets.UTF_8));
 		assertEquals("a", StringUtils.concat("a"));
+		
+		
+		assertEquals("Abc😉😊😇", StringUtils.capitalize("abc😉😊😇"));
+		assertEquals("Abc😉😊😇", StringUtils.capitalize("Abc😉😊😇"));
+		
+		assertEquals("abc😉😊😇", StringUtils.uncapitalize("abc😉😊😇"));
+		assertEquals("abc😉😊😇", StringUtils.uncapitalize("Abc😉😊😇"));
+		
+		assertEquals("😉😊😇", StringUtils.capitalize("😉😊😇"));
+		assertEquals("😉😊😇", StringUtils.uncapitalize("😉😊😇"));
+		assertEquals("🐵Abc", StringUtils.capitalize("🐵Abc"));
+		assertEquals("🐵111", StringUtils.uncapitalize("🐵111"));
+		assertEquals("🏥😉😇", StringUtils.capitalize("🏥😉😇"));
+		assertEquals("🏥😉😇", StringUtils.uncapitalize("🏥😉😇"));
 	}
 	
 	@Test

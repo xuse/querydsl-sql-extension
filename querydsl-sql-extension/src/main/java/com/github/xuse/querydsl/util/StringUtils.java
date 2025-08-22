@@ -2386,7 +2386,33 @@ public class StringUtils {
 	public static boolean startsWithIgnoreCase(String searchIn, int startAt, String searchFor) {
 		return searchIn.regionMatches(true, startAt, searchFor, 0, searchFor.length());
 	}
+	
+	public static String uncapitalize(String str) {
+		if(str==null || str.length()==0) {
+			return str;
+		}
+		char c=str.charAt(0);
+		if(Character.isUpperCase(c)) {
+			char[] cs=str.toCharArray();
+			cs[0]=Character.toLowerCase(c);
+			return new String(cs); 
+		}
+		return str;
+	}
 
+	public static String capitalize(String str) {
+		if(str==null || str.length()==0) {
+			return str;
+		}
+		char c=str.charAt(0);
+		if(Character.isLowerCase(c)) {
+			char[] cs=str.toCharArray();
+			cs[0]=Character.toUpperCase(c);
+			return new String(cs); 
+		}
+		return str;
+	}
+	
 	public static String removeChars(String str, char... remove) {
 		if (isEmpty(str))
 			return str;
