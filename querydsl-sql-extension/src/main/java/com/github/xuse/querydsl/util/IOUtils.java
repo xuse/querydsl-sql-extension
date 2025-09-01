@@ -206,13 +206,21 @@ public class IOUtils {
 			}
 		}
 	}
+	
+	@SneakyThrows
+	public static BufferedReader getUTF8Reader(URL target) {
+		Assert.notNull(target);
+		return new BufferedReader(new InputStreamReader(target.openStream(), StandardCharsets.UTF_8));
+	}
 
 	@SneakyThrows
 	public static BufferedReader getUTF8Reader(File target) {
+		Assert.notNull(target);
 		return new BufferedReader(new InputStreamReader(new FileInputStream(target), StandardCharsets.UTF_8));
 	}
 
 	public static BufferedWriter getUTF8Writer(File target, boolean append) {
+		Assert.notNull(target);
 		return getWriter(target, StandardCharsets.UTF_8, append);
 	}
 

@@ -36,6 +36,18 @@ public class ReflectCodec extends BeanCodec {
 	}
 
 	@Override
+	public void sets(Object[] fields, Object o) {
+		int len = methods.size();
+		try {
+			for (int i = 0; i < len; i++) {
+				methods.get(i).getSetter().invoke(o, fields[i]);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
 	public Object[] values(Object bean) {
 		int len = methods.size();
 		Object[] result = new Object[len];

@@ -98,6 +98,12 @@ public class ReflectCodecRecord extends BeanCodec {
 
 	@Override
 	public void copy(Object from, Object target) {
-		//All fields in Record in final value. unable to be updated.
+		//All fields in Record is final value. unable to be updated.
+	}
+	
+	
+	@Override
+	public void sets(Object[] values, Object o) {
+		//All fields in Record is final value. unable to be updated.
 	}
 }

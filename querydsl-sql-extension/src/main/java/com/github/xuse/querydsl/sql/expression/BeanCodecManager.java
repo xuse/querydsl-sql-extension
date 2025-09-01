@@ -1,5 +1,8 @@
 package com.github.xuse.querydsl.sql.expression;
 
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +81,18 @@ public class BeanCodecManager {
 	
 	public BeanCodec getCodec(Class<?> target) {
 		CacheKey key = CacheKey.of(target, FieldCollector.ALL_FIELDS);
-		return beanCodecs.computeIfAbsent(key, (k) -> generateAccessor(k, new FieldCollector()));
+		return beanCodecs.computeIfAbsent(key, (k) -> addRandomAccessIndex(generateAccessor(k, new FieldCollector())));
+	}
+
+	private BeanCodec addRandomAccessIndex(BeanCodec accessor) {
+		Map<String,Integer> map=new HashMap<>();
+		Field[] fields=accessor.getFields();
+		int len=fields.length;
+		for(int i=0;i<len;i++) {
+			map.put(fields[i].getName(), i);
+		}
+		accessor.setRandomAccessIndex(Collections.unmodifiableMap(map));
+		return accessor;
 	}
 
 	private BeanCodec generateAccessor(CacheKey key, BindingProvider bindings){

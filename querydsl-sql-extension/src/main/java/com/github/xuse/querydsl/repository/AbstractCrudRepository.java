@@ -697,12 +697,20 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			return exp.endsWithIgnoreCase(String.valueOf(value));
 		}
 		case STRING_CONTAINS: {
+			String str;
+			if(value==null || (str=value.toString()).isEmpty()) {
+				return null;
+			}
 			StringExpression exp = (StringExpression) path;
-			return exp.contains(String.valueOf(value));
+			return exp.contains(str);
 		}
 		case STRING_CONTAINS_IC: {
+			String str;
+			if(value==null || (str=value.toString()).isEmpty()) {
+				return null;
+			}
 			StringExpression exp = (StringExpression) path;
-			return exp.containsIgnoreCase(String.valueOf(value));
+			return exp.containsIgnoreCase(str);
 		}
 		case LIKE: {
 			StringExpression exp = (StringExpression) path;

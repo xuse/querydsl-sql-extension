@@ -27,6 +27,8 @@ import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Pair;
 
+import lombok.SneakyThrows;
+
 /**
  * To generate {@link BeanCodec} class with ASM.
  * 
@@ -78,21 +80,15 @@ public class CodecClassGenerator implements Opcodes {
 			mw.visitEnd();
 		}
 		if(record){
-			try{
-				generateRecordInstance(beanType,cw,methods);
-				
-				
-				//TODO
-				
-			}catch(Exception e) {
-				throw Exceptions.toRuntime(e);
-			}
+			generateRecordInstance(beanType,cw,methods);
+			// There will be no method copy/sets in the generated class. If user call these methods
+			// on a record object, will receive a AbstractMethodError. This is expected case.
 		}else{
 			generateInstance(beanType,cw,methods);
+			generateSet(beanType,cw,methods);
 			generateCopy(beanType,cw,methods);
 		}
 		{
-			// 生成values方法
 			MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "values", getMethodDesc(Object[].class, Object.class), null,
 					null);
 
@@ -133,7 +129,52 @@ public class CodecClassGenerator implements Opcodes {
 		return cw.toByteArray();
 	}
 
-	private void generateRecordInstance(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) throws NoSuchFieldException, SecurityException {
+	private void generateSet(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) {
+		String type=getType(beanType);
+		MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "sets", getMethodDesc(void.class, Object[].class, Object.class), null,null);
+		//Stack:0
+		//Locals:[0-this, 1-values, 2-bean]
+		mw.visitVarInsn(ALOAD, 2);// S1
+		mw.visitTypeInsn(CHECKCAST, type);// 类型转换
+		mw.visitVarInsn(ASTORE, 2);// S0 正常java代码变量类型是固定的，无法编译出这种数据。但直接操作字节码可以。
+		generateValueSet(type,mw,methods);
+		mw.visitInsn(RETURN);
+		mw.visitMaxs(2, 3);
+		mw.visitEnd();
+	}
+
+	private void generateValueSet(String type, MethodVisitor mw, List<FieldProperty> methods) {
+		int index = 0;
+		for (FieldProperty property : methods) {
+			Method setter = property.getSetter();
+			if (setter == null) {
+				index++;
+				continue;
+			}
+			mw.visitVarInsn(ALOAD, 2);// S1
+			mw.visitVarInsn(ALOAD, 1);// S2, 读取V1，即数组
+			iconst(mw, index++);// S3
+			mw.visitInsn(AALOAD);// S2
+			// 类型转换
+			Class<?> target = setter.getParameterTypes()[0];
+			if (target.isPrimitive()) {
+				Class<?> wrapped = Primitives.toWrapperClass(target);
+				boolean primitive = tryTypeConvert(mw, wrapped, property.getBindingType());
+				if (!primitive) {
+					doUnwrap(mw, target, wrapped); // 拆箱
+				}
+			} else {
+				boolean primitive = tryTypeConvert(mw, target, property.getBindingType());
+				if (primitive) {
+					ASMUtils.doWrap(mw, Primitives.toPrimitiveClass(target), target);
+				}
+			}
+			mw.visitMethodInsn(INVOKEVIRTUAL, type, setter.getName(), getDesc(setter), false);
+		}
+	}
+
+	@SneakyThrows
+	private void generateRecordInstance(Class<?> beanType, ClassWriter cw, List<FieldProperty> methods) {
 		MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "newInstance", getMethodDesc(Object.class, Object[].class),
 				null, null);
 		mw.visitTypeInsn(NEW, getType(beanType));// S1 用于返回的栈底
@@ -245,35 +286,7 @@ public class CodecClassGenerator implements Opcodes {
 			mw.visitMethodInsn(INVOKESPECIAL, type, "<init>", "()V", false);
 		}
 		mw.visitVarInsn(ASTORE, 2);// 存入 V2
-		int index = 0;
-		for (FieldProperty property : methods) {
-			Method setter = property.getSetter();
-			if (setter == null) {
-				// 轮空
-				index++;
-				continue;
-			}
-			mw.visitVarInsn(ALOAD, 2);// S1
-			mw.visitVarInsn(ALOAD, 1);// S2, 读取V1，即数组
-			iconst(mw, index++);// S3
-			mw.visitInsn(AALOAD);// S2
-			// 类型转换
-			Class<?> target = setter.getParameterTypes()[0];
-			if (target.isPrimitive()) {
-				Class<?> wrapped = Primitives.toWrapperClass(target);
-				boolean primitive = tryTypeConvert(mw, wrapped, property.getBindingType());
-				if (!primitive) {
-					doUnwrap(mw, target, wrapped); // 拆箱
-				}
-			} else {
-				boolean primitive = tryTypeConvert(mw, target, property.getBindingType());
-				if (primitive) {
-					ASMUtils.doWrap(mw, Primitives.toPrimitiveClass(target), target);
-				}
-			}
-			mw.visitMethodInsn(INVOKEVIRTUAL, type, setter.getName(), getDesc(setter), false);
-		}
-
+		generateValueSet(type,mw,methods);
 		mw.visitVarInsn(ALOAD, 2);// 创建对象并存入 S0
 		mw.visitInsn(ARETURN);
 		mw.visitMaxs(3, 3);
