@@ -8,7 +8,7 @@ import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.NoReadLockHashMap;
+import com.github.xuse.querydsl.util.collection.NoReadLockHashMap;
 import com.github.xuse.querydsl.util.lang.Lambdas;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Path;

@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.util.collection;
 
 import java.util.HashMap;
 
