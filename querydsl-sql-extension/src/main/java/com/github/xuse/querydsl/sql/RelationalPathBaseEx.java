@@ -38,9 +38,9 @@ import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Operator;
@@ -708,7 +708,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 			// 重建Path
 			Path<?> p = columns.get(i);
 			String name=p.getMetadata().getName();
-			Path<?> newPath = TypeUtils.createPathByType(p.getType(), name, t);
+			Path<?> newPath = SQLTypeUtils.createPathByType(p.getType(), name, t);
 			newColumns[i] = newPath;
 			pathMapping.put(p, newPath);
 			t.bindingsMap.put(name, newPath);

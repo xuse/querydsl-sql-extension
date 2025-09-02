@@ -31,6 +31,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.github.xuse.querydsl.util.lang.Primitives;
+
 /**
  * 数组工具
  *

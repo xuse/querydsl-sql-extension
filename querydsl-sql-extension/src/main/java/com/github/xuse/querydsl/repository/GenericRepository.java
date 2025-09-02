@@ -10,8 +10,8 @@ import javax.annotation.Resource;
 
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.sql.RelationalPath;
 
 import lombok.extern.slf4j.Slf4j;
@@ -101,7 +101,7 @@ public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T,
 			log.warn("Query Class not found {}, will generate a dynanamic model.", qClassName);
 			return PathCache.get(entity, null);
 		}
-		RelationalPath<?> result= TypeUtils.getMetaModel(clz);
+		RelationalPath<?> result= SQLTypeUtils.getMetaModel(clz);
 		if(result==null) {
 			throw Exceptions.illegalArgument("No relational path found in {}", clz.getName());
 		}

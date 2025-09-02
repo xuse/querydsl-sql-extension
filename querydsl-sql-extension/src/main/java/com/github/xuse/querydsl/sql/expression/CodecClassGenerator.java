@@ -23,8 +23,8 @@ import com.github.xuse.querydsl.asm.MethodVisitor;
 import com.github.xuse.querydsl.asm.Opcodes;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 import com.mysema.commons.lang.Pair;
 
 import lombok.SneakyThrows;

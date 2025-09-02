@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
+import com.github.xuse.querydsl.util.lang.Enums;
 
 public class MiscTest {
 	private String hello="Hello";

@@ -5,7 +5,7 @@ import java.util.function.Predicate;
 
 import com.github.xuse.querydsl.annotation.GeneratedType;
 import com.github.xuse.querydsl.annotation.UnsavedValue;
-import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Template;

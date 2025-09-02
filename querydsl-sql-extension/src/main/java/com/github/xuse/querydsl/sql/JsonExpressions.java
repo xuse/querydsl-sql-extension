@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.github.xuse.querydsl.sql.expression.JsonOps;
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;

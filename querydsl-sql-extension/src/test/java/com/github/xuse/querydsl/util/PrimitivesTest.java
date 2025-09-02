@@ -13,6 +13,8 @@ import java.util.TreeMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.util.lang.Primitives;
+
 @SuppressWarnings("unused")
 public class PrimitivesTest {
 	Class<?>[] pClazz = { int.class, long.class, short.class, double.class, float.class, char.class, boolean.class,

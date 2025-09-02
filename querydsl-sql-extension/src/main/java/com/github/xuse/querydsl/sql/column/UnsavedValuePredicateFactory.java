@@ -4,8 +4,8 @@ import java.util.function.Predicate;
 
 import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 
 public final class UnsavedValuePredicateFactory {
 

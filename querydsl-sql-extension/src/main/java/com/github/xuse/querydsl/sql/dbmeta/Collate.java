@@ -1,6 +1,6 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
-import com.github.xuse.querydsl.util.Enums;
+import com.github.xuse.querydsl.util.lang.Enums;
 
 public enum Collate {
 	utf8mb4_general_ci("utf8mb4"), 

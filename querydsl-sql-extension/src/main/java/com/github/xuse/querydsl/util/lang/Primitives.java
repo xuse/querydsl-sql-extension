@@ -1,6 +1,8 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.util.lang;
 
 import java.util.Date;
+
+import com.github.xuse.querydsl.util.Exceptions;
 
 /**
  * Utilities of operating Primitive types.

@@ -1,7 +1,9 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.util.lang;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import com.github.xuse.querydsl.util.Exceptions;
 
 public final class Enums {
 	private Enums(){}

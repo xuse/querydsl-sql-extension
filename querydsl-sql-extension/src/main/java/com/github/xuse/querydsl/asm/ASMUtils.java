@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.lang.Primitives;
 
 public class ASMUtils {
 

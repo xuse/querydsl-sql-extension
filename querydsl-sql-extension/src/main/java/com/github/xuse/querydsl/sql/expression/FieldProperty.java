@@ -3,7 +3,7 @@ package com.github.xuse.querydsl.sql.expression;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.lang.Primitives;
 
 import lombok.extern.slf4j.Slf4j;
 

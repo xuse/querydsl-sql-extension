@@ -12,7 +12,9 @@ import java.lang.reflect.WildcardType;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.WeakHashMap;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
@@ -26,8 +28,7 @@ public class GenericTypes {
 	private static final Map<Class, Reference<Map<TypeVariable, Type>>> typeVariableCache = Collections.synchronizedMap(new WeakHashMap<Class, Reference<Map<TypeVariable, Type>>>());
 
 	/**
-	 * Jiyi编写的泛型解析方法，将所有泛型边界和泛型边界解析为边界的具体类型
-	 * 
+	 * 将所有泛型边界和泛型边界解析为边界的具体类型
 	 * @param context
 	 * @param genericType
 	 * @return type
@@ -333,12 +334,12 @@ public class GenericTypes {
 		} else if (type instanceof TypeVariable<?>) {
 			return false;
 		} else if (type instanceof WildcardType) {
+			//? 这个返回不太合理。
 			return false;
 		}
 		throw new IllegalArgumentException();
 	}
 
-	//为Array或Collection获得Component类型
 	public static Type getComponentType(Type type) {
 		if (type instanceof GenericArrayType) {
 			return ((GenericArrayType) type).getGenericComponentType();
@@ -495,5 +496,26 @@ public class GenericTypes {
 	public static Type getSuperType(Type context, Class<?> contextRawType, Class<?> supertype) {
 		Assert.isTrue(supertype.isAssignableFrom(contextRawType));
 		return resolve(context, contextRawType, getGenericSupertype(context, contextRawType, supertype));
+	}
+	
+	public static Type[] getMapKeyAndValueTypes(Type context, Class<?> contextRawType) {
+		if (context == Properties.class) {
+			return new Type[] { String.class, String.class };
+		}
+		Type mapType = getSuperType(context, contextRawType, Map.class);
+		ParameterizedType mapParameterizedType = (ParameterizedType) mapType;
+		return mapParameterizedType.getActualTypeArguments();
+	}
+	
+	public static Type newMapType(Type key,Type value) {
+		return TypeUtils.parameterize(Map.class, key, value);
+	}
+	
+	public static Type newListType(Type element) {
+		return TypeUtils.parameterize(List.class, element);
+	}
+	
+	public static Type newParameterize(Class base, Type... params) {
+		return TypeUtils.parameterize(base, params);
 	}
 }

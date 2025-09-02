@@ -19,9 +19,9 @@ import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.types.Path;
 import com.querydsl.sql.RelationalPath;
 
@@ -114,7 +114,7 @@ public class InitDataExporter {
 	 */
 	public InitDataExporter export(Class<?> modelClass) {
 		try {
-			RelationalPath<?> obj = TypeUtils.getMetaModel(modelClass);
+			RelationalPath<?> obj = SQLTypeUtils.getMetaModel(modelClass);
 			if (obj != null) {
 				if (obj instanceof RelationalPathEx<?>) {
 					InitializeData anno = modelClass.getAnnotation(InitializeData.class);

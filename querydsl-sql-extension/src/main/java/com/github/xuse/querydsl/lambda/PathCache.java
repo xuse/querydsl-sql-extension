@@ -1,7 +1,5 @@
 package com.github.xuse.querydsl.lambda;
 
-import java.lang.invoke.SerializedLambda;
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -11,12 +9,11 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.NoReadLockHashMap;
-import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.lang.Lambdas;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.util.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -112,49 +109,13 @@ public class PathCache {
 	
 	@SuppressWarnings("unchecked")
 	protected static <B, T> Path<T> generate(LambdaColumnBase<B, T> func) {
-		Pair<Class<?>, String> pair = analysis(func);
+		Pair<Class<?>, String> pair = Lambdas.analysis(func);
 		RelationalPathEx path = get(pair.getFirst(), null);
 		Class<?> clazz = pair.getFirst();
 		String fieldName = pair.getSecond();
 		Path<T> p = path.getColumn(fieldName);
 		log.debug("Generate column path for {}::{} from {}", clazz.getName(), fieldName, func);
 		return p;
-	}
-	
-	public static Pair<Class<?>, String> analysis(LambdaColumnBase<?, ?> func) {
-		ClassLoader cl=Thread.currentThread().getContextClassLoader();
-		String clzName;
-		String methodName;
-		try {
-			Method method = func.getClass().getDeclaredMethod("writeReplace");
-			method.setAccessible(true);
-			SerializedLambda o=(SerializedLambda)method.invoke(func);
-			clzName=o.getImplClass().replace('/', '.');
-			methodName=o.getImplMethodName();			
-		}catch(Exception e) {
-			throw Exceptions.toRuntime(e);
-		}
-		try {
-			Class<?> clz = cl.loadClass(clzName);
-			boolean isRecord = TypeUtils.isRecord(clz);
-			String fieldName;
-			if(isRecord) {
-				fieldName = methodName;
-			}else {
-				if (methodName.startsWith("get")) {
-					fieldName = methodName.substring(3);
-				} else if (methodName.startsWith("is")) {
-					fieldName = methodName.substring(2);
-				} else {
-					throw Exceptions.illegalArgument(
-							"Method should started with 'get' or 'is', {}.{} is invalid.", clzName, methodName);
-				}	
-			}
-			fieldName = StringUtils.uncapitalize(fieldName);
-			return Pair.of(clz, fieldName);
-		}catch(Exception e) {
-			throw Exceptions.illegalState("path generate:{}.{} error.", clzName,methodName, e);
-		}
 	}
 
 	public static boolean register(RelationalPathEx<?> tablePath) {

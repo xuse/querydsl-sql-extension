@@ -15,10 +15,10 @@ import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
-import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.sql.RelationalPath;
 
 import lombok.extern.slf4j.Slf4j;
@@ -151,7 +151,7 @@ public class ScanContext {
 			log.error("class {} load error.", name, e);
 			return null;
 		}
-		return TypeUtils.getMetaModel(clz);
+		return SQLTypeUtils.getMetaModel(clz);
 	}
 	
 	public int getCount() {
