@@ -39,7 +39,6 @@ import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.github.xuse.querydsl.util.TypeUtils;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;

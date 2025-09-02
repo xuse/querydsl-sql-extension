@@ -95,7 +95,7 @@ public class ScanContext {
 				try {
 					RelationalPathEx<?> table=loadQueryClass(resource, cl);
 					if (table != null) {
-						log.info("Scan Query Class:{}", table.getSchemaAndTable());
+						log.info("Scan Query Class:[{}.{}]", table.getSchemaName(),table.getTableName());
 						scanned(table);
 					}else {
 						result.add(resource);

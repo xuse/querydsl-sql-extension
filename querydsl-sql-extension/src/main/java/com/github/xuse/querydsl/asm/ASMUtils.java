@@ -260,7 +260,7 @@ public class ASMUtils {
 		private Set<String> annotations = new HashSet<String>();
 
 		public ClassAnnotationExtracter() {
-			super(Opcodes.ASM7);
+			super(Opcodes.ASM9);
 		}
 
 		@Override

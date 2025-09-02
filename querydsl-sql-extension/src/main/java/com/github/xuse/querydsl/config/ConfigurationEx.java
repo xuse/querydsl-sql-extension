@@ -1,7 +1,8 @@
 package com.github.xuse.querydsl.config;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashSet;
@@ -58,7 +59,7 @@ public class ConfigurationEx {
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);
 	
-	final Set<RelationalPath<?>> registededRelations = new HashSet<>();
+	final Set<Class<?>> registededRelations = new HashSet<>();
 
 	/**
 	 * configuration of the original Querydsl.
@@ -134,8 +135,8 @@ public class ConfigurationEx {
 	transient volatile boolean noDDLPermission = false;
 
 	private LetterCase letterCase;
-
-	private static Field quoteStrField;
+	
+	private static Method getType;
 
 	/*
 	 * 在包扫描时识别到的数据库初始化任务，由于当时没有SQLQueryFactory实例化无法执行，故将初始化任务缓存起来，以便后续执行
@@ -149,10 +150,10 @@ public class ConfigurationEx {
 
 	static {
 		try {
-			quoteStrField = SQLTemplates.class.getDeclaredField("quoteStr");
-			quoteStrField.setAccessible(true);
+			getType = Configuration.class.getDeclaredMethod("getType", Path.class,Class.class);
+			getType.setAccessible(true);
 		} catch (Exception e) {
-			log.error("get field 'quoteStr' error, from {}", SQLTemplates.class);
+			log.error("get method 'getType' error, from {}", Configuration.class,e);
 		}
 	}
 
@@ -230,12 +231,14 @@ public class ConfigurationEx {
 		initTemplateEx();
 	}
 
-	public String getQuoteString() {
+	public com.querydsl.sql.types.Type<?> getType(Path<?> path,Class<?> valueType) {
 		try {
-			String s = (String) quoteStrField.get(configuration.getTemplates());
-			return s;
+			com.querydsl.sql.types.Type<?> t=(com.querydsl.sql.types.Type<?>)getType.invoke(this.configuration, path, valueType);
+			return t;
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw Exceptions.illegalState(e);
+		} catch (InvocationTargetException e) {
+			throw Exceptions.toRuntime(e);
 		}
 	}
 
@@ -298,14 +301,14 @@ public class ConfigurationEx {
 	 * @return true if registered.
 	 */
 	public boolean registerRelation(RelationalPathEx<?> table) {
-		if(registededRelations.add(table)) {
+		if(registededRelations.add(table.getClass())) {
 			PathCache.register(table);
 			for (Path<?> p : table.getColumns()) {
 				ColumnMapping c = table.getColumnMetadata(p);
 				Type<?> customType = c.getCustomType();
 				if (customType != null) {
 					configuration.register(table.getTableName(), c.getColumn().getName(), customType);
-					log.info("Column [{}.{}] is registered to:{}", table.getTableName(), c.getColumn().getName(),customType);
+					log.info("[CustomType] column [{}.{}] is registered to:{}", table.getTableName(), c.getColumn().getName(),customType);
 				}
 			}
 			return true;

@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.types.CodeEnum;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.lang.Annotations;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.FilteredClause;
 import com.querydsl.core.types.ConstantImpl;
@@ -41,6 +43,8 @@ import lombok.SneakyThrows;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class SQLTypeUtils {
+	public static UnsavedValue DEFAULT_UNSAVED_FOR_ID = Annotations.builder(UnsavedValue.class).set(UnsavedValue::value, UnsavedValue.ZeroAndMinus).build();
+	
 	private final static Map<Class<?>, BiFunction<Class<?>, PathMetadata, Path<?>>> PathCreators = new HashMap<>();
 
 	private static final BiFunction<Class<?>, PathMetadata, Path<?>> StringCreator = (a, b) -> Expressions
@@ -238,6 +242,20 @@ public class SQLTypeUtils {
 		case java.sql.Types.BINARY:
 		case java.sql.Types.LONGVARCHAR:
 		case java.sql.Types.LONGVARBINARY:
+		case java.sql.Types.NCHAR:
+		case java.sql.Types.NVARCHAR:
+		case java.sql.Types.LONGNVARCHAR:
+			return true;
+		default:
+			return false;
+		}
+	}
+	
+	public static boolean isChars(int type) {
+		switch (type) {
+		case java.sql.Types.VARCHAR:
+		case java.sql.Types.CHAR:
+		case java.sql.Types.LONGVARCHAR:
 		case java.sql.Types.NCHAR:
 		case java.sql.Types.NVARCHAR:
 		case java.sql.Types.LONGNVARCHAR:
