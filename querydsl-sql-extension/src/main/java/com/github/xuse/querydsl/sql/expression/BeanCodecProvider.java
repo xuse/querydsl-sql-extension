@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.sql.expression;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager.CacheKey;
@@ -10,13 +9,8 @@ public interface BeanCodecProvider {
 
 	BeanCodec generateAccessor(CacheKey key, BindingProvider bindings,ClassLoaderAccessor cl);
 
-
 	default BeanCodec inputFields(BeanCodec bc, Class<?> target,List<FieldProperty> properties) {
-		Field[] fields = new Field[properties.size()];
-		for (int i = 0; i < properties.size(); i++) {
-			fields[i] = properties.get(i).getField();
-		}
-		bc.setFields(fields);
+		bc.setFields(properties.toArray(new FieldProperty[0]));
 		bc.setType(target);
 		return bc;
 	}

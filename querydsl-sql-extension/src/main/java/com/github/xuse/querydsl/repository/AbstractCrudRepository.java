@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.repository;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +30,7 @@ import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
+import com.github.xuse.querydsl.sql.expression.Property;
 import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -304,14 +304,14 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		}
 		
 		BeanCodec codec = BeanCodecManager.getInstance().getCodec(conditionBean.getClass());
-		Field[] fields = codec.getFields();
+		Property[] fields = codec.getFields();
 		Object[] values = codec.values(conditionBean);
 		Map<String, Path<?>> bindings = new HashMap<>();
 		for (Path<?> p : beanPath.getColumns()) {
 			bindings.put(p.getMetadata().getName(), p);
 		}
 		for (int i = 0; i < fields.length; i++) {
-			Field field = fields[i];
+			Property field = fields[i];
 			Object value = values[i];
 			String fieldName=field.getName();
 			if (fieldName.equals(cb.limitField())) {
@@ -488,7 +488,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return isUnsavedValue(tester, value, op); 
 	}
 
-	private List<Pair<Path<?>,Boolean>> processOrder(Object value, Order order,Field[] fields,Object[] values,Map<String, Path<?>> bindings) {
+	private List<Pair<Path<?>,Boolean>> processOrder(Object value, Order order,Property[] fields,Object[] values,Map<String, Path<?>> bindings) {
 		String fieldNames=String.valueOf(value);
 		if(StringUtils.isBlank(fieldNames)) {
 			return Collections.emptyList();
@@ -496,7 +496,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		Object sortValue = null;
 		if(StringUtils.isNotEmpty(order.sortField())) {
 			for(int i=0;i<fields.length;i++) {
-				Field f = fields[i];
+				Property f = fields[i];
 				if(f.getName().equalsIgnoreCase(order.sortField())) {
 					sortValue = values[i];
 					break;

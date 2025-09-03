@@ -1,14 +1,16 @@
 package com.github.xuse.querydsl.sql.expression;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 
 import com.github.xuse.querydsl.util.lang.Primitives;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-final class FieldProperty {
+public final class FieldProperty implements Property{
 	private final Method getter;
 	private final Method setter;
 	private final Field field;
@@ -62,5 +64,25 @@ final class FieldProperty {
 
 	public String getName() {
 		return field.getName();
+	}
+
+	@Override
+	public <T extends Annotation> T getAnnotation(Class<T> clz) {
+		return field.getAnnotation(clz);
+	}
+
+	@Override
+	public Class<?> getType() {
+		return field.getType();
+	}
+
+	@Override
+	public Type getGenericType() {
+		return field.getGenericType();
+	}
+
+	@Override
+	public int getModifiers() {
+		return field.getModifiers();
 	}
 }

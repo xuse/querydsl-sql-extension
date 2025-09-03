@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.sql.expression;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
@@ -34,17 +33,17 @@ public abstract class BeanCodec {
 	 */
 	public abstract void sets(Object[] values, Object bean);
 
-	private Field[] fields;
+	private Property[] fields;
 	
 	private Class<?> type;
 	
 	private Map<String,Integer> randomAccessIndex;
 
-	public Field[] getFields() {
+	public Property[] getFields() {
 		return fields;
 	}
 
-	public void setFields(Field[] fields) {
+	public void setFields(FieldProperty[] fields) {
 		this.fields = fields;
 	}
 
