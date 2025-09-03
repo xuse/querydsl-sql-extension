@@ -876,4 +876,56 @@ public class IOUtils {
 		}
 		return StringUtils.fromHex(cw.toCharArray(), false);
 	}
+	
+	/**
+	 * 相对路径计算，计算从folder出发，到达file的相对路径
+	 * 
+	 * @param file
+	 * @param folder
+	 * @return
+	 */
+	public static String getRelativepath(String file, String folder) {
+		String[] f1 = StringUtils.split(file.replace('/', '\\'), '\\');
+		String[] f2 = StringUtils.split(folder.replace('/', '\\'), '\\');
+		int breakCount = -1;
+		for (int i = 0; i < f1.length; i++) {
+			String str = f1[i];
+			if (i < f2.length && str.equals(f2[i])) {
+				breakCount = i + 1;
+			} else {
+				break;
+			}
+		}
+		if (breakCount == -1)
+			return file;
+		StringBuilder sb = new StringBuilder();
+		sb.append(StringUtils.repeat(".." + File.separator, f2.length - breakCount));
+		for (int i = breakCount; i < f1.length; i++) {
+			sb.append(f1[i]).append(File.separatorChar);
+		}
+		sb.setLength(sb.length() - 1);
+		return sb.toString();
+	}
+
+	/**
+	 * 相对路径计算，计算从folder出发，到达file的相对路径
+	 * 
+	 * @param file
+	 * @param folder
+	 */
+	public static String getRelativepath(File file, File folder) {
+		String s1 = getCanonicalPath(file);
+		String s2 = getCanonicalPath(folder);
+		return getRelativepath(s1, s2);
+	}
+	
+	public static String getCanonicalPath(File file) {
+		Assert.notNull(file);
+		try {
+			return file.getCanonicalPath();
+		} catch (IOException e) {
+			return file.getAbsolutePath();
+		}
+	}
+
 }
