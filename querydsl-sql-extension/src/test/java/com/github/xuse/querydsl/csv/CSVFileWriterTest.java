@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +29,7 @@ public class CSVFileWriterTest {
 		String[] headers = null;
 		List<String[]> data = new ArrayList<>();
 		// Reader File.
-		try (CsvFileReader reader = new CsvFileReader(url, StandardCharsets.UTF_8)) {
+		try (CsvFileReader<String[]> reader = CsvFileReader.of(url, StandardCharsets.UTF_8)) {
 			if (reader.readHeaders()) {
 				headers = reader.getHeaders();
 				while (reader.readRecord()) {
@@ -96,10 +94,10 @@ public class CSVFileWriterTest {
 			writer.write("#comment ",true);
 			writer.flush();
 		}
-		try (CsvFileReader reader = new CsvFileReader(IOUtils.getUTF8Reader(tmpFile))) {
+		try (CsvFileReader<String[]> reader = CsvFileReader.of(IOUtils.getUTF8Reader(tmpFile))) {
 			reader.readHeaders();
 		}
-		try (CsvFileReader reader = new CsvFileReader(tmpFile, StandardCharsets.UTF_8)) {
+		try (CsvFileReader<String[]> reader = CsvFileReader.of(tmpFile, StandardCharsets.UTF_8)) {
 			reader.getSettings().escapeMode=EscapeMode.BACKSLASH;
 			reader.getSettings().useComments=true;
 			reader.skipLine();
@@ -118,7 +116,7 @@ public class CSVFileWriterTest {
 		tmpFile.delete();
 
 		URL url = this.getClass().getResource("/csv_escape.csv");
-		try (CsvFileReader reader = new CsvFileReader(url, StandardCharsets.UTF_8)) {
+		try (CsvFileReader<String[]> reader = CsvFileReader.of(url, StandardCharsets.UTF_8)) {
 			reader.getSettings().escapeMode=EscapeMode.BACKSLASH;
 			reader.getSettings().useComments=true;
 				reader.setHeaders(reader.getHeaders());
@@ -140,7 +138,7 @@ public class CSVFileWriterTest {
 				}
 		}
 		
-		try (CsvFileReader reader = new CsvFileReader(url, StandardCharsets.UTF_8)) {
+		try (CsvFileReader<String[]> reader = CsvFileReader.of(url, StandardCharsets.UTF_8)) {
 			reader.getSettings().escapeMode=EscapeMode.BACKSLASH;
 			reader.getSettings().useComments=true;
 			reader.getSettings().useTextQualifier=false;
@@ -162,31 +160,32 @@ public class CSVFileWriterTest {
 	}
 	
 	@Test
+	@SuppressWarnings("unused")
 	public void withExceptions() {
 		int count = 0;
 		try {
-			CsvFileReader reader=new CsvFileReader(null);	
+			CsvFileReader<String[]> reader=CsvFileReader.of(null);	
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
-		try {
-			CsvFileWriter reader=new CsvFileWriter(null);	
+		try (CsvFileWriter reader=new CsvFileWriter(null)){
+			;	
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
 		File tmpFile = new File(System.getProperty("user.dir"), "tmp.csv");
 		try {
-			CsvFileReader reader=new CsvFileReader(tmpFile,null);	
+			CsvFileReader<String[]> reader=CsvFileReader.of(tmpFile,null);	
+		}catch(IllegalArgumentException e) {
+			count++;
+		}
+		try (CsvFileWriter writer=new CsvFileWriter(tmpFile, null)){
+				
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
 		try {
-			CsvFileWriter reader=new CsvFileWriter(tmpFile, null);	
-		}catch(IllegalArgumentException e) {
-			count++;
-		}
-		try {
-			CsvFileReader reader=new CsvFileReader(tmpFile,StandardCharsets.UTF_8);	
+			CsvFileReader<String[]> reader=CsvFileReader.of(tmpFile,StandardCharsets.UTF_8);	
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
@@ -199,17 +198,17 @@ public class CSVFileWriterTest {
 		}
 		tmpFile=null;
 		try {
-			CsvFileReader reader=new CsvFileReader(tmpFile,StandardCharsets.UTF_8);	
+			CsvFileReader<String[]> reader=CsvFileReader.of(tmpFile,StandardCharsets.UTF_8);	
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
-		try {
-			CsvFileWriter reader=new CsvFileWriter(tmpFile, StandardCharsets.UTF_8);	
+		try (CsvFileWriter reader=new CsvFileWriter(tmpFile, StandardCharsets.UTF_8)){
+			
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
 		URL url=null;
-		try(CsvFileReader reader=new CsvFileReader(url,StandardCharsets.UTF_8)) {
+		try(CsvFileReader<String[]> reader=CsvFileReader.of(url,StandardCharsets.UTF_8)) {
 		}catch(IllegalArgumentException e) {
 			count++;
 		}

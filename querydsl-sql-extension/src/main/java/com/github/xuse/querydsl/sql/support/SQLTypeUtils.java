@@ -343,7 +343,6 @@ public class SQLTypeUtils {
 	 * @throws IllegalAccessException    IllegalAccessException
 	 * @throws InvocationTargetException InvocationTargetException
 	 */
-	@SuppressWarnings("rawtypes")
 	public static Type<?> createInstance(Class<? extends Type> clz, String[] parameters, Class<?> fieldType,java.lang.reflect.Type type)
 			throws InstantiationException, IllegalAccessException, InvocationTargetException {
 		int size = parameters.length;
@@ -388,7 +387,6 @@ public class SQLTypeUtils {
 		return o;
 	}
 
-	@SuppressWarnings("rawtypes")
 	private static Type createWith(Class<? extends Type> clz, Class[] types, Object[] params) {
 		try {
 			Constructor<? extends Type> c= clz.getDeclaredConstructor(types);

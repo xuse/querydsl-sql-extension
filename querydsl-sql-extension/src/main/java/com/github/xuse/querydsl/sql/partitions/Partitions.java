@@ -13,6 +13,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.FastHashtable;
+import com.github.xuse.querydsl.util.lang.Annotations;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
@@ -242,7 +243,13 @@ public class Partitions {
 			if (autoPartitionPeriod == null) {
 				return new AutoTimePartitions[0];
 			}
-			AutoTimePartitions a = new AutoTimePartitionImpl(autoPartitionPeriod, autoPartitionBegin, autoPartitionEnd, withMaxValuePartition, autoColumnFormat);
+			AutoTimePartitions a = Annotations.builder(AutoTimePartitions.class)
+					.set(AutoTimePartitions::unit, autoPartitionPeriod)
+					.set(AutoTimePartitions::periodsBegin, autoPartitionBegin)
+					.set(AutoTimePartitions::periodsEnd, autoPartitionEnd)
+					.set(AutoTimePartitions::createForMaxValue, withMaxValuePartition)
+					.set(AutoTimePartitions::columnFormat, autoColumnFormat)
+					.build();
 			return new AutoTimePartitions[] { a };
 		}
 	}

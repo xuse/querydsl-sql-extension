@@ -10,12 +10,20 @@ import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.function.Function;
 
+import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
+import com.github.xuse.querydsl.sql.expression.BeanCodec;
+import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
+import com.github.xuse.querydsl.sql.expression.Property;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
+import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.sql.Column;
 
 import lombok.SneakyThrows;
 
-public class CsvFileReader implements Closeable {
+public class CsvFileReader<T> implements Closeable {
 
 	private Reader reader = null;
 
@@ -48,42 +56,141 @@ public class CsvFileReader implements Closeable {
 	private long currentRecord = 0;
 
 	private String[] values = new String[INITIAL_COLUMN_COUNT];
+	
+	private final Function<String[], T> func;
 
 	@SneakyThrows
-	public CsvFileReader(File fileName, char delimiter, Charset charset) {
+	public CsvFileReader(File fileName, char delimiter, Charset charset, Function<String[],T> func) {
 		if (fileName == null) {
 			throw new IllegalArgumentException("Parameter fileName can not be null.");
 		}
 		if (charset == null) {
 			throw new IllegalArgumentException("Parameter charset can not be null.");
 		}
+		if(func==null) {
+			throw new IllegalArgumentException("Parameter func can not be nul.");
+		}
 		if (!fileName.exists()) {
 			throw new IllegalArgumentException("File " + fileName + " does not exist.");
 		}
 		this.reader=new InputStreamReader(new FileInputStream(fileName),charset);
 		this.config.delimiter = delimiter;
+		this.func=func;
 		isQualified = new boolean[values.length];
 	}
 
-	public CsvFileReader(File fileName, Charset charset) {
-		this(fileName, Characters.COMMA, charset);
+	private static Function<String[], String[]> CLONED_ARRAY = (s) -> {
+		int len = s.length;
+		String[] clone = new String[len];
+		System.arraycopy(s, 0, clone, 0, len);
+		return clone;
+	};
+	
+	public static <T> CsvFileReader<T> of(File fileName, Charset charset, Class<T> beanClz) {
+		BeanFunction<T> func=new BeanFunction<>(beanClz);
+		CsvFileReader<T> reader = new CsvFileReader<>(fileName, Characters.COMMA, charset, func);
+		if(reader.readHeaders()) {
+			func.setHeaders(reader.headersHolder);
+		}
+		return reader;
+	}
+	
+	private static class BeanFunction<T> implements Function<String[],T>{
+		final BeanCodec codec;
+		HeadersHolder headers;
+		int[] mapping;
+		BeanFunction(Class<T> clz){
+			this.codec=BeanCodecManager.getInstance().getCodec(clz);
+		}
+		
+		public void setHeaders(HeadersHolder headersHolder) {
+			this.headers=headersHolder;
+			int len=headers.Length;
+			mapping=new int[len];
+			for(int i=0;i<len;i++) {
+				Property p=codec.getFields()[i];
+				String name=p.getName();
+				{
+					Column ca=p.getAnnotation(Column.class);
+					if(ca!=null && StringUtils.isNotBlank(ca.value())) {
+						name=ca.value();
+					}	
+				}
+				{
+					ColumnSpec cs=p.getAnnotation(ColumnSpec.class);
+					if(cs!=null && StringUtils.isNotBlank(cs.name())) {
+						name=cs.name();
+					}	
+				}
+				Integer index=headers.IndexByName.get(name);
+				if(index!=null) {
+					mapping[i]= index;
+				}else {
+					mapping[i]= -1;
+				}
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public T apply(String[] s) {
+			int[] mapping=this.mapping;
+			int len=mapping.length;
+			Object[] values=new Object[len];
+			for(int i=0;i<len;i++) {
+				int index=mapping[i];
+				if(index>-1) {
+					values[i]=Codecs.fromString(s[index], codec.getFields()[i].getGenericType());
+				}
+			}
+			return (T)codec.newInstance(values);
+		}
 	}
 
+	public static CsvFileReader<String[]> of(File fileName, Charset charset) {
+		return new CsvFileReader<>(fileName, Characters.COMMA, charset,CLONED_ARRAY);
+	}
+	
+	public static <T> CsvFileReader<T> of(URL url, Charset charset, Class<T> beanClz) {
+		BeanFunction<T> func=new BeanFunction<>(beanClz);
+		CsvFileReader<T> reader = new CsvFileReader<>(url, charset, func);
+		if(reader.readHeaders()) {
+			func.setHeaders(reader.headersHolder);
+		}
+		return reader;
+	}
+	
+	public static CsvFileReader<String[]> of(URL url, Charset charset) {
+		return new CsvFileReader<>(url, charset,CLONED_ARRAY);
+	}
+	
+	public static CsvFileReader<String[]> of(Reader reader) {
+		return new CsvFileReader<>(reader, CLONED_ARRAY);
+	}
+	
 	@SneakyThrows
-	public CsvFileReader(URL url, Charset charset) {
+	public CsvFileReader(URL url, Charset charset, Function<String[],T> func) {
 		if (url == null) {
 			throw new IllegalArgumentException("Parameter url can not be null.");
 		}
+		if(func==null) {
+			throw new IllegalArgumentException("Parameter func can not be nul.");
+		}
 		this.reader = new InputStreamReader(url.openStream(),charset);
 		isQualified = new boolean[values.length];
+		this.func=func;
 	}
 
-	public CsvFileReader(Reader inputStream) {
-		if (inputStream == null) {
+	public CsvFileReader(Reader reader, Function<String[],T> func) {
+		if (reader == null) {
 			throw new IllegalArgumentException("Parameter reader can not be null.");
 		}
-		this.reader = inputStream;
+		if(func==null) {
+			throw new IllegalArgumentException("Parameter func can not be nul.");
+		}
+		this.reader = reader;
 		isQualified = new boolean[values.length];
+		this.func=func;
 	}
 	
 	public ReaderSettings getSettings() {
@@ -134,16 +241,12 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	public String[] getValues() throws IOException {
+	public T getValues() throws IOException {
 		checkClosed();
-		// need to return a clone, and can't use clone because values.Length
-		// might be greater than columnsCount
-		String[] clone = new String[columnsCount];
-		System.arraycopy(values, 0, clone, 0, columnsCount);
-		return clone;
+		return func.apply(values);
 	}
 
-	public String get(int columnIndex) throws IOException {
+	public String get(int columnIndex){
 		checkClosed();
 		if (columnIndex > -1 && columnIndex < columnsCount) {
 			return values[columnIndex];
@@ -157,14 +260,14 @@ public class CsvFileReader implements Closeable {
 		return get(getIndex(headerName));
 	}
 
-	public static CsvFileReader parse(String data) {
+	public static CsvFileReader<String[]> parse(String data) {
 		if (data == null) {
 			throw new IllegalArgumentException("Parameter data can not be null.");
 		}
-		return new CsvFileReader(new StringReader(data));
+		return new CsvFileReader<>(new StringReader(data),CLONED_ARRAY);
 	}
 
-	public boolean readRecord() throws IOException {
+	public boolean readRecord(){
 		checkClosed();
 		columnsCount = 0;
 		rawBuffer.index = 0;
@@ -560,7 +663,7 @@ public class CsvFileReader implements Closeable {
 		return hasReadNextLine;
 	}
 
-	private void checkDataLength() throws IOException {
+	private void checkDataLength(){
 		updateCurrentValue();
 		if (config.captureRawRecord && dataBuffer.Count > 0) {
 			if (rawBuffer.buffer.length - rawBuffer.index < dataBuffer.Count - dataBuffer.recordStart) {
@@ -576,7 +679,7 @@ public class CsvFileReader implements Closeable {
 			dataBuffer.Count = reader.read(dataBuffer.buffer, 0, dataBuffer.buffer.length);
 		} catch (IOException ex) {
 			close();
-			throw ex;
+			throw Exceptions.toRuntime(ex);
 		}
 		if (dataBuffer.Count == -1) {
 			hasMoreData = false;
@@ -586,7 +689,7 @@ public class CsvFileReader implements Closeable {
 		dataBuffer.fieldStart = 0;
 	}
 
-	public boolean readHeaders() throws IOException {
+	public boolean readHeaders()  {
 		boolean result = readRecord();
 		headersHolder.Length = columnsCount;
 		headersHolder.Headers = new String[columnsCount];
@@ -620,7 +723,7 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	private void endField() throws IOException {
+	private void endField() {
 		String currentValue = "";
 		if (fieldStarted) {
 			if (fieldBuffer.index == 0) {
@@ -713,7 +816,7 @@ public class CsvFileReader implements Closeable {
 		return recordRead;
 	}
 
-	public boolean skipLine() throws IOException {
+	public boolean skipLine() {
 		checkClosed();
 		// clear public column values for current line
 		columnsCount = 0;
@@ -755,9 +858,9 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	private void checkClosed() throws IOException {
+	private void checkClosed() {
 		if (reader==null) {
-			throw new IOException("This instance of the CsvReader class has already been closed.");
+			throw new IllegalStateException("This instance of the CsvReader class has already been closed.");
 		}
 	}
 

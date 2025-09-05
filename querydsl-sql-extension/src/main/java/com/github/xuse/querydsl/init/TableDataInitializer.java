@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.init;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -384,7 +383,7 @@ public class TableDataInitializer {
 	 */
 	class CSVObjectReader implements CloseableIterator<Object> {
 
-		private final CsvFileReader reader;
+		private final CsvFileReader<String[]> reader;
 
 		private final List<Entry<Path<?>, Integer>> props = new ArrayList<Entry<Path<?>, Integer>>();
 
@@ -392,7 +391,7 @@ public class TableDataInitializer {
 
 		public CSVObjectReader(URL url) {
 			try {
-				this.reader = new CsvFileReader(new InputStreamReader(url.openStream(), charset));
+				this.reader = CsvFileReader.of(url, charset);
 				initHeader();
 				readNext();
 			} catch (IOException e) {
