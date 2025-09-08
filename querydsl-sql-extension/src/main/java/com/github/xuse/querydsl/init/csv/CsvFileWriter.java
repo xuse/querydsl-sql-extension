@@ -8,12 +8,25 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
+import com.github.xuse.querydsl.sql.expression.BeanCodec;
+import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
+import com.github.xuse.querydsl.sql.expression.Property;
+import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.IOUtils;
+import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.sql.Column;
 
 import lombok.SneakyThrows;
 
-public class CsvFileWriter implements Closeable {
+public class CsvFileWriter<T> implements Closeable {
 
 	private Writer writer = null;
 
@@ -22,9 +35,128 @@ public class CsvFileWriter implements Closeable {
 	private final WriteSettings userSettings = new WriteSettings();
 	
 	private static final String RECORDDELIMITER = System.getProperty("line.separator");
+	
+	private final Function<T,String[]> func;
+	
+	private static final Function<String[],String[]> DEFAULT_FUNC=(s)->s;
+	
+	public static CsvFileWriter<String[]> ofUtf8Writer(File file) {
+		return of(file, StandardCharsets.UTF_8);
+	}
+	
+	public static CsvFileWriter<String[]> of(File file,Charset charset){
+		return new CsvFileWriter<>(file,charset,DEFAULT_FUNC);
+	}
+	
+	public static CsvFileWriter<String[]> of(Writer writer){
+		return new CsvFileWriter<>(writer, DEFAULT_FUNC);
+	}
+	
+	public static <T> CsvFileWriterBuilder<T> ofBean(Class<T> bean) {
+		return new CsvFileWriterBuilder<T>(bean);
+	}
+	
+	public static class CsvFileWriterBuilder<T>{
+		private final Class<T> clz;
+		private String[] headers;
+		private Charset cs=StandardCharsets.UTF_8;
+		public CsvFileWriterBuilder(Class<T> clz) {
+			this.clz=clz;
+		}
+		public CsvFileWriterBuilder<T> headers(String[] headers){
+			this.headers=headers;
+			return this;
+		}
+		public CsvFileWriterBuilder<T> charset(String charset){
+			cs=Charset.forName(charset);
+			return this;
+		}
+		public CsvFileWriterBuilder<T> charset(Charset charset){
+			cs = charset;
+			return this;
+		}
+		public CsvFileWriter<T> build(File file){
+			BeanFunction<T> func=new BeanFunction<>(clz,headers);
+			CsvFileWriter<T> cw= new CsvFileWriter<>(file,cs,func);
+			cw.writeHeaders(func.getHeaders());
+			return cw;
+		}
+		public CsvFileWriter<T> build(Writer writer){
+			BeanFunction<T> func=new BeanFunction<>(clz,headers);
+			CsvFileWriter<T> cw= new CsvFileWriter<>(writer,func);
+			cw.writeHeaders(func.getHeaders());
+			return cw;
+		}
+	}
+	
+	private static class BeanFunction<T> implements Function<T,String[]>{
+		final BeanCodec codec;
+		int[] mapping;
+		final String[] headers;
+		
+		BeanFunction(Class<T> clz, String[] headers){
+			this.codec=BeanCodecManager.getInstance().getCodec(clz);
+			Map<String,Integer> map = generateHeadersIndex(codec);
+			if(headers==null || headers.length==0){
+				headers=Arrays.stream(codec.getFields()).map(Property::properName).collect(Collectors.toList()).toArray(ArrayUtils.EMPTY_STRING_ARRAY);
+			}
+			this.headers=headers;
+			int[] mapping = new int[headers.length];
+			for(int i=0;i<headers.length;i++) {
+				Integer index=map.get(headers[i]);
+				if(index!=null){
+					mapping[i]=index;
+				}else {
+					mapping[i]=-1;
+				}
+			}
+			this.mapping=mapping;
+		}
+		private Map<String,Integer> generateHeadersIndex(BeanCodec codec) {
+			Property[] pps=codec.getFields();
+			int size=pps.length;
+			Map<String,Integer> index=new HashMap<>();
+			for(int i=0;i<size;i++){
+				Property pp=pps[i];
+				String name=pp.getName();
+				index.put(name, i);
+				
+				Column c=pp.getAnnotation(Column.class);
+				if(c!=null && StringUtils.isNotEmpty(c.value())){
+					name=c.value();
+					index.put(name, i);
+				}
+				ColumnSpec cs=pp.getAnnotation(ColumnSpec.class);
+				if(cs!=null && StringUtils.isNotEmpty(cs.name())) {
+					name=cs.name();
+					index.put(name, i);
+				}
+			}
+			return index;
+		}
+		public String[] getHeaders() {
+			return headers;
+		}
+		@Override
+		public String[] apply(T t) {
+			Object[] objs=codec.values(t);
+			int len=headers.length;
+			String[] values=new String[len];
+			Property[] pps=codec.getFields();
+			for(int i=0;i<len;i++) {
+				int index=mapping[i];
+				if(index>=0) {
+					Object o=objs[index];
+					values[i]=Codecs.toString(o, pps[index].getGenericType());
+				}else {
+					values[i]=""; //?
+				}
+			}
+			return values;
+		}
+	}
 
-	@SneakyThrows
-	public CsvFileWriter(File fileName, Charset charset) {
+	public CsvFileWriter(File fileName, Charset charset,Function<T,String[]> func) {
 		if (fileName == null) {
 			throw new IllegalArgumentException("Parameter fileName can not be null.");
 		}
@@ -32,21 +164,28 @@ public class CsvFileWriter implements Closeable {
 			throw new IllegalArgumentException("Parameter charset can not be null.");
 		}
 		IOUtils.ensureParentFolder(fileName);
-		writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName), charset));
+		try {
+			this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName), charset));
+		}catch(IOException e) {
+			throw new IllegalStateException(e);
+		}
+		this.func=func;
 	}
 
-	public CsvFileWriter(Writer outputStream) {
-		if (outputStream == null) {
+	public CsvFileWriter(Writer writer,Function<T,String[]> func) {
+		if (writer == null) {
 			throw new IllegalArgumentException("Parameter outputStream can not be null.");
 		}
-		this.writer = outputStream;
+		this.writer = writer;
+		this.func=func;
 	}
 	
 	public WriteSettings getSettings() {
 		return userSettings;
 	}
 
-	public CsvFileWriter write(String content, boolean preserveSpaces) throws IOException {
+	@SneakyThrows
+	public CsvFileWriter<T> write(String content, boolean preserveSpaces){
 		checkClosed();
 		if (content == null) {
 			content = "";
@@ -102,7 +241,7 @@ public class CsvFileWriter implements Closeable {
 		return this;
 	}
 
-	public CsvFileWriter write(String content) throws IOException {
+	public CsvFileWriter<T> write(String content) throws IOException {
 		return write(content, false);
 	}
 
@@ -114,7 +253,8 @@ public class CsvFileWriter implements Closeable {
 		firstColumn = true;
 	}
 
-	public void writeRecord(String[] values, boolean preserveSpaces) throws IOException {
+	public void writeRecord(T record, boolean preserveSpaces){
+		String[] values=func.apply(record);
 		if (values != null && values.length > 0) {
 			for (int i = 0; i < values.length; i++) {
 				write(values[i], preserveSpaces);
@@ -122,15 +262,28 @@ public class CsvFileWriter implements Closeable {
 			endRecord();
 		}
 	}
+	
+	public void writeHeaders(String[] values) {
+		if (values != null && values.length > 0) {
+			for (int i = 0; i < values.length; i++) {
+				write(values[i], true);
+			}
+			endRecord();
+		}
+	}
 
-	public void writeRecord(String[] values) throws IOException {
+	public void writeRecord(T values) throws IOException {
 		writeRecord(values, false);
 	}
 
-	public void endRecord() throws IOException {
+	public void endRecord(){
 		checkClosed();
-		writer.write(RECORDDELIMITER);
-		firstColumn = true;
+		try {
+			writer.write(RECORDDELIMITER);
+			firstColumn = true;
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public void flush() throws IOException {
@@ -144,9 +297,9 @@ public class CsvFileWriter implements Closeable {
 		}
 	}
 
-	private void checkClosed() throws IOException {
+	private void checkClosed() {
 		if (writer == null) {
-			throw new IOException("This instance of the CsvWriter class has already been closed.");
+			throw new IllegalStateException("This instance of the CsvWriter class has already been closed.");
 		}
 	}
 

@@ -148,7 +148,7 @@ public class InitDataExporter {
 			}
 			return;
 		}
-		CsvFileWriter cw = new CsvFileWriter(file, charset);
+		CsvFileWriter<String[]> cw = CsvFileWriter.of(file, charset);
 		try {
 			List<Path<?>> columns = meta.getColumns();
 			List<ColumnMapping> columnMetas = new ArrayList<>();

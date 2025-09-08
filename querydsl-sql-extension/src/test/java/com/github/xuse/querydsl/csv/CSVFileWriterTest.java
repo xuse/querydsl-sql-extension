@@ -40,7 +40,7 @@ public class CSVFileWriterTest {
 		if (headers != null) {
 			// Write to new File
 			File tmpFile = new File(System.getProperty("user.dir"), "tmp.csv");
-			try (CsvFileWriter writer = new CsvFileWriter(tmpFile, StandardCharsets.UTF_8)) {
+			try (CsvFileWriter<String[]> writer = CsvFileWriter.ofUtf8Writer(tmpFile)) {
 				writer.writeRecord(headers);
 				for (String[] row : data) {
 					writer.writeRecord(row);
@@ -65,7 +65,7 @@ public class CSVFileWriterTest {
 		File tmpFile = new File(System.getProperty("user.dir"), "tmp.csv");
 
 		String[] headers = new String[] { "A", "B" };
-		try (CsvFileWriter writer = new CsvFileWriter(IOUtils.getWriter(tmpFile, StandardCharsets.UTF_8, false))) {
+		try (CsvFileWriter<String[]> writer = CsvFileWriter.of(IOUtils.getWriter(tmpFile, StandardCharsets.UTF_8, false))) {
 			writer.getSettings().escapeMode=EscapeMode.BACKSLASH;
 			writer.write(null,false);
 			writer.write("##");
@@ -168,7 +168,7 @@ public class CSVFileWriterTest {
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
-		try (CsvFileWriter reader=new CsvFileWriter(null)){
+		try (CsvFileWriter<String[]> reader=CsvFileWriter.of(null)){
 			;	
 		}catch(IllegalArgumentException e) {
 			count++;
@@ -179,7 +179,7 @@ public class CSVFileWriterTest {
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
-		try (CsvFileWriter writer=new CsvFileWriter(tmpFile, null)){
+		try (CsvFileWriter<String[]> writer=CsvFileWriter.of(tmpFile, null)){
 				
 		}catch(IllegalArgumentException e) {
 			count++;
@@ -190,9 +190,9 @@ public class CSVFileWriterTest {
 			count++;
 		}
 		try {
-			CsvFileWriter reader=new CsvFileWriter(tmpFile, StandardCharsets.UTF_8);	
-			reader.close();
-			reader.write("123");
+			CsvFileWriter<String[]> writer=CsvFileWriter.of(tmpFile, StandardCharsets.UTF_8);	
+			writer.close();
+			writer.write("123");
 		}catch(IOException e) {
 			count++;
 		}
@@ -202,7 +202,7 @@ public class CSVFileWriterTest {
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
-		try (CsvFileWriter reader=new CsvFileWriter(tmpFile, StandardCharsets.UTF_8)){
+		try (CsvFileWriter<String[]> writer=CsvFileWriter.of(tmpFile, StandardCharsets.UTF_8)){
 			
 		}catch(IllegalArgumentException e) {
 			count++;
