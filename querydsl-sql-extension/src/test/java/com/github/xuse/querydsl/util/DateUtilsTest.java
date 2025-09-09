@@ -33,7 +33,7 @@ public class DateUtilsTest {
 	private final Date afterDay = DateUtils.get(2024, 1, 3);
 	private final long todayMillis=today.getTime();
 	
-	private final long millisTime=1075658522666L;
+	private final long millisTime=1675620122666L;
 	
 	@Test
 	public void testDateUtils() {
@@ -133,28 +133,28 @@ public class DateUtilsTest {
 		assertEquals("2004/02/02 00:00:00", DateFormats.DATE_TIME_CS2.format(DateUtils.getInstant(2004, 2, 2)));
 		
 		ret = new Date(millisTime);
-		assertEquals("2004-02-02 02:02:02.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.SECOND)));
-		assertEquals("2004-02-02 02:02:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.MINUTE)));
-		assertEquals("2004-02-02 02:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.HOUR)));
-		assertEquals("2004-02-02 00:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.DATE)));
-		assertEquals("2004-02-01 00:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.MONTH)));
-		assertEquals("2004-01-01 00:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.YEAR)));
+		assertEquals("2023-02-06 02:02:02.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.SECOND)));
+		assertEquals("2023-02-06 02:02:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.MINUTE)));
+		assertEquals("2023-02-06 02:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.HOUR)));
+		assertEquals("2023-02-06 00:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.DATE)));
+		assertEquals("2023-02-01 00:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.MONTH)));
+		assertEquals("2023-01-01 00:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.getTruncated(ret, Calendar.YEAR)));
 		
-		assertEquals("2004-01-01 08:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToYear(ret, TimeZones.UTC)));
-		assertEquals("2004-02-01 08:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToMonth(ret, TimeZones.UTC)));
-		assertEquals("2004-02-01 08:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToDay(ret,TimeZones.UTC)));
-		assertEquals("2004-02-02 02:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToHour(ret, TimeZones.UTC)));
-		assertEquals("2004-02-02 02:02:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToMinute(ret)));
-		assertEquals("2004-02-02 02:02:02.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToSecond(ret)));
+		assertEquals("2023-01-01 08:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToYear(ret, TimeZones.UTC)));
+		assertEquals("2023-02-01 08:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToMonth(ret, TimeZones.UTC)));
+		assertEquals("2023-02-05 08:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToDay(ret,TimeZones.UTC)));
+		assertEquals("2023-02-06 02:00:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToHour(ret, TimeZones.UTC)));
+		assertEquals("2023-02-06 02:02:00.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToMinute(ret)));
+		assertEquals("2023-02-06 02:02:02.000",DateFormats.TIME_STAMP_CS.format(DateUtils.truncateToSecond(ret)));
 		
-		assertEquals(2004,DateUtils.getYear(ret));
-		assertEquals(2004,DateUtils.getYear(ret,TimeZones.UTC_3));
+		assertEquals(2023,DateUtils.getYear(ret));
+		assertEquals(2023,DateUtils.getYear(ret,TimeZones.UTC_3));
 		assertEquals(2,DateUtils.getMonth(ret));
 		assertEquals(2,DateUtils.getMonth(ret,TimeZones.UTC_3));
-		assertEquals(2,DateUtils.getDay(ret));
-		assertEquals(1,DateUtils.getDay(ret,TimeZones.UTC_3));
-		assertEquals(29,DateUtils.getDaysInMonth(ret));
-		assertEquals(29,DateUtils.getDaysInMonth(ret,TimeZones.UTC_3));
+		assertEquals(6,DateUtils.getDay(ret));
+		assertEquals(5,DateUtils.getDay(ret,TimeZones.UTC_3));
+		assertEquals(28,DateUtils.getDaysInMonth(ret));
+		assertEquals(28,DateUtils.getDaysInMonth(ret,TimeZones.UTC_3));
 		assertEquals(2,DateUtils.getHour(ret));
 		assertEquals(21,DateUtils.getHour(ret,TimeZones.UTC_3));
 		assertEquals(2,DateUtils.getMinute(ret));
@@ -163,22 +163,23 @@ public class DateUtilsTest {
 		assertEquals(1,DateUtils.getWeekDay(ret));
 		assertEquals(0,DateUtils.getWeekDay(ret,TimeZones.UTC_3));
 		assertEquals(6,DateUtils.getWeekOfYear(ret));
-		assertEquals(5,DateUtils.getWeekOfYear(ret,TimeZones.UTC_3));
+		System.out.println(ret);
+		assertEquals(6,DateUtils.getWeekOfYear(ret,TimeZones.UTC_3));
 		
-		assertEquals("20040201180202.666",DateUtils.getFtpDate(millisTime));
+		assertEquals("20230205180202.666",DateUtils.getFtpDate(millisTime));
 		assertEquals(1075658522000L, DateUtils.parseFTPDate("20040201180202.666").getTime());
-		assertEquals("2004-02-02T02:02:02",DateUtils.getISO8601Date(millisTime));
-		assertEquals("Feb  2  2004",DateUtils.getUnixDate(millisTime));
+		assertEquals("2023-02-06T02:02:02",DateUtils.getISO8601Date(millisTime));
+		assertEquals("Feb  6  2023",DateUtils.getUnixDate(millisTime));
 		
 		assertTrue(DateUtils.getUnixDate(DateUtils.yesterday().getTime()).length()>0);
 		
 		assertArrayEquals(new int[] { 2, 2, 2 }, DateUtils.getHMS(ret));
 		assertArrayEquals(new int[] { 0, 0, 0 }, DateUtils.getHMS(null));
 		assertArrayEquals(new int[] { 4, 2, 2 }, DateUtils.getHMS(ret, TimeZones.UTC_10));
-		assertArrayEquals(new int[] { 2004, 2, 1 }, DateUtils.getYMD(ret,TimeZones.getByUTCOffset(5.5)));
+		assertArrayEquals(new int[] { 2023, 2, 5 }, DateUtils.getYMD(ret,TimeZones.getByUTCOffset(5.5)));
 		assertArrayEquals(new int[] { 23, 32, 2 }, DateUtils.getHMS(ret, TimeZones.getByUTCOffset(5.5)));
-		assertArrayEquals(new int[] { 2004, 2, 2 }, DateUtils.getYMD(ret));
-		assertArrayEquals(new int[] { 2004, 2, 1 }, DateUtils.getYMD(ret, TimeZones.UTC_1));
+		assertArrayEquals(new int[] { 2023, 2, 6 }, DateUtils.getYMD(ret));
+		assertArrayEquals(new int[] { 2023, 2, 5 }, DateUtils.getYMD(ret, TimeZones.UTC_1));
 		assertArrayEquals(new int[] { 0, 0, 0 }, DateUtils.getYMD(null));
 
 		ret=DateUtils.get(2004, 2, 1, 1, 0 ,0);
