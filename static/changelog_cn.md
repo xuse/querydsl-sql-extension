@@ -7,11 +7,13 @@ v{querydsl 版本号} - r(extension version)
 ```
 
 **v5.0.0-r140**  (2025-7-30)
-* Revise Javadoc by via translations.
+* 修正补充双语Javadoc
 * Some fix on function `findByConditionBean`
-* Utilities update.
-* Unit test coverage to 75%.
+* 工具更新
+* 单元测试覆盖率提升。当前75%.
 * Update语句在更新记录时，默认会更新指定为自动生成数值的列。
+* ASM升级，支持17以上版本类文件解析
+* 内置CSV工具API调整
 
 **v5.0.0-r130**  (2024-11-27)
 

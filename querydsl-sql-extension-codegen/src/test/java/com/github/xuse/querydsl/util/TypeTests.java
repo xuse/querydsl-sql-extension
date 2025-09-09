@@ -31,19 +31,6 @@ public class TypeTests {
 			System.err.println(result.getProblems());
 		}
 	}
-	
-	@SneakyThrows
-	@Test
-	public void testParserAst2() {
-		ParseResult<CompilationUnit> result=p.parse(new File("test.txt"));
-		if(result.isSuccessful()) {
-			print(result.getResult().get(),0);	
-		}else {
-			System.err.println(result.getProblems());
-		}
-	}
-	
-
 
 	private void print(Node value, int i) {
 		System.out.print("  ".repeat(i));

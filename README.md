@@ -48,7 +48,7 @@ See [User Guide](static/user_guide.md)
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r120</version>
+	<version>5.0.0-r140</version>
 </dependency>
 ```
 
@@ -57,7 +57,7 @@ If you need to integrate with Spring Framework, you also need to:
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension-spring</artifactId>
-	<version>5.0.0-r120</version>
+	<version>5.0.0-r140</version>
 </dependency>
 ```
 

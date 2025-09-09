@@ -8,13 +8,15 @@ The first number corresponds to the version of the querydsl library, and the sec
 v{querydsl version} - r(extension version)
 ```
 
-**v5.0.0-r140**  (2025-7-30)
+**v5.0.0-r140**  (2025-9-10)
 
 * Some fix on function `findByConditionBean`
 * Utilities update.
 * Unit test coverage to 75%.
 * Revise Javadoc via AI translations.
 * The UPDATE statement, when updating records, will by default update columns designated to auto-generate values.
+* upgrade ASM to support class format of Java 21
+* API adjust on CSV utilities.
 
 * **v5.0.0-r130** (2024-11-27)
 

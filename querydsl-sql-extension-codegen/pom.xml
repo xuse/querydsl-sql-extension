@@ -9,7 +9,6 @@
 	</parent>
 	<artifactId>querydsl-sql-extension-codegen</artifactId>
 	<packaging>jar</packaging>
-
 	<name>querydsl-sql-extension-codegen</name>
 	<url>http://maven.apache.org</url>
 	<properties>
