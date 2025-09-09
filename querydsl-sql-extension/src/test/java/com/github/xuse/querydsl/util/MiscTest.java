@@ -177,8 +177,8 @@ public class MiscTest {
 		ress=c.scan(new String[] {" ","com.github.xuse.querydsl.util"});
 		assertTrue(ress.size()==0);
 		
-		
-		c.filterWith(null);
+		c.rootClasspath(null);
+		c.clearFilter();
 		ress=c.scan(new String[] {" "});
 		assertTrue(ress.size()==0);
 		

@@ -98,7 +98,7 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 			if (column.isNullable() && anno == null && !ConfigurationEx.FREE_PRIMITIVE) {
 				throw Exceptions.illegalArgument("The column [{}] in database is nullable, please use a wrapped type (not primitive) to mapping it. field = {}", column.getName(), field);
 			} else if(unsaved==null){
-				if(spec.autoIncrement()) {
+				if(spec!=null && spec.autoIncrement()) {
 					unsaved = SQLTypeUtils.DEFAULT_UNSAVED_FOR_ID;
 				}else {
 					log.info("Field {} using primitive type to mapping a column in database. Please using {@code @UnsavedValue} or withUnsavePredicate() method to describe it. Otherwise the value like '0' or 'false' will be regarded as a null value.", field);	

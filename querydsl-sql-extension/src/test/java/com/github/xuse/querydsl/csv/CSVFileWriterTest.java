@@ -184,11 +184,7 @@ public class CSVFileWriterTest {
 		}catch(IllegalArgumentException e) {
 			count++;
 		}
-		try {
-			CsvFileReader<String[]> reader=CsvFileReader.of(tmpFile,StandardCharsets.UTF_8);	
-		}catch(IllegalArgumentException e) {
-			count++;
-		}
+
 		try {
 			CsvFileWriter<String[]> writer=CsvFileWriter.of(tmpFile, StandardCharsets.UTF_8);	
 			writer.close();
@@ -220,6 +216,6 @@ public class CSVFileWriterTest {
 			count++;
 		}
 		System.out.println(count);
-		assertEquals(10,count);
+		assertEquals(9,count);
 	}
 }

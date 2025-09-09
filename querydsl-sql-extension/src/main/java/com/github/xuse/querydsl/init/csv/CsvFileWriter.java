@@ -75,12 +75,14 @@ public class CsvFileWriter<T> implements Closeable {
 			cs = charset;
 			return this;
 		}
-		public CsvFileWriter<T> build(File file){
+		@SneakyThrows
+		public CsvFileWriter<T> build(File file) {
 			BeanFunction<T> func=new BeanFunction<>(clz,headers);
 			CsvFileWriter<T> cw= new CsvFileWriter<>(file,cs,func);
 			cw.writeHeaders(func.getHeaders());
 			return cw;
 		}
+		@SneakyThrows
 		public CsvFileWriter<T> build(Writer writer){
 			BeanFunction<T> func=new BeanFunction<>(clz,headers);
 			CsvFileWriter<T> cw= new CsvFileWriter<>(writer,func);
@@ -253,7 +255,7 @@ public class CsvFileWriter<T> implements Closeable {
 		firstColumn = true;
 	}
 
-	public void writeRecord(T record, boolean preserveSpaces){
+	public void writeRecord(T record, boolean preserveSpaces) throws IOException{
 		String[] values=func.apply(record);
 		if (values != null && values.length > 0) {
 			for (int i = 0; i < values.length; i++) {
@@ -263,7 +265,7 @@ public class CsvFileWriter<T> implements Closeable {
 		}
 	}
 	
-	public void writeHeaders(String[] values) {
+	public void writeHeaders(String[] values)  throws IOException{
 		if (values != null && values.length > 0) {
 			for (int i = 0; i < values.length; i++) {
 				write(values[i], true);
@@ -276,7 +278,7 @@ public class CsvFileWriter<T> implements Closeable {
 		writeRecord(values, false);
 	}
 
-	public void endRecord(){
+	public void endRecord() throws IOException{
 		checkClosed();
 		try {
 			writer.write(RECORDDELIMITER);
@@ -297,9 +299,9 @@ public class CsvFileWriter<T> implements Closeable {
 		}
 	}
 
-	private void checkClosed() {
+	private void checkClosed() throws IOException{
 		if (writer == null) {
-			throw new IllegalStateException("This instance of the CsvWriter class has already been closed.");
+			throw new IOException("This instance of the CsvWriter class has already been closed.");
 		}
 	}
 

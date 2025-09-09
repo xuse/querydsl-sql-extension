@@ -20,6 +20,20 @@ import com.github.xuse.querydsl.spring.core.resource.ResourcePatternResolver;
  * @author Joey
  */
 public class ClassScanner {
+	/**
+	 * 是否排除内部类
+	 */
+	private boolean excludeInnerClass = true;
+
+	/**
+	 * 限定特定的class path根路径，如果不指定那么就在所有ClassPath下寻找
+	 */
+	private URL rootClasspath;
+	
+	/**
+	 * set a filter condition.
+	 */
+	private Predicate<Resource> filter;
 
 	/**
 	 * 扫描包
@@ -52,20 +66,6 @@ public class ClassScanner {
 		}
 	}
 
-	/**
-	 * 是否排除内部类
-	 */
-	private boolean excludeInnerClass = true;
-
-	/**
-	 * 限定特定的class path根路径，如果不指定那么就在所有ClassPath下寻找
-	 */
-	private URL rootClasspath;
-	
-	/**
-	 * set a filter condition.
-	 */
-	private Predicate<Resource> filter;
 
 	public boolean isExcludeInnerClass() {
 		return excludeInnerClass;
@@ -86,11 +86,18 @@ public class ClassScanner {
 		return this;
 	}
 	
-	public ClassScanner filterWith(Predicate<Resource> filter) {
-		this.filter = this.filter==null? filter: this.filter.and(filter);
+	public ClassScanner clearFilter() {
+		this.filter = null;
 		return this;
 	}
 	
+	
+	public ClassScanner filterWith(Predicate<Resource> filter) {
+		if(filter!=null) {
+			this.filter = this.filter==null? filter: this.filter.and(filter);	
+		}
+		return this;
+	}
 	
 	public List<Resource> findResources(URLClassLoader cl, String packageName) {
 		String prifix = rootClasspath == null ? "classpath*:" : "classpath:";

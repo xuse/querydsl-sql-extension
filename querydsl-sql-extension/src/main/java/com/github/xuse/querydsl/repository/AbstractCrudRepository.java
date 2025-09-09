@@ -729,12 +729,11 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			return exp.isNotNull();
 		}
 		default:
-			throw new UnsupportedOperationException("Ops." + operator + " is not supported on field " + path);
 		}
 		}catch(Exception ex) {
 			throw Exceptions.illegalArgument("Setting condition [{}] on path {} error", fieldName, path,ex);
 		}
-		return null;
+		throw new UnsupportedOperationException("Ops." + operator + " is not supported on field " + path);
 	}
 
 	@SuppressWarnings({ "rawtypes" })

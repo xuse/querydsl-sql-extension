@@ -79,12 +79,7 @@ public class CsvFileReader<T> implements Closeable {
 		isQualified = new boolean[values.length];
 	}
 
-	private static Function<String[], String[]> CLONED_ARRAY = (s) -> {
-		int len = s.length;
-		String[] clone = new String[len];
-		System.arraycopy(s, 0, clone, 0, len);
-		return clone;
-	};
+	private static Function<String[], String[]> CLONED_ARRAY = (s) -> s;
 	
 	public static <T> CsvFileReader<T> of(File fileName, Charset charset, Class<T> beanClz) {
 		BeanFunction<T> func=new BeanFunction<>(beanClz);
@@ -243,7 +238,11 @@ public class CsvFileReader<T> implements Closeable {
 
 	public T getValues() throws IOException {
 		checkClosed();
-		return func.apply(values);
+		int len=this.columnsCount;
+		String[] values=this.values;
+		String[] clone = new String[len];
+		System.arraycopy(values, 0, clone, 0, len);
+		return func.apply(clone);
 	}
 
 	public String get(int columnIndex){
