@@ -6,7 +6,10 @@
 v{querydsl 版本号} - r(extension version)
 ```
 
-**v5.0.0-r140**  (2025-7-30)
+**v5.0.0-r141**  (2025-09-25)
+* 修复日期工具截取日期时对1970-01-01之前日期处理错误。
+
+**v5.0.0-r140**  (2025-09-10)
 * 修正补充双语Javadoc
 * Some fix on function `findByConditionBean`
 * 工具更新

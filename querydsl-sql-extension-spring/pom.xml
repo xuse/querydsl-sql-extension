@@ -6,7 +6,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>io.github.xuse</groupId>	<artifactId>querydsl-sql-extension-parent</artifactId>
-		<version>5.0.0-r140</version>
+		<version>5.0.0-r141</version>
 	</parent>
 	<artifactId>querydsl-sql-extension-spring</artifactId>
 	<name>querydsl-sql-extension-spring</name>

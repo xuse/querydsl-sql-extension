@@ -7,8 +7,10 @@ The first number corresponds to the version of the querydsl library, and the sec
 ```
 v{querydsl version} - r(extension version)
 ```
+**v5.0.0-r141**  (2025-09-25)
+* Fix error in date truncation on date before 1970-01-01.    
 
-**v5.0.0-r140**  (2025-9-10)
+**v5.0.0-r140**  (2025-09-10)
 
 * Some fix on function `findByConditionBean`
 * Utilities update.
