@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
+import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.Opcodes;
-import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
@@ -110,14 +110,17 @@ public class ScanContext {
 		return result;
 	}
 
-	private void scanned(RelationalPathEx<?> table) {
-		parent.registerRelation(table);
-		scannedEntities.add(table.getType().getName());
-		
-		TableInitTask task = new TableInitTask(table);
-		parent.initTasks.offer(task);
-		count++;
-	}
+    private void scanned(RelationalPathEx<?> table) {
+        if (scannedEntities.add(table.getType().getName())) {
+            parent.registerRelation(table);
+            Set<Class<?>> whiteList = parent.getScanOptions().getInitEntityWhiteList();
+            if (whiteList.isEmpty() || whiteList.contains(table.getType())) {
+                TableInitTask task = new TableInitTask(table);
+                parent.initTasks.offer(task);
+            }
+            count++;
+        }
+    }
 
 	private RelationalPathEx<?> loadQueryClass(Resource resource, ClassLoader cl) {
 		byte[] data;
@@ -168,8 +171,7 @@ public class ScanContext {
 	}
 	
 	public int getCount() {
-		// TODO Auto-generated method stub
-		return 0;
+		return count;
 	}
 
 }
