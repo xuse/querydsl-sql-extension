@@ -15,6 +15,8 @@ public final class ReaderSettings {
 	 * Trim values or not.
 	 */
 	public boolean trimWhitespace;
+	
+	public boolean trimHeaders;
 
 	/**
 	 * Delimiter between two fields.
@@ -43,6 +45,7 @@ public final class ReaderSettings {
 
 	public ReaderSettings() {
 		trimWhitespace = true;
+        trimHeaders = true;
 		delimiter = Characters.COMMA;
 		
 		useTextQualifier = true;

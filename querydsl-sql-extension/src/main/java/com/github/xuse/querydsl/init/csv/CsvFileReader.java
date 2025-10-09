@@ -19,6 +19,7 @@ import com.github.xuse.querydsl.sql.expression.Property;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.io.UnicodeReader;
 import com.querydsl.sql.Column;
 
 import lombok.SneakyThrows;
@@ -73,7 +74,7 @@ public class CsvFileReader<T> implements Closeable {
 		if (!fileName.exists()) {
 			throw new IllegalArgumentException("File " + fileName + " does not exist.");
 		}
-		this.reader=new InputStreamReader(new FileInputStream(fileName),charset);
+		this.reader=new UnicodeReader(new FileInputStream(fileName),charset);
 		this.config.delimiter = delimiter;
 		this.func=func;
 		isQualified = new boolean[values.length];
@@ -208,7 +209,7 @@ public class CsvFileReader<T> implements Closeable {
 		return headersHolder.Length;
 	}
 
-	public String[] getHeaders() throws IOException {
+	public String[] getHeaders(){
 		checkClosed();
 		if (headersHolder.Headers == null) {
 			return null;
@@ -236,7 +237,7 @@ public class CsvFileReader<T> implements Closeable {
 		}
 	}
 
-	public T getValues() throws IOException {
+	public T getValues(){
 		checkClosed();
 		int len=this.columnsCount;
 		String[] values=this.values;
@@ -254,7 +255,7 @@ public class CsvFileReader<T> implements Closeable {
 		}
 	}
 
-	public String get(String headerName) throws IOException {
+	public String get(String headerName){
 		checkClosed();
 		return get(getIndex(headerName));
 	}
@@ -694,6 +695,9 @@ public class CsvFileReader<T> implements Closeable {
 		headersHolder.Headers = new String[columnsCount];
 		for (int i = 0; i < headersHolder.Length; i++) {
 			String columnValue = get(i);
+			if(config.trimHeaders) {
+			    columnValue=columnValue.trim();
+			}
 			headersHolder.Headers[i] = columnValue;
 			headersHolder.IndexByName.put(columnValue, Integer.valueOf(i));
 		}
@@ -704,7 +708,7 @@ public class CsvFileReader<T> implements Closeable {
 		return result;
 	}
 
-	public String getHeader(int columnIndex) throws IOException {
+	public String getHeader(int columnIndex){
 		checkClosed();
 		if (columnIndex > -1 && columnIndex < headersHolder.Length) {
 			return headersHolder.Headers[columnIndex];
@@ -713,7 +717,7 @@ public class CsvFileReader<T> implements Closeable {
 		}
 	}
 
-	public boolean isQualified(int columnIndex) throws IOException {
+	public boolean isQualified(int columnIndex){
 		checkClosed();
 		if (columnIndex < columnsCount && columnIndex > -1) {
 			return isQualified[columnIndex];
@@ -793,7 +797,7 @@ public class CsvFileReader<T> implements Closeable {
 		currentRecord++;
 	}
 
-	public int getIndex(String headerName) throws IOException {
+	public int getIndex(String headerName){
 		checkClosed();
 		Object indexValue = headersHolder.IndexByName.get(headerName);
 		if (indexValue != null) {
@@ -803,7 +807,7 @@ public class CsvFileReader<T> implements Closeable {
 		}
 	}
 
-	public boolean skipRecord() throws IOException {
+	public boolean skipRecord(){
 		checkClosed();
 		boolean recordRead = false;
 		if (hasMoreData) {

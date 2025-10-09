@@ -33,7 +33,7 @@ public class TypeTests {
 	}
 
 	private void print(Node value, int i) {
-		System.out.print("  ".repeat(i));
+		System.out.print(StringUtils.repeat("  ",i));
 		System.out.print(" - ");
 		String nodeClass=value.getClass().getSimpleName();
 		String v;
