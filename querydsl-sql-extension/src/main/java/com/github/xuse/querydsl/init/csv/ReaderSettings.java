@@ -16,6 +16,8 @@ final class ReaderSettings {
 		public char textQualifier;
 
 		public boolean trimWhitespace;
+		
+		public boolean trimHeaders;
 
 		public boolean useTextQualifier;
 
@@ -39,6 +41,7 @@ final class ReaderSettings {
 			caseSensitive = true;
 			textQualifier = Characters.QUOTE;
 			trimWhitespace = true;
+            trimHeaders = true;
 			useTextQualifier = true;
 			delimiter = Characters.COMMA;
 			recordDelimiter = Characters.NULL;

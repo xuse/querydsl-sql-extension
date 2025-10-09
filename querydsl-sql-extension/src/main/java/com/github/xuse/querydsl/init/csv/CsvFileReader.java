@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.HashMap;
 
+import lombok.SneakyThrows;
+
 public class CsvFileReader implements Closeable {
 
 	private Reader reader = null;
@@ -216,7 +218,7 @@ public class CsvFileReader implements Closeable {
 		return headersHolder.Length;
 	}
 
-	public String[] getHeaders() throws IOException {
+	public String[] getHeaders(){
 		checkClosed();
 		if (headersHolder.Headers == null) {
 			return null;
@@ -244,7 +246,7 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	public String[] getValues() throws IOException {
+	public String[] getValues(){
 		checkClosed();
 		// need to return a clone, and can't use clone because values.Length
 		// might be greater than columnsCount
@@ -253,7 +255,7 @@ public class CsvFileReader implements Closeable {
 		return clone;
 	}
 
-	public String get(int columnIndex) throws IOException {
+	public String get(int columnIndex){
 		checkClosed();
 		if (columnIndex > -1 && columnIndex < columnsCount) {
 			return values[columnIndex];
@@ -262,7 +264,7 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	public String get(String headerName) throws IOException {
+	public String get(String headerName) {
 		checkClosed();
 		return get(getIndex(headerName));
 	}
@@ -274,7 +276,7 @@ public class CsvFileReader implements Closeable {
 		return new CsvFileReader(new StringReader(data));
 	}
 
-	public boolean readRecord() throws IOException {
+	public boolean readRecord(){
 		checkClosed();
 		columnsCount = 0;
 		rawBuffer.index = 0;
@@ -468,7 +470,7 @@ public class CsvFileReader implements Closeable {
 									dataBuffer.index++;
 									if (config.safetySwitch && dataBuffer.index - dataBuffer.fieldStart + fieldBuffer.index > 100000) {
 										close();
-										throw new IOException("Maximum column length of 100,000 exceeded in column " + NumberFormat.getIntegerInstance().format(columnsCount) + " in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting column lengths greater than 100,000 characters to" + " avoid this error.");
+										throw new IllegalStateException("Maximum column length of 100,000 exceeded in column " + NumberFormat.getIntegerInstance().format(columnsCount) + " in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting column lengths greater than 100,000 characters to" + " avoid this error.");
 									}
 								}
 							}
@@ -651,7 +653,7 @@ public class CsvFileReader implements Closeable {
 									dataBuffer.index++;
 									if (config.safetySwitch && dataBuffer.index - dataBuffer.fieldStart + fieldBuffer.index > 100000) {
 										close();
-										throw new IOException("Maximum column length of 100,000 exceeded in column " + NumberFormat.getIntegerInstance().format(columnsCount) + " in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting column lengths greater than 100,000 characters to" + " avoid this error.");
+										throw new IllegalStateException("Maximum column length of 100,000 exceeded in column " + NumberFormat.getIntegerInstance().format(columnsCount) + " in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting column lengths greater than 100,000 characters to" + " avoid this error.");
 									}
 								}
 							}
@@ -683,7 +685,8 @@ public class CsvFileReader implements Closeable {
 		return hasReadNextLine;
 	}
 
-	private void checkDataLength() throws IOException {
+	@SneakyThrows
+	private void checkDataLength(){
 		if (!initialized) {
 			if (fileName != null) {
 				reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), charset), ReaderSettings.MAX_FILE_BUFFER_SIZE);
@@ -716,12 +719,13 @@ public class CsvFileReader implements Closeable {
 		dataBuffer.fieldStart = 0;
 	}
 
-	public boolean readHeaders() throws IOException {
+	public boolean readHeaders(){
 		boolean result = readRecord();
 		headersHolder.Length = columnsCount;
 		headersHolder.Headers = new String[columnsCount];
 		for (int i = 0; i < headersHolder.Length; i++) {
 			String columnValue = get(i);
+			if(config.trimHeaders)columnValue = columnValue.trim();
 			headersHolder.Headers[i] = columnValue;
 			headersHolder.IndexByName.put(columnValue, Integer.valueOf(i));
 		}
@@ -741,7 +745,7 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	public boolean isQualified(int columnIndex) throws IOException {
+	public boolean isQualified(int columnIndex){
 		checkClosed();
 		if (columnIndex < columnsCount && columnIndex > -1) {
 			return isQualified[columnIndex];
@@ -750,7 +754,7 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	private void endField() throws IOException {
+	private void endField() {
 		String currentValue = "";
 		if (fieldStarted) {
 			if (fieldBuffer.index == 0) {
@@ -778,7 +782,7 @@ public class CsvFileReader implements Closeable {
 		fieldStarted = false;
 		if (columnsCount >= 100000 && config.safetySwitch) {
 			close();
-			throw new IOException("Maximum column count of 100,000 exceeded in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting more than 100,000 columns per record to" + " avoid this error.");
+			throw new IllegalStateException("Maximum column count of 100,000 exceeded in record " + NumberFormat.getIntegerInstance().format(currentRecord) + ". Set the SafetySwitch property to false" + " if you're expecting more than 100,000 columns per record to" + " avoid this error.");
 		}
 		if (columnsCount == values.length) {
 			// holder array needs to grow to be able to hold another column
@@ -825,7 +829,7 @@ public class CsvFileReader implements Closeable {
 		currentRecord++;
 	}
 
-	public int getIndex(String headerName) throws IOException {
+	public int getIndex(String headerName) {
 		checkClosed();
 		Object indexValue = headersHolder.IndexByName.get(headerName);
 		if (indexValue != null) {
@@ -835,7 +839,7 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	public boolean skipRecord() throws IOException {
+	public boolean skipRecord(){
 		checkClosed();
 		boolean recordRead = false;
 		if (hasMoreData) {
@@ -847,7 +851,7 @@ public class CsvFileReader implements Closeable {
 		return recordRead;
 	}
 
-	public boolean skipLine() throws IOException {
+	public boolean skipLine() {
 		checkClosed();
 		// clear public column values for current line
 		columnsCount = 0;
@@ -906,9 +910,9 @@ public class CsvFileReader implements Closeable {
 		}
 	}
 
-	private void checkClosed() throws IOException {
+	private void checkClosed() {
 		if (closed) {
-			throw new IOException("This instance of the CsvReader class has already been closed.");
+			throw new IllegalStateException("This instance of the CsvReader class has already been closed.");
 		}
 	}
 
