@@ -21,6 +21,12 @@
   			<artifactId>querydsl-sql-extension</artifactId>
   			<version>${project.version}</version>
     	</dependency>
+    	<dependency>
+	 		<groupId>io.github.xuse</groupId>
+  			<artifactId>querydsl-sql-extension-datatype</artifactId>
+  			<version>${project.version}</version>
+  			<scope>test</scope>
+    	</dependency>
 		<dependency>
 	 		<groupId>org.apache.commons</groupId>
   			<artifactId>commons-lang3</artifactId>

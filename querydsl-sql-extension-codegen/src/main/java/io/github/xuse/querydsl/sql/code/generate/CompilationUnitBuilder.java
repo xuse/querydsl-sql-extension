@@ -26,7 +26,6 @@ public class CompilationUnitBuilder {
 	private final JavaParser parser;
 	private final CompilationUnit unit;
 	
-	
 	public static CompilationUnitBuilder create() {
 		return new CompilationUnitBuilder(new CompilationUnit());
 	}
@@ -43,6 +42,11 @@ public class CompilationUnitBuilder {
 			types[i] = createType(args[i]);
 		}
 		return new ClassOrInterfaceType(null, new SimpleName(raw.getSimpleName()), NodeList.nodeList(types));
+	}
+	
+	public ClassOrInterfaceType createType(Class<?> raw, com.github.javaparser.ast.type.Type... args) {
+		addImport(raw);
+		return new ClassOrInterfaceType(null, new SimpleName(raw.getSimpleName()), NodeList.nodeList(args));
 	}
 
 	public com.github.javaparser.ast.type.Type createType(Type t) {
