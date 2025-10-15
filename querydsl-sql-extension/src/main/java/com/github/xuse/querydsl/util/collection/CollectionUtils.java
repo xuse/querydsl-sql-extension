@@ -70,6 +70,36 @@ public class CollectionUtils {
 		return ALL_NULL_LIST;
 	}
 	
+	public static <T> Iterable<List<T>> segments(List<T> list, int batchSize){
+	    Assert.nonNull(list,"Input list must not be null.");
+	    return new ListSegment<T>(list,batchSize);
+	}
+	
+	static class ListSegment<T> implements Iterable<List<T>>{
+	    private final List<T> raw;
+	    private final int batchSize;
+	    private final int max;
+	    ListSegment(List<T> list, int size){
+	        this.raw=list;
+	        this.batchSize=size;
+	        this.max=list.size();
+	    }
+        @Override
+        public Iterator<List<T>> iterator() {
+            return new Iterator<List<T>>() {
+                int from=0;
+                @Override
+                public boolean hasNext() {
+                    return from < max;
+                }
+                @Override
+                public List<T> next() {
+                    return raw.subList(from, from=Math.min(max, from+batchSize));
+                }
+            };
+        }
+	}
+	
 	protected CollectionUtils() {
 	}
 

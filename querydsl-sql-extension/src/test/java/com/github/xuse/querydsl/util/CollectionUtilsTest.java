@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -153,5 +154,39 @@ public class CollectionUtilsTest {
 	}
 	
 	
+	@Test
+	public void testSegment() {
+	    //11
+	    List<String> list=new ArrayList<>(Arrays.asList("a","b","c","d","e","f","g","h","i","j","k"));
+	    Iterator<List<String>> iter;
+	    
+	    //按3分，3段余2
+        iter=CollectionUtils.segments(list, 3).iterator();
+        iter.next();
+        iter.next();
+        iter.next();
+        assertEquals(2, iter.next().size());
+        
+	    //按4分，2段余3
+	    iter=CollectionUtils.segments(list, 4).iterator();
+	    iter.next();
+	    iter.next();
+	    assertEquals(3, iter.next().size());
+	    
+        //按5分，2段余1
+	    iter=CollectionUtils.segments(list, 5).iterator();
+        iter.next();
+        iter.next();
+        assertEquals(1, iter.next().size());
+        
+      //按6分，1段余5
+        iter=CollectionUtils.segments(list, 6).iterator();
+        iter.next();
+        assertEquals(5, iter.next().size());
+        
+        for(List<String> l:CollectionUtils.segments(Collections.<String>emptyList(), 3)) {
+            System.out.println("for:"+l);
+        }
+	}
 
 }

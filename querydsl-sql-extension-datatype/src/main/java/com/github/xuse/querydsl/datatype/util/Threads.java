@@ -1,16 +1,21 @@
 package com.github.xuse.querydsl.datatype.util;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.Holder;
 import com.github.xuse.querydsl.util.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -278,6 +283,59 @@ public abstract class Threads {
 	public static ThreadPoolBuilder newPoolBuilder() {
 		return new ThreadPoolBuilder();
 	}
+	
+	/**
+	 * 异步执行一个任务。
+	 * @param <T>
+	 * @param callable
+	 * @return Future<T>
+	 */
+    public static <T> Future<T> asyncExecute(Callable<T> callable) {
+        final Holder<Boolean> done = new Holder<>(Boolean.FALSE);
+        final Holder<T> holder = new Holder<>();
+        new Thread(() -> {
+            try {
+                holder.value = callable.call();
+                done.value = Boolean.TRUE;
+                log.info("Async Exec Success:{}", callable);
+                Threads.doNotifyAll(holder);
+            } catch (Exception e) {
+                log.error("Async Calling {}", callable, e);
+            }
+        }).start();
+        return new Future<T>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                throw new UnsupportedOperationException();
+            }
+            @Override
+            public boolean isCancelled() {
+                return false;
+            }
+            @Override
+            public boolean isDone() {
+                return done.value;
+            }
+            @Override
+            public T get() throws InterruptedException, ExecutionException {
+                if (!done.value) {
+                    synchronized (holder) {
+                        holder.wait();
+                    }
+                }
+                return holder.get();
+            }
+            @Override
+            public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+                if (!done.value) {
+                    synchronized (holder) {
+                        holder.wait(unit.toMillis(timeout));
+                    }
+                }
+                return holder.get();
+            }
+        };
+    }
 
 	/**
 	 * 构造器，用于创建一个在任务队列未满前开始扩容的线程池。
