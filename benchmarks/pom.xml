@@ -12,7 +12,7 @@
 	<groupId>io.github.xuse</groupId>
 	<artifactId>benchmarks</artifactId>
 	<name>benchmarks</name>
-	<version>5.0.0-r141</version>
+	<version>5.0.0-r142</version>
 	<url>http://maven.apache.org</url>
 	<dependencies>
 		<dependency>

@@ -1,9 +1,9 @@
 package com.github.xuse.querydsl.util;
 
 import java.util.Map;
+import java.util.function.IntUnaryOperator;
 import java.util.function.Supplier;
 
-import com.github.xuse.querydsl.util.lang.IntToIntFunction;
 
 public class KVSplitter {
     private String str;
@@ -11,20 +11,20 @@ public class KVSplitter {
     private int len;
     private final char entrySep;
     private final char keyValueSep;
-    private IntToIntFunction ignoreSpace = (i) -> {
+    private IntUnaryOperator ignoreSpace = (i) -> {
         while (str.charAt(i) == ' ') {
             i++;
         }
         return i;
     };
-    private IntToIntFunction ignorePrevSpace = (i)->{
+    private IntUnaryOperator ignorePrevSpace = (i)->{
         while (str.charAt(i - 1) == ' ') {
             i--;
         }
         return i;
     };
     
-    private static final IntToIntFunction KEEP_INDEX = (i) -> i;
+    private static final IntUnaryOperator KEEP_INDEX = (i) -> i;
 
     public static KVSplitter on(char entrySep, char kvSep) {
         KVSplitter p = new KVSplitter(entrySep, kvSep);
@@ -66,29 +66,29 @@ public class KVSplitter {
     }
 
     private String nextKey() {
-        int start = ignoreSpace.apply(this.begin);
+        int start = ignoreSpace.applyAsInt(this.begin);
         if (start >= len) {
             return null;
         }
         int i = str.indexOf(keyValueSep, start);
         if (i > -1) {
             begin = i + 1;
-            return str.substring(start, i > start ? ignorePrevSpace.apply(i) : i);
+            return str.substring(start, i > start ? ignorePrevSpace.applyAsInt(i) : i);
         }
         return null;
     }
 
     private String nextValue() {
-        int start = ignoreSpace.apply(this.begin);
+        int start = ignoreSpace.applyAsInt(this.begin);
         if (start >= len) {
             return null;
         }
         int i = str.indexOf(entrySep, start);
         if (i > -1) {
             begin = i + 1;
-            return str.substring(start, i > start ? ignorePrevSpace.apply(i) : i);
+            return str.substring(start, i > start ? ignorePrevSpace.applyAsInt(i) : i);
         } else {
-            return str.substring(start, ignorePrevSpace.apply(len));
+            return str.substring(start, ignorePrevSpace.applyAsInt(len));
         }
     }
 
