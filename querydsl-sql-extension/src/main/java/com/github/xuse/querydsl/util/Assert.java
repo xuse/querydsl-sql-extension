@@ -31,9 +31,10 @@ public class Assert {
 	 *  断言对象不为null
 	 *  @param obj obj
 	 */
-	public static void notNull(Object obj) {
+	public static Object notNull(Object obj) {
 		if (obj == null)
 			throw new IllegalArgumentException("The input parameter must not be null!");
+		return obj;
 	}
 
 	/**
@@ -320,9 +321,10 @@ public class Assert {
 	 *  断言文本为空
 	 *  @param text text
 	 */
-	public static void hasLength(String text) {
+	public static String hasLength(String text) {
 		if (text == null || text.length() == 0)
 			throw new IllegalArgumentException();
+		return text;
 	}
 
 	/**
@@ -335,16 +337,18 @@ public class Assert {
 			throw new IllegalArgumentException(msg);
 	}
 
-	public static void hasElements(Collection<?> collection) {
+	public static<T> Collection<T> hasElements(Collection<T> collection) {
 		if (collection == null || collection.isEmpty()) {
 			throw new IllegalArgumentException();
 		}
+		return collection;
 	}
 
-	public static void hasElements(Map<?, ?> collection) {
-		if (collection == null || collection.isEmpty()) {
+	public static <K,V> Map<K,V> hasElements(Map<K, V> map) {
+		if (map == null || map.isEmpty()) {
 			throw new IllegalArgumentException();
 		}
+		return map;
 	}
 
 	public static void hasElements(Collection<?> collection, String msg) {
@@ -432,4 +436,25 @@ public class Assert {
 	public static void noNullElements(Object[] array) {
 		noNullElements(array, "[Assertion failed] - this array must not contain any null elements");
 	}
+	
+	public static int notNegative(int value) {
+	    if(value>=0) {
+	        return value;
+	    }
+	    throw new IllegalArgumentException(value+" is a negative number.");
+	}
+	
+	public static int isPositive(int value) {
+	    if(value>0) {
+	        return value;
+	    }
+	    throw new IllegalArgumentException(value+" is not a positive number.");
+	}
+	
+    public static Object nonNull(Object value) {
+        if (value != null) {
+            return value;
+        }
+        throw new IllegalArgumentException(value + " is null.");
+    }
 }

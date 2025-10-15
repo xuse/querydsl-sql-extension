@@ -2,7 +2,6 @@ package com.github.xuse.querydsl.datatype.util;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -13,9 +12,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
+import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.Holder;
 import com.github.xuse.querydsl.util.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -284,57 +284,82 @@ public abstract class Threads {
 		return new ThreadPoolBuilder();
 	}
 	
+	public static <T> T invoke(Callable<T> callable,Function<Exception,T> handler) {
+	    try {
+	        return callable.call();
+	    }catch(Exception ex){
+	        return handler.apply(ex);
+	    }
+	}
+	
 	/**
 	 * 异步执行一个任务。
-	 * @param <T>
-	 * @param callable
-	 * @return Future<T>
+	 * @param <T> Type of result
+	 * @param callable callable
+	 * @return Future<T> Future
 	 */
     public static <T> Future<T> asyncExecute(Callable<T> callable) {
-        final Holder<Boolean> done = new Holder<>(Boolean.FALSE);
-        final Holder<T> holder = new Holder<>();
+        BasicFuture<T> f=new BasicFuture<T>();
         new Thread(() -> {
             try {
-                holder.value = callable.call();
-                done.value = Boolean.TRUE;
+                f.result = callable.call();
+                f.completed = true;
                 log.info("Async Exec Success:{}", callable);
-                Threads.doNotifyAll(holder);
+                Threads.doNotifyAll(f);
             } catch (Exception e) {
+                f.ex=e;
+                f.completed = true;
                 log.error("Async Calling {}", callable, e);
             }
         }).start();
-        return new Future<T>() {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                throw new UnsupportedOperationException();
+        return f;
+    }
+    
+    static class BasicFuture<T> implements Future<T>{
+        private volatile boolean completed;
+        private volatile T result;
+        private volatile Exception ex;
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            throw new UnsupportedOperationException();
+        }
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+        @Override
+        public boolean isDone() {
+            return completed;
+        }
+        private T getResult() {
+            if (this.ex != null) {
+                throw new IllegalStateException(this.ex);
             }
-            @Override
-            public boolean isCancelled() {
-                return false;
+            return this.result;
+        }
+        
+        @Override
+        public T get() {
+            while (!this.completed) {
+                doWait(this);
             }
-            @Override
-            public boolean isDone() {
-                return done.value;
-            }
-            @Override
-            public T get() throws InterruptedException, ExecutionException {
-                if (!done.value) {
-                    synchronized (holder) {
-                        holder.wait();
-                    }
+            return getResult();
+        }
+        
+        @Override
+        public T get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+            Assert.notNull(unit, "Time unit");
+            if (!completed) {
+                long wait=unit.toMillis(timeout);
+                if(wait<=0) {
+                    throw new TimeoutException();
                 }
-                return holder.get();
-            }
-            @Override
-            public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                if (!done.value) {
-                    synchronized (holder) {
-                        holder.wait(unit.toMillis(timeout));
-                    }
+                synchronized (this) {
+                    wait();
                 }
-                return holder.get();
             }
-        };
+            return getResult();
+        }
     }
 
 	/**
