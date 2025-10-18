@@ -12,7 +12,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -284,14 +283,6 @@ public abstract class Threads {
 		return new ThreadPoolBuilder();
 	}
 	
-	public static <T> T invoke(Callable<T> callable,Function<Exception,T> handler) {
-	    try {
-	        return callable.call();
-	    }catch(Exception ex){
-	        return handler.apply(ex);
-	    }
-	}
-	
 	/**
 	 * 异步执行一个任务。
 	 * @param <T> Type of result
@@ -464,6 +455,7 @@ public abstract class Threads {
 	}
 
 	static final class FrontPressureBlockingQueue<E> extends LinkedBlockingQueue<E> {
+		private static final long serialVersionUID = 1L;
 		private final int pressureSize;
 
 		public FrontPressureBlockingQueue(int queueSize, int pressureSize) {
