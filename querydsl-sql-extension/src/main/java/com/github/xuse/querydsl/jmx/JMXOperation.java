@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.jmx.annotation;
+package com.github.xuse.querydsl.jmx;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
-public @interface MBeanOperation {
+public @interface JMXOperation {
     /**
      * The impact of this operation
      */

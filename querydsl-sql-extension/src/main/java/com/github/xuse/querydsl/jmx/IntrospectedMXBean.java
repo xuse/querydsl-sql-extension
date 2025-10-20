@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.jmx.management;
+package com.github.xuse.querydsl.jmx;
 
 import static java.lang.String.format;
 
@@ -7,6 +7,7 @@ import java.beans.Introspector;
 import java.beans.MethodDescriptor;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
@@ -25,6 +26,7 @@ import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
+import javax.management.InstanceAlreadyExistsException;
 import javax.management.IntrospectionException;
 import javax.management.InvalidAttributeValueException;
 import javax.management.MBeanAttributeInfo;
@@ -34,70 +36,52 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanNotificationInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
-import javax.management.MBeanRegistration;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
+import javax.management.MXBean;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBean;
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBean.AutomaticType;
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBeanAttribute;
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBeanDescription;
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBeanOperation;
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBeanOperation.Impact;
-import com.github.xuse.querydsl.datatype.jmx.annotation.MBeanParameter;
-import com.github.xuse.querydsl.datatype.jmx.exception.ManagementException;
+import com.github.xuse.querydsl.jmx.JMXOperation.Impact;
+import com.github.xuse.querydsl.util.StringUtils;
 
-
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * A DynamicMBean that can introspect an annotated POJO bean and expose it as a DynamicMBean
+ * 将原本的POJO包装成动态JMXBean
  */
-public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
+@Slf4j
+public class IntrospectedMXBean implements DynamicMBean {
 
     private final Object mbean;
 
     private final Class<?> mbeanClass;
-
-    private final MBeanRegistration registrationDelegate;
 
     private final Map<String, PropertyDescriptor> propertyDescriptors;
 
     private final Map<String, Method> operationMethods;
 
     private final MBeanInfo mbeanInfo;
+    
+    private final boolean isAutomatic;
 
     /**
-     * Constructs a Dynamic MBean by introspecting a POJO MBean {@code annotatedMBean}. If
-     * {@code mbean} implements {@link MBeanRegistration}, it will receive callbacks to that
-     * interface's methods
-     * 
      * @param mbean
-     *            a POJO MBean annotated with {@link MBean}, that should be exposed as a
-     *            {@link DynamicMBean}
-     * @throws ManagementException
-     *             if an exception occurs during the introspection of {@code mbean}
-     * @throws IllegalArgumentException
-     *             if {@code mbean} is not annotated with {@link MBean}
+     *            a POJO MBean, that should be exposed as a{@link DynamicMBean}
      */
-    public IntrospectedMBean(Object mbean) throws ManagementException {
+    public IntrospectedMXBean(Object mbean, Class<?> mxInterface)  {
         this.mbean = mbean;
-        this.mbeanClass = mbean.getClass();
-        if (!mbeanClass.isAnnotationPresent(MBean.class)) {
-            throw new IllegalArgumentException(format("MBean %s is not annotated with @%s", mbeanClass,
-                    MBean.class.getName()));
-        }
-        registrationDelegate = (MBeanRegistration) ((mbean instanceof MBeanRegistration) ? mbean
-                : new MBeanRegistrationBase());
+        this.mbeanClass = mxInterface == null ? mbean.getClass() : mxInterface;
+        isAutomatic = mbeanClass.getAnnotation(MXBean.class)!=null;
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(mbeanClass);
             propertyDescriptors = createPropertyDescriptors(beanInfo);
             operationMethods = createOperationMethods(beanInfo);
             mbeanInfo = createMbeanInfo(mbeanClass, propertyDescriptors, operationMethods);
-        } catch (IntrospectionException e) {
-            throw new ManagementException(e);
-        } catch (java.beans.IntrospectionException e) {
-            throw new ManagementException(e);
+        } catch (IntrospectionException | java.beans.IntrospectionException e) {
+            throw new IllegalStateException(e);
         }
     }
 
@@ -106,7 +90,6 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
      *            the attribute whose value is requested
      * @return the reflected value of attribute
      */
-    // @Override commented out for JDK 5 compatibility
     public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException {
         PropertyDescriptor propertyDescriptor = propertyDescriptors.get(attribute);
         if (propertyDescriptor == null) {
@@ -117,9 +100,6 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
             throw new AttributeNotFoundException(format("Getter method for attribute %s of %s", attribute, mbeanClass));
         }
         try {
-            if (!getter.isAccessible()) {
-                getter.setAccessible(true);
-            }
             return getter.invoke(mbean);
         } catch (Exception e) {
             throw new RuntimeException(format("Unable to obtain value of attribute %s of %s", attribute, mbeanClass));
@@ -131,7 +111,6 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
      *            the attribute names whose values are requested
      * @return an attribute list describing each of attributeNames
      */
-    // @Override commented out for JDK 5 compatibility
     public AttributeList getAttributes(String[] attributeNames) {
         AttributeList attributes = new AttributeList(attributeNames.length);
         for (String attributeName : attributeNames) {
@@ -139,7 +118,6 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
                 Attribute attribute = new Attribute(attributeName, getAttribute(attributeName));
                 attributes.add(attribute);
             } catch (Exception e) {
-                // Must be a mistake that the signature doesn't allow throwing exceptions
                 throw new IllegalArgumentException(e);
             }
         }
@@ -150,7 +128,6 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
      * @param attribute
      *            the attribute for which to update the value
      */
-    // @Override commented out for JDK 5 compatibility
     public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException,
         MBeanException, ReflectionException {
         String name = attribute.getName();
@@ -184,7 +161,6 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
      * @param attributes
      *            a list of attributes for which to update the value
      */
-    // @Override commented out for JDK 5 compatibility
     public AttributeList setAttributes(AttributeList attributes) {
         for (Object object : attributes) {
             Attribute attribute = (Attribute) object;
@@ -199,26 +175,18 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
         return attributes;
     }
 
-    // @Override commented out for JDK 5 compatibility
     public MBeanInfo getMBeanInfo() {
         return mbeanInfo;
     }
 
-    // @Override commented out for JDK 5 compatibility
     public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException,
         ReflectionException {
         Method method = operationMethods.get(actionName);
-        // FIXME verify that the right signature is picked to avoid throwing an
-        // IllegalArgumentException
         try {
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
             return method.invoke(mbean, params);
         } catch (Exception e) {
-            throw new IllegalArgumentException(e);
+            throw new MBeanException(e);
         }
-
     }
 
     /**
@@ -229,62 +197,46 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
      *            attributes
      * @param mbean
      *            the annotated POJO MBean
-     * @return an MBeanInfo created by introspecting the {@code mbean}
+     * @return an MBeanInfo created by introspect the {@code mbean}
      * @throws IntrospectionException
      * @throws javax.management.IntrospectionException
-     * @throws ManagementException
      */
-    private static MBeanInfo createMbeanInfo(Class<?> mbeanClass, Map<String, PropertyDescriptor> propertyDescriptors,
-            Map<String, Method> operationMethods) throws IntrospectionException, ManagementException {
+    private MBeanInfo createMbeanInfo(Class<?> mbeanClass, Map<String, PropertyDescriptor> propertyDescriptors,
+            Map<String, Method> operationMethods) throws IntrospectionException{
+        
         String description = description(mbeanClass);
         final MBeanAttributeInfo[] attributeInfo = createAttributeInfo(propertyDescriptors);
         final MBeanConstructorInfo[] constructorInfo = createConstructorInfo();
         final MBeanOperationInfo[] operationInfo = createOperationInfo(operationMethods);
         final MBeanNotificationInfo[] notificationInfo = createNotificationInfo();
-        return new MBeanInfo(mbeanClass.getName(), description, attributeInfo, constructorInfo, operationInfo,
+        return new MBeanInfo(name(mbeanClass), description, attributeInfo, constructorInfo, operationInfo,
                 notificationInfo);
     }
 
-    /**
-     * FIXME 暂时不实现
-     * 
-     * @return null
-     */
     private static MBeanNotificationInfo[] createNotificationInfo() {
-        return null;
+        return new MBeanNotificationInfo[0];
     }
 
     /**
-     * TODO: Consider allowing multiple matches for each (overloaded) method name
-     * 
      * @return The methods that constitute the operations
-     * @throws ManagementException
-     *             if multiple Operation annotations exist on identically named (overloaded) methods
      */
-    private static Map<String, Method> createOperationMethods(BeanInfo beanInfo) throws ManagementException {
+    private Map<String, Method> createOperationMethods(BeanInfo beanInfo) {
         Set<Method> allAccessors = allAccessors(beanInfo);
         Map<String, Method> operationMethods = new HashMap<String, Method>();
         for (MethodDescriptor descriptor : beanInfo.getMethodDescriptors()) {
             Method method = descriptor.getMethod();
-            MBeanOperation operationAnnotation = method.getAnnotation(MBeanOperation.class);
+            JMXOperation operationAnnotation = method.getAnnotation(JMXOperation.class);
             if (operationAnnotation != null && allAccessors.contains(method)) {
-                throw new ManagementException(String.format("Accessor method %s is annotated as an @%s", method,
-                        MBeanOperation.class.getName()));
+                throw new IllegalArgumentException(String.format("Accessor method %s is annotated as an @%s", method,
+                        JMXOperation.class.getName()));
             }
-            /*
-             * consider the Method an automatic operation if it satisfies all of: 1. its class is
-             * annotated with
-             * @MBean(automatic=OPERATION) 2. it is a public instance (non static) method 3. it is
-             * NOT considered a bean accessor (getter/setter)
-             */
-            boolean isAutomatic = isAutomatic(method.getDeclaringClass(), AutomaticType.OPERATION);
             boolean autoOperation = (isAutomatic && isPublicInstance(method) && !allAccessors.contains(method));
             if (operationAnnotation != null || autoOperation) {
-                // This method is an operation
-                Method old = operationMethods.put(method.getName(), method);
+                String key=name(method);
+                Method old = operationMethods.put(key, method);
                 if (old != null) {
-                    throw new ManagementException(format("Multiple Operation annotations for operation %s of %s",
-                            method.getName(), old.getDeclaringClass()));
+                    throw new IllegalArgumentException(format("Multiple Operation annotations for operation %s with name %s",
+                            old.getDeclaringClass(),method.getName()));
                 }
             }
         }
@@ -313,52 +265,24 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
     }
 
     /**
-     * @return an MBeanOPerationInfo array that describes the {@link MBeanOperation} annotated
+     * @return an MBeanOPerationInfo array that describes the {@link JMXOperation} annotated
      *         methods of the operationMethods
-     * @throws ManagementException
      */
-    private static MBeanOperationInfo[] createOperationInfo(Map<String, Method> operationMethods)
-        throws ManagementException {
+    private static MBeanOperationInfo[] createOperationInfo(Map<String, Method> operationMethods){
         MBeanOperationInfo[] operationInfos = new MBeanOperationInfo[operationMethods.size()];
         int operationIndex = 0;
-        // Iterate in method name order
-        for (String methodName : sortedKeys(operationMethods)) {
-            Method method = operationMethods.get(methodName);
-            MBeanOperation annotation = method.getAnnotation(MBeanOperation.class);
-            // add description and names to parameters
+        for (String actionName : sortedKeys(operationMethods)) {
+            Method method = operationMethods.get(actionName);
+            JMXOperation annotation = method.getAnnotation(JMXOperation.class);
             MBeanParameterInfo[] signature = createParameterInfo(method);
-            // add description and parameter info to operation method
             Impact impact = annotation == null ? Impact.UNKNOWN : annotation.value();
             int impactValue = impact.impactValue;
             String description = description(method);
-            MBeanOperationInfo opInfo = new MBeanOperationInfo(method.getName(), description, signature, method
+            MBeanOperationInfo opInfo = new MBeanOperationInfo(actionName, description, signature, method
                     .getReturnType().getName(), impactValue, null);
             operationInfos[operationIndex++] = opInfo;
         }
         return operationInfos;
-    }
-
-    /**
-     * @param method
-     *            an operation or attribute getter/setter method
-     * @param autoType
-     *            the type of auto annotation to check for
-     * @return true if {@code method}'s declaring class is annotated with {@link MBean} that
-     *         includes {@code autoType} in its {@link MBean#automatic()} attribute
-     */
-    private static boolean isAutomatic(Class<?> clazz, AutomaticType autoType) {
-        MBean annotation = clazz.getAnnotation(MBean.class);
-        if (annotation == null) {
-            return false;
-        }
-        AutomaticType[] values = annotation.automatic();
-        // believe me, this is the fastest way of doing a contains() on this array
-        for (AutomaticType value : values) {
-            if (value == autoType) {
-                return true;
-            }
-        }
-        return false;
     }
 
     protected static MBeanParameterInfo[] createParameterInfo(Method method) {
@@ -366,38 +290,31 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
         for (int parameterIndex = 0; parameterIndex < parameters.length; parameterIndex++) {
             final String pType = method.getParameterTypes()[parameterIndex].getName();
             // locate parameter annotation
-            MBeanParameter mBeanParameter = getParameterAnnotation(method, parameterIndex, MBeanParameter.class);
-            MBeanDescription mBeanDescription = getParameterAnnotation(method, parameterIndex, MBeanDescription.class);
-            final String pName = (mBeanParameter != null) ? mBeanParameter.value() : "p" + (parameterIndex + 1); // 1
-            // ..
-            // n
-            final String pDesc = (mBeanDescription != null) ? mBeanDescription.value() : null;
+            JMXText mBeanDescription = getParameterAnnotation(method, parameterIndex, JMXText.class);
+            String text = mBeanDescription==null? null: mBeanDescription.value();
+            final String pName = StringUtils.isBlank(text)
+                    ? "p" + (parameterIndex + 1)
+                    : text; 
+            final String pDesc = (mBeanDescription != null) ? mBeanDescription.description() : null;
             parameters[parameterIndex] = new MBeanParameterInfo(pName, pType, pDesc);
         }
         return parameters;
     }
 
-    /**
-     * FIXME 暂时不实现
-     * 
-     * @return null
-     */
     private static MBeanConstructorInfo[] createConstructorInfo() {
-        return null;
+        return new MBeanConstructorInfo[0];
     }
 
     /**
-     * @return all properties where getter or setter is annotated with {@link MBeanAttribute}
-     * @throws ManagementException
+     * @return all properties where getter or setter is annotated with {@link JMXAttribute}
      */
-    private static Map<String, PropertyDescriptor> createPropertyDescriptors(BeanInfo beanInfo)
-        throws ManagementException {
+    private Map<String, PropertyDescriptor> createPropertyDescriptors(BeanInfo beanInfo){
         Map<String, PropertyDescriptor> properties = new HashMap<String, PropertyDescriptor>();
         for (PropertyDescriptor property : beanInfo.getPropertyDescriptors()) {
-            MBeanAttribute getterAnnotation = getAnnotation(property.getReadMethod(), MBeanAttribute.class);
-            MBeanAttribute setterAnnotation = getAnnotation(property.getWriteMethod(), MBeanAttribute.class);
-            if (isAutomatic(property) || getterAnnotation != null || setterAnnotation != null) {
-                properties.put(property.getName(), property);
+            JMXAttribute getterAnnotation = getAnnotation(property.getReadMethod(), JMXAttribute.class);
+            JMXAttribute setterAnnotation = getAnnotation(property.getWriteMethod(), JMXAttribute.class);
+            if (isAutomatic || getterAnnotation != null || setterAnnotation != null) {
+                properties.put(name(property), property);
             }
         }
         return properties;
@@ -405,45 +322,28 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
 
     /**
      * @param propertyDescriptors
-     *            property descriptors that are known to have at least one {@link MBeanAttribute}
+     *            property descriptors that are known to have at least one {@link JMXAttribute}
      *            annotation on its getter or setter method
      * @return MBean attributeInfo instances with getter/setter methods and description according to
      *         annotations
-     * @throws ManagementException
      * @throws IntrospectionException
      */
-    private static MBeanAttributeInfo[] createAttributeInfo(Map<String, PropertyDescriptor> propertyDescriptors)
-        throws ManagementException, IntrospectionException {
+    private MBeanAttributeInfo[] createAttributeInfo(Map<String, PropertyDescriptor> propertyDescriptors) throws IntrospectionException {
         MBeanAttributeInfo[] infos = new MBeanAttributeInfo[propertyDescriptors.size()];
         int i = 0;
-        // iterate over properties that are known to have ManagedAttribute annotations, sorted by
-        // name
         for (String propertyName : sortedKeys(propertyDescriptors)) {
             PropertyDescriptor property = propertyDescriptors.get(propertyName);
-            boolean isAutomatic = isAutomatic(property);
             Method readMethod = property.getReadMethod();
             Method writeMethod = property.getWriteMethod();
-            boolean readable = isAutomatic || (null != getAnnotation(readMethod, MBeanAttribute.class));
-            boolean writable = isAutomatic || (null != getAnnotation(writeMethod, MBeanAttribute.class));
-            MBeanDescription descriptionAnnotation = getSingleAnnotation(property, MBeanDescription.class, readMethod,
-                    writeMethod);
-            String description = (descriptionAnnotation != null) ? descriptionAnnotation.value() : null;
-            MBeanAttributeInfo info = new MBeanAttributeInfo(property.getName(), description, readable ? readMethod
+            boolean readable = isAutomatic || (null != getAnnotation(readMethod, JMXAttribute.class));
+            boolean writable = isAutomatic || (null != getAnnotation(writeMethod, JMXAttribute.class));
+            JMXText descriptionAnnotation = getFirstAnnotation(property, JMXText.class, readMethod, writeMethod);
+            String description = (descriptionAnnotation != null) ? descriptionAnnotation.description() : null;
+            MBeanAttributeInfo info = new MBeanAttributeInfo(propertyName, description, readable ? readMethod
                     : null, writable ? writeMethod : null);
             infos[i++] = info;
         }
         return infos;
-    }
-
-    /**
-     * @param property
-     * @return true if the declaring class is marked {@link MBean#automatic()} with
-     *         {@link AutomaticType#OPERATION}
-     */
-    private static boolean isAutomatic(PropertyDescriptor property) {
-        Method accessor = firstNotNull(property.getReadMethod(), property.getWriteMethod());
-        boolean isAutomatic = isAutomatic(accessor.getDeclaringClass(), AutomaticType.ATTRIBUTE);
-        return isAutomatic;
     }
 
     @SuppressWarnings("unchecked")
@@ -458,35 +358,17 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
         throw new NullPointerException("All null arguments");
     }
 
-    /**
-     * @param <T>
-     * @param property
-     *            The property to which entities belong
-     * @param annotationClass
-     *            Annotation type
-     * @param entities
-     *            A number of {@code Method}'s or {@code null}'s
-     * @return The one (and only) annotation of type {@code annotationClass} that appears on
-     *         {@code methods}, or null if none of the entities are annotated with annotationClass
-     * @throws ManagementException
-     *             if more than one of the entities are annotated with annotationClass
-     */
-    private static <T extends Annotation> T getSingleAnnotation(PropertyDescriptor property, Class<T> annotationClass,
-            AccessibleObject... entities) throws ManagementException {
-        T result = null;
+    private static <T extends Annotation> T getFirstAnnotation(PropertyDescriptor property, Class<T> annotationClass,
+            AccessibleObject... entities) {
         for (AccessibleObject entity : entities) {
             if (entity != null) {
                 T annotation = entity.getAnnotation(annotationClass);
                 if (annotation != null) {
-                    if (result != null) {
-                        throw new ManagementException(String.format("Multiple %s annotations found for property %s",
-                                annotationClass.getName(), property.getName()));
-                    }
-                    result = annotation;
+                    return annotation;
                 }
             }
         }
-        return result;
+        return null;
     }
 
     /**
@@ -525,13 +407,74 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
     }
 
     private static String description(AnnotatedElement element) {
-        MBeanDescription annotation = element.getAnnotation(MBeanDescription.class);
-        String explicitValue = (annotation != null) ? annotation.value() : null;
+        JMXText annotation = element.getAnnotation(JMXText.class);
+        String explicitValue = (annotation != null) ? annotation.description() : null;
         if (explicitValue != null && !explicitValue.isEmpty()) {
             return explicitValue;
         } else {
             return generatedDescription(element);
         }
+    }
+
+    private static String name(PropertyDescriptor property) {
+        JMXText anno= null;
+        Method reader = property.getReadMethod();
+        if (reader != null) {
+            anno = reader.getAnnotation(JMXText.class);
+        }
+        if (anno == null) {
+            Method writer = property.getWriteMethod();
+            if (writer != null) {
+                anno = writer.getAnnotation(JMXText.class);
+            }
+        }
+        String text = anno.value();
+        if(StringUtils.isBlank(text)) {
+            return property.getName();
+        }else {
+            return text;    
+        }
+    }
+    
+    private static String name(Method element) {
+        JMXText annotation = element.getAnnotation(JMXText.class);
+        String explicitValue = (annotation != null) ? annotation.value() : null;
+        if (explicitValue != null && !explicitValue.isEmpty()) {
+            return explicitValue;
+        } else {
+            return element.getName();
+        }
+    }
+    
+    private static String name(Class<?> element) {
+        JMXText annotation = element.getAnnotation(JMXText.class);
+        String explicitValue = (annotation != null) ? annotation.value() : null;
+        if (explicitValue != null && !explicitValue.isEmpty()) {
+            return explicitValue;
+        } else {
+            return element.getName();
+        }
+    }
+    
+    public boolean register() {
+        return registerWithIdentity(null);
+    }
+    
+    public boolean registerWithIdentity(String identity) {
+        if (StringUtils.isEmpty(identity)) {
+            identity = "Default";
+        }
+        try {
+            ObjectName mxbeanName = new ObjectName(this.mbeanInfo.getClassName() + ":type=" + identity);
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            if(!mbs.isRegistered(mxbeanName)) {
+                mbs.registerMBean(this, mxbeanName);
+                return true;
+            }
+        }catch(MalformedObjectNameException | InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException e) {
+            log.error("MBean [{}:type={}] error",this.mbeanInfo.getClassName(),identity,e);
+        }
+        return false;
     }
 
     private static String generatedDescription(AnnotatedElement element) {
@@ -553,21 +496,5 @@ public class IntrospectedMBean implements DynamicMBean, MBeanRegistration {
         List<String> keys = new ArrayList<String>(map.keySet());
         Collections.sort(keys);
         return keys;
-    }
-
-    public ObjectName preRegister(MBeanServer server, ObjectName name) throws Exception {
-        return registrationDelegate.preRegister(server, name);
-    }
-
-    public void postRegister(Boolean registrationDone) {
-        registrationDelegate.postRegister(registrationDone);
-    }
-
-    public void postDeregister() {
-        registrationDelegate.postDeregister();
-    }
-
-    public void preDeregister() throws Exception {
-        registrationDelegate.preDeregister();
     }
 }
