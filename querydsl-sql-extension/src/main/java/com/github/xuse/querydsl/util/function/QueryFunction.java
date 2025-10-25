@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.sql.support;
+package com.github.xuse.querydsl.util.function;
 
 import java.sql.SQLException;
 

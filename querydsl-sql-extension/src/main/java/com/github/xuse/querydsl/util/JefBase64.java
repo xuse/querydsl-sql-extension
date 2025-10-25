@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.github.xuse.querydsl.util.function.ByteDataFunction;
+
 /**
  * <b>Chinese</b><p>
  * 高性能Base64工具，并支持用户自定义码表

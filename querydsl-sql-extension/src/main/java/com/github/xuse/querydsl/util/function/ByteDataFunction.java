@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.util.function;
 
 /**
  * A byte data function. consume a byte data, and returns other things.
