@@ -2,6 +2,8 @@ package com.github.xuse.querydsl.util.lang;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import com.github.xuse.querydsl.util.Exceptions;
 
@@ -89,4 +91,19 @@ public final class Enums {
 		}
 		return result;
 	}
+	
+	private static final Map<Class<?>,Map<?,?>> CACHE=new ConcurrentHashMap<>();
+	
+    public static <T extends Enum<T>, K> T getByCode(Class<T> clz, Function<T, K> method, K key) {
+        @SuppressWarnings("unchecked")
+        Map<K, T> index = (Map<K, T>) CACHE.computeIfAbsent(clz, (c) -> {
+            Map<K, T> map = new HashMap<>();
+            for (T t : clz.getEnumConstants()) {
+                K k = method.apply(t);
+                map.put(k, t);
+            }
+            return map;
+        });
+        return index.get(key);
+    }
 }
