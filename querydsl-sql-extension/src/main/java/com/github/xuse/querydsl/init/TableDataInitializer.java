@@ -364,7 +364,7 @@ public class TableDataInitializer {
 
 	public static String calcResourceName(String resource, RelationalPath<?> table, ConfigurationEx configuration) {
 		if (StringUtils.isEmpty(resource)) {
-			resource = table.getType().getName() + configuration.getDataInitFileSuffix();
+			resource = table.getType().getName() + configuration.getScanOptions().getDataInitFileSuffix();
 		}
 		return resource;
 	}

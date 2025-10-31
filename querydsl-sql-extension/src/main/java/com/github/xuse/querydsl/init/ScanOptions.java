@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.init;
 
+import java.lang.annotation.Annotation;
+
 import com.github.xuse.querydsl.config.ConfigurationEx;
 
 import lombok.Getter;
@@ -57,6 +59,10 @@ public class ScanOptions {
 	// (alterExistTable=true的情况下)是否允许删除已有表的约束
 	private boolean allowDropConstraint;
 
+	private Class<? extends Annotation> withAnnotation;
+	
+	private Class<? extends Annotation> withoutAnnotation;
+	    
 	/**
 	 * Data Initialization Feature: Use a record table to log initialization states.
 	 * <h1>Function 1: Log whether each table has been initialized.</h1> Once
@@ -196,6 +202,16 @@ public class ScanOptions {
 	public ScanOptions setUseDataInitTable(boolean useDataInitTable) {
 		this.useDataInitTable = useDataInitTable;
 		return this;
+	}
+	
+	public ScanOptions withAnnotation(Class<? extends Annotation> annotation) {
+	    this.withAnnotation=annotation;
+	    return this;
+	}
+	
+	public ScanOptions withoutAnnotation(Class<? extends Annotation> annotation) {
+	    this.withoutAnnotation=annotation;
+	    return this;
 	}
 
 	/**

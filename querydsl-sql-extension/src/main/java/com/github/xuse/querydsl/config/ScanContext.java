@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,11 +29,23 @@ public class ScanContext {
 	private final Set<String> scannedEntities = new HashSet<>();
 	private final ConfigurationEx parent;
 	private int count;
+	private Class<? extends Annotation> matchAnnotation;
+	private Class<? extends Annotation> matchWithoutAnnotation;
 
 	ScanContext(ConfigurationEx parent) {
 		this.parent = parent;
 	}
 
+	public ScanContext withAnnotation(Class<? extends Annotation> annotation) {
+	    this.matchAnnotation=annotation;
+	    return this;
+	}
+	
+	public ScanContext withoutAnnotation(Class<? extends Annotation> annotation) {
+        this.matchWithoutAnnotation=annotation;
+        return this;
+    }
+	
 	public void scan(String[] pkgNames) {
 		List<Resource> resources = new ClassScanner().scan(pkgNames);
 		//第一遍扫描QueryClass
@@ -74,9 +87,11 @@ public class ScanContext {
 			Class<?> clz;
 			try {
 				clz = cl.loadClass(name);
-				log.info("Scan Entity Class:{}", name);
 				RelationalPathEx<?> table = PathCache.get(clz, null);
-				scanned(table);
+				if(filterWithAnnotation(table)) {
+				    log.info("Scan Entity Class:{}", name);
+				    scanned(table);    
+				}
 			} catch (ClassNotFoundException e) {
 				log.error("class {} load error.", name, e);
 				return;
@@ -84,7 +99,29 @@ public class ScanContext {
 		};
 	}
 
-	private Set<Resource> scanQueryClass(List<Resource> resources) {
+	private boolean filterWithAnnotation(RelationalPathEx<?> table) {
+	    if(this.matchAnnotation!=null) {
+	        if(findAnnotation(table,matchAnnotation)==null) {
+	            return false;
+	        }
+	    }
+	    if(this.matchWithoutAnnotation!=null) {
+	        if(findAnnotation(table,matchAnnotation)!=null) {
+	            return false;
+	        }
+	    }
+        return true;
+    }
+
+    private Object findAnnotation(RelationalPathEx<?> table, Class<? extends Annotation> type) {
+        Object o=table.getType().getAnnotation(type);
+        if(o!=null) {
+            return o;
+        }
+        return table.getClass().getAnnotation(type);
+    }
+
+    private Set<Resource> scanQueryClass(List<Resource> resources) {
 		Set<Resource> result=new HashSet<>();
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
 		for (Resource resource : resources) {
@@ -95,8 +132,10 @@ public class ScanContext {
 				try {
 					RelationalPathEx<?> table=loadQueryClass(resource, cl);
 					if (table != null) {
-						log.info("Scan Query Class:[{}.{}]", table.getSchemaName(),table.getTableName());
-						scanned(table);
+					    if(filterWithAnnotation(table)) {
+					        log.info("Scan Query Class:[{}.{}]", table.getSchemaName(),table.getTableName());
+					        scanned(table);    
+					    }
 					}else {
 						result.add(resource);
 					}

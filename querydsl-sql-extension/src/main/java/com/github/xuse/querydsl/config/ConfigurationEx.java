@@ -181,10 +181,18 @@ public class ConfigurationEx {
 		return this;
 	}
 
+	/**
+	 * @return extension name of data file.
+	 * @deprecated use getScanOptions().getDataInitFileSuffix()
+	 */
 	public String getDataInitFileSuffix() {
 		return scanOptions.getDataInitFileSuffix();
 	}
 
+	/**
+	 * @deprecated use getScanOptions().setDataInitFileSuffix()
+	 * @param dataInitFileSuffix extension name of data file.
+	 */
 	public void setDataInitFileSuffix(String dataInitFileSuffix) {
 		this.scanOptions.setDataInitFileSuffix(dataInitFileSuffix);
 	}
@@ -435,7 +443,8 @@ public class ConfigurationEx {
 	 * @return 扫描实体定义数量
 	 */
 	public int scanPackages(String... pkgNames) {
-		ScanContext context=new ScanContext(this);
+		ScanContext context=new ScanContext(this).withAnnotation(scanOptions.getWithAnnotation())
+		        .withoutAnnotation(scanOptions.getWithoutAnnotation());
 		context.scan(pkgNames);
 		return context.getCount();
 	}
