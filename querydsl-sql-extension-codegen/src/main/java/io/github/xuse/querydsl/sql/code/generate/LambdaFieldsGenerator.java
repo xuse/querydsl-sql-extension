@@ -3,10 +3,7 @@ package io.github.xuse.querydsl.sql.code.generate;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.Modifier.Keyword;
 import com.github.javaparser.ast.NodeList;
@@ -18,17 +15,15 @@ import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import com.github.javaparser.ast.expr.TypeExpr;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.sql.column.AccessibleElement;
-import com.github.xuse.querydsl.sql.column.FieldImpl;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.util.StringUtils;
-import com.querydsl.sql.Column;
 
 import io.github.xuse.querydsl.sql.code.generate.PropertyPathCreaters.PathGenerator;
+import io.github.xuse.querydsl.sql.code.generate.model.ClassImpl;
+import io.github.xuse.querydsl.sql.code.generate.model.ClassMetadata;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,14 +65,8 @@ public class LambdaFieldsGenerator {
         cu.setPackageDeclaration(pkg);
         ClassOrInterfaceDeclaration targetClz = cu.addClass(className);
 
-        String fieldOfTable = tableFieldCalculator.apply(entityClz.getSimpleName());
-
-        ClassOrInterfaceType entityType = cu.createClassType(entityClz);
-        List<AccessibleElement> fields = TypeUtils.getAllDeclaredFields(entityClz).stream()
-                .filter(f -> !Modifier.isStatic(f.getModifiers())
-                        && (f.getAnnotation(Column.class) != null || f.getAnnotation(ColumnSpec.class) != null))
-                .map(f -> new FieldImpl(f)).collect(Collectors.toList());
-        addStaticDefinitions(targetClz, fieldOfTable, entityType, cu, fields, fieldNameGenerator);
+        ClassMetadata entity=new ClassImpl(entityClz);
+        addStaticDefinitions(targetClz, entity, cu);
 
         // 将AST保存成Java文件
         File file = new File(outputDir.path + pkg.replace('.', '/') + "/" + className + ".java");
@@ -89,25 +78,24 @@ public class LambdaFieldsGenerator {
         return file;
     }
 
-    public static void addStaticDefinitions(ClassOrInterfaceDeclaration targetClz, String tableFidleName,
-            ClassOrInterfaceType entityType, CompilationUnitBuilder cu, List<AccessibleElement> fields,
-            Function<String, String> fieldNameGenerator) {
-
+    public void addStaticDefinitions(ClassOrInterfaceDeclaration parent,
+            ClassMetadata entityClz, CompilationUnitBuilder cu) {
+        String tableFieldName = tableFieldCalculator.apply(entityClz.getSimpleName());
+        ClassOrInterfaceType entityType = cu.createClassType(entityClz);
         // 生成表定义
         {
-            FieldDeclaration table = targetClz.addField(cu.createType(LambdaTable.class, entityType), tableFidleName, Keyword.PUBLIC,
+            FieldDeclaration table = parent.addField(cu.createType(LambdaTable.class, entityType), tableFieldName, Keyword.PUBLIC,
                     Keyword.FINAL, Keyword.STATIC);
             LambdaExpr expr = new LambdaExpr(NodeList.nodeList(), new ExpressionStmt(new ClassExpr(entityType)), true);
             table.getVariables().get(0).setInitializer(expr);
         }
-
         // 各个字段描述
-        for (AccessibleElement field : fields) {
+        for (AccessibleElement field : entityClz.getColumnFields()) {
             // 需要的
             String name = field.getName();
             PathGenerator generatgor = PropertyPathCreaters.getGenerator(field.getType());
             java.lang.reflect.Type fType = field.getGenericType();
-            FieldDeclaration propPath = targetClz.addField(generatgor.lambdaType(fType, entityType, cu), fieldNameGenerator.apply(name),
+            FieldDeclaration propPath = parent.addField(generatgor.lambdaType(fType, entityType, cu), fieldNameGenerator.apply(name),
                     Keyword.PUBLIC, Keyword.FINAL, Keyword.STATIC);
 
             MethodReferenceExpr expr = new MethodReferenceExpr();
