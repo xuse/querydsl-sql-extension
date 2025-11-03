@@ -134,8 +134,18 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 
 	@Override
 	public List<TableInfo> getTables(String catalog, String schema) {
-		return metadataQuery.getTables(catalog, schema);
+		return listTables(catalog, schema);
 	}
+	
+    @Override
+    public List<TableInfo> listTables(String catalog, String schema) {
+        return metadataQuery.listTables(catalog, schema);
+    }
+
+    @Override
+    public TableInfo getTable(SchemaAndTable schemaAndTable) {
+        return metadataQuery.getTable(schemaAndTable);
+    }
 
 	@Override
 	public List<String> getNames(String catalog, String schema, ObjectType... types) {
@@ -177,6 +187,12 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 		table = metadataQuery.asInCurrentSchema(table);
 		return metadataQuery.getIndexes(table, MetadataQuerySupport.INDEX_POLICY_INDEX_ONLY);
 	}
+
+    @Override
+    public Collection<Constraint> getAllIndexAndConstraints(SchemaAndTable table) {
+        table = metadataQuery.asInCurrentSchema(table);
+        return metadataQuery.getIndexes(table, MetadataQuerySupport.INDEX_POLICY_MERGE_CONSTRAINTS);
+    }
 
 	@Override
 	public Collection<Constraint> getConstraints(SchemaAndTable table) {

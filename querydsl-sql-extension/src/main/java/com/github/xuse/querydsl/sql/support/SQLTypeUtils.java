@@ -234,7 +234,20 @@ public class SQLTypeUtils {
 		}
 	}
 
-	public static boolean isCharBinary(int type) {
+    public static boolean hasDigits(int type) {
+        switch (type) {
+        case java.sql.Types.NUMERIC:
+        case java.sql.Types.DECIMAL:
+        case java.sql.Types.REAL:
+        case java.sql.Types.DOUBLE:
+        case java.sql.Types.FLOAT:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    public static boolean isCharBinary(int type) {
 		switch (type) {
 		case java.sql.Types.VARBINARY:
 		case java.sql.Types.VARCHAR:

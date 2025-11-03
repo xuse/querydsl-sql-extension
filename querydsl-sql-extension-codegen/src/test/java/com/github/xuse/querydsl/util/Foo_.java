@@ -14,17 +14,17 @@ public class Foo_ {
 
     public final static LambdaTable<Foo> foo = () -> Foo.class;
 
-    public final NumberLambdaColumn<Foo, Long> _id = Foo::getId;
+    public final static NumberLambdaColumn<Foo, Long> _id = Foo::getId;
 
-    public final StringLambdaColumn<Foo> _content = Foo::getContent;
+    public final static StringLambdaColumn<Foo> _content = Foo::getContent;
 
-    public final DateTimeLambdaColumn<Foo, Instant> _created = Foo::getCreated;
+    public final static DateTimeLambdaColumn<Foo, Instant> _created = Foo::getCreated;
 
-    public final DateTimeLambdaColumn<Foo, Date> _updated = Foo::getUpdated;
+    public final static DateTimeLambdaColumn<Foo, Date> _updated = Foo::getUpdated;
 
-    public final NumberLambdaColumn<Foo, Integer> _version = Foo::getVersion;
+    public final static NumberLambdaColumn<Foo, Integer> _version = Foo::getVersion;
 
-    public final SimpleLambdaColumn<Foo, Map<String, String>> _ext = Foo::getExt;
+    public final static SimpleLambdaColumn<Foo, Map<String, String>> _ext = Foo::getExt;
 
-    public final BooleanLambdaColumn<Foo> _init = Foo::getInit;
+    public final static BooleanLambdaColumn<Foo> _init = Foo::getInit;
 }

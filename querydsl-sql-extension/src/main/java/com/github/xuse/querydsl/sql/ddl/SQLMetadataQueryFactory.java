@@ -278,6 +278,14 @@ public interface SQLMetadataQueryFactory {
 	 *  @return all constraint on this table, CHECK, PRIMARY_KEY, UNIQUE etc. except any foreign key.
 	 */
 	Collection<Constraint> getConstraints(SchemaAndTable table);
+	
+	
+	/**
+	 *  fetch constraints and indices of table.
+	 * @param table
+	 * @return Indices and constraints.
+	 */
+	Collection<Constraint> getAllIndexAndConstraints(SchemaAndTable table);
 
 	/**
 	 * Fetch partition information of the table. will return null if the database do not support partition feature.
@@ -306,16 +314,32 @@ public interface SQLMetadataQueryFactory {
 	 * @return schema names.
 	 */
 	Collection<String> getSchemas(String catalog);
-	
+
 	/**
-	 * Fetch information of all tables in schema.
-	 * <p>
-	 * 得到表的信息
-	 * @param catalog catalog
-	 * @param schema schema.
+	 * @deprecated use {@link #listTables(String, String)} instead.
+	 * @param catalog catalog 
+	 * @param schema schema. Note that MySQL and postgresql do not have schemas, and Oracle has.  
 	 * @return List of Table information.
 	 */
+	@Deprecated
 	List<TableInfo> getTables(String catalog, String schema);
+	
+	/**
+     * Fetch information of all tables in schema.
+     * <p>
+     * 得到表的信息
+     * @param catalog catalog
+     * @param schema schema.
+     * @return List of Table information.
+     */
+	List<TableInfo> listTables(String catalog, String schema);
+	
+	/**
+	 *  Fetch information of the table
+	 * @param schemaAndTable
+	 * @return  Table information.
+	 */
+	TableInfo getTable(SchemaAndTable schemaAndTable);
 
 	/**
 	 * Get the database product name.

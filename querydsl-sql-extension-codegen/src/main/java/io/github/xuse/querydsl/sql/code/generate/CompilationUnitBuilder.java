@@ -1,10 +1,14 @@
 package io.github.xuse.querydsl.sql.code.generate;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.github.javaparser.JavaParser;
@@ -12,8 +16,20 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.ArrayInitializerExpr;
+import com.github.javaparser.ast.expr.BooleanLiteralExpr;
+import com.github.javaparser.ast.expr.DoubleLiteralExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.IntegerLiteralExpr;
+import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
+import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.Name;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SimpleName;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
@@ -131,4 +147,85 @@ public class CompilationUnitBuilder {
 			throw Exceptions.illegalArgument("Invalid express code: [{}]\nProblem:", code, result.getProblems());
 		}
 	}
+
+	public MemberValuePair member(String name, Expression value) {
+	    MemberValuePair np=new MemberValuePair(name,value);
+	    return np;
+	}
+	
+	public <T extends Annotation> AnnotationBuilder<T> createAnnotation(Class<T> clz){
+	    return new AnnotationBuilder<>(clz);
+	}
+	
+    private AnnotationExpr annotation(Class<? extends Annotation> class1,Collection<MemberValuePair> values) {
+        unit.addImport(class1);
+       Name name=new Name(class1.getSimpleName());
+        if(values.isEmpty()) {
+            return new MarkerAnnotationExpr(name);
+        }else {
+            return new NormalAnnotationExpr(name,NodeList.nodeList(values));
+        }
+        
+    }
+    
+    public StringLiteralExpr literal(String value) {
+        return new StringLiteralExpr(value);
+    }
+    
+    public BooleanLiteralExpr literal(boolean value) {
+        return new BooleanLiteralExpr(value);
+    }
+    
+    public IntegerLiteralExpr literal(int value) {
+        return new IntegerLiteralExpr(String.valueOf(value));
+    }
+    
+    public DoubleLiteralExpr literal(double value) {
+        return new DoubleLiteralExpr(String.valueOf(value));
+    }
+    
+    public ArrayInitializerExpr arrayString(Collection<String> strings) {
+        Expression[] exprs=new Expression[strings.size()];
+        int index=0;
+        for(String s:strings) {
+            exprs[index++]=literal(s);
+        }
+        return array(exprs);
+    }
+    
+    public <T extends Expression> ArrayInitializerExpr array(Collection<T> exprs) {
+        return new ArrayInitializerExpr(NodeList.nodeList(exprs.toArray(new Expression[0])));
+    }
+    
+    public ArrayInitializerExpr array(Expression... exprs) {
+        return new ArrayInitializerExpr(NodeList.nodeList(exprs));
+    }
+    
+    public FieldAccessExpr createFieldAccess(Class<?> type,String fieldName) {
+        unit.addImport(type);
+        FieldAccessExpr f=new FieldAccessExpr(expression(type.getSimpleName()),fieldName);
+        return f;
+    }
+    
+    public NameExpr expression(String name) {
+        return new NameExpr(new SimpleName(name));
+    }
+    
+    public class AnnotationBuilder<T extends Annotation> {
+        private final List<MemberValuePair> members=new ArrayList<>();
+        private final Class<T> clz;
+        AnnotationBuilder(Class<T> clz){
+            this.clz=clz;
+        }
+        public AnnotationBuilder<T> add(String name, Expression value){
+            members.add(new MemberValuePair(name,value));
+            return this;
+        }
+        public AnnotationExpr build() {
+            return annotation(clz, members);
+        }
+        public CompilationUnitBuilder getParent() {
+            return CompilationUnitBuilder.this;
+        }
+    }
 }

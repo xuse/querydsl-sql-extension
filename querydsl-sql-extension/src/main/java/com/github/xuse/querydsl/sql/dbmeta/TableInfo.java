@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.sql.SchemaAndTable;
 
 import lombok.Generated;
 
@@ -200,5 +201,9 @@ public class TableInfo {
 			attributes = new HashMap<>();
 		}
 		attributes.put(at, obj);
+	}
+	
+	public SchemaAndTable toSchemaTable() {
+	    return new SchemaAndTable(schema, name);
 	}
 }

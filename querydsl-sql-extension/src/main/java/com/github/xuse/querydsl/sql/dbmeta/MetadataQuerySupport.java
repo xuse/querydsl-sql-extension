@@ -162,9 +162,9 @@ public abstract class MetadataQuerySupport {
 	 * @param schema schema
 	 * @return 表信息
 	 */
-	public List<TableInfo> getTables(String catalog, String schema) {
+	public List<TableInfo> listTables(String catalog, String schema) {
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(policy.toNamespace(catalog, schema), null), null);
+		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(policy.toNamespace(catalog, schema), null), Ops.LIKE);
 	}
 
 	/**

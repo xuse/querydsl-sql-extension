@@ -36,7 +36,7 @@ import com.querydsl.core.types.dsl.TimePath;
 
 import io.github.xuse.querydsl.sql.code.generate.util.GenericTypes;
 
-public class PropertyPathCreater {
+public class PropertyPathCreaters {
 	static interface PathGenerator{
 		ClassOrInterfaceType pathType(Type fieldType,CompilationUnitBuilder builder); 
 		ClassOrInterfaceType lambdaType(Type type,ClassOrInterfaceType bean,CompilationUnitBuilder builder);

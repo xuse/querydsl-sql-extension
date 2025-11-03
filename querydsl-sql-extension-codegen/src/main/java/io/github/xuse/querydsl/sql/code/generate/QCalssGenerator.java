@@ -26,10 +26,13 @@ import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.util.StringUtils;
 import com.querydsl.sql.Column;
 
-import io.github.xuse.querydsl.sql.code.generate.PropertyPathCreater.PathGenerator;
+import io.github.xuse.querydsl.sql.code.generate.PropertyPathCreaters.PathGenerator;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 解析带注解的Java类，生成对应的QueryEntity
+ */
 @Slf4j
 @Setter
 public class QCalssGenerator {
@@ -86,7 +89,7 @@ public class QCalssGenerator {
 			}
 			// 需要的
 			String name = field.getName();
-			PathGenerator generatgor = PropertyPathCreater.getGenerator(field.getType());
+			PathGenerator generatgor = PropertyPathCreaters.getGenerator(field.getType());
 			java.lang.reflect.Type fType=field.getGenericType();
 			FieldDeclaration propPath = clazz.addField(generatgor.pathType(fType,cu), name, Keyword.PUBLIC, Keyword.FINAL);
 			propPath.getVariable(0).setInitializer(generatgor.pathValue(fType,name,cu));
