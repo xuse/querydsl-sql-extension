@@ -106,7 +106,7 @@ public class ScanContext {
 	        }
 	    }
 	    if(this.matchWithoutAnnotation!=null) {
-	        if(findAnnotation(table,matchAnnotation)!=null) {
+	        if(findAnnotation(table,matchWithoutAnnotation)!=null) {
 	            return false;
 	        }
 	    }

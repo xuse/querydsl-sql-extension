@@ -6,6 +6,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.entity.CustomAnnotation;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
@@ -118,6 +119,7 @@ public abstract class AbstractTestBase {
 		configuration.getScanOptions()
 			.setAlterExistTable(false)
 			.allowDrops()
+			.withoutAnnotation(CustomAnnotation.class)
 			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
