@@ -11,8 +11,6 @@ import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.JDKEnvironment;
-import com.github.xuse.querydsl.util.StringUtils;
-import com.github.xuse.querydsl.util.lang.Enums;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -67,23 +65,7 @@ public final class DriverInfo implements DatabaseInfo{
 	
 	public void setUrl(String url) {
 		this.url=url;
-		this.dbType=parseDbType(url);
-	}
-
-	private DbType parseDbType(String url) {
-		if(url.startsWith("jdbc:")) {
-			String s=url.substring(5);
-			s=StringUtils.substringBefore(s, ":");
-			DbType dbType=Enums.valueOf(DbType.class, s, null);
-			if(dbType==null) {
-				dbType = DbType.ofAlias(s);
-			}
-			if(dbType!=null) {
-				return dbType;
-			}
-		}
-		log.warn("Unable to determine dbtype for {}",url);
-		return DbType.other;
+		this.dbType=DbType.find(DbType.extractDbNameFromURL(url));
 	}
 
 	@Override

@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.code.generate;
+package io.github.xuse.querydsl.sql.code.generate.model;
 
 public enum OutputDir {
 	DIR_TARGET("target/generated-sources/"), 

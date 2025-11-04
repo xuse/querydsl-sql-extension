@@ -34,9 +34,10 @@ import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.core.types.dsl.TimePath;
 
-import io.github.xuse.querydsl.sql.code.generate.util.GenericTypes;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.GenericTypes;
 
-public class PropertyPathCreaters {
+public class JavaTypeToPropertyPathMappings {
 	static interface PathGenerator{
 		ClassOrInterfaceType pathType(Type fieldType,CompilationUnitBuilder builder); 
 		ClassOrInterfaceType lambdaType(Type type,ClassOrInterfaceType bean,CompilationUnitBuilder builder);

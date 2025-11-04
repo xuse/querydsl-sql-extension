@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.code.generate;
+package io.github.xuse.querydsl.sql.code.generate.core;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.GenericArrayType;
@@ -37,10 +37,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.xuse.querydsl.util.Exceptions;
 
-import io.github.xuse.querydsl.sql.code.generate.model.ClassMetadata;
-
 public class CompilationUnitBuilder {
-//	private List<Class<?>> imports = new LinkedHashSet<>();
     private Map<String, Class<?>> simpleNames = new HashMap<>();
     private Set<String> stringImports = new HashSet<>();
 

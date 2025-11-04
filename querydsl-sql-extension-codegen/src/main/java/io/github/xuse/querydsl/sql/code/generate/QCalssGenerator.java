@@ -24,9 +24,11 @@ import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.util.StringUtils;
 
-import io.github.xuse.querydsl.sql.code.generate.PropertyPathCreaters.PathGenerator;
-import io.github.xuse.querydsl.sql.code.generate.model.ClassImpl;
-import io.github.xuse.querydsl.sql.code.generate.model.ClassMetadata;
+import io.github.xuse.querydsl.sql.code.generate.JavaTypeToPropertyPathMappings.PathGenerator;
+import io.github.xuse.querydsl.sql.code.generate.core.ClassImpl;
+import io.github.xuse.querydsl.sql.code.generate.core.ClassMetadata;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
+import io.github.xuse.querydsl.sql.code.generate.model.OutputDir;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,9 +38,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Setter
 public class QCalssGenerator {
-	private Function<String,String> tableAliasCalcutor = QCalssGenerator::calcAlias;
+	private Function<String,String> tableRefNameFunction = QCalssGenerator::calcAlias;
 	
-	private Function<String,String> tableFieldCalculator =QCalssGenerator::clacField;
+	private Function<String,String> columnRefNameFunction =QCalssGenerator::clacField;
 	
 	private OutputDir outputDir = OutputDir.DIR_MAIN;
 
@@ -86,10 +88,10 @@ public class QCalssGenerator {
         
         // 创建全局表模型实例
         ClassOrInterfaceType thisType = new ClassOrInterfaceType(null, qClassName);
-        FieldDeclaration table = clazz.addField(thisType,tableFieldCalculator.apply(entityClz.getSimpleName()), Keyword.PUBLIC, Keyword.FINAL, Keyword.STATIC);
+        FieldDeclaration table = clazz.addField(thisType,columnRefNameFunction.apply(entityClz.getSimpleName()), Keyword.PUBLIC, Keyword.FINAL, Keyword.STATIC);
         ObjectCreationExpr objectCreationExpr = new ObjectCreationExpr();
         objectCreationExpr.setType(thisType);
-        String alias =  this.tableAliasCalcutor.apply(entityClz.getSimpleName());
+        String alias =  this.tableRefNameFunction.apply(entityClz.getSimpleName());
         objectCreationExpr.addArgument(new StringLiteralExpr(alias));
         table.getVariables().get(0).setInitializer(objectCreationExpr);
          List<AccessibleElement> fields = entityClz.getColumnFields();
@@ -113,7 +115,7 @@ public class QCalssGenerator {
 
             // 需要的
             String name = field.getName();
-            PathGenerator generatgor = PropertyPathCreaters.getGenerator(field.getType());
+            PathGenerator generatgor = JavaTypeToPropertyPathMappings.getGenerator(field.getType());
             java.lang.reflect.Type fType=field.getGenericType();
             FieldDeclaration propPath = clazz.addField(generatgor.pathType(fType,cu), name, Keyword.PUBLIC, Keyword.FINAL);
             propPath.getVariable(0).setInitializer(generatgor.pathValue(fType,name,cu));

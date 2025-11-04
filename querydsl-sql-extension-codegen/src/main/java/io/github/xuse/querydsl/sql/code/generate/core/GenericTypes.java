@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.code.generate.util;
+package io.github.xuse.querydsl.sql.code.generate.core;
 
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
@@ -27,15 +27,6 @@ public class GenericTypes {
 	/** Cache from Class to TypeVariable Map */
 	private static final Map<Class, Reference<Map<TypeVariable, Type>>> typeVariableCache = Collections.synchronizedMap(new WeakHashMap<Class, Reference<Map<TypeVariable, Type>>>());
 
-	/**
-	 * 将所有泛型边界和泛型边界解析为边界的具体类型
-	 * @param context
-	 * @param genericType
-	 * @return type
-	 */
-	public static Type resolve(Type genericType,Type context) {
-		return getBoundType(genericType, context == null ? null : new ClassEx(context));
-	}
 	
 	public static Type resolve(Type context, Class<?> contextRawType, Type toResolve) {
 		// this implementation is made a little more complicated in an attempt
@@ -278,66 +269,6 @@ public class GenericTypes {
 			throw new IllegalArgumentException("Expected a Class, ParameterizedType, or " + "GenericArrayType, but <"
 					+ type + "> is of type " + className);
 		}
-	}
-
-	/**
-	 * Jiyi 编写的计算泛型边界，将泛型变量、边界描述、全部按照允许的最左边界进行计算
-	 * 
-	 * @param type
-	 * @param cw
-	 * @return type
-	 */
-	public static Type getBoundType(Type type, ClassEx cw) {
-		if (type instanceof TypeVariable<?>) {
-			TypeVariable<?> tv = (TypeVariable<?>) type;
-			Type real = cw.getImplType(tv);
-			if (real != null) {
-				return getBoundType(real, cw);
-			}
-			real = tv.getBounds()[0];
-			return getBoundType(real, cw);
-		} else if (type instanceof WildcardType) {
-			WildcardType wild = (WildcardType) type;
-			return getBoundType(wild.getUpperBounds()[0], cw);
-		}
-		if (isImplType(type)) {
-			return type;
-		}
-		if (type instanceof ParameterizedType) {
-			ParameterizedType pt = (ParameterizedType) type;
-			Type[] types = pt.getActualTypeArguments();
-			for (int i = 0; i < types.length; i++) {
-				types[i] = getBoundType(types[i], cw);
-			}
-			Class<?> raw = (Class<?>) getBoundType(pt.getRawType(), cw);
-			return TypeUtils.parameterize(raw, types);
-		} else if (type instanceof GenericArrayType) {
-			GenericArrayType at = (GenericArrayType) type;
-			return TypeUtils.genericArrayType(getBoundType(at.getGenericComponentType(), cw));
-		}
-		return null;
-	}
-
-	// 是否确定类型的泛型常量，还是类型不确定的泛型变量。
-	private static boolean isImplType(Type type) {
-		if (type instanceof Class<?>)
-			return true;
-		if (type instanceof GenericArrayType) {
-			return isImplType(((GenericArrayType) type).getGenericComponentType());
-		} else if (type instanceof ParameterizedType) {
-			for (Type sub : ((ParameterizedType) type).getActualTypeArguments()) {
-				if (!isImplType(sub)) {
-					return false;
-				}
-			}
-			return true;
-		} else if (type instanceof TypeVariable<?>) {
-			return false;
-		} else if (type instanceof WildcardType) {
-			//? 这个返回不太合理。
-			return false;
-		}
-		throw new IllegalArgumentException();
 	}
 
 	public static Type getComponentType(Type type) {

@@ -21,9 +21,11 @@ import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.util.StringUtils;
 
-import io.github.xuse.querydsl.sql.code.generate.PropertyPathCreaters.PathGenerator;
-import io.github.xuse.querydsl.sql.code.generate.model.ClassImpl;
-import io.github.xuse.querydsl.sql.code.generate.model.ClassMetadata;
+import io.github.xuse.querydsl.sql.code.generate.JavaTypeToPropertyPathMappings.PathGenerator;
+import io.github.xuse.querydsl.sql.code.generate.core.ClassImpl;
+import io.github.xuse.querydsl.sql.code.generate.core.ClassMetadata;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
+import io.github.xuse.querydsl.sql.code.generate.model.OutputDir;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,8 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Setter
 public class LambdaFieldsGenerator {
-    private Function<String, String> tableFieldCalculator = LambdaFieldsGenerator::clacTableField;
-    private Function<String, String> fieldNameGenerator = (s) -> "_" + s;
+    private Function<String, String> tableRefNameFunction = LambdaFieldsGenerator::clacTableField;
+    private Function<String, String> columnRefNameFunction = (s) -> "_" + s;
 
     private OutputDir outputDir = OutputDir.DIR_MAIN;
 
@@ -80,7 +82,7 @@ public class LambdaFieldsGenerator {
 
     public void addStaticDefinitions(ClassOrInterfaceDeclaration parent,
             ClassMetadata entityClz, CompilationUnitBuilder cu) {
-        String tableFieldName = tableFieldCalculator.apply(entityClz.getSimpleName());
+        String tableFieldName = tableRefNameFunction.apply(entityClz.getSimpleName());
         ClassOrInterfaceType entityType = cu.createClassType(entityClz);
         // 生成表定义
         {
@@ -93,9 +95,9 @@ public class LambdaFieldsGenerator {
         for (AccessibleElement field : entityClz.getColumnFields()) {
             // 需要的
             String name = field.getName();
-            PathGenerator generatgor = PropertyPathCreaters.getGenerator(field.getType());
+            PathGenerator generatgor = JavaTypeToPropertyPathMappings.getGenerator(field.getType());
             java.lang.reflect.Type fType = field.getGenericType();
-            FieldDeclaration propPath = parent.addField(generatgor.lambdaType(fType, entityType, cu), fieldNameGenerator.apply(name),
+            FieldDeclaration propPath = parent.addField(generatgor.lambdaType(fType, entityType, cu), columnRefNameFunction.apply(name),
                     Keyword.PUBLIC, Keyword.FINAL, Keyword.STATIC);
 
             MethodReferenceExpr expr = new MethodReferenceExpr();

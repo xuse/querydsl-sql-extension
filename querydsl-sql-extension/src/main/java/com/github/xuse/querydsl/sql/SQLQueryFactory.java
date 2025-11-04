@@ -15,6 +15,7 @@ package com.github.xuse.querydsl.sql;
 
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,27 +34,26 @@ import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.repository.AbstractCrudRepository;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.dialect.MySQLWithJSONTemplates;
+import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.extension.ExtensionQueryFactory;
+import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.sql.DerbyTemplates;
-import com.querydsl.sql.H2Templates;
-import com.querydsl.sql.OracleTemplates;
-import com.querydsl.sql.PostgreSQLTemplates;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SQLCloseListener;
-import com.querydsl.sql.SQLServer2012Templates;
 import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.mssql.SQLServerQueryFactory;
 import com.querydsl.sql.oracle.OracleQueryFactory;
 import com.querydsl.sql.postgresql.PostgreSQLQueryFactory;
+
+import lombok.SneakyThrows;
 
 /**
  * Factory class for query and DML clause creation
@@ -104,21 +104,21 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 	 * @return SQLTemplates
 	 */
 	public static SQLTemplates calcSQLTemplate(String url) {
-		if (url.startsWith("jdbc:mysql:")) {
-			return new MySQLWithJSONTemplates();
-		} else if (url.startsWith("jdbc:derby:")) {
-			return DerbyTemplates.builder().newLineToSingleSpace().build();
-		} else if (url.startsWith("jdbc:postgresql:")) {
-			return PostgreSQLTemplates.builder().build();
-		} else if (url.startsWith("jdbc:sqlserver")) {
-			return SQLServer2012Templates.builder().newLineToSingleSpace().build();
-		} else if (url.startsWith("jdbc:oracle:")) {
-			return OracleTemplates.builder().newLineToSingleSpace().build();
-		} else if(url.startsWith("jdbc:h2:")) {
-			return H2Templates.builder().newLineToSingleSpace().build();
-		}
-		throw Exceptions.illegalArgument(url);
+	    DbType db=DbType.find(DbType.extractDbNameFromURL(url));
+	    Assert.notNull(db);
+	    return db.templates();
 	}
+	
+    @SneakyThrows
+    public static SQLTemplates calcSQLTemplate(DataSource ds) {
+        try (Connection conn = ds.getConnection()) {
+            DatabaseMetaData metadata = conn.getMetaData();
+            String productName = StringUtils.lowerCase(metadata.getDatabaseProductName().toLowerCase());
+            DbType db = DbType.find(productName);
+            Assert.notNull(db);
+            return db.templates();
+        }
+    }
 
 	static class DataSourceProvider implements Supplier<Connection> {
 

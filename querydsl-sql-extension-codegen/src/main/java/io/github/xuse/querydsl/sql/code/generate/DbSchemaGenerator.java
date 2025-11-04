@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.sql.DataSource;
+
 import com.github.javaparser.ast.Modifier.Keyword;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -24,6 +26,7 @@ import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.Key;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.AccessibleElement;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -31,16 +34,20 @@ import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.SchemaAndTable;
 
-import io.github.xuse.querydsl.sql.code.generate.CompilationUnitBuilder.AnnotationBuilder;
-import io.github.xuse.querydsl.sql.code.generate.FieldCratetors.FieldGenerator;
-import io.github.xuse.querydsl.sql.code.generate.model.ClassMetadata;
-import io.github.xuse.querydsl.sql.code.generate.model.MetaFieldGeneration;
-import io.github.xuse.querydsl.sql.code.generate.util.GenericTypes;
+import io.github.xuse.querydsl.sql.code.generate.JdbcToJavaFieldMappings.FieldGenerator;
+import io.github.xuse.querydsl.sql.code.generate.core.ClassMetadata;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder.AnnotationBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.GenericTypes;
+import io.github.xuse.querydsl.sql.code.generate.model.MetafieldGenerationType;
+import io.github.xuse.querydsl.sql.code.generate.model.OutputDir;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -51,17 +58,48 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DbSchemaGenerator {
     private OutputDir outputDir = OutputDir.DIR_MAIN;
-    private String packageName = "io.github.xuse.test";
+    /**
+     * 生成类的包名
+     */
+    private String packageName;
     private boolean writeTableSchema = false;
     private boolean ignoreColumnCase = false;
     private boolean uselombokData = true;
-    private MetaFieldGeneration metafields = MetaFieldGeneration.LAMBDA;
-
-    private final SQLMetadataQueryFactory metadata;
+    
+    /**
+     * 表/字段引用生成模式
+     * @see MetafieldGenerationType
+     */
+    private MetafieldGenerationType metafields = MetafieldGenerationType.LAMBDA;
+    
+    /**
+     * 表引用名生成函数
+     */
+    private Function<String,String> tableRefNameFunction;
+    
+    /**
+     * 列引用名生成函数
+     */
+    private Function<String, String> columnRefNameFunction = (s) -> "_" + s;
+    
+    /**
+     * 表名到Java类名转换函数（下划线转驼峰，一般无需调整） 
+     */
     private Function<String, String> classNameConverter = (s) -> nameApply(s,true);
+    
+    /**
+     * 表名到Java字段名转换函数（下划线转驼峰，一般无需调整）
+     */
     private Function<String, String> fieldNameConverter = (s) -> nameApply(s,false);
-    private Function<String, String> modelNameConvevrter = (s) -> "_" + s;
+    
+    /**
+     * 数据库注释处理函数。处理注释中的双引号。
+     */
     private Function<String, String> remarkProcessor= (s)-> s.trim().replace("\"", "\\\"");
+
+    
+    private final SQLMetadataQueryFactory metadata;
+    
 
     public static String nameApply(String s, boolean beginUpper) {
         StringBuilder sb = new StringBuilder(s.length());
@@ -81,16 +119,27 @@ public class DbSchemaGenerator {
         return sb.toString();
     }
 
+    private void checkPackage() {
+        if(StringUtils.isEmpty(packageName)) {
+            StackTraceElement[] elements= Thread.currentThread().getStackTrace();
+            StackTraceElement last=elements[3];
+            String name=last.getClassName();
+            packageName = StringUtils.substringBeforeLast(name, ".");
+        }
+    }
+    
     public DbSchemaGenerator(SQLQueryFactory factory) {
         this.metadata = factory.getMetadataFactory();
     }
 
     public File generate(String name) {
+        checkPackage();
         TableInfo table = metadata.getTable(new SchemaAndTable(null, name));
         return generateTable(table);
     }
-    
+
     public int generateAll(String databaseName) {
+        checkPackage();
         if(StringUtils.isEmpty(databaseName)) {
             databaseName=metadata.getDatabaseInfo().getNamespace();
         }
@@ -104,47 +153,57 @@ public class DbSchemaGenerator {
         return files.size();
     }
 
-
-    public OutputDir getOutputDir() {
-        return outputDir;
-    }
-
-    public void setOutputDir(OutputDir outputDir) {
+    public DbSchemaGenerator output(OutputDir outputDir) {
         this.outputDir = outputDir;
+        return this;
     }
 
     public String getPackageName() {
         return packageName;
     }
 
-    public void setPackageName(String packageName) {
+    public DbSchemaGenerator packageName(String packageName) {
         this.packageName = packageName;
+        return this;
     }
 
     public boolean isWriteTableSchema() {
         return writeTableSchema;
     }
 
-    public void setWriteTableSchema(boolean writeTableSchema) {
+    public DbSchemaGenerator writeTableSchema(boolean writeTableSchema) {
         this.writeTableSchema = writeTableSchema;
+        return this;
     }
 
     public boolean isIgnoreColumnCase() {
         return ignoreColumnCase;
     }
 
-    public void setIgnoreColumnCase(boolean ignoreColumnCase) {
+    public DbSchemaGenerator ignoreColumnCase(boolean ignoreColumnCase) {
         this.ignoreColumnCase = ignoreColumnCase;
+        return this;
     }
 
     public boolean isUselombokData() {
         return uselombokData;
     }
 
-    public void setUselombokData(boolean uselombokData) {
+    public DbSchemaGenerator useLombokAnnotation(boolean uselombokData) {
         this.uselombokData = uselombokData;
+        return this;
     }
 
+    public DbSchemaGenerator tableRefNameIs(Function<String,String> function) {
+        this.tableRefNameFunction=function;
+        return this;
+    }
+    
+    public DbSchemaGenerator columnRefNameIs(Function<String, String> function) {
+        this.columnRefNameFunction = function;
+        return this;
+    }
+    
     public Function<String, String> getRemarkProcessor() {
         return remarkProcessor;
     }
@@ -153,12 +212,13 @@ public class DbSchemaGenerator {
         this.remarkProcessor = remarkProcessor;
     }
 
-    public MetaFieldGeneration getMetafields() {
+    public MetafieldGenerationType getMetafieldType() {
         return metafields;
     }
 
-    public void setMetafields(MetaFieldGeneration metafields) {
+    public DbSchemaGenerator metafields(MetafieldGenerationType metafields) {
         this.metafields = metafields;
+        return this;
     }
 
     public Function<String, String> getClassNameConverter() {
@@ -245,7 +305,7 @@ public class DbSchemaGenerator {
         for (ColumnDef c : columns) {
             String fieldName = columnToFieldName.get(normalizeColumn(c.getColumnName()));
             Assert.hasLength(fieldName);
-            FieldGenerator fg = FieldCratetors.getGenerator(c.getJdbcType());
+            FieldGenerator fg = JdbcToJavaFieldMappings.getGenerator(c.getJdbcType());
             Type fieldType=fg.getFieldType(c);
             FieldDeclaration columnField = targetClz.addField(cu.createType(fieldType), fieldName, Keyword.PRIVATE);
 
@@ -263,15 +323,27 @@ public class DbSchemaGenerator {
         
         ClassMetadata clzMetadata=new ClassMetadataImpl(packageName+"."+ className, className, fields);
         
-        if(metafields==MetaFieldGeneration.LAMBDA) {
+        if(metafields==MetafieldGenerationType.LAMBDA) {
             LambdaFieldsGenerator g2=new LambdaFieldsGenerator();
+            if(tableRefNameFunction!=null) {
+                g2.setTableRefNameFunction(tableRefNameFunction);    
+            }
+            if(columnRefNameFunction!=null) {
+                g2.setColumnRefNameFunction(columnRefNameFunction);
+            }
             g2.addStaticDefinitions(targetClz, clzMetadata, cu);
-        }else if(metafields==MetaFieldGeneration.QCLASS) {
+        }else if(metafields==MetafieldGenerationType.QCLASS) {
             QCalssGenerator g2=new QCalssGenerator();
+            if(tableRefNameFunction!=null) {
+                g2.setTableRefNameFunction(tableRefNameFunction);    
+            }
+            if(columnRefNameFunction!=null) {
+                g2.setColumnRefNameFunction(columnRefNameFunction);
+            }
             String qClassName = "Q" + clzMetadata.getSimpleName();
             CompilationUnitBuilder qcu= g2.generateContent(clzMetadata, packageName, qClassName);
             File qFile=save(qcu,qClassName);
-            log.info("Generate QClass file:{}",qFile.getAbsolutePath());
+            log.info("Generate file:{}",qFile.getAbsolutePath());
         }
         return save(cu,clzMetadata.getSimpleName());
     }
@@ -293,7 +365,7 @@ public class DbSchemaGenerator {
 
 
     @AllArgsConstructor
-    static class ClassMetadataImpl implements ClassMetadata{
+    final static class ClassMetadataImpl implements ClassMetadata{
         private final String name;
         private final String simpleName;
         private final List<AccessibleElement> columns;
@@ -312,7 +384,7 @@ public class DbSchemaGenerator {
     }
     
     @AllArgsConstructor
-    static class ColumnField implements AccessibleElement{
+    final static class ColumnField implements AccessibleElement{
         final String name;
         final Type type;
         @Override
@@ -368,11 +440,19 @@ public class DbSchemaGenerator {
         return ignoreColumnCase ? col.toLowerCase() : col;
     }
 
-    public Function<String, String> getModelNameConvevrter() {
-        return modelNameConvevrter;
+    public static DbSchemaGenerator from(DataSource ds) {
+        ConfigurationEx config=querydslConfiguration(SQLQueryFactory.calcSQLTemplate(ds));
+        SQLQueryFactory factory = new SQLQueryFactory(config, ds);
+        return new DbSchemaGenerator(factory);
     }
-
-    public void setModelNameConvevrter(Function<String, String> modelNameConvevrter) {
-        this.modelNameConvevrter = modelNameConvevrter;
+    
+    private static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
+        ConfigurationEx configuration = new ConfigurationEx(templates);
+        configuration.setSlowSqlWarnMillis(5000);
+        configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_COMPACT));
+        configuration.getScanOptions().disableDDL();
+        return configuration;
     }
+    
+    
 }

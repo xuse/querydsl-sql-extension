@@ -1,21 +1,18 @@
-package com.github.xuse.querydsl.util;
+package io.github.xuse.test;
 
 import java.io.File;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.init.DataInitBehavior;
-import com.github.xuse.querydsl.sql.SQLQueryFactory;
-import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.support.SimpleDataSource;
-import com.querydsl.sql.SQLTemplates;
+import com.github.xuse.querydsl.util.Foo;
+import com.github.xuse.querydsl.util.JefBase64;
 
 import io.github.xuse.querydsl.sql.code.generate.DbSchemaGenerator;
 import io.github.xuse.querydsl.sql.code.generate.LambdaFieldsGenerator;
-import io.github.xuse.querydsl.sql.code.generate.OutputDir;
 import io.github.xuse.querydsl.sql.code.generate.QCalssGenerator;
-import io.github.xuse.querydsl.sql.code.generate.model.MetaFieldGeneration;
+import io.github.xuse.querydsl.sql.code.generate.model.MetafieldGenerationType;
+import io.github.xuse.querydsl.sql.code.generate.model.OutputDir;
 
 public class GenerateTest {
 
@@ -53,28 +50,11 @@ public class GenerateTest {
         ds.setUsername(System.getProperty("mysql.user"));
         ds.setPassword(System.getProperty("mysql.password"));
 
-        System.out.println(ds);
-        SQLQueryFactory factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(ds.getUrl())), ds);
-
-        DbSchemaGenerator g = new DbSchemaGenerator(factory);
-        g.setOutputDir(OutputDir.DIR_TEST);
-        g.setMetafields(MetaFieldGeneration.NONE);
-        File file = g.generate("open_simcard_config");
-        System.out.println(file.getAbsolutePath());
-//        int size=g.generateAll(null);
-//        System.out.println("生成文件"+size+"个。");
-    }
-    
-    
-    
-    
-    public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
-        ConfigurationEx configuration = new ConfigurationEx(templates);
-        configuration.setSlowSqlWarnMillis(4000);
-        configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_DEBUG));
-        configuration.allowTableDropAndCreate();
-        // 如果使用了自定义映射，需要提前注册，或者扫描指定包
-        configuration.getScanOptions().setCreateMissingTable(true).allowDrops().setDataInitBehavior(DataInitBehavior.NONE);
-        return configuration;
+        DbSchemaGenerator.from(ds)
+            .output(OutputDir.DIR_TARGET)
+            .metafields(MetafieldGenerationType.QCLASS)
+            .useLombokAnnotation(true)
+            .tableRefNameIs(s->"_table")
+            .generateAll("sim_card");
     }
 }

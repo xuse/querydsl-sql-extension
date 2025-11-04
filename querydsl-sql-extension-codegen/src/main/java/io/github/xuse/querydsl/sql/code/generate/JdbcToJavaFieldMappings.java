@@ -14,9 +14,10 @@ import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.lang.Primitives;
 
-import io.github.xuse.querydsl.sql.code.generate.CompilationUnitBuilder.AnnotationBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder.AnnotationBuilder;
 
-public class FieldCratetors {
+public class JdbcToJavaFieldMappings {
     static class FieldGenerator{
         protected Class<?> clz;
         protected final String sqlTypeName;
@@ -155,7 +156,6 @@ public class FieldCratetors {
         creators.put(Types.TINYINT, new NumberGenerator("TINYINT",Integer.class));
         creators.put(Types.VARBINARY, new FieldGenerator("VARBINARY",byte[].class));
         creators.put(Types.VARCHAR, new FieldGenerator("VARCHAR",String.class));
-        
     }
 
     public static FieldGenerator getGenerator(int type) {

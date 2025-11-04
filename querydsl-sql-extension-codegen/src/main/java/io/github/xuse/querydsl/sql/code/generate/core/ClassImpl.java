@@ -1,4 +1,4 @@
-package io.github.xuse.querydsl.sql.code.generate.model;
+package io.github.xuse.querydsl.sql.code.generate.core;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
