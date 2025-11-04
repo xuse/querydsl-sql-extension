@@ -40,6 +40,7 @@ import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLMergeClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.github.xuse.querydsl.sql.extension.ExtensionQueryFactory;
+import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -118,6 +119,21 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
             Assert.notNull(db);
             return db.templates();
         }
+    }
+    
+    /**
+     * 快速从DataSource创建一个SQLQueryFactory实例，用于特性体验或一些简单场景的数据库访问。
+     * 这种方式将无法获得包扫描、自动维护数据库结构等高级特性。且自动选择数据方言仅可支持一些常见数据库。
+     * @param ds DataSource
+     * @return SQLQueryFactory
+     */
+    public static SQLQueryFactory from(DataSource ds) {
+        ConfigurationEx configuration = new ConfigurationEx(calcSQLTemplate(ds));
+        configuration.setSlowSqlWarnMillis(5000);
+        configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_COMPACT));
+        configuration.getScanOptions().disableDDL();
+        SQLQueryFactory factory = new SQLQueryFactory(configuration, ds);
+        return factory;
     }
 
 	static class DataSourceProvider implements Supplier<Connection> {

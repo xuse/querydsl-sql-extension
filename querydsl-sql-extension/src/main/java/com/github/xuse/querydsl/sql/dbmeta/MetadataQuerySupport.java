@@ -157,14 +157,13 @@ public abstract class MetadataQuerySupport {
 	}
 
 	/**
-	 * 返回数据库中所有的表(当前schema下)
+	 * 返回数据库中所有符合条件的表
 	 * @param catalog catalog
 	 * @param schema schema
 	 * @return 表信息
 	 */
-	public List<TableInfo> listTables(String catalog, String schema) {
-		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(policy.toNamespace(catalog, schema), null), Ops.LIKE);
+	public List<TableInfo> listTables(String namespace, String tableNamePattern) {
+		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(namespace, tableNamePattern), Ops.LIKE);
 	}
 
 	/**

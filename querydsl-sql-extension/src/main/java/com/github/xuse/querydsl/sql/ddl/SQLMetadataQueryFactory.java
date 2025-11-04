@@ -316,7 +316,6 @@ public interface SQLMetadataQueryFactory {
 	Collection<String> getSchemas(String catalog);
 
 	/**
-	 * @deprecated use {@link #listTables(String, String)} instead.
 	 * @param catalog catalog 
 	 * @param schema schema. Note that MySQL and postgresql do not have schemas, and Oracle has.  
 	 * @return List of Table information.
@@ -328,11 +327,11 @@ public interface SQLMetadataQueryFactory {
      * Fetch information of all tables in schema.
      * <p>
      * 得到表的信息
-     * @param catalog catalog
-     * @param schema schema.
+     * @param namespace catalog or schema. null as the current namespace. if you want to fetch tables from all catalogs/schemas, input '%'.  
+     * @param tableNamePattern table name. null as '%'
      * @return List of Table information.
      */
-	List<TableInfo> listTables(String catalog, String schema);
+	List<TableInfo> listTables(String namespace, String tableNamePattern);
 	
 	/**
 	 *  Fetch information of the table

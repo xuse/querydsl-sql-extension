@@ -26,7 +26,6 @@ import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.Key;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
-import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.AccessibleElement;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -34,11 +33,9 @@ import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.SchemaAndTable;
 
 import io.github.xuse.querydsl.sql.code.generate.JdbcToJavaFieldMappings.FieldGenerator;
@@ -85,59 +82,63 @@ public class DbSchemaGenerator {
     /**
      * 表名到Java类名转换函数（下划线转驼峰，一般无需调整） 
      */
-    private Function<String, String> classNameConverter = (s) -> nameApply(s,true);
+    private Function<String, String> classNameConverter = (s) -> underlineToCamelCase(s,true);
     
     /**
      * 表名到Java字段名转换函数（下划线转驼峰，一般无需调整）
      */
-    private Function<String, String> fieldNameConverter = (s) -> nameApply(s,false);
+    private Function<String, String> fieldNameConverter = (s) -> underlineToCamelCase(s,false);
     
     /**
      * 数据库注释处理函数。处理注释中的双引号。
      */
     private Function<String, String> remarkProcessor= (s)-> s.trim().replace("\"", "\\\"");
 
-    
+    /**
+     * 数据库访问句柄
+     */
     private final SQLMetadataQueryFactory metadata;
     
 
-    public static String nameApply(String s, boolean beginUpper) {
-        StringBuilder sb = new StringBuilder(s.length());
-        boolean toUpper = beginUpper;
-        for (char c : s.toCharArray()) {
-            if (c == '_') {
-                toUpper = true;
-                continue;
-            }
-            if (toUpper) {
-                sb.append(Character.toUpperCase(c));
-                toUpper = false;
-            } else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    private void checkPackage() {
-        if(StringUtils.isEmpty(packageName)) {
-            StackTraceElement[] elements= Thread.currentThread().getStackTrace();
-            StackTraceElement last=elements[3];
-            String name=last.getClassName();
-            packageName = StringUtils.substringBeforeLast(name, ".");
-        }
-    }
-    
     public DbSchemaGenerator(SQLQueryFactory factory) {
         this.metadata = factory.getMetadataFactory();
     }
 
-    public File generate(String name) {
+    /**
+     * 生成当前Database/Schema下的一张表
+     * @param name 表名
+     * @return 生成的文件
+     */
+    public File generateTable(String name) {
         checkPackage();
         TableInfo table = metadata.getTable(new SchemaAndTable(null, name));
         return generateTable(table);
     }
+    
+    /**
+     * 生成实体映射
+     * 
+     * @param namespace   数据库名或Schema名。传入null表示当前库/Schema下。如果要跨多个Schema或库，传入'%'。
+     * @param namePattern 表名，可以带通配符，如 ‘driver%’ 表示所有driver开头的表
+     * @return 生成实体映射的数量
+     */
+    public int generateTables(String namespace,String namePattern) {
+        checkPackage();
+        List<File> files=new ArrayList<>();
+        List<TableInfo> tables=metadata.listTables(namespace, namePattern);
+        for(TableInfo table: tables) {
+            File file = generateTable(table);
+            files.add(file);
+            log.info("Generate file {}", file.getAbsolutePath());
+        }
+        return files.size();
+    }
 
+    /**
+     * 为一个Database/Schema下所有表生成实体映射
+     * @param databaseName 数据库名/Schema名，如果传入null则表示当前数据库下
+     * @return 生成数量
+     */
     public int generateAll(String databaseName) {
         checkPackage();
         if(StringUtils.isEmpty(databaseName)) {
@@ -153,6 +154,11 @@ public class DbSchemaGenerator {
         return files.size();
     }
 
+    /**
+     * 指定输出文件夹。相对当前工程的路径
+     * @param outputDir OutputDir
+     * @return this
+     */
     public DbSchemaGenerator output(OutputDir outputDir) {
         this.outputDir = outputDir;
         return this;
@@ -162,6 +168,11 @@ public class DbSchemaGenerator {
         return packageName;
     }
 
+    /**
+     * 指定输出类的包名
+     * @param packageName 包名
+     * @return this
+     */
     public DbSchemaGenerator packageName(String packageName) {
         this.packageName = packageName;
         return this;
@@ -171,6 +182,10 @@ public class DbSchemaGenerator {
         return writeTableSchema;
     }
 
+    /**
+     * @param writeTableSchema 输出类中是否携带Schema名称。默认false
+     * @return this
+     */
     public DbSchemaGenerator writeTableSchema(boolean writeTableSchema) {
         this.writeTableSchema = writeTableSchema;
         return this;
@@ -180,6 +195,11 @@ public class DbSchemaGenerator {
         return ignoreColumnCase;
     }
 
+    /**
+     * 忽略列名大小写。默认false
+     * @param ignoreColumnCase 
+     * @return this
+     */
     public DbSchemaGenerator ignoreColumnCase(boolean ignoreColumnCase) {
         this.ignoreColumnCase = ignoreColumnCase;
         return this;
@@ -189,16 +209,32 @@ public class DbSchemaGenerator {
         return uselombokData;
     }
 
+    /**
+     * 输出类使用Lombok的@Data注解。默认true。
+     * 如果不使用@Data注解，将显式生成Getter和Setter。
+     * @param uselombokData
+     * @return this
+     */
     public DbSchemaGenerator useLombokAnnotation(boolean uselombokData) {
         this.uselombokData = uselombokData;
         return this;
     }
 
+    /**
+     * 覆盖默认的表引用字段名称
+     * @param function 自定义函数
+     * @return this
+     */
     public DbSchemaGenerator tableRefNameIs(Function<String,String> function) {
         this.tableRefNameFunction=function;
         return this;
     }
     
+    /**
+     * 覆盖默认的列引用字段名称。默认为Java字段名前加下划线，仅当Lambda模式下生效
+     * @param function 自定义函数
+     * @return this
+     */
     public DbSchemaGenerator columnRefNameIs(Function<String, String> function) {
         this.columnRefNameFunction = function;
         return this;
@@ -301,6 +337,7 @@ public class DbSchemaGenerator {
         
     
         List<AccessibleElement> fields=new ArrayList<>();
+        List<FieldDeclaration> astFields=new ArrayList<>();
         // 生成各个字段
         for (ColumnDef c : columns) {
             String fieldName = columnToFieldName.get(normalizeColumn(c.getColumnName()));
@@ -318,11 +355,14 @@ public class DbSchemaGenerator {
                 comment.add("value", cu.literal(remarkProcessor.apply(c.getRemarks())));
                 columnField.addAnnotation(comment.build());
             }
+            astFields.add(columnField);
             fields.add(new ColumnField(fieldName,fieldType));
+        }
+        if(!uselombokData) {
+            astFields.stream().forEach((f)->{f.createGetter();f.createSetter();});
         }
         
         ClassMetadata clzMetadata=new ClassMetadataImpl(packageName+"."+ className, className, fields);
-        
         if(metafields==MetafieldGenerationType.LAMBDA) {
             LambdaFieldsGenerator g2=new LambdaFieldsGenerator();
             if(tableRefNameFunction!=null) {
@@ -347,7 +387,6 @@ public class DbSchemaGenerator {
         }
         return save(cu,clzMetadata.getSimpleName());
     }
-    
     
     private File save(CompilationUnitBuilder cu, String simpleName) {
         File file = new File(outputDir.path + packageName.replace('.', '/') + "/" + simpleName + ".java");
@@ -441,18 +480,34 @@ public class DbSchemaGenerator {
     }
 
     public static DbSchemaGenerator from(DataSource ds) {
-        ConfigurationEx config=querydslConfiguration(SQLQueryFactory.calcSQLTemplate(ds));
-        SQLQueryFactory factory = new SQLQueryFactory(config, ds);
-        return new DbSchemaGenerator(factory);
+        return new DbSchemaGenerator( SQLQueryFactory.from(ds));
+    }
+
+    private static String underlineToCamelCase(String s, boolean beginUpper) {
+        StringBuilder sb = new StringBuilder(s.length());
+        boolean toUpper = beginUpper;
+        for (char c : s.toCharArray()) {
+            if (c == '_') {
+                toUpper = true;
+                continue;
+            }
+            if (toUpper) {
+                sb.append(Character.toUpperCase(c));
+                toUpper = false;
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
     
-    private static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
-        ConfigurationEx configuration = new ConfigurationEx(templates);
-        configuration.setSlowSqlWarnMillis(5000);
-        configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_COMPACT));
-        configuration.getScanOptions().disableDDL();
-        return configuration;
+    private void checkPackage() {
+        if(StringUtils.isEmpty(packageName)) {
+            StackTraceElement[] elements= Thread.currentThread().getStackTrace();
+            StackTraceElement last=elements[3];
+            String name=last.getClassName();
+            packageName = StringUtils.substringBeforeLast(name, ".");
+        }
     }
-    
     
 }

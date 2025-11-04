@@ -2,16 +2,13 @@
 
 - [快速入门](#快速入门)
 	- [1 GenericRepository介绍](#1-genericrepository介绍)
-	- [2 多种API风格](#2-多种api风格)
-		- [准备工作](#准备工作)
-		- [使用](#使用)
-	- [3 用法简述](#3-用法简述)
+	- [2 简介](#2-简介)
+		- [快速开始](#快速开始)
+		- [查询API介绍](#查询api介绍)
+	- [3 使用手册](#3-使用手册)
 		- [基本](#基本)
+		- [从数据库生成实体映射](#从数据库生成实体映射)
 		- [构造自己的业务Repository](#构造自己的业务repository)
-		- [快速获得Repository](#快速获得repository)
-		- [非Spring下初始化 - 可跳过](#非spring下初始化---可跳过)
-		- [使用Query Class - 可跳过](#使用query-class---可跳过)
-		- [使用SQLQueryFactory - 可跳过](#使用sqlqueryfactory---可跳过)
 		- [使用Record数据类型](#使用record数据类型)
 	- [4 表结构注解详解](#4-表结构注解详解)
 		- [@TableSpec](#tablespec)
@@ -38,6 +35,10 @@
 	- [8. 常见问题 / 功能杂项](#8-常见问题--功能杂项)
 		- [业务层分表兼容机制](#业务层分表兼容机制)
 		- [动态数据库表模型](#动态数据库表模型)
+		- [非Spring下初始化 - 可跳过](#非spring下初始化---可跳过)
+		- [对于习惯QueryDSL原生功能的开发者](#对于习惯querydsl原生功能的开发者)
+			- [使用QueryDSL Maven插件进行代码生成](#使用querydsl-maven插件进行代码生成)
+			- [使用SQLQueryFactory](#使用sqlqueryfactory)
 
 
 ## 1 GenericRepository介绍
@@ -75,9 +76,9 @@ GenericRepository中提供了对单表常用的增删该查功能见下表，其
 
 > 多表操作和更多复杂的SQL，可以基于QueryDSL的原生API进行操作，即使用SQLQueryFactory系列的API，这是我看到过的业界最好的QueryBuilder。
 
-## 2 多种API风格
+## 2 简介
 
-### 准备工作
+### 快速开始
 
 Step.1 要完成下列示例，可以先创建一个简单的POJO
 
@@ -110,11 +111,22 @@ metadata.createTable(()->Foo.class).ifExists().execute();
 
 Step.3 获得Repository对象
 
-您可以参阅 第3章 用法简述 来获得Repository对象。然后即可体验，下面以一个查询为例介绍不同风格API用法。
+```java
+DataSource dataSource = createDtaSource();
+//这个对象线程安全，请全局持有。
+SQLQueryFactory factory=SQLQueryFactory.from(dataSource);
 
-### 使用
+CRUDRepository<Foo, Integer> repository = factory.asRepository(()->Foo.class);
+```
 
-**传统风格**
+上述代码可以快速获得数据库访问对象，但会失去一些高级特性。完整的初始化方式参见` 第3章 用法简述`.
+### 查询API介绍
+
+**QueryDSL原生语法**
+SQLQueryFactory 对象支持QueryDSL原生语法，习惯原生语法的开发者使用这个对象就够了。
+为了帮助一些更习惯传统框架的开发者，有了以下API。
+
+**传统风格查询**
 
 传统风格对复杂查询功能支持功能较弱，比如无法支持Between条件
 
@@ -125,7 +137,7 @@ foo.setCreated(Instant.now());
 repository.findByExample(foo);	
 ```
 
-**Lambda风格**
+**Lambda API风格**
 
 QueryDSL官方原生API中，要求使用者必须创建一个Q开头的类，称为查询类(query class). 使用查询类的模型可以大幅简化操作的写法，甚至包括各种复杂的函数都可以使用查询类中的API直接写出。这个查询类作用接近于JPA中的元模型(meta model)的用法。
 
@@ -182,11 +194,11 @@ MyBatis支持Lambda风格用法，区别在于其还是相对传统地将查询�
 
 
 
-## 3 用法简述
+## 3 使用手册
 
 > 本节仅介绍Spring集成场景。
 
-**如在非Spring下使用**
+**如在非Spring下使用，并且希望得到完整的高级特性**
 
 参见此文档 [Without Springframework](static/without_springfrwmework.md)
 
@@ -233,7 +245,47 @@ MyBatis支持Lambda风格用法，区别在于其还是相对传统地将查询�
 	}
 ```
 
+### 从数据库生成实体映射
 
+可以使用QueryDSL原生的Maven插件生成。也可以使用本框架提供的代码生成工具。（Since v5.0.0-r150）
+
+```xml
+<dependency>
+    <groupId>io.github.xuse</groupId>
+    <artifactId>querydsl-sql-extension-codegen</artifactId>
+    <version>5.0.0-r150</version>
+</dependency>
+```
+
+目前没有做成插件，可以先用代码进行集成：
+
+```java
+//创建数据源
+DataSource ds = createDataSource();
+
+ DbSchemaGenerator.from(ds)
+        .output(OutputDir.DIR_TARGET)  //指定输出路径
+        .metafields(MetafieldGenerationType.LAMBDA) //表/列的模型字段如何生成（即QueryDSL中的Quey class），类似于JPA的元模型
+        .useLombokAnnotation(false)  //是使用LombOK @Data的注解，还是生成Getter和Setter代码
+        .generateTables(null, "%");  //为当前schema下的所有表，生成对应的实体映射
+```
+
+元模型生成方式有三种，可任选一种。
+
+```java
+    /**
+     * 不生成，选择此模式后。将只生成POJO类型的实体类.
+     */
+    NONE,
+    /**
+     * 生成QueryClass，即原生QueryDSL模式。该模式下，在POJO实体同个包下还会有一个Q开头的查询引用类。
+     */
+    QCLASS,
+    /**
+     * 简化的Lambda引用。选择此模式后，在POJO类中会增加静态常量，作为表/列模型引用。
+     */
+    LAMBDA
+```
 
 ### 构造自己的业务Repository
 
@@ -251,219 +303,7 @@ public class MyEntityRpository extends GenericRepository<MyEntity, Integer>{
 }
 ```
 
-### 快速获得Repository
 
-可直接通过SQLQueryFactory对象获得Repository
-
-```java
-CRUDRepository<Foo, Integer> repository = factory.asRepository(()->Foo.class);
-```
-
-
-
-### 非Spring下初始化 - 可跳过
-
-> 初次使用本框架的用户，本节可以跳过。
-
-```java
-private static SQLQueryFactory factory;
-static{
-	try {
-		DataSource ds = initDataSource();
-		factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(ds.getUrl())),ds);
-	} catch (Exception e) {
-		e.printStackTrace();
-	}
-}
-
-public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
-	ConfigurationEx configuration = new ConfigurationEx(templates);
-	configuration.setSlowSqlWarnMillis(200);
-	configuration.addListener(new QueryDSLSQLListener());
-	configuration.addListener(new UpdateDeleteProtectListener());
-	configuration.scanPackages("{your entity packages}");
-	return configuration;
-}
-```
-
-如果非Spring下，又希望自己管理事务，可以用SQLQueryFactory的另一个构造，自行管理事务和连接。
-
-### 使用Query Class - 可跳过
-
-> 对于没有使用过QueryDSL、且初次使用本框架的用户，建议使用纯POJO方式。本节可以跳过不看。
-
-本节介绍基于QueryDSL的代码生成工具来使用本框架。
-
-因为当前没有编写从数据库自动生成java代码的功能，所以可以先用官方文档中的 “code generation via maven” 一章中介绍来生成代码，生成的代码还需要修改一下。
-
-**使用Maven插件来生成Query class
-
- ```xml
-	<plugin>
-		<groupId>com.querydsl</groupId>
-		<artifactId>querydsl-maven-plugin</artifactId>
-		<version>5.0.0</version>
-		<executions>
-			<execution>
-				<goals>
-					<goal>export</goal>
-				</goals>
-			</execution>
-		</executions>
-		<configuration>
-			<jdbcDriver>com.mysql.cj.jdbc.Driver</jdbcDriver>
-			<jdbcUrl>jdbc:mysql://host:port/database?useUnicode=true</jdbcUrl>
-			<jdbcUser>username</jdbcUser>
-			<jdbcPassword>password</jdbcPassword>
-			<exportBeans>true</exportBeans>
-			<packageName>xxx.xxx.dal.domain</packageName>
-			<targetFolder>${project.basedir}/src/main/java</targetFolder>
-			<tableNamePattern>%</tableNamePattern>
-			<beanAddToString>true</beanAddToString>
-		</configuration>
-	</plugin>
- ```
-
-
-
-**微调生成后的代码**
-
-生成的代码还需要修改一下，举例：生成的代码如下——
-
-```java
-@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
-
-	private static final long serialVersionUID = -1;
-    public static final QAaa aaa = new QAaa("AAA");
-    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
-```
-
-要使用扩展功能，请将上文的 `com.querydsl.sql.RelationalPathBase` 类替换为 `com.github.xuse.querydsl.sql.RelationalPathBaseEx`。
-替换后为：
-
-```java
-@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa extends com.github.xuse.querydsl.sql.RelationalPathBaseEx<Aaa> {
-
-private static final long serialVersionUID = -124472086;
-    public static final QAaa aaa = new QAaa("AAA");
-    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
-```
-
-替换后，在addMetadata()方法中，可以使用更多的API来定义数据结构和框架行为。
-
-另外如果对生成对象的一些字段类型不满意，也可以自行手工修改。
-
-
-
-**建议：使用primitive类型**
-
-primitive类型指java中的byte/short/int/long/float/double/char/boolean等类型。
-
-一些ORM框架不建议用户在Bean定义中使用primitive类型，原因是框架无法根据 `object == null` 这样的运算判断用户是否对该字段进行过赋值。但是使用Integer/Long等包装类型也会带来额外的负担——代码中需要频繁地对字段进行 is null的判断，带来了代码的流畅性和装拆箱带来的性能损失。
-
-> 最佳实践：对于NOT NULL的数据库列，使用primitive类型进行映射。
-
-在一个设计良好的数据库中，大部分数值类列都应当是非空（not null）列。querydsl-sql-extension鼓励用户使用primitive类型作为非空列的映射，在querydsl中由于大量API都是显式指定path进行操作的，因此primitive类型对于是否设置数值不存在歧义。但是依然有部分API，会尝试“自动”地判断是否需要将该字段写入或更新到数据库中，在这种情况下，可以通过设置告知框架哪些值被视为null(未设置)。
-
-```java
-@UnsavedValue(UnsavedValue.MinusNumber)   //负数被视为无效数值 (等同于null)
-private int dataInt;
-```
-
-或者
-
-```java
-//零视为无效数值
-addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER)).withUnsavePredicate(UnsavedValue.Zero);
-```
-
-解决了无效值的问题后，Primitive类型不会带来额外的困扰，另有详细分析文档。
-### 使用SQLQueryFactory - 可跳过
-
-> QueryDSL原生风格功能强大且非常灵活，对于初学者来说较难驾驭，仅有类JPA框架使用经验的读者可以先跳过本节。
-
-本节介绍使用QueryDSL语法进行基本的数据库操作。SQLQueryFactory是大部分情况下访问数据库的总入口，以下是简单的操作示例。
-
-**Insert DEMO**
-
-```java
-QFoo t1 = QFoo.foo;
-Foo a = new Foo();
-a.setName("Zhang San");
-a.setGender(Gender.FEMALE);
-Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
-System.out.println("The auto increment value is " + id);	
-```
-
-**Select DEMO**
-
-```java
-Foo selected = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
-```
-
-**Update DEMO**
-
-```java
-long count = factory.update(t1)
-       .set(t1.created, Expressions.currentTimestamp())
-       .set(t1.name, "李四")
-       .where(t1.id.eq(1))   
-       .execute();
-System.out.println(count + " records was updated.");	
-
-//Update DEMO2
-Foo b = new Foo();
-b.setName("Zhang San");
-b.setGender(Gender.FEMALE);
-long count = factory.update(t1)
-       .populate(b)
-       .where(t1.id.eq(1))   
-       .execute();
-
-
-```
-
-**对比更新 Comparison Update DEMO**
-
-*  对比更新下，仅有变化的字段被SET，如果两个对象无区别，将不会写数据库。
-
-```java
-Foo oldRecord = factory.selectFrom(t1)
-     .where(t1.id.eq(id)).fetchOne();
-Foo b = new Foo();
-b.setName("Zhang San");
-b.setGender(Gender.FEMALE);
-factory.update(t1)
- 	.populateWithCompare(a, oldRecord)
-	 .where(t1.id.eq(id))
-	 .execute(); 
-```
-
-**Delete DEMO**
-
-```java
-factory.delete(t1).where(t1.id.eq(id)).execute();
-```
-
-**Complex Selection DEMO**
-
-```java
-
-	QCaAsset t2=QCaAsset.caAsset;
-	List<Tuple> tuples=factory.select(t1.name,t1.gender,t2.content,t2.code)
-	    .from(t1)
-		.innerJoin(t2).on(t1.id.eq(t2.id))
-	    .where(t1.name.eq("Zhangsan"))
-	    .fetch();
-```
-
-
-
-更多使用方法参见QueryDSL的文档 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html。
-
-querydsl-sql-extension在原生版本的基础上扩展很多用法，具体可参见javadoc。
 
 ### 使用Record数据类型 
 
@@ -961,7 +801,7 @@ ALTER TABLE table1
 
 ### 业务层分表兼容机制
 
-> 本框架不提供分库分表功能
+> 重要：本框架不提供分库分表功能
 
 但有一种情形，当分表规则和用法较为简单，业务层希望自行封装分表时，需要能根据业务数据动态变化表名。针对这种情形，提供了一个允许业务代码自行调整表名的机制。
 
@@ -1057,3 +897,208 @@ SimpleExpression<Integer> status = table.path("status", Integer.class);
 List<Tuple> tuples=factory.select(id,status).from(table).where(name.eq("张三")).fetch();
 ```
 
+
+
+
+
+
+
+### 非Spring下初始化 - 可跳过
+
+> 初次使用本框架的用户，本节可以跳过。
+
+```java
+private static SQLQueryFactory factory;
+static{
+	try {
+		DataSource ds = initDataSource();
+		factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(ds.getUrl())),ds);
+	} catch (Exception e) {
+		e.printStackTrace();
+	}
+}
+
+public static ConfigurationEx querydslConfiguration(SQLTemplates templates) {
+	ConfigurationEx configuration = new ConfigurationEx(templates);
+	configuration.setSlowSqlWarnMillis(200);
+	configuration.addListener(new QueryDSLSQLListener());
+	configuration.addListener(new UpdateDeleteProtectListener());
+	configuration.scanPackages("{your entity packages}");
+	return configuration;
+}
+```
+
+如果非Spring下，又希望自己管理事务，可以用SQLQueryFactory的另一个构造，自行管理事务和连接。
+
+### 对于习惯QueryDSL原生功能的开发者
+
+#### 使用QueryDSL Maven插件进行代码生成
+
+本节介绍基于QueryDSL的代码生成工具来使用本框架。
+
+**使用Maven插件来生成Query class
+
+ ```xml
+	<plugin>
+		<groupId>com.querydsl</groupId>
+		<artifactId>querydsl-maven-plugin</artifactId>
+		<version>5.0.0</version>
+		<executions>
+			<execution>
+				<goals>
+					<goal>export</goal>
+				</goals>
+			</execution>
+		</executions>
+		<configuration>
+			<jdbcDriver>com.mysql.cj.jdbc.Driver</jdbcDriver>
+			<jdbcUrl>jdbc:mysql://host:port/database?useUnicode=true</jdbcUrl>
+			<jdbcUser>username</jdbcUser>
+			<jdbcPassword>password</jdbcPassword>
+			<exportBeans>true</exportBeans>
+			<packageName>xxx.xxx.dal.domain</packageName>
+			<targetFolder>${project.basedir}/src/main/java</targetFolder>
+			<tableNamePattern>%</tableNamePattern>
+			<beanAddToString>true</beanAddToString>
+		</configuration>
+	</plugin>
+ ```
+
+
+
+**微调生成后的代码**
+
+生成的代码还需要修改一下，举例：生成的代码如下——
+
+```java
+@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
+public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
+
+	private static final long serialVersionUID = -1;
+    public static final QAaa aaa = new QAaa("AAA");
+    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
+```
+
+要使用扩展功能，请将上文的 `com.querydsl.sql.RelationalPathBase` 类替换为 `com.github.xuse.querydsl.sql.RelationalPathBaseEx`。
+替换后为：
+
+```java
+@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
+public class QAaa extends com.github.xuse.querydsl.sql.RelationalPathBaseEx<Aaa> {
+
+private static final long serialVersionUID = -124472086;
+    public static final QAaa aaa = new QAaa("AAA");
+    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
+```
+
+替换后，在addMetadata()方法中，可以使用更多的API来定义数据结构和框架行为。
+
+另外如果对生成对象的一些字段类型不满意，也可以自行手工修改。
+
+
+
+**建议：使用primitive类型**
+
+primitive类型指java中的byte/short/int/long/float/double/char/boolean等类型。
+
+一些ORM框架不建议用户在Bean定义中使用primitive类型，原因是框架无法根据 `object == null` 这样的运算判断用户是否对该字段进行过赋值。但是使用Integer/Long等包装类型也会带来额外的负担——代码中需要频繁地对字段进行 is null的判断，带来了代码的流畅性和装拆箱带来的性能损失。
+
+> 最佳实践：对于NOT NULL的数据库列，使用primitive类型进行映射。
+
+在一个设计良好的数据库中，大部分数值类列都应当是非空（not null）列。querydsl-sql-extension鼓励用户使用primitive类型作为非空列的映射，在querydsl中由于大量API都是显式指定path进行操作的，因此primitive类型对于是否设置数值不存在歧义。但是依然有部分API，会尝试“自动”地判断是否需要将该字段写入或更新到数据库中，在这种情况下，可以通过设置告知框架哪些值被视为null(未设置)。
+
+```java
+@UnsavedValue(UnsavedValue.MinusNumber)   //负数被视为无效数值 (等同于null)
+private int dataInt;
+```
+
+或者
+
+```java
+//零视为无效数值
+addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER)).withUnsavePredicate(UnsavedValue.Zero);
+```
+
+解决了无效值的问题后，Primitive类型不会带来额外的困扰，另有详细分析文档。
+
+#### 使用SQLQueryFactory
+
+> QueryDSL原生风格功能强大且非常灵活，对于初学者来说较难驾驭，仅有类JPA框架使用经验的读者可以先跳过本节。
+
+本节介绍使用QueryDSL语法进行基本的数据库操作。SQLQueryFactory是大部分情况下访问数据库的总入口，以下是简单的操作示例。
+
+**Insert DEMO**
+
+```java
+QFoo t1 = QFoo.foo;
+Foo a = new Foo();
+a.setName("Zhang San");
+a.setGender(Gender.FEMALE);
+Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
+System.out.println("The auto increment value is " + id);	
+```
+
+**Select DEMO**
+
+```java
+Foo selected = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
+```
+
+**Update DEMO**
+
+```java
+long count = factory.update(t1)
+       .set(t1.created, Expressions.currentTimestamp())
+       .set(t1.name, "李四")
+       .where(t1.id.eq(1))   
+       .execute();
+System.out.println(count + " records was updated.");	
+
+//Update DEMO2
+Foo b = new Foo();
+b.setName("Zhang San");
+b.setGender(Gender.FEMALE);
+long count = factory.update(t1)
+       .populate(b)
+       .where(t1.id.eq(1))   
+       .execute();
+
+
+```
+
+**对比更新 Comparison Update DEMO**
+
+*  对比更新下，仅有变化的字段被SET，如果两个对象无区别，将不会写数据库。
+
+```java
+Foo oldRecord = factory.selectFrom(t1)
+     .where(t1.id.eq(id)).fetchOne();
+Foo b = new Foo();
+b.setName("Zhang San");
+b.setGender(Gender.FEMALE);
+factory.update(t1)
+ 	.populateWithCompare(a, oldRecord)
+	 .where(t1.id.eq(id))
+	 .execute(); 
+```
+
+**Delete DEMO**
+
+```java
+factory.delete(t1).where(t1.id.eq(id)).execute();
+```
+
+**Complex Selection DEMO**
+
+```java
+	QCaAsset t2=QCaAsset.caAsset;
+	List<Tuple> tuples=factory.select(t1.name,t1.gender,t2.content,t2.code)
+	    .from(t1)
+		.innerJoin(t2).on(t1.id.eq(t2.id))
+	    .where(t1.name.eq("Zhangsan"))
+	    .fetch();
+```
+
+更多使用方法参见QueryDSL的文档 http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html。
+
+querydsl-sql-extension在原生版本的基础上扩展很多用法，具体可参见javadoc。
