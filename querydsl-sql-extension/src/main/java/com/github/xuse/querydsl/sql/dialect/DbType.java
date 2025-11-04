@@ -116,7 +116,7 @@ public enum DbType {
     public static String extractDbNameFromURL(String url) {
         if(url.startsWith("jdbc:")) {
             String s=url.substring(5);
-            s=StringUtils.substringBefore(s, ":");
+            return StringUtils.substringBefore(s, ":");
         }
         return url;
     }

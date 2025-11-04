@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -26,6 +28,7 @@ import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.Key;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.AccessibleElement;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -33,9 +36,11 @@ import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.sql.SchemaAndTable;
 
 import io.github.xuse.querydsl.sql.code.generate.JdbcToJavaFieldMappings.FieldGenerator;
@@ -47,6 +52,7 @@ import io.github.xuse.querydsl.sql.code.generate.model.MetafieldGenerationType;
 import io.github.xuse.querydsl.sql.code.generate.model.OutputDir;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -62,6 +68,10 @@ public class DbSchemaGenerator {
     private boolean writeTableSchema = false;
     private boolean ignoreColumnCase = false;
     private boolean uselombokData = true;
+    private boolean overwrite = false;
+    
+    private final CachedConnection cachedConnection;
+    
     
     /**
      * 表/字段引用生成模式
@@ -102,7 +112,14 @@ public class DbSchemaGenerator {
 
     public DbSchemaGenerator(SQLQueryFactory factory) {
         this.metadata = factory.getMetadataFactory();
+        this.cachedConnection = null;
     }
+    
+    DbSchemaGenerator(SQLQueryFactory factory,CachedConnection conn) {
+        this.metadata = factory.getMetadataFactory();
+        this.cachedConnection = conn;
+    }
+    
 
     /**
      * 生成当前Database/Schema下的一张表
@@ -112,7 +129,9 @@ public class DbSchemaGenerator {
     public File generateTable(String name) {
         checkPackage();
         TableInfo table = metadata.getTable(new SchemaAndTable(null, name));
-        return generateTable(table);
+        File file= generateTable(table).getFirst();
+        tryRelease();
+        return file;
     }
     
     /**
@@ -127,10 +146,14 @@ public class DbSchemaGenerator {
         List<File> files=new ArrayList<>();
         List<TableInfo> tables=metadata.listTables(namespace, namePattern);
         for(TableInfo table: tables) {
-            File file = generateTable(table);
-            files.add(file);
-            log.info("Generate file {}", file.getAbsolutePath());
+            Pair<File, Boolean> result = generateTable(table);
+            if(result.getSecond()) {
+                File file =result.getFirst();
+                files.add(file);
+                log.info("Generate file {}", file.getAbsolutePath());    
+            }
         }
+        tryRelease();
         return files.size();
     }
 
@@ -147,11 +170,21 @@ public class DbSchemaGenerator {
         List<File> files=new ArrayList<>();
         List<TableInfo> tables=metadata.listTables(databaseName, null);
         for(TableInfo table: tables) {
-            File file = generateTable(table);
-            files.add(file);
-            log.info("Generate file {}", file.getAbsolutePath());
+            Pair<File, Boolean> result = generateTable(table);
+            if(result.getSecond()) {
+                File file =result.getFirst();
+                files.add(file);
+                log.info("Generate file {}", file.getAbsolutePath());    
+            }
         }
+        tryRelease();
         return files.size();
+    }
+
+    private void tryRelease() {
+        if(cachedConnection!=null) {
+            cachedConnection.close();
+        }
     }
 
     /**
@@ -231,6 +264,16 @@ public class DbSchemaGenerator {
     }
     
     /**
+     * 是否覆盖已有文件
+     * @param overwrite
+     * @return
+     */
+    public DbSchemaGenerator overwriteFiles(boolean overwrite) {
+        this.overwrite=overwrite;
+        return this;
+    }
+    
+    /**
      * 覆盖默认的列引用字段名称。默认为Java字段名前加下划线，仅当Lambda模式下生效
      * @param function 自定义函数
      * @return this
@@ -273,16 +316,24 @@ public class DbSchemaGenerator {
         this.fieldNameConverter = fieldNameConverter;
     }
 
-    private File generateTable(TableInfo table) {
+    private Pair<File,Boolean> generateTable(TableInfo table) {
         SchemaAndTable key = table.toSchemaTable();
         List<ColumnDef> columns = metadata.getColumns(key);
         Map<String, String> columnToFieldName = createColumnMap(columns);
 
-        String className = classNameConverter.apply(table.getName());
+        String simpleName = classNameConverter.apply(table.getName());
+        
+        if(!overwrite) {
+            File file=getFile(simpleName);
+            if(file.exists()) {
+                log.info("Ignore "+table+", file exists:{}",file.getAbsolutePath());
+                return Pair.of(file, false);
+            }
+        }
         CompilationUnitBuilder cu = CompilationUnitBuilder.create();
 
         cu.setPackageDeclaration(packageName);
-        ClassOrInterfaceDeclaration targetClz = cu.addClass(className);
+        ClassOrInterfaceDeclaration targetClz = cu.addClass(simpleName);
         targetClz.setComment(new BlockComment("This class was generated by querydsl-sql-extension."));
  
         // 生成表头注解
@@ -362,7 +413,7 @@ public class DbSchemaGenerator {
             astFields.stream().forEach((f)->{f.createGetter();f.createSetter();});
         }
         
-        ClassMetadata clzMetadata=new ClassMetadataImpl(packageName+"."+ className, className, fields);
+        ClassMetadata clzMetadata=new ClassMetadataImpl(packageName+"."+ simpleName, simpleName, fields);
         if(metafields==MetafieldGenerationType.LAMBDA) {
             LambdaFieldsGenerator g2=new LambdaFieldsGenerator();
             if(tableRefNameFunction!=null) {
@@ -385,11 +436,11 @@ public class DbSchemaGenerator {
             File qFile=save(qcu,qClassName);
             log.info("Generate file:{}",qFile.getAbsolutePath());
         }
-        return save(cu,clzMetadata.getSimpleName());
+        return Pair.of(save(cu,clzMetadata.getSimpleName()), true);
     }
     
     private File save(CompilationUnitBuilder cu, String simpleName) {
-        File file = new File(outputDir.path + packageName.replace('.', '/') + "/" + simpleName + ".java");
+        File file = getFile(simpleName);
         File parent = file.getParentFile();
         if (!parent.exists()) {
             parent.mkdirs();
@@ -400,6 +451,11 @@ public class DbSchemaGenerator {
             throw Exceptions.toRuntime(e);
         }
         return file;
+    }
+
+
+    private File getFile(String simpleName) {
+        return new File(outputDir.path + packageName.replace('.', '/') + "/" + simpleName + ".java");
     }
 
 
@@ -480,7 +536,13 @@ public class DbSchemaGenerator {
     }
 
     public static DbSchemaGenerator from(DataSource ds) {
-        return new DbSchemaGenerator( SQLQueryFactory.from(ds));
+        ConfigurationEx configuration = new ConfigurationEx(SQLQueryFactory.calcSQLTemplate(ds));
+        configuration.setSlowSqlWarnMillis(5000);
+        configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_COMPACT));
+        configuration.getScanOptions().disableDDL();
+        CachedConnection conn=new CachedConnection(ds);
+        SQLQueryFactory factory = new SQLQueryFactory(configuration, conn);
+        return new DbSchemaGenerator(factory,conn);
     }
 
     private static String underlineToCamelCase(String s, boolean beginUpper) {
@@ -507,6 +569,35 @@ public class DbSchemaGenerator {
             StackTraceElement last=elements[3];
             String name=last.getClassName();
             packageName = StringUtils.substringBeforeLast(name, ".");
+        }
+    }
+    
+    @AllArgsConstructor
+    static class CachedConnection implements Supplier<Connection> {
+        volatile Connection conn;
+        final DataSource ds;
+
+        @SneakyThrows
+        CachedConnection(DataSource ds) {
+            this.ds = ds;
+        }
+
+        @SneakyThrows
+        void close() {
+            Connection conn = this.conn;
+            this.conn = null;
+            if(conn!=null) {
+                conn.close();
+            }
+        }
+
+        @Override
+        @SneakyThrows
+        public synchronized Connection get() {
+            if (conn == null) {
+                return conn = ds.getConnection();
+            }
+            return conn;
         }
     }
     
