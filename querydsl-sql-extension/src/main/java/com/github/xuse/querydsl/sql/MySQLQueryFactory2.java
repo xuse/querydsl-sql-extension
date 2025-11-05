@@ -128,7 +128,7 @@ public class MySQLQueryFactory2 extends AbstractSQLQueryFactory<MySQLQuery<?>> {
 
 	@Override
 	public SQLDeleteClauseAlter delete(RelationalPath<?> path) {
-		return null;
+		return new SQLDeleteClauseAlter(connection, configuration,path);
 	}
 
 	@Override

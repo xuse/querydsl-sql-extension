@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.datatype.util.ToStringUtils;
-import com.github.xuse.querydsl.datatype.util.binary.BeanCodec;
+import com.github.xuse.querydsl.datatype.util.binary.BinaryCodec;
 import com.github.xuse.querydsl.datatype.util.binary.BufferedDecoder;
 import com.github.xuse.querydsl.datatype.util.binary.BufferedEncoder;
 import com.github.xuse.querydsl.datatype.util.binary.CodecContext;
@@ -20,7 +20,7 @@ public class BinaryUtilsTest {
 		a.setName(StringUtils.randomString());
 		a.setVersion(1);
 		
-		CodecContext.INSTANCE.register(new BeanCodec<Aaa>() {
+		CodecContext.INSTANCE.register(new BinaryCodec<Aaa>() {
 			@Override
 			public Class<Aaa> getType() {
 				return Aaa.class;

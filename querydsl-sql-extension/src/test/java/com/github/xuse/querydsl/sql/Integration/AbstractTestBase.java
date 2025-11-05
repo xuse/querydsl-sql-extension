@@ -6,9 +6,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.entity.CustomAnnotation;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.support.SimpleDataSource;
@@ -82,14 +84,23 @@ public abstract class AbstractTestBase {
 	
 	@BeforeAll
 	public static void doInit() {
-		try {
-			factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),
-					wrapAsPool(effectiveDs), true);
-		} catch (Exception e) {
-			e.printStackTrace();
+		if(factory==null) {
+			getSqlFactory();			
 		}
 	}
 	
+	protected static SQLQueryFactory getSqlFactory() {
+		if(factory==null) {
+			try {
+				return factory = new SQLQueryFactory(querydslConfiguration(SQLQueryFactory.calcSQLTemplate(effectiveDs.getUrl())),
+						wrapAsPool(effectiveDs), true);
+			} catch (Exception e) {
+				throw new IllegalStateException(e);
+			}	
+		}
+		return factory;
+	}
+
 	private static DataSource wrapAsPool(DataSource ds) {
 		HikariDataSource pool = new HikariDataSource();
 		pool.setDataSource(ds);
@@ -109,8 +120,14 @@ public abstract class AbstractTestBase {
 		configuration.getScanOptions()
 			.setAlterExistTable(false)
 			.allowDrops()
+			.withoutAnnotation(CustomAnnotation.class)
+			.addListener(AbstractTestBase::onScaned)
 			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
+	}
+	
+	private static void onScaned(RelationalPathEx<?> entityPath) {
+		System.out.println("[REG LISTENER]:"+entityPath.getType());
 	}
 }

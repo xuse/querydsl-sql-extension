@@ -1,16 +1,18 @@
 package com.github.xuse.querydsl.sql.expression;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-public final class FieldCollector implements BindingProvider {
+final class FieldCollector implements BindingProvider {
+	static final List<String> ALL_FIELDS = Collections.singletonList("*");
+	
 	private List<String> fieldNames;
 
 	@Override
 	public List<String> fieldNames() {
-		return Collections.singletonList("*");
+		return ALL_FIELDS;
 	}
 
 	@Override
@@ -19,8 +21,8 @@ public final class FieldCollector implements BindingProvider {
 	}
 
 	@Override
-	public List<String> names(Collection<String> fieldOrder) {
-		return fieldNames = new ArrayList<>(fieldOrder);
+	public List<String> names(Map<String, FieldProperty> fieldOrder) {
+		return new ArrayList<>(fieldOrder.keySet());
 	}
 
 	@Override

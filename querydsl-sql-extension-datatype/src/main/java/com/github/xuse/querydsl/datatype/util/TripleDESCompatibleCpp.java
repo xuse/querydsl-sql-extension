@@ -19,10 +19,10 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
 /*
- * Asiainfo提供的3DES算法，和C++版本的兼容。
+ * 3DES算法，和C++版本的兼容。
  * 原先的代码有点问题，不支持双字节码，已经修正。
- * 总的来说功能和性能较差，仅为兼容某些C++加密出来的字符串使用。
- * 在padding算法等地方和java以及C#的版本不兼容。
+ * 性能较差，仅为兼容某些C++加密出来的字符串使用。
+ * 原因是在padding算法等地方和java默认情况下与C++不兼容。
  */
 public class TripleDESCompatibleCpp {
 	public TripleDESCompatibleCpp() {
@@ -246,12 +246,12 @@ public class TripleDESCompatibleCpp {
 	}
 
 	public String cipher2(byte key[], String plain_textStr) {
-		byte[] plain_text=plain_textStr.getBytes();
+		byte[] plain_text = plain_textStr.getBytes();
 		byte keyBytes[] = key;
 		byte t_plain[] = new byte[1024];
 		byte t_crypt[] = new byte[1024];
 		int pad_cnt = 0;
-		int length=plain_text.length;
+		int length = plain_text.length;
 		if (length > 1024)
 			throw new IllegalArgumentException("length exceed");
 		for (int i = 0; i < plain_text.length; i++)
@@ -285,7 +285,7 @@ public class TripleDESCompatibleCpp {
 
 		}
 
-		StringBuilder sb=new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 8 * en_cnt; i++) {
 			byte temp = t_crypt[i];
 			if (temp < 10 && temp >= 0) {
@@ -491,7 +491,7 @@ public class TripleDESCompatibleCpp {
 		byte keyBytes[] = makeUpKey(key, 16);
 		byte t_crypt[] = new byte[1024];
 		byte plain_text[] = new byte[1024];
-		int length=crypted_text.length();
+		int length = crypted_text.length();
 		byte crypted_text_array[] = crypted_text.getBytes();
 		for (int i = 0; i < length / 2; i++)
 			t_crypt[i] = asc_bcd(crypted_text_array[i * 2],
@@ -517,15 +517,15 @@ public class TripleDESCompatibleCpp {
 		}
 
 		plain_text[length / 2] = 0;
-		int n=0;
+		int n = 0;
 		for (int i = 0; i < plain_text.length; i++) {
-			if (plain_text[i] == 0){
-				n=i;
+			if (plain_text[i] == 0) {
+				n = i;
 				break;
 			}
 		}
 		try {
-			return new String(plain_text,0,n,Charset.defaultCharset().name());
+			return new String(plain_text, 0, n, Charset.defaultCharset().name());
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 		}
@@ -1582,98 +1582,97 @@ public class TripleDESCompatibleCpp {
 	}
 
 	public static final int MAX_CI_LEN = 1024;
-	
 
-final static class HByte {
+	final static class HByte {
 
-	public HByte() {
-		ibyte = new DES3Byte();
-	}
-
-	public byte getAbyte() {
-		int array[] = { ibyte.bit0, ibyte.bit1, ibyte.bit2, ibyte.bit3,
-				ibyte.bit4, ibyte.bit5, ibyte.bit6, ibyte.bit7 };
-		String bString = "";
-		for (int i = 0; i < array.length; i++)
-			bString = array[i] + bString;
-
-		return getByteFromChar((char) Integer.valueOf(bString, 2).intValue());
-	}
-
-	public static char getBinaryValue(String bString) {
-		int result = 0;
-		String temp = bString;
-		for (int i = 0; i < 32 - bString.length(); i++)
-			temp = "0" + temp;
-
-		result += Integer.valueOf(temp, 2).intValue();
-		return (char) result;
-	}
-
-	public static byte getByteFromChar(char c) {
-		if (c >= '\200') {
-			int t = ~c + 1;
-			String bString = Integer.toBinaryString(t);
-			bString = bString.substring(bString.length() - 8);
-			int temp = Integer.valueOf(bString, 2).intValue() * -1;
-			return (byte) temp;
-		} else {
-			return (byte) c;
-		}
-	}
-
-	public static char getChar(byte b) {
-		if (b >= 0)
-			return (char) b;
-		char temp = (char) (b * -1);
-		if (b == -128) {
-			return temp;
-		} else {
-			temp = (char) (~temp + 1);
-			String bString = Integer.toBinaryString(temp);
-			return getBinaryValue(bString.substring(bString.length() - 8));
-		}
-	}
-
-	public void setAbyte(byte abyte) {
-		String bString = null;
-		this.abyte = getChar(abyte);
-		if (this.abyte >= '\200') {
-			bString = Integer.toBinaryString(this.abyte);
-		} else {
-			bString = Integer.toString(abyte, 2);
-			int len = bString.length();
-			for (int i = len; i < 8; i++)
-				bString = "0" + bString;
-
-		}
-		ibyte.bit7 = (char) Integer.parseInt(bString.charAt(0) + "");
-		ibyte.bit6 = (char) Integer.parseInt(bString.charAt(1) + "");
-		ibyte.bit5 = (char) Integer.parseInt(bString.charAt(2) + "");
-		ibyte.bit4 = (char) Integer.parseInt(bString.charAt(3) + "");
-		ibyte.bit3 = (char) Integer.parseInt(bString.charAt(4) + "");
-		ibyte.bit2 = (char) Integer.parseInt(bString.charAt(5) + "");
-		ibyte.bit1 = (char) Integer.parseInt(bString.charAt(6) + "");
-		ibyte.bit0 = (char) Integer.parseInt(bString.charAt(7) + "");
-	}
-
-	private char abyte;
-	DES3Byte ibyte;
-
-	public static class DES3Byte {
-
-		public DES3Byte() {
+		public HByte() {
+			ibyte = new DES3Byte();
 		}
 
-		public char bit0;
-		public char bit1;
-		public char bit2;
-		public char bit3;
-		public char bit4;
-		public char bit5;
-		public char bit6;
-		public char bit7;
+		public byte getAbyte() {
+			int array[] = { ibyte.bit0, ibyte.bit1, ibyte.bit2, ibyte.bit3,
+					ibyte.bit4, ibyte.bit5, ibyte.bit6, ibyte.bit7 };
+			String bString = "";
+			for (int i = 0; i < array.length; i++)
+				bString = array[i] + bString;
+
+			return getByteFromChar((char) Integer.valueOf(bString, 2).intValue());
+		}
+
+		public static char getBinaryValue(String bString) {
+			int result = 0;
+			String temp = bString;
+			for (int i = 0; i < 32 - bString.length(); i++)
+				temp = "0" + temp;
+
+			result += Integer.valueOf(temp, 2).intValue();
+			return (char) result;
+		}
+
+		public static byte getByteFromChar(char c) {
+			if (c >= '\200') {
+				int t = ~c + 1;
+				String bString = Integer.toBinaryString(t);
+				bString = bString.substring(bString.length() - 8);
+				int temp = Integer.valueOf(bString, 2).intValue() * -1;
+				return (byte) temp;
+			} else {
+				return (byte) c;
+			}
+		}
+
+		public static char getChar(byte b) {
+			if (b >= 0)
+				return (char) b;
+			char temp = (char) (b * -1);
+			if (b == -128) {
+				return temp;
+			} else {
+				temp = (char) (~temp + 1);
+				String bString = Integer.toBinaryString(temp);
+				return getBinaryValue(bString.substring(bString.length() - 8));
+			}
+		}
+
+		public void setAbyte(byte abyte) {
+			String bString = null;
+			this.abyte = getChar(abyte);
+			if (this.abyte >= '\200') {
+				bString = Integer.toBinaryString(this.abyte);
+			} else {
+				bString = Integer.toString(abyte, 2);
+				int len = bString.length();
+				for (int i = len; i < 8; i++)
+					bString = "0" + bString;
+
+			}
+			ibyte.bit7 = (char) Integer.parseInt(bString.charAt(0) + "");
+			ibyte.bit6 = (char) Integer.parseInt(bString.charAt(1) + "");
+			ibyte.bit5 = (char) Integer.parseInt(bString.charAt(2) + "");
+			ibyte.bit4 = (char) Integer.parseInt(bString.charAt(3) + "");
+			ibyte.bit3 = (char) Integer.parseInt(bString.charAt(4) + "");
+			ibyte.bit2 = (char) Integer.parseInt(bString.charAt(5) + "");
+			ibyte.bit1 = (char) Integer.parseInt(bString.charAt(6) + "");
+			ibyte.bit0 = (char) Integer.parseInt(bString.charAt(7) + "");
+		}
+
+		private char abyte;
+		DES3Byte ibyte;
+
+		public static class DES3Byte {
+
+			public DES3Byte() {
+			}
+
+			public char bit0;
+			public char bit1;
+			public char bit2;
+			public char bit3;
+			public char bit4;
+			public char bit5;
+			public char bit6;
+			public char bit7;
+		}
 	}
-}
 
 }

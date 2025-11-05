@@ -14,8 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.sql.support.QueryFunction;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.function.QueryFunction;
 import com.querydsl.sql.SQLBindings;
 
 /**

@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.github.xuse.querydsl.util.TypeUtils;
 
+import lombok.SneakyThrows;
+
 /**
  * 基于反射的对象访问器，万一ASM失效后启用
  * 
@@ -34,6 +36,18 @@ public class ReflectCodec extends BeanCodec {
 	}
 
 	@Override
+	public void sets(Object[] fields, Object o) {
+		int len = methods.size();
+		try {
+			for (int i = 0; i < len; i++) {
+				methods.get(i).getSetter().invoke(o, fields[i]);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
 	public Object[] values(Object bean) {
 		int len = methods.size();
 		Object[] result = new Object[len];
@@ -44,6 +58,17 @@ public class ReflectCodec extends BeanCodec {
 			return result;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	@SneakyThrows
+	public void copy(Object from, Object target) {
+		for(FieldProperty p:methods) {
+			if(p.getGetter()!=null && p.getSetter()!=null) {
+				Object value=p.getGetter().invoke(from);
+				p.getSetter().invoke(target, value);
+			}
 		}
 	}
 }

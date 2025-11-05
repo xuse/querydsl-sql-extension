@@ -1,13 +1,11 @@
 package com.github.xuse.querydsl.asm;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.github.xuse.querydsl.util.Primitives;
+import com.github.xuse.querydsl.util.lang.Primitives;
 
 public class ASMUtils {
 
@@ -81,28 +79,6 @@ public class ASMUtils {
 			return "D";
 		}
 		throw new IllegalStateException("Type: " + type.getCanonicalName() + " is not a primitive type");
-	}
-
-	public static Type getMethodType(Class<?> clazz, String methodName) {
-		try {
-			Method method = clazz.getMethod(methodName);
-			return method.getGenericReturnType();
-		} catch (Exception ex) {
-			return null;
-		}
-	}
-
-	public static Type getFieldType(Class<?> clazz, String fieldName) {
-		Class<?> clz = clazz;
-		while (clz != Object.class) {
-			try {
-				Field field = clazz.getDeclaredField(fieldName);
-				return field.getGenericType();
-			} catch (Exception ex) {
-			}
-			clz = clz.getSuperclass();
-		}
-		return null;
 	}
 
 	public static boolean checkName(String name) {
@@ -280,13 +256,11 @@ public class ASMUtils {
 		return cr.getSuperName().replace('/', '.');
 	}
 	
-
 	public static class ClassAnnotationExtracter extends ClassVisitor {
-
 		private Set<String> annotations = new HashSet<String>();
 
 		public ClassAnnotationExtracter() {
-			super(Opcodes.ASM7);
+			super(Opcodes.ASM9);
 		}
 
 		@Override

@@ -1,0 +1,604 @@
+package io.github.xuse.querydsl.sql.code.generate;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
+
+import com.github.javaparser.ast.Modifier.Keyword;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.comments.BlockComment;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.xuse.querydsl.annotation.dbdef.Check;
+import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
+import com.github.xuse.querydsl.annotation.dbdef.Comment;
+import com.github.xuse.querydsl.annotation.dbdef.Key;
+import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
+import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.SQLQueryFactory;
+import com.github.xuse.querydsl.sql.column.AccessibleElement;
+import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
+import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
+import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
+import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
+import com.github.xuse.querydsl.util.Assert;
+import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.StringUtils;
+import com.mysema.commons.lang.Pair;
+import com.querydsl.sql.SchemaAndTable;
+
+import io.github.xuse.querydsl.sql.code.generate.JdbcToJavaFieldMappings.FieldGenerator;
+import io.github.xuse.querydsl.sql.code.generate.core.ClassMetadata;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder.AnnotationBuilder;
+import io.github.xuse.querydsl.sql.code.generate.core.GenericTypes;
+import io.github.xuse.querydsl.sql.code.generate.model.MetafieldGenerationType;
+import io.github.xuse.querydsl.sql.code.generate.model.OutputDir;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * 解析数据库数据。生成对应实体类
+ */
+@Slf4j
+public class DbSchemaGenerator {
+    private OutputDir outputDir = OutputDir.DIR_MAIN;
+    /**
+     * 生成类的包名
+     */
+    private String packageName;
+    private boolean writeTableSchema = false;
+    private boolean ignoreColumnCase = false;
+    private boolean uselombokData = true;
+    private boolean overwrite = false;
+    
+    private final CachedConnection cachedConnection;
+    
+    
+    /**
+     * 表/字段引用生成模式
+     * @see MetafieldGenerationType
+     */
+    private MetafieldGenerationType metafields = MetafieldGenerationType.LAMBDA;
+    
+    /**
+     * 表引用名生成函数
+     */
+    private Function<String,String> tableRefNameFunction;
+    
+    /**
+     * 列引用名生成函数
+     */
+    private Function<String, String> columnRefNameFunction = (s) -> "_" + s;
+    
+    /**
+     * 表名到Java类名转换函数（下划线转驼峰，一般无需调整） 
+     */
+    private Function<String, String> classNameConverter = (s) -> underlineToCamelCase(s,true);
+    
+    /**
+     * 表名到Java字段名转换函数（下划线转驼峰，一般无需调整）
+     */
+    private Function<String, String> fieldNameConverter = (s) -> underlineToCamelCase(s,false);
+    
+    /**
+     * 数据库注释处理函数。处理注释中的双引号。
+     */
+    private Function<String, String> remarkProcessor= (s)-> s.trim().replace("\"", "\\\"");
+
+    /**
+     * 数据库访问句柄
+     */
+    private final SQLMetadataQueryFactory metadata;
+    
+
+    public DbSchemaGenerator(SQLQueryFactory factory) {
+        this.metadata = factory.getMetadataFactory();
+        this.cachedConnection = null;
+    }
+    
+    DbSchemaGenerator(SQLQueryFactory factory,CachedConnection conn) {
+        this.metadata = factory.getMetadataFactory();
+        this.cachedConnection = conn;
+    }
+    
+
+    /**
+     * 生成当前Database/Schema下的一张表
+     * @param name 表名
+     * @return 生成的文件
+     */
+    public File generateTable(String name) {
+        checkPackage();
+        TableInfo table = metadata.getTable(new SchemaAndTable(null, name));
+        File file= generateTable(table).getFirst();
+        tryRelease();
+        return file;
+    }
+    
+    /**
+     * 生成实体映射
+     * 
+     * @param namespace   数据库名或Schema名。传入null表示当前库/Schema下。如果要跨多个Schema或库，传入'%'。
+     * @param namePattern 表名，可以带通配符，如 ‘driver%’ 表示所有driver开头的表
+     * @return 生成实体映射的数量
+     */
+    public int generateTables(String namespace,String namePattern) {
+        checkPackage();
+        List<File> files=new ArrayList<>();
+        List<TableInfo> tables=metadata.listTables(namespace, namePattern);
+        for(TableInfo table: tables) {
+            Pair<File, Boolean> result = generateTable(table);
+            if(result.getSecond()) {
+                File file =result.getFirst();
+                files.add(file);
+                log.info("Generate file {}", file.getAbsolutePath());    
+            }
+        }
+        tryRelease();
+        return files.size();
+    }
+
+    /**
+     * 为一个Database/Schema下所有表生成实体映射
+     * @param databaseName 数据库名/Schema名，如果传入null则表示当前数据库下
+     * @return 生成数量
+     */
+    public int generateAll(String databaseName) {
+        checkPackage();
+        if(StringUtils.isEmpty(databaseName)) {
+            databaseName=metadata.getDatabaseInfo().getNamespace();
+        }
+        List<File> files=new ArrayList<>();
+        List<TableInfo> tables=metadata.listTables(databaseName, null);
+        for(TableInfo table: tables) {
+            Pair<File, Boolean> result = generateTable(table);
+            if(result.getSecond()) {
+                File file =result.getFirst();
+                files.add(file);
+                log.info("Generate file {}", file.getAbsolutePath());    
+            }
+        }
+        tryRelease();
+        return files.size();
+    }
+
+    private void tryRelease() {
+        if(cachedConnection!=null) {
+            cachedConnection.close();
+        }
+    }
+
+    /**
+     * 指定输出文件夹。相对当前工程的路径
+     * @param outputDir OutputDir
+     * @return this
+     */
+    public DbSchemaGenerator output(OutputDir outputDir) {
+        this.outputDir = outputDir;
+        return this;
+    }
+
+    public String getPackageName() {
+        return packageName;
+    }
+
+    /**
+     * 指定输出类的包名
+     * @param packageName 包名
+     * @return this
+     */
+    public DbSchemaGenerator packageName(String packageName) {
+        this.packageName = packageName;
+        return this;
+    }
+
+    public boolean isWriteTableSchema() {
+        return writeTableSchema;
+    }
+
+    /**
+     * @param writeTableSchema 输出类中是否携带Schema名称。默认false
+     * @return this
+     */
+    public DbSchemaGenerator writeTableSchema(boolean writeTableSchema) {
+        this.writeTableSchema = writeTableSchema;
+        return this;
+    }
+
+    public boolean isIgnoreColumnCase() {
+        return ignoreColumnCase;
+    }
+
+    /**
+     * 忽略列名大小写。默认false
+     * @param ignoreColumnCase 
+     * @return this
+     */
+    public DbSchemaGenerator ignoreColumnCase(boolean ignoreColumnCase) {
+        this.ignoreColumnCase = ignoreColumnCase;
+        return this;
+    }
+
+    public boolean isUselombokData() {
+        return uselombokData;
+    }
+
+    /**
+     * 输出类使用Lombok的@Data注解。默认true。
+     * 如果不使用@Data注解，将显式生成Getter和Setter。
+     * @param uselombokData
+     * @return this
+     */
+    public DbSchemaGenerator useLombokAnnotation(boolean uselombokData) {
+        this.uselombokData = uselombokData;
+        return this;
+    }
+
+    /**
+     * 覆盖默认的表引用字段名称
+     * @param function 自定义函数
+     * @return this
+     */
+    public DbSchemaGenerator tableRefNameIs(Function<String,String> function) {
+        this.tableRefNameFunction=function;
+        return this;
+    }
+    
+    /**
+     * 是否覆盖已有文件
+     * @param overwrite
+     * @return
+     */
+    public DbSchemaGenerator overwriteFiles(boolean overwrite) {
+        this.overwrite=overwrite;
+        return this;
+    }
+    
+    /**
+     * 覆盖默认的列引用字段名称。默认为Java字段名前加下划线，仅当Lambda模式下生效
+     * @param function 自定义函数
+     * @return this
+     */
+    public DbSchemaGenerator columnRefNameIs(Function<String, String> function) {
+        this.columnRefNameFunction = function;
+        return this;
+    }
+    
+    public Function<String, String> getRemarkProcessor() {
+        return remarkProcessor;
+    }
+
+    public void setRemarkProcessor(Function<String, String> remarkProcessor) {
+        this.remarkProcessor = remarkProcessor;
+    }
+
+    public MetafieldGenerationType getMetafieldType() {
+        return metafields;
+    }
+
+    public DbSchemaGenerator metafields(MetafieldGenerationType metafields) {
+        this.metafields = metafields;
+        return this;
+    }
+
+    public Function<String, String> getClassNameConverter() {
+        return classNameConverter;
+    }
+
+    public void setClassNameConverter(Function<String, String> classNameConverter) {
+        this.classNameConverter = classNameConverter;
+    }
+
+    public Function<String, String> getFieldNameConverter() {
+        return fieldNameConverter;
+    }
+
+    public void setFieldNameConverter(Function<String, String> fieldNameConverter) {
+        this.fieldNameConverter = fieldNameConverter;
+    }
+
+    private Pair<File,Boolean> generateTable(TableInfo table) {
+        SchemaAndTable key = table.toSchemaTable();
+        List<ColumnDef> columns = metadata.getColumns(key);
+        Map<String, String> columnToFieldName = createColumnMap(columns);
+
+        String simpleName = classNameConverter.apply(table.getName());
+        
+        if(!overwrite) {
+            File file=getFile(simpleName);
+            if(file.exists()) {
+                log.info("Ignore "+table+", file exists:{}",file.getAbsolutePath());
+                return Pair.of(file, false);
+            }
+        }
+        CompilationUnitBuilder cu = CompilationUnitBuilder.create();
+
+        cu.setPackageDeclaration(packageName);
+        ClassOrInterfaceDeclaration targetClz = cu.addClass(simpleName);
+        targetClz.setComment(new BlockComment("This class was generated by querydsl-sql-extension."));
+ 
+        // 生成表头注解
+        {
+            AnnotationBuilder<TableSpec> tableSpec = cu.createAnnotation(TableSpec.class);
+            if (writeTableSchema) {
+                tableSpec.add("schema", cu.literal(table.getSchema()));
+            }
+            tableSpec.add("name", cu.literal(table.getName()));
+            String collate = table.getAttribute("COLLATE");
+            if (StringUtils.isNotEmpty(collate)) {
+                tableSpec.add("collate", cu.literal(collate));
+            }
+
+            Collection<Constraint> constraints = metadata.getAllIndexAndConstraints(key);
+            List<String> pkFields = Collections.emptyList();
+            List<AnnotationExpr> indexAnnos = new ArrayList<>();
+            List<AnnotationExpr> checkAnnos = new ArrayList<>();
+
+            for (Constraint c : constraints) {
+                ConstraintType type = c.getConstraintType();
+                if (type.isColumnList()) {
+                    if (type == ConstraintType.PRIMARY_KEY) {
+                        pkFields = c.getColumnNames().stream().map(n -> columnToFieldName.get(normalizeColumn(n)))
+                                .collect(Collectors.toList());
+                    } else {
+                        indexAnnos.add(createIndexAnnotation(c, cu, columnToFieldName));
+                    }
+                } else if (type.isCheckClause()) {
+                    checkAnnos.add(createCheckAnnotation(c, cu));
+                }
+            }
+            if (!pkFields.isEmpty()) {
+                tableSpec.add("primaryKeys", cu.arrayString(pkFields));
+            }
+            if (indexAnnos != null) {
+                tableSpec.add("keys", cu.array(indexAnnos));
+            }
+            if (checkAnnos != null) {
+                tableSpec.add("checks", cu.array(checkAnnos));
+            }
+            targetClz.addAnnotation(tableSpec.build());
+
+            if (StringUtils.isNotBlank(table.getRemarks())) {
+                targetClz.addAnnotation(cu.createAnnotation(Comment.class).add("value", cu.literal(remarkProcessor.apply(table.getRemarks()))).build());
+            }
+
+            if (uselombokData) {
+                targetClz.addAnnotation(cu.createAnnotation(Data.class).build());
+            }
+        }
+        
+    
+        List<AccessibleElement> fields=new ArrayList<>();
+        List<FieldDeclaration> astFields=new ArrayList<>();
+        // 生成各个字段
+        for (ColumnDef c : columns) {
+            String fieldName = columnToFieldName.get(normalizeColumn(c.getColumnName()));
+            Assert.hasLength(fieldName);
+            FieldGenerator fg = JdbcToJavaFieldMappings.getGenerator(c.getJdbcType());
+            Type fieldType=fg.getFieldType(c);
+            FieldDeclaration columnField = targetClz.addField(cu.createType(fieldType), fieldName, Keyword.PRIVATE);
+
+            AnnotationBuilder<ColumnSpec> columnSpec = cu.createAnnotation(ColumnSpec.class);
+            fg.setAttribs(columnSpec, c);
+            columnField.addAnnotation(columnSpec.build());
+
+            if (!StringUtils.isBlank(c.getRemarks())) {
+                AnnotationBuilder<Comment> comment = cu.createAnnotation(Comment.class);
+                comment.add("value", cu.literal(remarkProcessor.apply(c.getRemarks())));
+                columnField.addAnnotation(comment.build());
+            }
+            astFields.add(columnField);
+            fields.add(new ColumnField(fieldName,fieldType));
+        }
+        if(!uselombokData) {
+            astFields.stream().forEach((f)->{f.createGetter();f.createSetter();});
+        }
+        
+        ClassMetadata clzMetadata=new ClassMetadataImpl(packageName+"."+ simpleName, simpleName, fields);
+        if(metafields==MetafieldGenerationType.LAMBDA) {
+            LambdaFieldsGenerator g2=new LambdaFieldsGenerator();
+            if(tableRefNameFunction!=null) {
+                g2.setTableRefNameFunction(tableRefNameFunction);    
+            }
+            if(columnRefNameFunction!=null) {
+                g2.setColumnRefNameFunction(columnRefNameFunction);
+            }
+            g2.addStaticDefinitions(targetClz, clzMetadata, cu);
+        }else if(metafields==MetafieldGenerationType.QCLASS) {
+            QCalssGenerator g2=new QCalssGenerator();
+            if(tableRefNameFunction!=null) {
+                g2.setTableRefNameFunction(tableRefNameFunction);    
+            }
+            if(columnRefNameFunction!=null) {
+                g2.setColumnRefNameFunction(columnRefNameFunction);
+            }
+            String qClassName = "Q" + clzMetadata.getSimpleName();
+            CompilationUnitBuilder qcu= g2.generateContent(clzMetadata, packageName, qClassName);
+            File qFile=save(qcu,qClassName);
+            log.info("Generate file:{}",qFile.getAbsolutePath());
+        }
+        return Pair.of(save(cu,clzMetadata.getSimpleName()), true);
+    }
+    
+    private File save(CompilationUnitBuilder cu, String simpleName) {
+        File file = getFile(simpleName);
+        File parent = file.getParentFile();
+        if (!parent.exists()) {
+            parent.mkdirs();
+        }
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(cu.build().toString());
+        } catch (IOException e) {
+            throw Exceptions.toRuntime(e);
+        }
+        return file;
+    }
+
+
+    private File getFile(String simpleName) {
+        return new File(outputDir.path + packageName.replace('.', '/') + "/" + simpleName + ".java");
+    }
+
+
+    @AllArgsConstructor
+    final static class ClassMetadataImpl implements ClassMetadata{
+        private final String name;
+        private final String simpleName;
+        private final List<AccessibleElement> columns;
+        @Override
+        public String getName() {
+            return name;
+        }
+        @Override
+        public String getSimpleName() {
+            return simpleName;
+        }
+        @Override
+        public List<AccessibleElement> getColumnFields() {
+            return columns;
+        }
+    }
+    
+    @AllArgsConstructor
+    final static class ColumnField implements AccessibleElement{
+        final String name;
+        final Type type;
+        @Override
+        public <T extends Annotation> T getAnnotation(Class<T> clz) {
+            return null;
+        }
+        @Override
+        public Class<?> getType() {
+            return GenericTypes.getRawClass(type);
+        }
+        @Override
+        public String getName() {
+            return name;
+        }
+        @Override
+        public void set(Object bean, Object value) {
+        }
+        @Override
+        public Type getGenericType() {
+            return type;
+        }
+    }
+
+    private AnnotationExpr createCheckAnnotation(Constraint check, CompilationUnitBuilder cu) {
+        return cu.createAnnotation(Check.class).add("name", cu.literal(check.getName()))
+                .add("value", cu.literal(check.getCheckClause().toString())).build();
+    }
+
+    private AnnotationExpr createIndexAnnotation(Constraint index, CompilationUnitBuilder cu, Map<String, String> columnToFieldName) {
+        AnnotationBuilder<Key> builder = cu.createAnnotation(Key.class);
+
+        builder.add("name", cu.literal(index.getName()));
+
+        ConstraintType type = index.getConstraintType();
+        builder.add("type", cu.createFieldAccess(ConstraintType.class, type.name()));
+
+        List<String> paths = index.getColumnNames().stream().map((e) -> columnToFieldName.get(normalizeColumn(e)))
+                .collect(Collectors.toList());
+        builder.add("path", cu.arrayString(paths));
+        builder.add("allowIgnore", cu.literal(false));
+        return builder.build();
+    }
+
+    private Map<String, String> createColumnMap(List<ColumnDef> columns) {
+        Map<String, String> map = new HashMap<>();
+        for (ColumnDef def : columns) {
+            map.put(normalizeColumn(def.getColumnName()), fieldNameConverter.apply(def.getColumnName()));
+        }
+        return map;
+    }
+
+    private String normalizeColumn(String col) {
+        return ignoreColumnCase ? col.toLowerCase() : col;
+    }
+
+    public static DbSchemaGenerator from(DataSource ds) {
+        ConfigurationEx configuration = new ConfigurationEx(SQLQueryFactory.calcSQLTemplate(ds));
+        configuration.setSlowSqlWarnMillis(5000);
+        configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_COMPACT));
+        configuration.getScanOptions().disableDDL();
+        CachedConnection conn=new CachedConnection(ds);
+        SQLQueryFactory factory = new SQLQueryFactory(configuration, conn);
+        return new DbSchemaGenerator(factory,conn);
+    }
+
+    private static String underlineToCamelCase(String s, boolean beginUpper) {
+        StringBuilder sb = new StringBuilder(s.length());
+        boolean toUpper = beginUpper;
+        for (char c : s.toCharArray()) {
+            if (c == '_') {
+                toUpper = true;
+                continue;
+            }
+            if (toUpper) {
+                sb.append(Character.toUpperCase(c));
+                toUpper = false;
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+    
+    private void checkPackage() {
+        if(StringUtils.isEmpty(packageName)) {
+            StackTraceElement[] elements= Thread.currentThread().getStackTrace();
+            StackTraceElement last=elements[3];
+            String name=last.getClassName();
+            packageName = StringUtils.substringBeforeLast(name, ".");
+        }
+    }
+    
+    @AllArgsConstructor
+    static class CachedConnection implements Supplier<Connection> {
+        volatile Connection conn;
+        final DataSource ds;
+
+        @SneakyThrows
+        CachedConnection(DataSource ds) {
+            this.ds = ds;
+        }
+
+        @SneakyThrows
+        void close() {
+            Connection conn = this.conn;
+            this.conn = null;
+            if(conn!=null) {
+                conn.close();
+            }
+        }
+
+        @Override
+        @SneakyThrows
+        public synchronized Connection get() {
+            if (conn == null) {
+                return conn = ds.getConnection();
+            }
+            return conn;
+        }
+    }
+    
+}

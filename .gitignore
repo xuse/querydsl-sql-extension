@@ -9,4 +9,6 @@ hs_err_pid*
 db
 *.log
 *.iml
+.lingma
+.vscode
 test.txt

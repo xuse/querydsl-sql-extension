@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
@@ -37,13 +38,13 @@ import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.DistributedLock;
-import com.github.xuse.querydsl.sql.support.QueryFunction;
 import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.function.QueryFunction;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Operator;
@@ -156,14 +157,13 @@ public abstract class MetadataQuerySupport {
 	}
 
 	/**
-	 * 返回数据库中所有的表(当前schema下)
+	 * 返回数据库中所有符合条件的表
 	 * @param catalog catalog
 	 * @param schema schema
 	 * @return 表信息
 	 */
-	public List<TableInfo> getTables(String catalog, String schema) {
-		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(policy.toNamespace(catalog, schema), null), null);
+	public List<TableInfo> listTables(String namespace, String tableNamePattern) {
+		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(namespace, tableNamePattern), Ops.LIKE);
 	}
 
 	/**
@@ -411,7 +411,7 @@ public abstract class MetadataQuerySupport {
 			throw getConfiguration().get().translate(e);
 		}
 		List<FieldOrder> result = new ArrayList<>();
-		for (Field field : clz.getDeclaredFields()) {
+		for (Field field : Util.getDeclaredFields(clz)) {
 			if (Modifier.isStatic(field.getModifiers())) {
 				continue;
 			}

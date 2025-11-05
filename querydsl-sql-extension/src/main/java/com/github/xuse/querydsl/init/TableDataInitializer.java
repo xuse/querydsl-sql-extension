@@ -1,7 +1,6 @@
 package com.github.xuse.querydsl.init;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -365,7 +364,7 @@ public class TableDataInitializer {
 
 	public static String calcResourceName(String resource, RelationalPath<?> table, ConfigurationEx configuration) {
 		if (StringUtils.isEmpty(resource)) {
-			resource = table.getType().getName() + configuration.getDataInitFileSuffix();
+			resource = table.getType().getName() + configuration.getScanOptions().getDataInitFileSuffix();
 		}
 		return resource;
 	}
@@ -382,9 +381,9 @@ public class TableDataInitializer {
 	/*
 	 * Use stream processing to prevent high memory usage caused by large files.
 	 */
-	class CSVObjectReader implements CloseableIterator<Object>, AutoCloseable {
+	class CSVObjectReader implements CloseableIterator<Object> {
 
-		private final CsvFileReader reader;
+		private final CsvFileReader<String[]> reader;
 
 		private final List<Entry<Path<?>, Integer>> props = new ArrayList<Entry<Path<?>, Integer>>();
 
@@ -392,7 +391,7 @@ public class TableDataInitializer {
 
 		public CSVObjectReader(URL url) {
 			try {
-				this.reader = new CsvFileReader(new InputStreamReader(url.openStream(), charset));
+				this.reader = CsvFileReader.of(url, charset);
 				initHeader();
 				readNext();
 			} catch (IOException e) {

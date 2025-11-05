@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension-parent</artifactId>
-	<version>5.0.0-r130</version>
+	<version>5.0.0-r150</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>querydsl-sql-extension</module>
@@ -13,6 +13,7 @@
 		<module>querydsl-sql-extension-datatype</module>
 		<module>querydsl-sql-r2dbc</module>
 		<module>querydsl-sql-r2dbc-spring</module>
+		<module>querydsl-sql-extension-codegen</module>
 	</modules>
 	<name>querydsl-sql-extension-parent</name>
 	<description>extension of querdsl-sql, extending its capabilities with

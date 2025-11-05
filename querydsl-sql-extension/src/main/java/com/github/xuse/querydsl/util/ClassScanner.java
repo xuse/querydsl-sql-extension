@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.spring.core.resource.PathMatchingResourcePatternResolver;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.spring.core.resource.ResourcePatternResolver;
@@ -19,6 +20,20 @@ import com.github.xuse.querydsl.spring.core.resource.ResourcePatternResolver;
  * @author Joey
  */
 public class ClassScanner {
+	/**
+	 * 是否排除内部类
+	 */
+	private boolean excludeInnerClass = true;
+
+	/**
+	 * 限定特定的class path根路径，如果不指定那么就在所有ClassPath下寻找
+	 */
+	private URL rootClasspath;
+	
+	/**
+	 * set a filter condition.
+	 */
+	private Predicate<Resource> filter;
 
 	/**
 	 * 扫描包
@@ -26,7 +41,7 @@ public class ClassScanner {
 	 * @param packages packages 基础包
 	 * @return List of resources
 	 */
-	public List<Resource> scan(String[] packages) {
+	public List<Resource> scan(String... packages) {
 		boolean allPackages = packages.length == 0;
 		URLClassLoader cl = rootClasspath == null ? null : new URLClassLoader(new URL[] { rootClasspath }, null);
 		try {
@@ -51,20 +66,6 @@ public class ClassScanner {
 		}
 	}
 
-	/**
-	 * 是否排除内部类
-	 */
-	private boolean excludeInnerClass = true;
-
-	/**
-	 * 限定特定的class path根路径，如果不指定那么就在所有ClassPath下寻找
-	 */
-	private URL rootClasspath;
-	
-	/**
-	 * set a filter condition.
-	 */
-	private Predicate<Resource> filter;
 
 	public boolean isExcludeInnerClass() {
 		return excludeInnerClass;
@@ -79,12 +80,24 @@ public class ClassScanner {
 		this.rootClasspath = rootClasspath;
 		return this;
 	}
-
-	public ClassScanner filterWith(Predicate<Resource> filter) {
-		this.filter = filter;
+	
+	public ClassScanner filterWithClassReader(Predicate<ClassReader> filter) {
+		filterWith((r) -> r.isReadable() && filter.test(r.toClassReader()));
 		return this;
 	}
 	
+	public ClassScanner clearFilter() {
+		this.filter = null;
+		return this;
+	}
+	
+	
+	public ClassScanner filterWith(Predicate<Resource> filter) {
+		if(filter!=null) {
+			this.filter = this.filter==null? filter: this.filter.and(filter);	
+		}
+		return this;
+	}
 	
 	public List<Resource> findResources(URLClassLoader cl, String packageName) {
 		String prifix = rootClasspath == null ? "classpath*:" : "classpath:";

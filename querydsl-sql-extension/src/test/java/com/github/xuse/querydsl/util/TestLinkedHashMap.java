@@ -11,6 +11,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.util.collection.NoReadLockHashMap;
+
 @SuppressWarnings("unused")
 public class TestLinkedHashMap {
 	private static final int LOOP_TIMES = 5;

@@ -11,8 +11,6 @@ public class SnowflakeIdManager {
 
 	/**
 	 * Initialize a Snowflake ID Generator.
-	 * <h2>Chinese:</h2>
-	 *  初始化一个雪花ID生成器
 	 * @param workerId     worker ID (0~255)
 	 * @param datacenterId data center ID (0~3)
 	 */

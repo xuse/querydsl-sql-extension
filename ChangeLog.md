@@ -5,18 +5,28 @@ The version number consists of two parts.
 The first number corresponds to the version of the querydsl library, and the second is the revision number of this extension framework. 
 
 ```
-v{querydsl 版本号} - r(extension version)
+v{querydsl version} - r(extension version)
 ```
+**v5.0.0-r141**  (2025-09-25)
+* Fix error in date truncation on date before 1970-01-01.    
 
-**v5.0.0-r130**
-2024-11-27
- * New modules for r2dbc and r2dbc-spring transaction
- * Supports DDL on H2DB.
+**v5.0.0-r140**  (2025-09-10)
+
+* Some fix on function `findByConditionBean`
+* Utilities update.
+* Unit test coverage to 75%.
+* Revise Javadoc via AI translations.
+* The UPDATE statement, when updating records, will by default update columns designated to auto-generate values.
+* upgrade ASM to support class format of Java 21
+* API adjust on CSV utilities.
+
+* **v5.0.0-r130** (2024-11-27)
+
+ * New modules for r2dbc and r2dbc-spring transaction, supports reactive programming. 
+ * Supports DDL executing on H2DB.
  * Upgerade JUnit to Junit.jupiter
 
-**v5.0.0-r120**
-
-2024-10-01
+**v5.0.0-r120**  (2024-10-01)
 
 * Project Split: Separated unused core classes into other projects. Created `querydsl-sql-extension-spring` for Spring integration. `querydsl-sql-extension` no longer depends on any Spring Framework and FastJSON.
 * Automated Unit Testing and Reporting: During build time, unit tests are automatically executed and reports are generated. Current line coverage is 65%, with further improvements planned for the next version.
@@ -24,9 +34,7 @@ v{querydsl 版本号} - r(extension version)
 * Unit Test Enhancements: Fixed minor errors in utility classes under boundary conditions.
 * Enhanced AlterTableQuery: Enhanced capabilities of `AlterTableQuery` to support column modifications, renaming, and other operations.
 
-**v5.0.0-r110**
-
-2024-09-01
+**v5.0.0-r110**  (2024-09-01)
 
 * PostgreSQL DDL Support: Tested with PostgreSQL 10.3. General DDL operations are now supported.
 * PostgreSQL Table Partitioning Support: 
@@ -40,34 +48,25 @@ v{querydsl 版本号} - r(extension version)
 * QueryDSL Insert Batch Adjustment: Added consistent parameter handling.
 * Data Initialization Configuration: Added `setPrimaryKeys` to control whether primary key columns should be written to the database.
 
-**v5.0.0-r104**
-
-2024-08-08
+**v5.0.0-r104**  (2024-08-08)
 
 * Support for GraalVM Native Mode usage.
 * Support for using `record` types as entities in Java 16 and above.
 
-**v5.0.0-r102**
-
-2024-07-24
+**v5.0.0-r102**  (2024-07-24)
 
 * Organize Javadoc by packages and change the package location of some classes. Add bilingual Javadocs for important classes.
 * Support for external extensions to implement Facades independently. Extend various query APIs by implementing the `ExtensionQueryFactory` interface.
 * Provide a `GenericRepository` class, enabling common repository features in Spring without writing any code. Supports multiple API styles.
 * Support for POJO mapping without Query Class. Use Bean Class instead of Query Class. Use method reference `Lambda` instead of model fields.
 
-**v5.0.0-r101**
-
-2024-06-28
+**v5.0.0-r101**  (2024-06-28)
 
 * Added a mechanism for the upper business layer to adjust table names, supporting scenarios where tables are split at the business layer.
 * Support for MySQL Partition management. Supports partition types such as RANGE, LIST, HASH, and KEY, as well as operations like partition creation, adjustment, deletion, and reorganization.
 * Supplemented missing interfaces for table constraints and indexes. Some operations are supported by MySQL as online operations without locking the table.
 
-
-**v5.0.0-r8 **
-
-2018
+**v5.0.0-r8 **  (2018)
 
 * Upgraded to support Querydsl v5.0.0
 * Added MySQL dialect: `com.querydsl.core.types.dsl.MySQLWithJSONTemplates`, `JsonExpressions`, etc., supporting JSON field operations
@@ -81,9 +80,7 @@ v{querydsl 版本号} - r(extension version)
 * Optimized performance for result set concatenation. Provided additional `RelationalPathBaseEx` for inheritance.
 * API additions — introduced a DDL syntax framework (not yet implemented).
 
-**v4.2.1-r1 **
-
-2017
+**v4.2.1-r1 **  (2017)
 
 1. Log Extensions
 2. Addressed the `Connection is not transactional` exception and certain other personalized requirements through this project extension. Further updates will follow as functionalities are improved.

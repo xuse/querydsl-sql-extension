@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.sql.column.ColumnBuilderHandler;
+import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.querydsl.core.Tuple;
@@ -36,7 +36,7 @@ public class DynamicRelationalPath extends RelationalPathExImpl<Tuple>{
 	 * @return ColumnBuilderHandler
 	 */
 	@SuppressWarnings("unchecked")
-	public <A> ColumnBuilderHandler<A,Path<A>> addColumn(Class<A> type,ColumnMetadata column) {
+	public <A> ColumnPathHandler<A,Path<A>> addColumn(Class<A> type,ColumnMetadata column) {
 		String name=column.getName();
 		Path<A> path;
 		if(String.class==type){
@@ -49,7 +49,7 @@ public class DynamicRelationalPath extends RelationalPathExImpl<Tuple>{
 			path = createSimple(name, type);
 		}
 		PathMapping cb= addMetadataDynamic(path, column);
-		return new ColumnBuilderHandler<>(cb,path);
+		return new ColumnPathHandler<>(cb,path);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -61,8 +61,16 @@ public class DynamicRelationalPath extends RelationalPathExImpl<Tuple>{
 	private NumberPath<? extends Number> createNumber0(String property, Class type){
 		return createNumber(property, type);
 	 }
-	 
 
+	/**
+	 * Retrieves a tuple projection of all columns in this dynamic relational path.
+	 *
+	 * This method overrides the superclass implementation to provide a specific
+	 * behavior for dynamic relational paths, returning a QTuple that contains
+	 * all the columns of the path.
+	 *
+	 * @return a QTuple containing all the columns of this dynamic relational path.
+	 */
 	@Override
 	public QTuple getProjection() {
 		List<Path<?>> list=this.getColumns();
@@ -95,6 +103,16 @@ public class DynamicRelationalPath extends RelationalPathExImpl<Tuple>{
 		return newTuple(values); 
 	}
 
+	/**
+	 * Retrieves a simple expression for the specified column path.
+	 *
+	 * This method fetches the column corresponding to the given string and returns it as a SimpleExpression.
+	 * The ignoredClass1 parameter is included for type inference but is not used in the method.
+	 *
+	 * @param string The name of the column to retrieve.
+	 * @param ignoredClass1 The class type of the column, used for type inference.
+	 * @return A SimpleExpression representing the specified column.
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> SimpleExpression<T> path(String string, Class<T> ignoredClass1) {
 		Path<?> path=getColumn(string);

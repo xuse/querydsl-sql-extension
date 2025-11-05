@@ -6,13 +6,21 @@
 	<modelVersion>4.0.0</modelVersion>
 	<properties>
 		<jmh.version>1.35</jmh.version>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>benchmarks</artifactId>
 	<name>benchmarks</name>
-	<version>5.0.0-r130</version>
+	<version>5.0.0-r150</version>
 	<url>http://maven.apache.org</url>
 	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.32</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp</artifactId>
@@ -21,6 +29,16 @@
 		<dependency>
 			<groupId>io.github.xuse</groupId>
 			<artifactId>querydsl-sql-extension</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.xuse</groupId>
+			<artifactId>querydsl-sql-r2dbc</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.xuse</groupId>
+			<artifactId>querydsl-sql-extension-spring</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<!--
@@ -44,10 +62,10 @@
 		1. jmh-core 和 jmh-generator-annprocess 都不能是scope=test，至少必须是provided.
 		很多人在IJ下碰到BenchmarkList资源找不到，都是这个问题。
 		2.
-		在Eclipse下，会碰到更多问题。需要手工配置注解处理器，如果benchmark类是test类，在Eclipse下不生成META-INF/BenchmarkList资源，需要手工调用一次
+		在Eclipse下会碰到更多问题。需要手工配置注解处理器，如果benchmark类是test类，在Eclipse下不生成META-INF/BenchmarkList资源，需要手工调用一次
 		compiler:testCompile 才会生成。在IJ下没有这个问题。
 		3. 必须在生成上述资源文件后。使用main方法或maven插件、或junit runner才能正常调用jmh测试。否则都是报找不到资源文件错误。
-	-->
+		-->
 		<dependency>
 			<groupId>org.openjdk.jmh</groupId>
 			<artifactId>jmh-core</artifactId>
@@ -73,6 +91,11 @@
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
+					 <compilerArgs>
+                        <arg>-parameters</arg>
+                        <arg>--add-modules=jdk.incubator.vector</arg>
+                        <arg>--add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED</arg>
+                    </compilerArgs>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>

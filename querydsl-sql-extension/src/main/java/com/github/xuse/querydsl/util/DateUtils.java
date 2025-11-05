@@ -307,10 +307,22 @@ public class DateUtils {
 		return c.get(Calendar.YEAR);
 	}
 
+	/**
+	 * 该天位于一年中的第几周.
+	 * @param date 
+	 * @param zone time zone
+	 * @return the number of week in the year.
+	 */
 	public static int getWeekOfYear(Date date) {
 		return getWeekOfYear(date, TimeZone.getDefault());
 	}
 
+	/**
+	 * 该天位于一年中的第几周.
+	 * @param date 
+	 * @param zone time zone
+	 * @return the number of week in the year.
+	 */
 	public static int getWeekOfYear(Date date, TimeZone zone) {
 		final Calendar c = new GregorianCalendar(zone);
 		c.setTime(date);
@@ -395,6 +407,73 @@ public class DateUtils {
 		c.setTime(d);
 		return c.get(Calendar.DAY_OF_WEEK) - 1;
 	}
+	
+	/**
+	 * 得到指定瞬间在当前时区的一天的开始。
+	 * <br>
+     * 注：月的范围定义取决于当前时区。（本函数的时区计算不考虑夏令时）
+	 * @param date
+	 * @return the begin time of the date.
+	 */
+	public static Date beginOfDay(Date date) {
+	    return truncateToDay0(date,TimeZone.getDefault(),0L);
+	}
+	
+	/**
+	 * 得到指定瞬间当天的最后一瞬（毫秒）。<br>
+	 * 注：当天的定义取决于当前时区。（本函数的时区计算不考虑夏令时）
+	 * @param date
+	 * @return the last millisecond in the day.
+	 */
+	public static Date endOfDay(Date date) {
+        return truncateToDay0(date, TimeZone.getDefault(), MILLISECONDS_IN_DAY - 1);
+    }
+	
+	/**
+	 * 指定瞬间所在月的开始
+	 * <br>
+     * 注：月的范围定义取决于当前时区。（本函数的时区计算不考虑夏令时）
+	 * @param date
+	 * @return
+	 */
+	public static Date beginOfMonth(Date date) {
+	    return truncateToMonth(date, TimeZone.getDefault());
+	}
+	
+	/**
+	 * 指定瞬间所在月的最后一瞬（毫秒）<br>
+	 * <br>
+     * 注：月的范围定义取决于当前时区。（本函数的时区计算不考虑夏令时）
+	 * @param date
+	 * @return the last millisecond in the month.
+	 */
+	public static Date endOfMonth(Date date) {
+	    int days=getDaysInMonth(date,TimeZone.getDefault());
+        return new Date(truncateToMonth(date,TimeZone.getDefault()).getTime()+TimeUnit.DAYS.toMillis(days)-1);
+    }
+	
+	   /**
+     * 指定瞬间所在月的开始<br>
+     * <br>
+     * 注：月的范围定义取决于当前时区。（本函数的时区计算不考虑夏令时）
+     * @param date
+     * @return
+     */
+    public static Date beginOfYear(Date date) {
+        return truncateToYear(date, TimeZone.getDefault());
+    }
+    
+    /**
+     * 指定瞬间所在月的最后一瞬（毫秒）<br>
+     * <br>
+     * 注：月的范围定义取决于当前时区。（本函数的时区计算不考虑夏令时）
+     * @param date
+     * @return the last millisecond in the month.
+     */
+    public static Date endOfYear(Date date) {
+        int days=getDaysInYear(DateUtils.getYear(date,TimeZone.getDefault()));
+        return new Date(truncateToYear(date,TimeZone.getDefault()).getTime()+TimeUnit.DAYS.toMillis(days)-1);
+    }
 
 	/**
 	 * 返回传入日期所在周的第一天。<br>
@@ -407,14 +486,14 @@ public class DateUtils {
 	 * @return The first day of the week. Note: only the date was adjusted. time is
 	 *         kept as original.
 	 */
-	public static Date weekBegin(Date date, TimeZone zone) {
+	public static Date beginOfWeek(Date date, TimeZone zone) {
 		return toWeekDayCS(date, 1, zone);
 	}
 
 	/**
 	 * 返回传入日期所在周的最后一天。<br>
 	 * 按中国和部分欧洲习惯，<strong>星期天 作为每周的最后一天</strong>
-	 * 返回新的日期对象，输入的时分秒将被保留。
+	 * 返回新的日期对象，<strong>输入的时分秒将被保留</strong>
 	 * <p>
 	 * <strong>A Week is Monday to Sunday</strong>
 	 * @param date date
@@ -422,7 +501,7 @@ public class DateUtils {
 	 * @return The last day of the week. Note: only the date was adjusted. time is
 	 *         kept as original.
 	 */
-	public static Date weekEnd(Date date, TimeZone zone) {
+	public static Date endOfWeek(Date date, TimeZone zone) {
 		return toWeekDayCS(date, 7, zone);
 	}
 
@@ -437,7 +516,7 @@ public class DateUtils {
 	 * @return The first day of the week. Note: only the date was adjusted. time is
 	 *         kept as original.
 	 */
-	public static Date weekBeginUS(Date date, TimeZone zone) {
+	public static Date beginOfUSWeek(Date date, TimeZone zone) {
 		return toWeekDayUS(date, 0, zone);
 	}
 
@@ -451,7 +530,7 @@ public class DateUtils {
 	 * @return The last day of the week. Note: only the date was adjusted. time is
 	 *         kept as original.
 	 */
-	public static Date weekEndUS(Date date, TimeZone zone) {
+	public static Date endOfUSWeek(Date date, TimeZone zone) {
 		return toWeekDayUS(date, 6, zone);
 	}
 
@@ -628,7 +707,7 @@ public class DateUtils {
 
 	/**
 	 * @param d     时间
-	 * @param value 加指定天
+	 * @param value 加指定天数。
 	 */
 	public static void addDay(Date d, int value) {
 		d.setTime(d.getTime() + TimeUnit.DAYS.toMillis(value));
@@ -659,6 +738,19 @@ public class DateUtils {
 		c.add(Calendar.YEAR, value);
 		d.setTime(c.getTime().getTime());
 	}
+	
+	/**
+	 * 在原有
+	 * @param date
+	 * @param days
+	 * @return
+	 */
+	public static Date adjustDays(Date date, int days) {
+		if(date==null) {
+			return null;
+		}
+		return new Date(date.getTime() + days * (long) MILLISECONDS_IN_DAY);
+	}
 
 	/**
 	 * 在原日期上增加指定的 年、月、日数 。这个方法不会修改传入的Date对象，而是一个新的Date对象
@@ -670,6 +762,9 @@ public class DateUtils {
 	 * @return 调整后的日期（新的日期对象）
 	 */
 	public static Date adjustDate(Date date, int year, int month, int day) {
+		if(date == null) {
+			return null;
+		}
 		Calendar c = Calendar.getInstance();
 		c.setTime(date);
 		c.add(Calendar.YEAR, year);
@@ -688,6 +783,9 @@ public class DateUtils {
 	 * @return 调整后的日期时间（新的日期对象）
 	 */
 	public static Date adjustTime(Date date, int hour, int minute, int second) {
+		if(date == null) {
+			return null;
+		}
 		Calendar c = Calendar.getInstance();
 		c.setTime(date);
 		c.add(Calendar.HOUR, hour);
@@ -704,6 +802,9 @@ public class DateUtils {
 	 * @return 调整后的日期时间（新的日期对象）
 	 */
 	public static Date adjust(Date date, long mills) {
+		if(date == null) {
+			return null;
+		}
 		return new Date(date.getTime() + mills);
 	}
 
@@ -747,6 +848,19 @@ public class DateUtils {
 		calendar.set(year, month - 1, date, 0, 0, 0);
 		calendar.set(Calendar.MILLISECOND, 0);
 		return new java.sql.Date(calendar.getTime().getTime());
+	}
+	
+	/**
+	 * 获取一个时间对象(java.sql.Time)
+	 * @param hour hour
+	 * @param min minute
+	 * @param sec seconds
+	 * @param millis mill seconds.
+	 * @return java.sql.Time
+	 */
+	public static final java.sql.Time getSqlTime(int hour, int min, int sec, int millis) {
+		return new java.sql.Time(TimeUnit.HOURS.toMillis(hour) + TimeUnit.MINUTES.toMillis(min)
+				+ TimeUnit.SECONDS.toMillis(sec) + millis);
 	}
 
 	/**
@@ -807,8 +921,8 @@ public class DateUtils {
 	 * @param b b
 	 * @return TimeZone
 	 */
-	public static final int daySubtract(Date a, Date b) {
-		return daySubtract(a, b, TimeZone.getDefault());
+	public static final int dayNumBetween(Date a, Date b) {
+		return dayNumBetween(a, b, TimeZone.getDefault());
 	}
 
 	/**
@@ -816,10 +930,10 @@ public class DateUtils {
 	 * 
 	 * @param a    a
 	 * @param b    b
-	 * @param zone zone，(备注:当前算法不考虑该时区的夏令时。
+	 * @param zone zone，(备注:当前算法不考虑该时区的夏令时。)
 	 * @return 相差的天数
 	 */
-	public static final int daySubtract(Date a, Date b, TimeZone zone) {
+	public static final int dayNumBetween(Date a, Date b, TimeZone zone) {
 		int offset = zone.getRawOffset();
 		int date = (int) (((a.getTime() + offset) / MILLISECONDS_IN_DAY
 				- (b.getTime() + offset) / MILLISECONDS_IN_DAY));
@@ -837,6 +951,15 @@ public class DateUtils {
 		return ((a.getTime() - b.getTime()) / 1000);
 	}
 
+	/**
+     * 得到指定年包含的天数
+     */
+	public static final int getDaysInYear(int year) {
+	    Calendar calendar = Calendar.getInstance();
+	    calendar.set(year, 0, 1);
+        return calendar .getActualMaximum(Calendar.DAY_OF_YEAR);
+    }
+	
 	/**
 	 * 得到该日期所在月包含的天数
 	 * 
@@ -977,23 +1100,6 @@ public class DateUtils {
 	}
 
 	/**
-	 * 返回“昨天”的同一时间
-	 *
-	 * @return 昨天
-	 */
-	public static Date yesterday() {
-		return futureDay(-1);
-	}
-
-	/**
-	 * @param i 天数，可以传入负数，比如-1表示昨天，-2表示前天
-	 * @return 未来多少天的同一时间
-	 */
-	public static Date futureDay(int i) {
-		return new Date(System.currentTimeMillis() + (long) MILLISECONDS_IN_DAY * i);
-	}
-
-	/**
 	 * 将系统格式时间(毫秒)转换为文本格式
 	 * 
 	 * @param millseconds millseconds
@@ -1036,13 +1142,47 @@ public class DateUtils {
 	}
 
 	/**
-	 * 返回今天
+	 * 返回今天的开始时间
 	 *
-	 * @return the begin of today.
+	 * @return the begin time of today.
 	 */
 	public static Date today() {
 		return truncateToDay(new Date());
 	}
+
+    /**
+     * 返回“昨天”的开始时间
+     * @return the begin time of yesterday.
+     */
+    public static Date yesterday() {
+		return beginOfFutureDay(-1);
+    }
+
+    /**
+     * 返回“明天”的开始时间
+     * @return the begin time of yesterday.
+     */
+    public static Date tomorrow() {
+        return beginOfFutureDay(1);
+    }
+
+    /**
+     * 返回与今天相隔N天的当前时间。
+     * @param i 天数，可以传入负数，比如-1表示昨天，-2表示前天
+     * @return the time of day after. of minus parameter for day before. with same hour and minutes. 
+     */
+    public static Date futureDay(int i) {
+        return new Date(System.currentTimeMillis() + (long) MILLISECONDS_IN_DAY * i);
+    }
+
+    /**
+     * 返回与今天相隔N天的起始时间。
+     * @param i 天数，可以传入负数，比如-1表示昨天，-2表示前天
+     * @return the begin time of day after. of minus parameter for day before. 
+     */    
+    public static Date beginOfFutureDay(int i) {
+        return truncateToDay(new Date(System.currentTimeMillis() + (long) MILLISECONDS_IN_DAY * i));
+    }
 
 	/**
 	 * @return 返回现在
@@ -1341,11 +1481,11 @@ public class DateUtils {
 			return truncateToHour(start);
 		case Calendar.DATE:
 		case Calendar.DAY_OF_YEAR:
-			return truncateToDay(start);
+			return truncateToDay(start,TimeZone.getDefault());
 		case Calendar.MONTH:
-			return truncateToMonth(start);
+			return truncateToMonth(start,TimeZone.getDefault());
 		case Calendar.YEAR:
-			return truncateToYear(start);
+			return truncateToYear(start,TimeZone.getDefault());
 		default:
 			throw new UnsupportedOperationException("Unsupported unit:" + unit);
 		}
@@ -1419,7 +1559,7 @@ public class DateUtils {
 	 * @return 截断后的时间
 	 */
 	public static Date truncateToDay(Date d) {
-		return truncateToDay(d, TimeZone.getDefault());
+		return truncateToDay0(d, TimeZone.getDefault(), 0L);
 	}
 
 	/**
@@ -1430,13 +1570,21 @@ public class DateUtils {
 	 * @return 截断后的时间
 	 */
 	public static Date truncateToDay(Date d, TimeZone zone) {
-		if (d == null) {
-			return null;
-		}
-		long l = d.getTime();
-		long left = (l + zone.getRawOffset()) % MILLISECONDS_IN_DAY;
-		return new Date(l - left);
+		return truncateToDay0(d, zone, 0L);
 	}
+	
+	private static Date truncateToDay0(Date d, TimeZone zone,long offset) {
+        if (d == null) {
+            return null;
+        }
+        long l = d.getTime();
+        long left = (l + zone.getRawOffset()) % MILLISECONDS_IN_DAY;
+        if (left < 0) {
+            //Fix days before 1970-01-01
+            left += MILLISECONDS_IN_DAY;
+        }
+        return new Date(l - left +offset);
+    }
 
 	/**
 	 * 取得截去分钟以下单位的时间。得到整点
@@ -1492,5 +1640,49 @@ public class DateUtils {
 		long l = d.getTime();
 		long left = l % MILLISECONDS_IN_SECOND;
 		return new Date(l - left);
+	}
+	
+	////////////////////////
+	/**
+	 * @deprecated Use {@link #dayNumBetween(Date, Date)};
+	 */
+	@Deprecated
+	public static final int daySubtract(Date a, Date b) {
+		return dayNumBetween(a, b);
+	}	
+	/**
+	 * @deprecated Use {@link #dayNumBetween(Date, Date, TimeZone)};
+	 */
+	@Deprecated
+	public static final int daySubtract(Date a, Date b, TimeZone zone) {
+		return dayNumBetween(a, b, zone);
+	}
+	/**
+	 * @deprecated Use {@link #beginOfWeek(Date, TimeZone)};
+	 */
+	@Deprecated
+	public static Date weekBegin(Date date, TimeZone zone) {
+		return beginOfWeek(date, zone);
+	}
+	/**
+	 * @deprecated Use {@link #endOfWeek(Date, TimeZone)};
+	 */
+	@Deprecated
+	public static Date weekEnd(Date date, TimeZone zone) {
+		return endOfWeek(date, zone);
+	}
+	/**
+	 * @deprecated Use {@link #beginOfUSWeek(Date, TimeZone)};
+	 */
+	@Deprecated
+	public static Date weekBeginUS(Date date, TimeZone zone) {
+		return beginOfUSWeek(date, zone);
+	}
+	/**
+	 * @deprecated Use {@link #endOfUSWeek(Date, TimeZone)};
+	 */
+	@Deprecated
+	public static Date weekEndUS(Date date, TimeZone zone) {
+		return endOfUSWeek(date, zone);
 	}
 }

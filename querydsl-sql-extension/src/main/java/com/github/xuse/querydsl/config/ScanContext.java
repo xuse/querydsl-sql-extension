@@ -2,11 +2,13 @@ package com.github.xuse.querydsl.config;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
@@ -17,6 +19,7 @@ import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.IOUtils;
@@ -29,20 +32,42 @@ public class ScanContext {
 	private final Set<String> scannedEntities = new HashSet<>();
 	private final ConfigurationEx parent;
 	private int count;
+	private Class<? extends Annotation> matchAnnotation;
+	private Class<? extends Annotation> matchWithoutAnnotation;
+	private final List<Consumer<RelationalPathEx<?>>> listeners = new ArrayList<>();
 
 	ScanContext(ConfigurationEx parent) {
 		this.parent = parent;
 	}
 
+	public ScanContext withAnnotation(Class<? extends Annotation> annotation) {
+		this.matchAnnotation = annotation;
+		return this;
+	}
+
+	public ScanContext withoutAnnotation(Class<? extends Annotation> annotation) {
+		this.matchWithoutAnnotation = annotation;
+		return this;
+	}
+
+	public ScanContext addListener(Consumer<RelationalPathEx<?>> listener) {
+		this.listeners.add(listener);
+		return this;
+	}
+
+	public ScanContext addListeners(Collection<Consumer<RelationalPathEx<?>>> listeners) {
+		this.listeners.addAll(listeners);
+		return this;
+	}
+
 	public void scan(String[] pkgNames) {
 		List<Resource> resources = new ClassScanner().scan(pkgNames);
-		//第一遍扫描QueryClass
+		// 第一遍扫描QueryClass
 		Set<Resource> startWithQButNotQueryClass = scanQueryClass(resources);
-		//第二遍扫描EntityClass
-		scanEntityClass(resources,startWithQButNotQueryClass);
+		// 第二遍扫描EntityClass
+		scanEntityClass(resources, startWithQButNotQueryClass);
 		log.info("Scan query class finish, {} relations registered.", count);
 	}
-	
 
 	private void scanEntityClass(List<Resource> resources, Set<Resource> whitelist) {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -50,11 +75,10 @@ public class ScanContext {
 			if (!resource.isReadable()) {
 				continue;
 			}
-			//已经加载 过了
-			if(resource.getFilename().startsWith("Q") && !whitelist.contains(resource)) {
+			if (resource.getFilename().startsWith("Q") && !whitelist.contains(resource)) {
 				continue;
 			}
-			loadEntityModel(resource,cl);
+			loadEntityModel(resource, cl);
 		}
 	}
 
@@ -66,61 +90,95 @@ public class ScanContext {
 			throw Exceptions.illegalState("Load resource {} error", resource, e);
 		}
 		ClassReader reader = new ClassReader(data);
-		ClassAnnotationExtracter annoExtr=new ClassAnnotationExtracter();
+		ClassAnnotationExtracter annoExtr = new ClassAnnotationExtracter();
 		reader.accept(annoExtr, ClassReader.SKIP_CODE);
-		if(annoExtr.hasAnnotation(TableSpec.class)) {
-			String name=reader.getClassName().replace('/', '.');
-			if(scannedEntities.contains(name)) {
+		if (annoExtr.hasAnnotation(TableSpec.class)) {
+			String name = reader.getClassName().replace('/', '.');
+			if (scannedEntities.contains(name)) {
 				return;
 			}
 			Class<?> clz;
 			try {
 				clz = cl.loadClass(name);
-				log.info("Scan Entity Class:{}", name);
 				RelationalPathEx<?> table = PathCache.get(clz, null);
-				scanned(table);
+				if (filterWithAnnotation(table)) {
+					log.info("Scan Entity Class:{}", name);
+					scanned(table);
+				}
 			} catch (ClassNotFoundException e) {
 				log.error("class {} load error.", name, e);
 				return;
 			}
-		};
+		}
+		;
+	}
+
+	private boolean filterWithAnnotation(RelationalPathEx<?> table) {
+		if (this.matchAnnotation != null) {
+			if (findAnnotation(table, matchAnnotation) == null) {
+				return false;
+			}
+		}
+		if (this.matchWithoutAnnotation != null) {
+			if (findAnnotation(table, matchWithoutAnnotation) != null) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private Object findAnnotation(RelationalPathEx<?> table, Class<? extends Annotation> type) {
+		Object o = table.getType().getAnnotation(type);
+		if (o != null) {
+			return o;
+		}
+		return table.getClass().getAnnotation(type);
 	}
 
 	private Set<Resource> scanQueryClass(List<Resource> resources) {
-		Set<Resource> result=new HashSet<>();
+		Set<Resource> result = new HashSet<>();
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
 		for (Resource resource : resources) {
 			if (!resource.isReadable()) {
 				continue;
 			}
-			if(resource.getFilename().startsWith("Q")) {
+			if (resource.getFilename().startsWith("Q")) {
 				try {
-					RelationalPathEx<?> table=loadQueryClass(resource, cl);
+					RelationalPathEx<?> table = loadQueryClass(resource, cl);
 					if (table != null) {
-						log.info("Scan Query Class:{}", table.getSchemaAndTable());
-						scanned(table);
-					}else {
+						if (filterWithAnnotation(table)) {
+							log.info("Scan Query Class:[{}.{}]", table.getSchemaName(), table.getTableName());
+							scanned(table);
+						}
+					} else {
 						result.add(resource);
 					}
 				} catch (Exception e) {
 					log.error("Scan error: {}", resource, e);
-				}	
+				}
 			}
 		}
 		return result;
 	}
 
-    private void scanned(RelationalPathEx<?> table) {
-        if (scannedEntities.add(table.getType().getName())) {
-            parent.registerRelation(table);
-            Set<Class<?>> whiteList = parent.getScanOptions().getInitEntityWhiteList();
-            if (whiteList.isEmpty() || whiteList.contains(table.getType())) {
-                TableInitTask task = new TableInitTask(table);
-                parent.initTasks.offer(task);
-            }
-            count++;
-        }
-    }
+	private void scanned(RelationalPathEx<?> table) {
+		if (scannedEntities.add(table.getType().getName())) {
+			parent.registerRelation(table);
+			Set<Class<?>> whiteList = parent.getScanOptions().getInitEntityWhiteList();
+			if (whiteList.isEmpty() || whiteList.contains(table.getType())) {
+				TableInitTask task = new TableInitTask(table);
+				parent.initTasks.offer(task);
+			}
+			for (Consumer<RelationalPathEx<?>> listener : listeners) {
+				try {
+					listener.accept(table);
+				} catch (Exception e) {
+					log.error("Notify entity {} to listener {} raise a error.", table.getTableName(), listener, e);
+				}
+			}
+			count++;
+		}
+	}
 
 	private RelationalPathEx<?> loadQueryClass(Resource resource, ClassLoader cl) {
 		byte[] data;
@@ -146,7 +204,6 @@ public class ScanContext {
 		return null;
 	}
 
-
 	private RelationalPath<?> getMetaModel(ClassReader res, ClassLoader cl) {
 		String name = res.getClassName().replace('/', '.');
 		Class<?> clz;
@@ -156,20 +213,9 @@ public class ScanContext {
 			log.error("class {} load error.", name, e);
 			return null;
 		}
-		for (Field field : clz.getDeclaredFields()) {
-			if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == clz) {
-				try {
-					RelationalPath<?> obj = (RelationalPath<?>) field.get(null);
-					return obj;
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					log.error("register class {}", name, e);
-					throw Exceptions.toRuntime(e);
-				}
-			}
-		}
-		return null;
+		return SQLTypeUtils.getMetaModel(clz);
 	}
-	
+
 	public int getCount() {
 		return count;
 	}

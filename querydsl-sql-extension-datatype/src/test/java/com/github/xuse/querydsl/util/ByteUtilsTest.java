@@ -13,7 +13,7 @@ public class ByteUtilsTest {
 	private long long1 = 3_707_610_042L;
 	
 	private byte[] byte4 = new byte[] {0x1f,0x1f,0x10,0x22};
-	private byte[] byte8 = new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
+	//private byte[] byte8 = new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
 	
 	@Test
 	public void testBytes() {

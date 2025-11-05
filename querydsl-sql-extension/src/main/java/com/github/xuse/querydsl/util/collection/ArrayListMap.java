@@ -16,7 +16,7 @@ import java.util.Set;
  * @param <K> the type class of key.
  * @param <V> the type class of value.
  */
-public final class ArrayListMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Serializable {
+public final class ArrayListMap<K, V> extends AbstractMap<K, V> implements Serializable {
 
 	private static final long serialVersionUID = -4930667933312037159L;
 

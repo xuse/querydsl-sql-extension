@@ -9,8 +9,8 @@ import java.util.Objects;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 
 public interface AssertEumSupport {
 

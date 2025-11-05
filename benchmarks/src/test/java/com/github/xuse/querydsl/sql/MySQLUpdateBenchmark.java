@@ -1,5 +1,10 @@
 package com.github.xuse.querydsl.sql;
 
-public class MySQLUpdateBenchmark extends DbBenchmarkBase{
+import org.openjdk.jmh.annotations.Benchmark;
 
+public class MySQLUpdateBenchmark extends DbBenchmarkBase{
+	@Benchmark
+	public void dataUpdate() {
+		
+	}
 }

@@ -33,10 +33,12 @@ import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.ddl.TruncateTableQuery;
 import com.github.xuse.querydsl.sql.dialect.Privilege;
 import com.github.xuse.querydsl.sql.dialect.PrivilegeDetector;
+import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.DbDistributedLockProvider;
 import com.github.xuse.querydsl.sql.support.DistributedLock;
 import com.github.xuse.querydsl.sql.support.DistributedLockProvider;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
 
@@ -134,8 +136,22 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 
 	@Override
 	public List<TableInfo> getTables(String catalog, String schema) {
-		return metadataQuery.getTables(catalog, schema);
+	    SchemaPolicy policy= configuration.getTemplates().getSchemaPolicy();
+		return listTables(policy.toNamespace(catalog, schema),"%");
 	}
+	
+    @Override
+    public List<TableInfo> listTables(String namespace, String tableName) {
+        if(StringUtils.isEmpty(namespace)) {
+            namespace = metadataQuery.getDriverInfo().getNamespace(); 
+        }
+        return metadataQuery.listTables(namespace, tableName);
+    }
+
+    @Override
+    public TableInfo getTable(SchemaAndTable schemaAndTable) {
+        return metadataQuery.getTable(schemaAndTable);
+    }
 
 	@Override
 	public List<String> getNames(String catalog, String schema, ObjectType... types) {
@@ -177,6 +193,12 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 		table = metadataQuery.asInCurrentSchema(table);
 		return metadataQuery.getIndexes(table, MetadataQuerySupport.INDEX_POLICY_INDEX_ONLY);
 	}
+
+    @Override
+    public Collection<Constraint> getAllIndexAndConstraints(SchemaAndTable table) {
+        table = metadataQuery.asInCurrentSchema(table);
+        return metadataQuery.getIndexes(table, MetadataQuerySupport.INDEX_POLICY_MERGE_CONSTRAINTS);
+    }
 
 	@Override
 	public Collection<Constraint> getConstraints(SchemaAndTable table) {

@@ -20,8 +20,15 @@ public class SequenceInfo {
 	 */
 	private long currentValue;
 
+	/**
+	 * 获取目录信息
+	 * Returns the catalog information
+	 * 
+	 * @return 目录字符串
+	 *         Catalog string
+	 */
 	public String getCatalog() {
-		return catalog;
+	    return catalog;
 	}
 
 	public void setCatalog(String catalog) {

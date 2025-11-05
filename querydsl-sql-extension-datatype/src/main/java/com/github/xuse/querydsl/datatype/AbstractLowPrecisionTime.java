@@ -9,6 +9,10 @@ import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.DateFormats.TLDateFormat;
 import com.querydsl.sql.types.AbstractType;
 
+/**
+ * 抽象低精度时间类，继承自AbstractType<Date>
+ * 用于处理日期类型的数据，但精度较低，可能只精确到天或小时
+ */
 public abstract class AbstractLowPrecisionTime extends AbstractType<Date> {
 	/**
 	 * 精度。

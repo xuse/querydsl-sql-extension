@@ -1,12 +1,20 @@
 package com.github.xuse.querydsl.init;
 
+
+
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <h2>Database Operation Control Accompanied with the Entity Scanning</h2>
@@ -38,6 +46,7 @@ import lombok.Getter;
  * </ul>
  */
 @Getter
+@Setter
 public class ScanOptions {
 
 	private static final String DEFAULT_DISTRIBUTED_LOCK_NAME = "lock#table_initialize";
@@ -60,6 +69,13 @@ public class ScanOptions {
 	// (alterExistTable=true的情况下)是否允许删除已有表的约束
 	private boolean allowDropConstraint;
 
+	private Class<? extends Annotation> withAnnotation;
+	
+	private Class<? extends Annotation> withoutAnnotation;
+	
+	private final List<Consumer<RelationalPathEx<?>>> listeners = new ArrayList<>();
+	
+	    
 	/**
 	 * Data Initialization Feature: Use a record table to log initialization states.
 	 * <h1>Function 1: Log whether each table has been initialized.</h1> Once
@@ -200,7 +216,22 @@ public class ScanOptions {
 		this.useDataInitTable = useDataInitTable;
 		return this;
 	}
-
+	
+	public ScanOptions withAnnotation(Class<? extends Annotation> annotation) {
+	    this.withAnnotation=annotation;
+	    return this;
+	}
+	
+	public ScanOptions withoutAnnotation(Class<? extends Annotation> annotation) {
+	    this.withoutAnnotation=annotation;
+	    return this;
+	}
+	
+	public ScanOptions addListener(Consumer<RelationalPathEx<?>> listener) {
+		this.listeners.add(listener);
+		return this;
+	}
+	
 	/**
 	 *  设置开关，允许修改表以及删除表中的字段等。
 	 *

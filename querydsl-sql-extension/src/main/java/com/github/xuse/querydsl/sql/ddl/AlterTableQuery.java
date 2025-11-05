@@ -12,10 +12,10 @@ import java.util.Objects;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
-import com.github.xuse.querydsl.sql.column.ColumnBuilderHandler;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
+import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
@@ -27,7 +27,6 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.core.types.Constant;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -173,11 +172,11 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	 * @param type Java数据类型
 	 * @return ColumnBuilderHandler，可配置该列的缺省值等信息。
 	 */
-	public <A> ColumnBuilderHandler<A, AlterTableQuery> addColumn(ColumnMetadata column, Class<A> type) {
+	public <A> ColumnPathHandler<A, AlterTableQuery> addColumn(ColumnMetadata column, Class<A> type) {
 		String name = column.getName();
 		Path<A> path = table.createPath(name, type);
 		PathMapping cb = table.addMetadataDynamic(path, column);
-		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
+		return new ColumnPathHandler<A, AlterTableQuery>(cb, this);
 	}
 	
 	/**
@@ -188,7 +187,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	 * @param type type 
 	 * @return ColumnBuilderHandler，可配置该列的缺省值等信息。
 	 */
-	public <A> ColumnBuilderHandler<A, AlterTableQuery> changeColumn(Path<?> path, Class<A> type, ColumnMetadata column) {
+	public <A> ColumnPathHandler<A, AlterTableQuery> changeColumn(Path<?> path, Class<A> type, ColumnMetadata column) {
 		ColumnMapping mapping = table.removeColumn(path);
 		if(mapping==null) {
 			throw new IllegalArgumentException("The path '"+column+"' is not belong to current table.");
@@ -197,10 +196,10 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			//Column rename
 			this.columnRenameMapping.put(mapping.getName().toLowerCase(), column.getName().toLowerCase());
 			//如果列改名，Path需要更换为指向当前对象的Path，否则会在序列化时导致列名计算不正确
-			path=TypeUtils.createPathByType(type, path.getMetadata().getName(), table);
+			path=SQLTypeUtils.createPathByType(type, path.getMetadata().getName(), table);
 		}
 		PathMapping cb = table.addMetadataDynamic(path, column);
-		return new ColumnBuilderHandler<A, AlterTableQuery>(cb, this);
+		return new ColumnPathHandler<A, AlterTableQuery>(cb, this);
 	}
 	
 	/**

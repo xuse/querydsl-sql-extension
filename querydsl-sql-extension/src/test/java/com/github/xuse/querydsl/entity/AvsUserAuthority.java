@@ -18,7 +18,6 @@ import com.github.xuse.querydsl.types.EnumByCodeType;
  */
 @Generated("com.querydsl.codegen.BeanSerializer")
 public class AvsUserAuthority {
-
     private String authContent;
 
     private Integer authType;

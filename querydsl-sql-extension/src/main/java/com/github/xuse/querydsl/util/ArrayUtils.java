@@ -31,6 +31,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.github.xuse.querydsl.util.lang.Primitives;
+
 /**
  * 数组工具
  *
@@ -538,9 +540,9 @@ public class ArrayUtils {
 	 *  @since 2.1
 	 *  @see Arrays#copyOfRange(byte[], int, int)
 	 */
-	public static byte[] subArray(final byte[] array, int startIndexInclusive, int endIndexExclusive) {
+	public static byte[] subArray(byte[] array, int startIndexInclusive, int endIndexExclusive) {
 		if (array == null) {
-			return null;
+			array = EMPTY_BYTE_ARRAY;
 		}
 		if (startIndexInclusive < 0) {
 			startIndexInclusive = 0;
@@ -582,6 +584,19 @@ public class ArrayUtils {
 		}
 		char[] data = new char[len];
 		System.arraycopy(array, 0, data, 0, len);
+		return data;
+	}
+	
+	public static char[] subArray(char[] array, int offset, int len) {
+		if (offset ==0 && array.length == len) {
+			return array;
+		}
+		len = Math.min(array.length - offset, len);
+		if(len==0) {
+			return new char[0];
+		}
+		char[] data = new char[len];
+		System.arraycopy(array, offset, data, 0, len);
 		return data;
 	}
 
@@ -978,8 +993,8 @@ public class ArrayUtils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] minus(T[] ls, T[] ls2) {
-		if(ls==null) {
-			return null;
+		if(ls==null || ls2==null) {
+			return ls;
 		}
 		HashSet<Object> set = new HashSet<Object>(Arrays.asList(ls));
 		set.removeAll(Arrays.asList(ls2));
@@ -1201,5 +1216,14 @@ public class ArrayUtils {
 
 	public static Stream<Double> stream(double[] array) {
 		return StreamSupport.stream(Spliterators.spliterator(array, Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
+	}
+	
+
+	public static int countNonNull(Object... objs) {
+		int result = 0;
+		for(Object o:objs) {
+			if(o!=null)result++;
+		}
+		return result;
 	}
 }

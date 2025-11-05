@@ -7,15 +7,21 @@
 	<parent>
 		<groupId>io.github.xuse</groupId>
 		<artifactId>querydsl-sql-extension-parent</artifactId>
-		<version>5.0.0-r130</version>
+		<version>5.0.0-r150</version>
 	</parent>
 	<artifactId>querydsl-sql-extension-spring</artifactId>
-
+	<name>querydsl-sql-extension-spring</name>
 	<properties>
 		<springframework.version>5.3.34</springframework.version>
 		<kotlin.version>1.5.21</kotlin.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core</artifactId>
+			<version>3.5.8</version>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>io.github.xuse</groupId>
 			<artifactId>querydsl-sql-extension</artifactId>

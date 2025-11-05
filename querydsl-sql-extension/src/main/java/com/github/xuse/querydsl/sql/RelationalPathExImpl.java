@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.sql;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -19,9 +20,11 @@ import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.lang.Lambdas;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
@@ -94,6 +97,9 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		return super.createCheck(name, checkExpression);
 	}
 
+	/*
+	 * This method is for internal use, do not call it from your application.
+	 */
 	public <P> PathMapping addMetadataDynamic(Path<P> path, ColumnMetadata cMetadata) {
 		PathMapping metadata = new PathMapping(path, new DynamicField(path), cMetadata);
 		addMetadata(path, metadata);
@@ -135,11 +141,16 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		@Override
 		public void set(Object bean, Object value) {
 		}
+
+		@Override
+		public Type getGenericType() {
+			return path.getType();
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public <A> Path<A> createPath(String property, Class<? super A> type) {
-		return (Path<A>) TypeUtils.createPathByType(type, property, this);
+		return (Path<A>) SQLTypeUtils.createPathByType(type, property, this);
 	}
 
 	public StringPath createString(String property) {
@@ -179,7 +190,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
 		t.scanClassMetadata(() -> {
 			List<Path<?>> paths = new ArrayList<>();
-			for (Field field : TypeUtils.getFields(beanType)) {
+			for (Field field : TypeUtils.getAllDeclaredFields(beanType)) {
 				if (Modifier.isStatic(field.getModifiers())) {
 					continue;
 				}
@@ -188,7 +199,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 				if (column == null && anno == null) {
 					continue;
 				}
-				Path<?> path = TypeUtils.createPathByType(field.getType(), field.getName(), t);
+				Path<?> path = SQLTypeUtils.createPathByType(field.getType(), field.getName(), t);
 				paths.add(path);
 			}
 			if (paths.isEmpty()) {
@@ -224,7 +235,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 
 	@Override
 	public StringPath get(StringLambdaColumn<T> column) {
-		Pair<Class<?>, String> pair = PathCache.analysis(column);
+		Pair<Class<?>, String> pair = Lambdas.analysis(column);
 		if (pair.getFirst() == this.getType()) {
 			// 应当相同
 			Path<?> p = this.getColumn(pair.getSecond());
@@ -247,7 +258,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <C extends Number & Comparable<C>> NumberPath<C> get(NumberLambdaColumn<T, C> column) {
-		Pair<Class<?>, String> pair = PathCache.analysis(column);
+		Pair<Class<?>, String> pair = Lambdas.analysis(column);
 		if (pair.getFirst() == this.getType()) {
 			// 应当相同
 			Path<?> p = this.getColumn(pair.getSecond());
@@ -262,7 +273,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <C extends Comparable<C>> ComparableExpression<C> get(LambdaColumn<T, C> column) {
-		Pair<Class<?>, String> pair = PathCache.analysis(column);
+		Pair<Class<?>, String> pair = Lambdas.analysis(column);
 		if (pair.getFirst() == this.getType()) {
 			// 应当相同
 			Path<?> p = this.getColumn(pair.getSecond());

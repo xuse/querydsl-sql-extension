@@ -2,8 +2,6 @@ package com.github.xuse.querydsl.init;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -12,19 +10,20 @@ import java.util.List;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.asm.ASMUtils;
+import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.asm.ClassReader;
 import com.github.xuse.querydsl.asm.Opcodes;
-import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
 import com.github.xuse.querydsl.init.csv.Codecs;
 import com.github.xuse.querydsl.init.csv.CsvFileWriter;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.ClassScanner;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.IOUtils;
 import com.querydsl.core.types.Path;
+import com.querydsl.sql.RelationalPath;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,15 +48,15 @@ public class InitDataExporter {
 	private boolean writeNullString = false;
 
 	/**
-	 *  @param session 数据库客户端
+	 * @param session 数据库客户端
 	 */
 	public InitDataExporter(SQLQueryFactory session) {
 		this.session = session;
 	}
 
 	/**
-	 *  @param session 数据库客户端
-	 *  @param target  生成的资源文件路径
+	 * @param session 数据库客户端
+	 * @param target  生成的资源文件路径
 	 */
 	public InitDataExporter(SQLQueryFactory session, File target) {
 		this.session = session;
@@ -65,9 +64,10 @@ public class InitDataExporter {
 	}
 
 	/**
-	 *  由于CSV文件存储的特性，对于varchar等数据库字段，导出数据无法区分null和""。
-	 *  开启此选项后，null值将用特殊字符串表示，从而在数据导入时可以区分null和""。
-	 *  @return this
+	 * 由于CSV文件存储的特性，对于varchar等数据库字段，导出数据无法区分null和""。
+	 * 开启此选项后，null值将用特殊字符串表示，从而在数据导入时可以区分null和""。
+	 * 
+	 * @return this
 	 */
 	public InitDataExporter writeNullString() {
 		this.writeNullString = true;
@@ -76,9 +76,10 @@ public class InitDataExporter {
 
 	/**
 	 * 作为初始化数据导出到src/main/resources下。
+	 * 
 	 * @param packageName packageName
 	 * @throws ClassNotFoundException If encounter ClassNotFoundException
-	 * @throws IOException If encounter IOException
+	 * @throws IOException            If encounter IOException
 	 */
 	public void exportPackage(String... packageName) throws ClassNotFoundException, IOException {
 		ClassLoader classLoader = this.getClass().getClassLoader();
@@ -87,7 +88,7 @@ public class InitDataExporter {
 			if (!resource.isReadable()) {
 				continue;
 			}
-			ClassReader cl = new ClassReader(IOUtils.toByteArray(resource.getInputStream()));
+			ClassReader cl = resource.toClassReader();
 			if ((cl.getAccess() & Opcodes.ACC_PUBLIC) == 0) {
 				// 非公有跳过
 				continue;
@@ -107,30 +108,28 @@ public class InitDataExporter {
 
 	/**
 	 * 导出制定的实体类数据
+	 * 
 	 * @param modelClass modelClass
 	 * @return this
 	 */
 	public InitDataExporter export(Class<?> modelClass) {
 		try {
-			RelationalPathEx<?> obj = null;
-			for (Field field : modelClass.getDeclaredFields()) {
-				if ((field.getModifiers() & Modifier.STATIC) > 0 && field.getType() == modelClass) {
-					obj = (RelationalPathEx<?>) field.get(null);
-					break;
-				}
-			}
-			InitializeData anno = modelClass.getAnnotation(InitializeData.class);
-			if (anno == null) {
-				anno = obj.getType().getAnnotation(InitializeData.class);
-			}
+			RelationalPath<?> obj = SQLTypeUtils.getMetaModel(modelClass);
 			if (obj != null) {
-				export0(obj, anno);
+				if (obj instanceof RelationalPathEx<?>) {
+					InitializeData anno = modelClass.getAnnotation(InitializeData.class);
+					if (anno == null) {
+						anno = obj.getType().getAnnotation(InitializeData.class);
+					}
+					export0((RelationalPathEx<?>) obj, anno);
+				} else {
+					throw Exceptions.illegalArgument(
+							"{} is not a subtype of com.github.xuse.querydsl.sql.RelationalPathEx.", modelClass);
+				}
 			}
 		} catch (SQLException e) {
 			throw new IllegalArgumentException(e);
 		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException(e);
 		}
 		return this;
@@ -149,7 +148,7 @@ public class InitDataExporter {
 			}
 			return;
 		}
-		CsvFileWriter cw = new CsvFileWriter(file, charset);
+		CsvFileWriter<String[]> cw = CsvFileWriter.of(file, charset);
 		try {
 			List<Path<?>> columns = meta.getColumns();
 			List<ColumnMapping> columnMetas = new ArrayList<>();

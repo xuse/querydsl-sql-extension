@@ -595,7 +595,7 @@ public final class IntList {
 	 * @param treatNullAsZero treatNullAsZero
 	 * @return array
 	 */
-	public static IntList convertFrom(Collection<Integer> array, boolean treatNullAsZero) {
+	public static IntList from(Collection<Integer> array, boolean treatNullAsZero) {
 		IntList result = new IntList(array.size());
 		for (Integer i : array) {
 			if (i == null) {

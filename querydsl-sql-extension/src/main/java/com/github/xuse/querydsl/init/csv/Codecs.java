@@ -3,11 +3,16 @@ package com.github.xuse.querydsl.init.csv;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.github.xuse.querydsl.init.TableDataInitializer;
+import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.JefBase64;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -157,13 +162,13 @@ public class Codecs {
         public String toString(java.sql.Date t) {
             if (t == null)
                 return "";
-            return String.valueOf(t.getTime());
+            return DateFormats.DATE_CS.format(t);
         }
 
         public java.sql.Date fromString(String s) {
             if (s == null || s.length() == 0)
                 return null;
-            return new java.sql.Date(Long.parseLong(s));
+            return new java.sql.Date(DateFormats.DATE_CS.parse(s).getTime());
         }
     };
     private static final CsvCodec<java.sql.Time> sTime = new CsvCodec<java.sql.Time>() {
@@ -192,6 +197,60 @@ public class Codecs {
             return new Timestamp(Long.parseLong(s));
         }
     };
+    
+    private static final CsvCodec<Instant> sInstant = new CsvCodec<Instant>() {
+        public String toString(Instant t) {
+            if (t == null)
+                return "";
+            return String.valueOf(t.toEpochMilli());
+        }
+
+        public Instant fromString(String s) {
+            if (s == null || s.length() == 0)
+                return null;
+            return Instant.ofEpochMilli(Long.parseLong(s));
+        }
+    };
+    private static final CsvCodec<LocalDate> sLocalDate = new CsvCodec<LocalDate>() {
+        public String toString(LocalDate t) {
+            if (t == null)
+                return "";
+            return String.valueOf(t.toEpochDay());
+        }
+
+        public LocalDate fromString(String s) {
+            if (s == null || s.length() == 0)
+                return null;
+            return LocalDate.ofEpochDay(Long.parseLong(s));
+        }
+    };
+    private static final CsvCodec<LocalTime> sLocalTime = new CsvCodec<LocalTime>() {
+        public String toString(LocalTime t) {
+            if (t == null)
+                return "";
+            return String.valueOf(t.toNanoOfDay());
+        }
+
+        public LocalTime fromString(String s) {
+            if (s == null || s.length() == 0)
+                return null;
+            return LocalTime.ofNanoOfDay(Long.parseLong(s));
+        }
+    };
+    private static final CsvCodec<LocalDateTime> sLocalDateTime = new CsvCodec<LocalDateTime>() {
+        public String toString(LocalDateTime t) {
+            if (t == null)
+                return "";
+            return DateFormats.TIME_STAMP_CS.format(t);
+        }
+
+        public LocalDateTime fromString(String s) {
+            if (s == null || s.length() == 0)
+                return null;
+            return LocalDateTime.parse(s,DateFormats.TIME_STAMP_CS.df);
+        }
+    };
+    
     private static final CsvCodec<byte[]> BIN = new CsvCodec<byte[]>() {
         public String toString(byte[] t) {
             if (t == null)
@@ -255,6 +314,10 @@ public class Codecs {
         CACHE.put(java.sql.Date.class, sDate);
         CACHE.put(java.sql.Time.class, sTime);
         CACHE.put(java.sql.Timestamp.class, TIMESTAMP);
+        CACHE.put(Instant.class, sInstant);
+        CACHE.put(LocalDate.class, sLocalDate);
+        CACHE.put(LocalTime.class, sLocalTime);
+        CACHE.put(LocalDateTime.class, sLocalDateTime);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -267,7 +330,9 @@ public class Codecs {
         }
         CsvCodec codec = CACHE.get(type);
         if (codec == null) {
-            if (obj instanceof Serializable) {
+        	if(obj ==null) {
+        		return "";
+        	}else if (obj instanceof Serializable) {
                 return OTHER.toString((Serializable) obj);
             } else {
                 throw new UnsupportedOperationException("Object to String error, type " + type + " was not supported.");

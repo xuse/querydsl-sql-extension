@@ -83,7 +83,7 @@ public class CodecContext {
 
 	final Map<Class, Codec> encodeMap = new HashMap<>();
 
-	final Map<String, BeanCodec> beanCodecs = new HashMap<>();
+	final Map<String, BinaryCodec> beanCodecs = new HashMap<>();
 
 	public final Codec<?> get(Class<?> clz) {
 		return adjustEncoder(encodeMap.get(clz), clz);
@@ -99,7 +99,7 @@ public class CodecContext {
 			}
 		}
 		if(codec==null) {
-			BeanCodec bc=beanCodecs.get(clz.getName());
+			BinaryCodec bc=beanCodecs.get(clz.getName());
 			if (bc != null) {
 				return new BeanCodecAdapter(bc);
 			}
@@ -234,7 +234,7 @@ public class CodecContext {
 		return c.decode(buffer, this);
 	}
 
-	public <T> void register(BeanCodec<T> codec) {
+	public <T> void register(BinaryCodec<T> codec) {
 		this.beanCodecs.put(codec.getType().getName(), codec);
 	}
 	
@@ -246,7 +246,7 @@ public class CodecContext {
 		@Override
 		public Object decode(ByteBuffer buffer, CodecContext context) {
 			String clzName=context.getString(TYPE_SHORT_STRING, buffer);
-			BeanCodec bc=beanCodecs.get(clzName);
+			BinaryCodec bc=beanCodecs.get(clzName);
 			if(bc!=null) {
 				Object result=bc.decode(buffer, context);
 				byte b = buffer.get();
@@ -271,9 +271,9 @@ public class CodecContext {
 			return null;
 		}
 		
-		private final BeanCodec<T> bc;
+		private final BinaryCodec<T> bc;
 		
-		BeanCodecAdapter(BeanCodec<T> bc) {
+		BeanCodecAdapter(BinaryCodec<T> bc) {
 			this.bc = bc;
 		}
 		

@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.util;
 
-import java.lang.reflect.Field;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.Collection;
@@ -14,8 +13,6 @@ import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import sun.misc.Unsafe;
-
 /**
  * LinkedHashMap的自定义实现，目标是得到一个更高性能的Map。
  * @implSpec
@@ -28,9 +25,9 @@ import sun.misc.Unsafe;
  * 不支持扩容。大幅超过预定容量后会逐渐退化为链表，性能急剧下降。
  * @param <V> value type
  */
-@SuppressWarnings({"restriction","rawtypes"})
+@SuppressWarnings({"rawtypes"})
 public final class FastHashtable<V> implements Map<String, V> {
-
+	private static final int GRID_MASK = 7;
 	private final Object[] table;
 
 	private int hashTableMask;
@@ -47,6 +44,8 @@ public final class FastHashtable<V> implements Map<String, V> {
 
 	private int size;
 
+/////////////////////以下是使用Unsafe来规避边界检查的实现，考虑到Java 9，暂废弃////////////////
+	/*
 	private static final Unsafe U = unsafe();
 
 	private static Unsafe unsafe() {
@@ -58,8 +57,6 @@ public final class FastHashtable<V> implements Map<String, V> {
 			throw new RuntimeException(e);
 		}
 	}
-
-	private static final int GRID_MASK = 7;
 	private static final int ABASE = U.arrayBaseOffset(Object[].class);
 	private static final int ASHIFT;
 	static {
@@ -68,18 +65,28 @@ public final class FastHashtable<V> implements Map<String, V> {
 			throw new ExceptionInInitializerError("array index scale not a power of two");
 		ASHIFT = 31 - Integer.numberOfLeadingZeros(scale);
 	}
-
 	static final Object tabAt(Object tab, int i) {
 		return U.getObject(tab, ((long) i << ASHIFT) + ABASE);
 	}
 	static final void tabSet(Object tab, int i, Object obj) {
 		U.putObject(tab, ((long) i << ASHIFT) + ABASE, obj);
 	}
-
 	static final void gridSet(Node[] tab, int i, Node node) {
 		U.putObject(tab, ((long) i << ASHIFT) + ABASE, node);
 	}
-
+	*/
+	//////////////
+	static final Object tabAt(Object[] tab, int i) {
+		return tab[i];
+	}
+	static final void tabSet(Object[] tab, int i, Object node) {
+		tab[i]=node;
+	}
+	static final void gridSet(Node[] tab, int i, Node node) {
+		tab[i]=node;
+	}
+	/////////////////////////////////////////////
+	
 	public FastHashtable(int initSize) {
 		initSize = tableSizeFor(initSize);
 		this.table = new Object[initSize];
@@ -218,7 +225,7 @@ public final class FastHashtable<V> implements Map<String, V> {
 		if (obj != null) {
 			Node<V> acc;
 			if (obj instanceof Node[]) {
-				acc = (Node)tabAt(obj, hash & GRID_MASK);
+				acc = ((Node[])obj)[hash & GRID_MASK];
 			} else {
 				acc = (Node<V>) obj;
 			}

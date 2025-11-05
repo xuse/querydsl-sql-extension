@@ -26,7 +26,7 @@ public class DDLExpressions {
 	private static final Expression<?> CASCADE = Expressions.simpleTemplate(Object.class, "CASCADE");
 
 	private static final Expression<?> EMPTY = Expressions.simpleTemplate(Object.class, "");
-	
+
 	public static final Expression<?> DEFAULT = Expressions.simpleTemplate(Object.class, "DEFAULT");
 
 	@SuppressWarnings("rawtypes")
@@ -42,6 +42,7 @@ public class DDLExpressions {
 
 	/**
 	 * Generate expression AST like {@code  (exp1, exp2, exp3, ...)}
+	 * 
 	 * @param paths paths
 	 * @return expression;
 	 */
@@ -51,6 +52,7 @@ public class DDLExpressions {
 
 	/**
 	 * Generate expression AST like {@code  (exp1, exp2, exp3, ...)}
+	 * 
 	 * @param paths paths
 	 * @return expression;
 	 */
@@ -63,7 +65,7 @@ public class DDLExpressions {
 	}
 
 	public static Expression<?> nullAblity(Boolean isNullable) {
-		if(isNullable==null) {
+		if (isNullable == null) {
 			return EMPTY;
 		}
 		return isNullable ? simple(DDLOps.COLUMN_ALLOW_NULL) : NOT_NULL;
@@ -81,7 +83,8 @@ public class DDLExpressions {
 		return simple(DDLOps.COLUMN_SPEC, column, dataType, columnConstraints);
 	}
 
-	public static Expression<?> dataType(Operator op,String dataType, Boolean isNullable, boolean unsigned, Expression<?> defaultValue) {
+	public static Expression<?> dataType(Operator op, String dataType, Boolean isNullable, boolean unsigned,
+			Expression<?> defaultValue) {
 		Expression<?> datatype = Expressions.template(Object.class, dataType);
 		if (unsigned) {
 			datatype = withUnsigned(datatype);
@@ -115,13 +118,15 @@ public class DDLExpressions {
 
 	/**
 	 * create a AST for constraint/
-	 * @param type {@link ConstraintType}
-	 * @param table table
+	 * 
+	 * @param type           {@link ConstraintType}
+	 * @param table          table
 	 * @param constraintName constraintName
-	 * @param definition definition
+	 * @param definition     definition
 	 * @return expression
 	 */
-	public static Expression<?> constraintDefinition(ConstraintType type, RelationalPath<?> table, SchemaAndTable constraintName, Expression<?> definition) {
+	public static Expression<?> constraintDefinition(ConstraintType type, RelationalPath<?> table,
+			SchemaAndTable constraintName, Expression<?> definition) {
 		String name = constraintName == null ? null : constraintName.getTable();
 		SimplePath<?> thisPath = Expressions.path(Object.class, table, name);
 		return Expressions.simpleOperation(Object.class, type, table, thisPath, definition);
@@ -141,7 +146,7 @@ public class DDLExpressions {
 	}
 
 	public static Expression<?> text(String str) {
-		if(str==null || str.isEmpty()) {
+		if (str == null || str.isEmpty()) {
 			return EMPTY;
 		}
 		return Expressions.template(Object.class, str);
@@ -153,13 +158,13 @@ public class DDLExpressions {
 		}
 		return Expressions.template(Boolean.class, str);
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public static <T> Expression<T> defaultExpr(){
+	public static <T> Expression<T> defaultExpr() {
 		return (Expression<T>) DEFAULT;
 	}
-	
-	public static Constant<?> createConstant(Object t){
-		return t==null? Null.CONSTANT: ConstantImpl.create(t);
+
+	public static Constant<?> createConstant(Object t) {
+		return t == null ? Null.CONSTANT : ConstantImpl.create(t);
 	}
 }

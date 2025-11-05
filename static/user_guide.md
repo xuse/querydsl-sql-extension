@@ -2,15 +2,13 @@
 
 - [User Guide](#user-guide)
 	- [1 Using GenericRepository](#1-using-genericrepository)
-	- [2 Multiple API Styles](#2-multiple-api-styles)
+	- [2 Quick Start](#2-quick-start)
 		- [Preparations](#preparations)
 		- [Usage](#usage)
 	- [3 Usage Overview](#3-usage-overview)
 		- [Basics](#basics)
-		- [Create a Business Repository](#create-a-business-repository)
-		- [Obtain Repository Quickly](#obtain-repository-quickly)
-		- [Using Query Class](#using-query-class)
-		- [Using SQLQueryFactory](#using-sqlqueryfactory)
+		- [Generating Entity Mappings from the Database](#generating-entity-mappings-from-the-database)
+		- [Create a Custom Repository](#create-a-custom-repository)
 		- [Using Record Data Types](#using-record-data-types)
 	- [4 Table Structure Annotations](#4-table-structure-annotations)
 		- [@TableSpec](#tablespec)
@@ -36,6 +34,9 @@
 		- [MySQL Online DDL (Partial Support)](#mysql-online-ddl-partial-support)
 	- [8. FAQs / Miscellaneous Features](#8-faqs--miscellaneous-features)
 		- [Compatibility for Sharding in Business Layer](#compatibility-for-sharding-in-business-layer)
+		- [For developers move from QueryDSL](#for-developers-move-from-querydsl)
+			- [Code Generation](#code-generation)
+			- [Using SQLQueryFactory](#using-sqlqueryfactory)
 
 
 ## 1 Using GenericRepository
@@ -73,7 +74,7 @@ The examples in the subsequent sections of this article will be based on scenari
 
 > Performing multi-table operations and more complex SQL can be done using the native API of QueryDSL, specifically the SQLQueryFactory series of APIs. This is the best QueryBuilder I have seen in the industry.
 
-## 2 Multiple API Styles
+## 2 Quick Start
 
 ### Preparations
 
@@ -108,7 +109,15 @@ metadata.createTable(()->Foo.class).ifExists().execute();
 
 Step.3 Obtain a Repository Object
 
-You can refer to [Chapter 3: Usage Overview](#3-usage-overview) to obtain a Repository object. Once you have the object, you can experience its functionalities. Below, we introduce the usage of different API styles with an example query.
+```java
+DataSource dataSource = createDtaSource();
+//Thread-safe object
+SQLQueryFactory factory=SQLQueryFactory.from(dataSource);
+
+CRUDRepository<Foo, Integer> repository = factory.asRepository(()->Foo.class);
+```
+
+The code above can quickly obtain a database access object, but it may lose some advanced features. For the complete initialization method, please refer to  [Chapter 3: Usage Overview](#3-usage-overview).
 
 ### Usage
 
@@ -178,8 +187,9 @@ MyBatis supports lambda style usage, with the difference that it relatively trad
 	repo.findByCondition(params);
 ````
 
-
 ## 3 Usage Overview
+
+### Basics
 
 **Import the Library**
 
@@ -193,8 +203,6 @@ This document uses a Spring integration example, so it depends on the `querydsl-
 	<version>${querydsl-sql-extension.version}</version>
 </dependency>
 ```
-
-### Basics
 
 This framework directly depends on the `querydsl-sql` library, and its primary usage is consistent with QueryDSL. However, the initialization method differs from QueryDSL.
 
@@ -225,7 +233,48 @@ This framework directly depends on the `querydsl-sql` library, and its primary u
 	}
 ```
 
-### Create a Business Repository
+### Generating Entity Mappings from the Database
+
+It can be generated using the native Maven plugin of QueryDSL. Alternatively, you can use the code generation tool provided by this framework. (Since v5.0.0-r150)
+
+```xml
+<dependency>
+    <groupId>io.github.xuse</groupId>
+    <artifactId>querydsl-sql-extension-codegen</artifactId>
+    <version>5.0.0-r150</version>
+</dependency>
+```
+
+The following code snippet can generate entity mappings from the database.
+
+```java
+DataSource ds = createDataSource();
+
+ DbSchemaGenerator.from(ds)
+        .output(OutputDir.DIR_TARGET)  //Assign the output path for the generation.
+        .metafields(MetafieldGenerationType.LAMBDA) //How to Generate Table/Column Meta Fields, it's similar to JPA's meta model
+        .useLombokAnnotation(false)  //using the Lombok @Data annotation or generating getter and setter code.
+        .generateTables(null, "%");  //Generate entity mappings for all tables under the current schema.
+```
+
+There are three options for the meta model genration.
+
+```java
+/**
+ * No generation. When this mode is selected, only POJO-type entity will be generated.
+ */
+NONE,
+/**
+ * In this mode, a Q-prefixed query reference class will also be generated in the same package as the POJO entity.
+ */
+QCLASS,
+/**
+ * When this mode is selected, static constants will be added to the POJO class to serve as table/column model references.
+ */
+LAMBDA
+```
+
+### Create a Custom Repository
 
 Write your own Repository class and add its package name to the Spring auto-scan path.
 
@@ -240,187 +289,6 @@ public class MyEntityRpository extends GenericRepository<MyEntity, Integer>{
 	//If you need to write your own business logic for the Repository layer, you can add methods here.
 }
 ```
-
-### Obtain Repository Quickly
-
-In another way, the Repository can be directly obtained via the SQLQueryFactory object.
-
-```java
-CRUDRepository<Foo, Integer> repository = factory.asRepository(()->Foo.class);
-```
-
-### Using Query Class
-
-> For users who have not used QueryDSL and are using this framework for the first time, it is recommended to use the pure POJO approach. This section can be skipped.
-
-This section introduces how to use the code generation tool based on QueryDSL within this framework.
-Since there is no current functionality to automatically generate Java code from the database, you can first use the "code generation via maven" section in the official documentation to generate the code. Some modifications to the generated code may be necessary.
-
-**Using Maven Plugin to Generate Query Class**
-
- ```xml
-	<plugin>
-		<groupId>com.querydsl</groupId>
-		<artifactId>querydsl-maven-plugin</artifactId>
-		<version>5.0.0</version>
-		<executions>
-			<execution>
-				<goals>
-					<goal>export</goal>
-				</goals>
-			</execution>
-		</executions>
-		<configuration>
-			<jdbcDriver>com.mysql.cj.jdbc.Driver</jdbcDriver>
-			<jdbcUrl>jdbc:mysql://host:port/database?useUnicode=true</jdbcUrl>
-			<jdbcUser>username</jdbcUser>
-			<jdbcPassword>password</jdbcPassword>
-			<exportBeans>true</exportBeans>
-			<packageName>xxx.xxx.dal.domain</packageName>
-			<targetFolder>${project.basedir}/src/main/java</targetFolder>
-			<tableNamePattern>%</tableNamePattern>
-			<beanAddToString>true</beanAddToString>
-		</configuration>
-	</plugin>
- ```
-
-
-
-**Modifications on generated code**
-
-The generated code still needs some modifications. For example, the generated code is as follows
-
-```java
-@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
-
-	private static final long serialVersionUID = -1;
-    public static final QAaa aaa = new QAaa("AAA");
-    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
-```
-
-To use the extended functionality, replace the `com.querydsl.sql.RelationalPathBase` class mentioned above with `com.github.xuse.querydsl.sql.RelationalPathBaseEx`.
-After the replacement, it will be:
-
-```java
-@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa extends com.github.xuse.querydsl.sql.RelationalPathBaseEx<Aaa> {
-
-private static final long serialVersionUID = -124472086;
-    public static final QAaa aaa = new QAaa("AAA");
-    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
-```
-
-After the replacement, in the `addMetadata()` method, you can use more APIs to define the data structure and framework behavior.
-Additionally, if you are not satisfied with the types of some fields in the generated objects, you can manually modify them as well.
-
-
-**Recommendation: Use Primitive Types**
-
-Primitive types refer to `byte`, `short`, `int`, `long`, `float`, `double`, `char`, `boolean`.
-
-Some ORM frameworks do not recommend using primitive types in Bean definitions because the framework cannot determine whether the user has assigned a value to the field using operations like `object == null`. However, using wrapper types such as `Integer` or `Long` also introduces additional burdens—the code frequently needs to check if the field is null, which affects code readability and incurs performance costs due to boxing and unboxing operations.
-
-> Best Practice: Map NOT NULL database columns to primitive types.
-
-In a well-designed database, most numeric columns should be NOT NULL columns. The querydsl-sql-extension encourages users to use primitive types for mapping non-null columns. In querydsl, many APIs explicitly specify paths for operations, so there is no ambiguity regarding whether a primitive type value is set. However, some APIs still attempt to "automatically" determine whether a field should be written to or updated in the database. In such cases, you can inform the framework which values should be considered as null (unset).
-
-```java
-@UnsavedValue(UnsavedValue.MinusNumber)   //Negative Values Are Considered Invalid (Equivalent to Null).
-private int dataInt;
-```
-
-Or
-
-```java
-//Zero is Considered Invalid (Equivalent to Null).
-addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER)).withUnsavePredicate(UnsavedValue.Zero);
-```
-
-Once the issue of invalid values is resolved, primitive types will not cause additional complications. Further analysis is available in detailed documentation.
-
-### Using SQLQueryFactory
-
-> The native style of QueryDSL is powerful and very flexible, making it difficult for beginners to master. Readers with experience only in JPA-like frameworks can skip this section for now.
-> 
-This section introduces basic database operations using the QueryDSL syntax. SQLQueryFactory is the main entry point for database access in most cases. Below is a simple operation example.
-
-**Insert DEMO**
-
-```java
-QFoo t1 = QFoo.foo;
-Foo a = new Foo();
-a.setName("Jhon");
-a.setGender(Gender.FEMALE);
-Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
-System.out.println("The auto increment value is " + id);	
-```
-
-**Select DEMO**
-
-```java
-Foo selected = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
-```
-
-**Update DEMO**
-
-```java
-long count = factory.update(t1)
-       .set(t1.created, Expressions.currentTimestamp())
-       .set(t1.name, "李四")
-       .where(t1.id.eq(1))   
-       .execute();
-System.out.println(count + " records was updated.");	
-
-//Update DEMO2
-Foo b = new Foo();
-b.setName("Jhon");
-b.setGender(Gender.FEMALE);
-long count = factory.update(t1)
-       .populate(b)
-       .where(t1.id.eq(1))   
-       .execute();
-```
-
-**Update with comparisons**
-
-*  For comparison updates, only the changed fields are set. If there are no differences between the two objects, the database will not be written to.
-
-```java
-Foo oldRecord = factory.selectFrom(t1)
-     .where(t1.id.eq(id)).fetchOne();
-Foo b = new Foo();
-b.setName("Jhon");
-b.setGender(Gender.FEMALE);
-factory.update(t1)
- 	.populateWithCompare(a, oldRecord)
-	 .where(t1.id.eq(id))
-	 .execute(); 
-```
-
-**Delete DEMO**
-
-```java
-factory.delete(t1).where(t1.id.eq(id)).execute();
-```
-
-**Complex Selection DEMO**
-
-```java
-
-	QCaAsset t2=QCaAsset.caAsset;
-	List<Tuple> tuples=factory.select(t1.name,t1.gender,t2.content,t2.code)
-	    .from(t1)
-		.innerJoin(t2).on(t1.id.eq(t2.id))
-	    .where(t1.name.eq("Zhangsan"))
-	    .fetch();
-```
-
-
-
-For more usage methods, refer to the QueryDSL documentation:** [Querydsl-sql Documentation](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html).
-
-The `querydsl-sql-extension` extends many functionalities based on the native version. For details, refer to the javadoc.
 
 ### Using Record Data Types
 
@@ -939,3 +807,178 @@ However, there is a scenario where the sharding rules and usage are relatively s
 ```
 
 Hint: If the rules for database and table sharding are complex, it is recommended to use a special sharding layer under this framework, such as Sharding JDBC/Sharding Sphere.
+
+
+
+### For developers move from QueryDSL
+
+#### Code Generation
+
+This section introduces how to use the code generation tool based on QueryDSL within this framework.
+Since there is no current functionality to automatically generate Java code from the database, you can first use the "code generation via maven" section in the official documentation to generate the code. Some modifications to the generated code may be necessary.
+
+
+
+ ```xml
+	<plugin>
+		<groupId>com.querydsl</groupId>
+		<artifactId>querydsl-maven-plugin</artifactId>
+		<version>5.0.0</version>
+		<executions>
+			<execution>
+				<goals>
+					<goal>export</goal>
+				</goals>
+			</execution>
+		</executions>
+		<configuration>
+			<jdbcDriver>com.mysql.cj.jdbc.Driver</jdbcDriver>
+			<jdbcUrl>jdbc:mysql://host:port/database?useUnicode=true</jdbcUrl>
+			<jdbcUser>username</jdbcUser>
+			<jdbcPassword>password</jdbcPassword>
+			<exportBeans>true</exportBeans>
+			<packageName>xxx.xxx.dal.domain</packageName>
+			<targetFolder>${project.basedir}/src/main/java</targetFolder>
+			<tableNamePattern>%</tableNamePattern>
+			<beanAddToString>true</beanAddToString>
+		</configuration>
+	</plugin>
+ ```
+
+
+
+**Modifications on generated code**
+
+The generated code still needs some modifications. For example, the generated code is as follows
+
+```java
+@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
+public class QAaa extends com.querydsl.sql.RelationalPathBase<Aaa> {
+
+	private static final long serialVersionUID = -1;
+    public static final QAaa aaa = new QAaa("AAA");
+    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
+```
+
+To use the extended functionality, replace the `com.querydsl.sql.RelationalPathBase` class mentioned above with `com.github.xuse.querydsl.sql.RelationalPathBaseEx`.
+After the replacement, it will be:
+
+```java
+@Generated("com.querydsl.sql.codegen.MetaDataSerializer")
+public class QAaa extends com.github.xuse.querydsl.sql.RelationalPathBaseEx<Aaa> {
+
+private static final long serialVersionUID = -124472086;
+    public static final QAaa aaa = new QAaa("AAA");
+    public final NumberPath<Long> cBigint = createNumber("cBigint", Long.class);
+```
+
+After the replacement, in the `addMetadata()` method, you can use more APIs to define the data structure and framework behavior.
+Additionally, if you are not satisfied with the types of some fields in the generated objects, you can manually modify them as well.
+
+
+**Recommendation: Use Primitive Types**
+
+Primitive types refer to `byte`, `short`, `int`, `long`, `float`, `double`, `char`, `boolean`.
+
+Some ORM frameworks do not recommend using primitive types in Bean definitions because the framework cannot determine whether the user has assigned a value to the field using operations like `object == null`. However, using wrapper types such as `Integer` or `Long` also introduces additional burdens—the code frequently needs to check if the field is null, which affects code readability and incurs performance costs due to boxing and unboxing operations.
+
+> Best Practice: Map NOT NULL database columns to primitive types.
+
+In a well-designed database, most numeric columns should be NOT NULL columns. The querydsl-sql-extension encourages users to use primitive types for mapping non-null columns. In querydsl, many APIs explicitly specify paths for operations, so there is no ambiguity regarding whether a primitive type value is set. However, some APIs still attempt to "automatically" determine whether a field should be written to or updated in the database. In such cases, you can inform the framework which values should be considered as null (unset).
+
+```java
+@UnsavedValue(UnsavedValue.MinusNumber)   //Negative Values Are Considered Invalid (Equivalent to Null).
+private int dataInt;
+```
+
+Or
+
+```java
+//Zero is Considered Invalid (Equivalent to Null).
+addMetadata(id, ColumnMetadata.named("ID").withIndex(1).ofType(Types.INTEGER)).withUnsavePredicate(UnsavedValue.Zero);
+```
+
+Once the issue of invalid values is resolved, primitive types will not cause additional complications. Further analysis is available in detailed documentation.
+
+#### Using SQLQueryFactory
+
+> The native style of QueryDSL is powerful and very flexible, making it difficult for beginners to master. Readers with experience only in JPA-like frameworks can skip this section for now.
+>
+> This section introduces basic database operations using the QueryDSL syntax. SQLQueryFactory is the main entry point for database access in most cases. Below is a simple operation example.
+
+**Insert DEMO**
+
+```java
+QFoo t1 = QFoo.foo;
+Foo a = new Foo();
+a.setName("Jhon");
+a.setGender(Gender.FEMALE);
+Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
+System.out.println("The auto increment value is " + id);	
+```
+
+**Select DEMO**
+
+```java
+Foo selected = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
+```
+
+**Update DEMO**
+
+```java
+long count = factory.update(t1)
+       .set(t1.created, Expressions.currentTimestamp())
+       .set(t1.name, "李四")
+       .where(t1.id.eq(1))   
+       .execute();
+System.out.println(count + " records was updated.");	
+
+//Update DEMO2
+Foo b = new Foo();
+b.setName("Jhon");
+b.setGender(Gender.FEMALE);
+long count = factory.update(t1)
+       .populate(b)
+       .where(t1.id.eq(1))   
+       .execute();
+```
+
+**Update with comparisons**
+
+*  For comparison updates, only the changed fields are set. If there are no differences between the two objects, the database will not be written to.
+
+```java
+Foo oldRecord = factory.selectFrom(t1)
+     .where(t1.id.eq(id)).fetchOne();
+Foo b = new Foo();
+b.setName("Jhon");
+b.setGender(Gender.FEMALE);
+factory.update(t1)
+ 	.populateWithCompare(a, oldRecord)
+	 .where(t1.id.eq(id))
+	 .execute(); 
+```
+
+**Delete DEMO**
+
+```java
+factory.delete(t1).where(t1.id.eq(id)).execute();
+```
+
+**Complex Selection DEMO**
+
+```java
+	QCaAsset t2=QCaAsset.caAsset;
+	List<Tuple> tuples=factory.select(t1.name,t1.gender,t2.content,t2.code)
+	    .from(t1)
+		.innerJoin(t2).on(t1.id.eq(t2.id))
+	    .where(t1.name.eq("Zhangsan"))
+	    .fetch();
+```
+
+
+
+For more usage methods, refer to the QueryDSL documentation:** [Querydsl-sql Documentation](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html).
+
+The `querydsl-sql-extension` extends many functionalities based on the native version. For details, refer to the javadoc.
+

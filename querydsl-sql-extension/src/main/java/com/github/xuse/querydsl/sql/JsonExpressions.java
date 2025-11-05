@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.github.xuse.querydsl.sql.expression.JsonOps;
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -113,9 +113,9 @@ public class JsonExpressions {
 	 * @param paths paths
 	 * @return StringOperation
 	 */
-	public static StringOperation jsonContainsPath(Expression<String> jsonDoc, boolean trueAsAll, String... paths) {
+	public static BooleanOperation jsonContainsPath(Expression<String> jsonDoc, boolean trueAsAll, String... paths) {
 		Expression<String> oneAll = Expressions.asString(trueAsAll ? "all" : "one");
-		return Expressions.stringOperation(JsonOps.JSON_CONTAINS_PATH, jsonDoc, oneAll, ConstantImpl.create(paths));
+		return Expressions.booleanOperation(JsonOps.JSON_CONTAINS_PATH, jsonDoc, oneAll, ConstantImpl.create(paths));
 	}
 
 	/**
@@ -197,7 +197,7 @@ public class JsonExpressions {
 	 *
 	 * @see #jsonSearch(Expression, boolean, String)
 	 * @param jsonDoc jsonDoc
-	 * @param trueAsAll trueAsAll
+	 * @param trueAsAll 'one' or 'all', true is 'all'.
 	 * @param text text
 	 * @param escapeChar escapeChar
 	 * @param paths paths
@@ -208,7 +208,7 @@ public class JsonExpressions {
 		if (paths == null || paths.length == 0) {
 			return Expressions.stringOperation(JsonOps.JSON_SEARCH, jsonDoc, oneOrAll, ConstantImpl.create(text), ConstantImpl.create(escapeChar));
 		} else {
-			return Expressions.stringOperation(JsonOps.JSON_SEARCH_WITH_PATH, jsonDoc, oneOrAll, ConstantImpl.create(text), ConstantImpl.create(escapeChar), ConstantImpl.create(paths));
+			return Expressions.stringOperation(JsonOps.JSON_SEARCH_WITH_PATH, jsonDoc, oneOrAll, ConstantImpl.create(text), ConstantImpl.create(escapeChar), ConstantImpl.create(paths[0]));
 		}
 	}
 
@@ -399,7 +399,7 @@ public class JsonExpressions {
 	 */
 	public static NumberOperation<Integer> jsonLength(Expression<String> jsonDoc, String path) {
 		path = path == null || path.isEmpty() ? "$" : path;
-		return Expressions.numberOperation(Integer.class,JsonOps.JSON_TYPE, jsonDoc, ConstantImpl.create(path));
+		return Expressions.numberOperation(Integer.class,JsonOps.JSON_LENGTH, jsonDoc, ConstantImpl.create(path));
 	}
 
 	/**

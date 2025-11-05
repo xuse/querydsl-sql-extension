@@ -66,7 +66,7 @@ public interface SQLMetadataQueryFactory {
 	/**
 	 *  Create a table deletion query.
 	 *  <p>
-	 *  生成删除表请求
+	 *  生成删除表请求。需要调用{@link DropTableQuery#execute()}才会实际操作。
 	 *
 	 *  @param <T>  the type of the table model.
 	 *  @param path  path of the table.
@@ -77,7 +77,7 @@ public interface SQLMetadataQueryFactory {
 	/**
 	 * Create a table truncation query.
 	 * <p>
-	 * 截断表（删除所有数据）
+	 * 截断表（删除所有数据）。需要调用{@link TruncateTableQuery#execute()}才会实际操作。
 	 * @param <T>  the type of the table model.
 	 * @param path path
 	 * @return TruncateTableQuery
@@ -85,7 +85,7 @@ public interface SQLMetadataQueryFactory {
 	<T> TruncateTableQuery truncate(RelationalPath<T> path);
 	
 	/**
-	 * Create a table truncation query.
+	 * Create a table truncation query. 需要调用{@link TruncateTableQuery#execute()}才会实际操作。
 	 * <p>
 	 * 截断表（删除所有数据）
 	 * @param <T>  the type of the table model.
@@ -278,6 +278,14 @@ public interface SQLMetadataQueryFactory {
 	 *  @return all constraint on this table, CHECK, PRIMARY_KEY, UNIQUE etc. except any foreign key.
 	 */
 	Collection<Constraint> getConstraints(SchemaAndTable table);
+	
+	
+	/**
+	 *  fetch constraints and indices of table.
+	 * @param table
+	 * @return Indices and constraints.
+	 */
+	Collection<Constraint> getAllIndexAndConstraints(SchemaAndTable table);
 
 	/**
 	 * Fetch partition information of the table. will return null if the database do not support partition feature.
@@ -306,16 +314,31 @@ public interface SQLMetadataQueryFactory {
 	 * @return schema names.
 	 */
 	Collection<String> getSchemas(String catalog);
-	
+
 	/**
-	 * Fetch information of all tables in schema.
-	 * <p>
-	 * 得到表的信息
-	 * @param catalog catalog
-	 * @param schema schema.
+	 * @param catalog catalog 
+	 * @param schema schema. Note that MySQL and postgresql do not have schemas, and Oracle has.  
 	 * @return List of Table information.
 	 */
+	@Deprecated
 	List<TableInfo> getTables(String catalog, String schema);
+	
+	/**
+     * Fetch information of all tables in schema.
+     * <p>
+     * 得到表的信息
+     * @param namespace catalog or schema. null as the current namespace. if you want to fetch tables from all catalogs/schemas, input '%'.  
+     * @param tableNamePattern table name. null as '%'
+     * @return List of Table information.
+     */
+	List<TableInfo> listTables(String namespace, String tableNamePattern);
+	
+	/**
+	 *  Fetch information of the table
+	 * @param schemaAndTable
+	 * @return  Table information.
+	 */
+	TableInfo getTable(SchemaAndTable schemaAndTable);
 
 	/**
 	 * Get the database product name.

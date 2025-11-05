@@ -14,8 +14,13 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.annotation.partition.AutoTimePartitions;
+import com.github.xuse.querydsl.annotation.partition.ColumnFormat;
+import com.github.xuse.querydsl.annotation.partition.Period;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.spring.core.resource.Resource;
+import com.github.xuse.querydsl.util.lang.Annotations;
+import com.github.xuse.querydsl.util.lang.Enums;
 
 public class MiscTest {
 	private String hello="Hello";
@@ -112,12 +117,7 @@ public class MiscTest {
 
 	@Test
 	public void snowFlake() {
-		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) {
-			@Override
-			protected long timeGen() {
-				return get(2050,1,10,12,0,0).getTime();
-			}
-		};
+		SnowflakeIdWorker worker=new SnowflakeIdWorker(7,0) ;
 		System.out.println(worker.nextId());
 	}
 	
@@ -177,12 +177,28 @@ public class MiscTest {
 		ress=c.scan(new String[] {" ","com.github.xuse.querydsl.util"});
 		assertTrue(ress.size()==0);
 		
-		
-		c.filterWith(null);
+		c.rootClasspath(null);
+		c.clearFilter();
 		ress=c.scan(new String[] {" "});
 		assertTrue(ress.size()==0);
 		
 		ress=c.scan(new String[] {"com.github.xuse.querydsl.util"});
 		assertTrue(ress.size()>0);
+	}
+	
+	@Test	
+	public void testAnnotations() {
+		AutoTimePartitions a = Annotations.builder(AutoTimePartitions.class)
+				.set(AutoTimePartitions::unit, Period.DAY)
+				.set(AutoTimePartitions::periodsBegin, 1)
+				.set(AutoTimePartitions::periodsEnd, 5)
+				.set(AutoTimePartitions::createForMaxValue, true)
+				.set(AutoTimePartitions::columnFormat, ColumnFormat.NUMBER_YEAR)
+				.build();
+		assertEquals(a.columnFormat(),ColumnFormat.NUMBER_YEAR);
+		assertEquals(a.createForMaxValue(),true);
+		assertEquals(a.periodsBegin(),1);
+		assertEquals(a.periodsEnd(),5);
+		assertEquals(a.unit(),Period.DAY);
 	}
 }

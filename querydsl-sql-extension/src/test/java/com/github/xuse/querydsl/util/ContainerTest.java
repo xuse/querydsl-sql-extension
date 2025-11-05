@@ -19,6 +19,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.util.collection.NoReadLockHashMap;
+
 @SuppressWarnings("unused")
 public class ContainerTest {
 	private String hello="Hello";

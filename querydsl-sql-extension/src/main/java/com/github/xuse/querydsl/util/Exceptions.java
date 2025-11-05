@@ -19,28 +19,24 @@ import org.slf4j.helpers.MessageFormatter;
  */
 public class Exceptions {
 	/**
-	 * 重试执行指定的函数（会被异常所打断并抛出异常）
-	 * @param invokeCount 重试次数
-	 * @param input       入参
-	 * @param retryInvoke 重试函数
-	 * @return 成功与否
+	 * Retry executing the specified function until it returns true or the maximum
+	 * number of attempts is reached. 
+	 * @param times Retry times.
+	 * @param input The parameter.
+	 * @param retryInvoke The specified function
+	 * @return Success  or not.
 	 * @param <T> The type of target object.
 	 */
-	public static <T> boolean retry(int invokeCount, T input, Predicate<T> retryInvoke) {
-		for (int i = 0; i < invokeCount; i++) {
-			if (retryInvoke.test(input)) {
-				return true;
-			}
-		}
-		return false;
+	public static <T> boolean retry(int times, T input, Predicate<T> retryInvoke) {
+		return RetryPolicy.newBuilder().nowait().maxAttempts(times).build().executeUntilReturnTrue(retryInvoke, input);
 	}
 
 	/**
-	 * 执行指定的函数，当出现异常时返回默认值
-	 * @param function     函数
-	 * @param s            参数
-	 * @param defaultValue 默认值
-	 * @return 函数结果，或默认值
+	 * Execute the specified function, and return the default value if an exception occurs.
+	 * @param function     The specified function
+	 * @param s             The parameter
+	 * @param defaultValue  Default value
+	 * @return Result of the specified function, or default value if function execution failed.
 	 * @param <S> The type of target object.
 	 * @param <T> The type of target object.
 	 */
@@ -54,12 +50,12 @@ public class Exceptions {
 	}
 
 	/**
-	 * 执行指定的函数，当出现异常时返回默认值
-	 * @param function     函数
-	 * @param p1           参数1
-	 * @param p2           参数2
+	 * Execute the specified function, and return the default value if an exception occurs.
+	 * @param function     The specified function
+	 * @param p1           The first parameter.
+	 * @param p2           The second parameter
 	 * @param defaultValue 默认值
-	 * @return 函数结果，或默认值
+	 * @return Result of the specified function, or default value if function execution failed.
 	 * @param <P1> The type of target object.
 	 * @param <P2> The type of target object.
 	 * @param <T> The type of target object.
@@ -74,10 +70,10 @@ public class Exceptions {
 	}
 
 	/**
-	 * 执行指定的函数，当出现异常时返回默认值
-	 * @param function     函数
-	 * @param defaultValue 默认值
-	 * @return 函数结果，或默认值
+	 *  Execute the specified function, and return the default value if an exception occurs.
+	 * @param function     The specified function
+	 * @param defaultValue The default value.
+	 * @return Result of the specified function, or default value if function execution failed.
 	 * @param <T> The type of target object.
 	 */
 	public static <T> T apply(Supplier<T> function, T defaultValue) {
@@ -90,31 +86,42 @@ public class Exceptions {
 	}
 
 	/**
-	 * 执行指定的函数，当出现异常或执行结果为null时返回默认值
-	 * @param function     函数
-	 * @param s            参数
-	 * @param defaultValue 默认值
-	 * @return 函数结果，或默认值
+	 * Execute the specified function, and return the default value if an exception occurs or the execution result is null.
+	 * @param function     The specified function
+	 * @param parameter           The parameter
+	 * @param defaultValue the default value
+	 * @return Result of the specified function, or default value if function execution failed. 
 	 * @param <S> The type of target object.
 	 * @param <T> The type of target object.
 	 */
-	public static <S, T> T applyNotNull(Function<S, T> function, S s, T defaultValue) {
+	public static <S, T> T applyNotNull(Function<S, T> function, S parameter, T defaultValue) {
 		try {
-			T t = function.apply(s);
+			T t = function.apply(parameter);
 			return t == null ? defaultValue : t;
 		} catch (Exception e) {
 			log.error("apply {} error,", function, e);
 			return defaultValue;
 		}
 	}
+	
+	public static <T> Predicate<T> handled(Predicate<T> predicate) {
+		return (t)->{
+			try {
+				return predicate.test(t);	
+			}catch(Exception e) {
+				log.error("",e);
+				return false;
+			}
+		};
+	}
 
 	/**
-	 * 执行指定的函数，当出现异常或执行结果为null时返回默认值
-	 * @param function     函数
-	 * @param p1           参数1
-	 * @param p2           参数2
-	 * @param defaultValue 默认值
-	 * @return 函数结果，或默认值
+	 * Execute the specified function, and return the default value if an exception occurs or the execution result is null.
+	 * @param function     The specified function
+	 * @param p1           The first Parameter.
+	 * @param p2           The second Parameter.
+	 * @param defaultValue The default value
+	 * @return Result of the specified function, or default value if function execution failed. 
 	 * @param <P1> The type of target object.
 	 * @param <P2> The type of target object.
 	 * @param <T> The type of target object.
@@ -130,10 +137,10 @@ public class Exceptions {
 	}
 
 	/**
-	 * 执行指定的函数，当出现异常或执行结果为null时返回默认值
-	 * @param function     函数
-	 * @param defaultValue 默认值
-	 * @return 函数结果，或默认值
+	 * Execute the specified function, and return the default value if an exception occurs or the execution result is null.
+	 * @param function     The specified function
+	 * @param defaultValue The default value.
+	 * @return Result of the specified function, or default value if function execution failed. 
 	 * @param <T> The type of target object.
 	 */
 	public static <T> T applyNotNull(Supplier<T> function, T defaultValue) {
@@ -163,7 +170,7 @@ public class Exceptions {
 	}
 
 	/**
-	 * 将指定的异常封装为IllegalArgumentException
+	 * Wrap the specified exception as an IllegalArgumentException.
 	 * @param t t
 	 * @return IllegalArgumentException
 	 */
@@ -172,7 +179,7 @@ public class Exceptions {
 	}
 
 	/**
-	 * 将异常转换为RuntimeException
+	 * Wrap the specified exception as an RuntimeException.
 	 * @param t t
 	 * @return RuntimeException
 	 */
@@ -187,7 +194,7 @@ public class Exceptions {
 	}
 
 	/**
-	 * 使用slf4j的机制来生成异常信息
+	 * Generate an IllegalArgumentException.
 	 * @param message message
 	 * @param objects objects
 	 * @return {@link IllegalArgumentException}
@@ -198,9 +205,9 @@ public class Exceptions {
 	}
 
 	/**
-	 *  转封装为IllegalArgumentException
+	 *  Wrap the specified exception as an IllegalArgumentException.
 	 *
-	 *  @param t                 异常
+	 *  @param t                 The throwable
 	 *  @param allowOtherRuntime true则允许抛出其他RuntimeException.
 	 *  @return IllegalArgumentException
 	 */
@@ -216,9 +223,8 @@ public class Exceptions {
 	}
 
 	/**
-	 *  转封装为IllegalStateException
-	 *
-	 *  @param t 异常
+	 *  Wrap the specified exception as an IllegalStateException.
+	 *  @param t The throwable
 	 *  @return IllegalStateException
 	 */
 	public static IllegalStateException illegalState(Throwable t) {
@@ -228,7 +234,7 @@ public class Exceptions {
 	/**
 	 *  转封装为IllegalStateException
 	 *
-	 *  @param t                 异常
+	 *  @param t                 The throwable
 	 *  @param allowOtherRuntime true则允许抛出其他RuntimeException.
 	 *  @return IllegalStateException
 	 */

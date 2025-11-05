@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.util.DateFormats;
 import com.github.xuse.querydsl.util.DateFormats.TLDateFormat;
-import com.github.xuse.querydsl.util.Primitives;
 import com.github.xuse.querydsl.util.collection.CollectionUtils;
+import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
@@ -262,10 +262,17 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		}
 	}
 
+	/**
+	 * 适合大型生产环境的紧凑格式。
+	 */
 	public static final int FORMAT_COMPACT = 0;
-
+	/**
+	 * 长的字符串会完整输出，SQL和参数之间会换行。
+	 */
 	public static final int FORMAT_FULL = 1;
-
+	/**
+	 * 最详细的信息输出，会有频繁换行，适合开发环境观察语句和输出。
+	 */
 	public static final int FORMAT_DEBUG = 2;
 
 	/**
