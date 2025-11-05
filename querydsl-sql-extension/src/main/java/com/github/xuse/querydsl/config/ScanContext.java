@@ -3,9 +3,12 @@ package com.github.xuse.querydsl.config;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.asm.ASMUtils.ClassAnnotationExtracter;
@@ -31,6 +34,7 @@ public class ScanContext {
 	private int count;
 	private Class<? extends Annotation> matchAnnotation;
 	private Class<? extends Annotation> matchWithoutAnnotation;
+	private final List<Consumer<RelationalPathEx<?>>> listeners = new ArrayList<>();
 
 	ScanContext(ConfigurationEx parent) {
 		this.parent = parent;
@@ -45,6 +49,16 @@ public class ScanContext {
         this.matchWithoutAnnotation=annotation;
         return this;
     }
+	
+	public ScanContext addListener(Consumer<RelationalPathEx<?>> listener) {
+		this.listeners.add(listener);
+		return this;
+	}
+	
+	public ScanContext addListeners(Collection<Consumer<RelationalPathEx<?>>> listeners) {
+		this.listeners.addAll(listeners);
+		return this;
+	}
 	
 	public void scan(String[] pkgNames) {
 		List<Resource> resources = new ClassScanner().scan(pkgNames);
@@ -153,6 +167,13 @@ public class ScanContext {
 		
 		TableInitTask task = new TableInitTask(table);
 		parent.initTasks.offer(task);
+		for(Consumer<RelationalPathEx<?>> listener:listeners) {
+			try {
+				listener.accept(table);
+			}catch(Exception e) {
+				log.error("Notify entity {} to listener {} raise a error.", table.getTableName(), listener, e);
+			}
+		}
 		count++;
 	}
 

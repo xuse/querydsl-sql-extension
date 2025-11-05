@@ -1,8 +1,12 @@
 package com.github.xuse.querydsl.init;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -62,6 +66,9 @@ public class ScanOptions {
 	private Class<? extends Annotation> withAnnotation;
 	
 	private Class<? extends Annotation> withoutAnnotation;
+	
+	private final List<Consumer<RelationalPathEx<?>>> listeners = new ArrayList<>();
+	
 	    
 	/**
 	 * Data Initialization Feature: Use a record table to log initialization states.
@@ -213,7 +220,12 @@ public class ScanOptions {
 	    this.withoutAnnotation=annotation;
 	    return this;
 	}
-
+	
+	public ScanOptions addListener(Consumer<RelationalPathEx<?>> listener) {
+		this.listeners.add(listener);
+		return this;
+	}
+	
 	/**
 	 *  设置开关，允许修改表以及删除表中的字段等。
 	 *

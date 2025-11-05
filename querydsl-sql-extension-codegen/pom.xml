@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>io.github.xuse</groupId>
 		<artifactId>querydsl-sql-extension-parent</artifactId>
-		<version>5.0.0-r144</version>
+		<version>5.0.0-r150</version>
 	</parent>
 	<artifactId>querydsl-sql-extension-codegen</artifactId>
 	<packaging>jar</packaging>
