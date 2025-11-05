@@ -1,8 +1,13 @@
 package com.github.xuse.querydsl.init;
 
+
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
@@ -48,6 +53,7 @@ public class ScanOptions {
 
 	public static final ScanOptions DEFAULT = new ScanOptions();
 
+    final Set<Class<?>> initEntityWhiteList = new HashSet<>();
 	// 是否创建不存在的表
 	private boolean createMissingTable = true;
 
@@ -305,4 +311,9 @@ public class ScanOptions {
 		this.useDistributedLock=flag;
 		return this;
 	}
+	
+	   public ScanOptions setInitTableWhiteList(Class<?>... clazz) {
+	        this.initEntityWhiteList.addAll(Arrays.asList(clazz));
+	        return this;
+	    }
 }
