@@ -545,7 +545,7 @@ public class DbSchemaGenerator {
         return new DbSchemaGenerator(factory,conn);
     }
 
-    private static String underlineToCamelCase(String s, boolean beginUpper) {
+    public static String underlineToCamelCase(String s, boolean beginUpper) {
         StringBuilder sb = new StringBuilder(s.length());
         boolean toUpper = beginUpper;
         for (char c : s.toCharArray()) {

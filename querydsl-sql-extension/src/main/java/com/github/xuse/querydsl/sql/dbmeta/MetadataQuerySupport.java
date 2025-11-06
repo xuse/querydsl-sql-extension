@@ -163,7 +163,7 @@ public abstract class MetadataQuerySupport {
 	 * @return 表信息
 	 */
 	public List<TableInfo> listTables(String namespace, String tableNamePattern) {
-		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(namespace, tableNamePattern), Ops.LIKE);
+		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(namespace, tableNamePattern), null);
 	}
 
 	/**
