@@ -147,6 +147,14 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
         }
         return metadataQuery.listTables(namespace, tableName);
     }
+    
+    @Override
+    public List<TableInfo> listViews(String namespace, String tableName) {
+        if(StringUtils.isEmpty(namespace)) {
+            namespace = metadataQuery.getDriverInfo().getNamespace(); 
+        }
+        return metadataQuery.listTables(namespace, tableName);
+    }
 
     @Override
     public TableInfo getTable(SchemaAndTable schemaAndTable) {

@@ -62,7 +62,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class MetadataQuerySupport {
-
 	private static final QueryMetadata metadata = new DefaultQueryMetadata();
 
 	protected abstract ConfigurationEx getConfiguration();
@@ -74,11 +73,11 @@ public abstract class MetadataQuerySupport {
 	public DriverInfo getDriverInfo() {
 		return ConfigrationPackageExporter.computeDriverInfo(getConfiguration(), this::generateDriverInfo);
 	}
-	
+
 	private DriverInfo generateDriverInfo() {
 		DriverInfo result = doConnectionAccess(c -> {
 			DriverInfo r = new DriverInfo();
-			DatabaseMetaData e=c.getMetaData();
+			DatabaseMetaData e = c.getMetaData();
 			r.catalog = c.getCatalog();
 			r.schema = c.getSchema();
 			r.driverName = e.getDriverName();
@@ -91,20 +90,21 @@ public abstract class MetadataQuerySupport {
 		});
 		result.policy = getConfiguration().getTemplates().getSchemaPolicy();
 		result.setDbTimeDelta(calcDbTimeDelta());
-		if(log.isInfoEnabled()){
+		if (log.isInfoEnabled()) {
 			log.info(result.toString());
 		}
 		return result;
 	}
-	
+
 	private long calcDbTimeDelta() {
 		SQLTemplatesEx templates = getConfiguration().getTemplates();
 		String dummyTable = templates.getDummyTable();
-		if(dummyTable==null) {
-			dummyTable="";
+		if (dummyTable == null) {
+			dummyTable = "";
 		}
 		SQLSerializer s = new SQLSerializer(this.getConfiguration().get());
-		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, Expressions.currentTimestamp(), Expressions.path(Object.class, null, dummyTable)));
+		s.handle(DDLExpressions.simple(Basic.SELECT_VALUES, Expressions.currentTimestamp(),
+				Expressions.path(Object.class, null, dummyTable)));
 		String sql = s.toString();
 		final SQLBindings qSql = new SQLBindings(sql, Collections.emptyList());
 		long dbTimeDelta = doSQLQuery(e -> {
@@ -117,22 +117,21 @@ public abstract class MetadataQuerySupport {
 	public MetadataQuerySupport() {
 		listeners = new SQLListeners(getConfiguration().get().getListeners());
 	}
-	
 
 	/**
-	 *  得到当前数据库的时间，这一运算不是通过到数据库查询而得，而是和数据库每次心跳时都会刷新当前系统时间和数据库时间的差值，从而得到数据库时间。
+	 * 得到当前数据库的时间，这一运算不是通过到数据库查询而得，而是和数据库每次心跳时都会刷新当前系统时间和数据库时间的差值，从而得到数据库时间。
 	 *
-	 *  @return 当前数据库时间
+	 * @return 当前数据库时间
 	 */
 	public Date getDatabaseTime() {
 		return getDriverInfo().getDatabaseTime();
 	}
 
 	/**
-	 *  得到数据库中的表
+	 * 得到数据库中的表
 	 *
-	 *  @param tablename 要查找的表名，仅第一个参数有效
-	 *  @return 表的信息
+	 * @param tablename 要查找的表名，仅第一个参数有效
+	 * @return 表的信息
 	 */
 	public TableInfo getTable(String tablename) {
 		return getTable(parseSchemaAndTable(tablename));
@@ -140,6 +139,7 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 得到数据库中的表
+	 * 
 	 * @param table table
 	 * @return 表的信息
 	 */
@@ -153,26 +153,27 @@ public abstract class MetadataQuerySupport {
 
 	public boolean existsTable(SchemaAndTable table, RoutingStrategy routing) {
 		table = routing.getOverride(table, getConfiguration());
-		return !getDatabaseObject(ObjectType.TABLE, table, null).isEmpty();
+		return !getDatabaseObject(ObjectType.TABLE, table, Ops.EQ).isEmpty();
 	}
 
 	/**
 	 * 返回数据库中所有符合条件的表
+	 * 
 	 * @param catalog catalog
-	 * @param schema schema
+	 * @param schema  schema
 	 * @return 表信息
 	 */
 	public List<TableInfo> listTables(String namespace, String tableNamePattern) {
-		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(namespace, tableNamePattern), null);
+		return getDatabaseObject(ObjectType.TABLE, new SchemaAndTable(namespace, tableNamePattern), Ops.LIKE);
 	}
 
 	/**
-	 *  @param type  要查询的对象类型 "TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY",
-	 *               "LOCAL TEMPORARY", "ALIAS", "SYNONYM".
-	 *  @param table 匹配名称
-	 *  @param oper  操作符，可以为null，为null时表示等于条件
-	 *  @return 表/视图等数据库对象的信息
-	 *  @see Operator
+	 * @param type  要查询的对象类型 "TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY",
+	 *              "LOCAL TEMPORARY", "ALIAS", "SYNONYM".
+	 * @param table 匹配名称
+	 * @param oper  操作符，可以为null，为null时表示等于条件
+	 * @return 表/视图等数据库对象的信息
+	 * @see Operator
 	 */
 	public List<TableInfo> getDatabaseObject(ObjectType type, SchemaAndTable table, Ops oper) {
 		SQLTemplatesEx templates = getConfiguration().getTemplates();
@@ -180,14 +181,15 @@ public abstract class MetadataQuerySupport {
 		final String qSchema = processNamespace(table.getSchema());
 		final String qMatchName = processName(table.getTable(), oper);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		List<TableInfo> result = doSQLQuery(q -> 
-			templates.getSchemaAccessor().fetchTables(q, policy.asCatalog(qSchema), policy.asSchema(qSchema), qMatchName, type), "getTables");
+		List<TableInfo> result = doSQLQuery(q -> templates.getSchemaAccessor().fetchTables(q, policy.asCatalog(qSchema),
+				policy.asSchema(qSchema), qMatchName, type), "getTables");
 		log.debug("getting {} {}.{}, result is {}", type, qSchema, qMatchName, result);
 		return result;
 	}
 
 	/**
 	 * 得到表的Column信息
+	 * 
 	 * @param tableName tableName
 	 * @return List&lt;ColumnDef&gt;
 	 */
@@ -197,6 +199,7 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 得到表的Column信息
+	 * 
 	 * @param schemaAndTable schemaAndTable
 	 * @return List&lt;ColumnDef&gt;
 	 */
@@ -205,7 +208,8 @@ public abstract class MetadataQuerySupport {
 		final String namespace = processNamespace(schemaAndTable.getSchema());
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		final String tableName = processName(schemaAndTable.getTable(), Ops.EQ);
-		List<ColumnDef> columns = doMetadataQuery("getColumns[" + tableName + "]", c -> c.getColumns(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, "%"), this::populateColumn);
+		List<ColumnDef> columns = doMetadataQuery("getColumns[" + tableName + "]",
+				c -> c.getColumns(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, "%"), this::populateColumn);
 		columns.sort(Comparator.comparingInt(ColumnDef::getOrdinal));
 		log.debug("Table {} 's columns: {}", schemaAndTable, columns);
 		return columns;
@@ -228,7 +232,8 @@ public abstract class MetadataQuerySupport {
 		column.setJdbcType(jdbcType);
 		column.setColumnSize(sizeParser.size(columnSize, digits));
 		column.setDecimalDigit(sizeParser.digits(columnSize, digits));
-		defaultVal = getConfiguration().getTemplates().translateDefault(defaultVal, jdbcType, column.getColumnSize(), column.getDecimalDigit());
+		defaultVal = getConfiguration().getTemplates().translateDefault(defaultVal, jdbcType, column.getColumnSize(),
+				column.getDecimalDigit());
 		column.setTableCat(rs.getString("TABLE_CAT"));
 		column.setTableSchema(rs.getString("TABLE_SCHEM"));
 		column.setTableName(rs.getString("TABLE_NAME"));
@@ -236,11 +241,11 @@ public abstract class MetadataQuerySupport {
 		column.setDataType(rs.getString("TYPE_NAME"));
 		column.setCharOctetLength(rs.getInt("CHAR_OCTET_LENGTH"));
 		int nullable = rs.getInt("NULLABLE");
-		
+
 		boolean nullAble1 = nullable == DatabaseMetaData.columnNullable;
 		boolean nullAble2 = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
 		if (nullAble1 != nullAble2) {
-			logDriverProblem("column null ability",rs.getString("IS_NULLABLE"));
+			logDriverProblem("column null ability", rs.getString("IS_NULLABLE"));
 		}
 		column.setNullable(nullAble2);
 		column.setAutoIncrement("YES".equalsIgnoreCase(rs.getString("IS_AUTOINCREMENT")));
@@ -262,14 +267,15 @@ public abstract class MetadataQuerySupport {
 	}
 
 	private void logDriverProblem(String string, String params) {
-		DriverInfo driverInfo=getDriverInfo();
-		log.warn(driverInfo.getDriverVersion() + " " + driverInfo.getDriverVersion() + ":" + string+"="+params);
+		DriverInfo driverInfo = getDriverInfo();
+		log.warn(driverInfo.getDriverVersion() + " " + driverInfo.getDriverVersion() + ":" + string + "=" + params);
 	}
 
 	/**
 	 * 返回当前schema下的所有数据库对象名称
+	 * 
 	 * @param catalog catalog
-	 * @param schema schema
+	 * @param schema  schema
 	 * @param types   取以下参数{@link ObjectType}。可以省略，省略的情况下取Table
 	 * @return 所有表名
 	 */
@@ -285,12 +291,13 @@ public abstract class MetadataQuerySupport {
 		SchemaAndTable schemaAndTable = new SchemaAndTable(policy.toNamespace(catalog, schema), null);
 		schemaAndTable = getConfiguration().getOverride(schemaAndTable);
 		final String namespace = processNamespace(schemaAndTable.getSchema());
-		List<String> names = this.doMetadataQuery("getObjects", m -> m.getTables(policy.asCatalog(namespace), policy.asSchema(namespace), null, ts), r -> r.getString("TABLE_NAME"));
+		List<String> names = this.doMetadataQuery("getObjects",
+				m -> m.getTables(policy.asCatalog(namespace), policy.asSchema(namespace), null, ts), r -> r.getString("TABLE_NAME"));
 		return names;
 	}
 
 	/**
-	 *  a catalog cache for 5 seconds.
+	 * a catalog cache for 5 seconds.
 	 */
 	private volatile Entry<Set<String>, Long> catalogCache = new Entry<>(null, 0L);
 
@@ -305,7 +312,7 @@ public abstract class MetadataQuerySupport {
 		long currentTime = System.currentTimeMillis();
 		if (catalogCache == null || currentTime - catalogCache.getValue() > 5000) {
 			Set<String> catalog = new HashSet<>(// r.getString("TABLE_CAT")
-			doMetadataQuery("AllCatalogs", DatabaseMetaData::getCatalogs, r -> r.getString(1)));
+					doMetadataQuery("AllCatalogs", DatabaseMetaData::getCatalogs, r -> r.getString(1)));
 			this.catalogCache = new Entry<>(catalog, currentTime);
 			return catalog;
 		} else {
@@ -331,9 +338,9 @@ public abstract class MetadataQuerySupport {
 	public Collection<String> getSchemas() {
 		return getSchemas(null);
 	}
-	
-	public List<DataType> getDataTypes(){
-		return doMetadataQuery("getInfoType", meta->meta.getTypeInfo(), rs->getFromResultSet(rs, DataType.class));
+
+	public List<DataType> getDataTypes() {
+		return doMetadataQuery("getInfoType", meta -> meta.getTypeInfo(), rs -> getFromResultSet(rs, DataType.class));
 	}
 
 	public List<SequenceInfo> getSequenceInfo(String namespace, String seqName) {
@@ -349,12 +356,13 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 得到数据库中（当前schema下）所有视图
+	 * 
 	 * @param namespace namespace
 	 * @return 视图信息列表。 A collection of view info.
 	 */
-	public List<TableInfo> getViews(String namespace) {
+	public List<TableInfo> listViews(String namespace,String namePattern) {
 		SchemaAndTable schemaAndTable = new SchemaAndTable(namespace, null);
-		return getDatabaseObject(ObjectType.VIEW, schemaAndTable, Ops.EQ);
+		return getDatabaseObject(ObjectType.VIEW, schemaAndTable, Ops.LIKE);
 	}
 
 	/**
@@ -366,22 +374,25 @@ public abstract class MetadataQuerySupport {
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		SchemaReader schemas=getConfiguration().getTemplates().getSchemaAccessor();
-		return this.doSQLQuery(e->schemas.getPrimaryKey(policy.asCatalog(namespace), policy.asSchema(namespace), tableName,e),"getPrimryKey");
+		SchemaReader schemas = getConfiguration().getTemplates().getSchemaAccessor();
+		return this.doSQLQuery(e -> schemas.getPrimaryKey(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, e),
+				"getPrimryKey");
 	}
 
 	/**
-	 *  获得外键（引用其他表的键）
+	 * 获得外键（引用其他表的键）
 	 *
-	 *  @param table SchemaAndTable
-	 *  @return ForeignKeyItem
+	 * @param table SchemaAndTable
+	 * @return ForeignKeyItem
 	 */
 	public List<ForeignKeyItem> getForeignKey(SchemaAndTable table) {
 		table = getConfiguration().getOverride(table);
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		List<ForeignKeyItem> result = doMetadataQuery("getForeignKey", m -> m.getImportedKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName), r -> getFromResultSet(r, ForeignKeyItem.class));
+		List<ForeignKeyItem> result = doMetadataQuery("getForeignKey",
+				m -> m.getImportedKeys(policy.asCatalog(namespace), policy.asSchema(namespace), tableName),
+				r -> getFromResultSet(r, ForeignKeyItem.class));
 		return result;
 	}
 
@@ -456,12 +467,12 @@ public abstract class MetadataQuerySupport {
 		final String namespace = processNamespace(table.getSchema());
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
-		return getConstraints0(policy.asCatalog(namespace),policy.asSchema(namespace),tableName,detail);
+		return getConstraints0(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, detail);
 	}
 
 	private List<Constraint> getConstraints0(String catalog, String schema, String tableName, boolean detail) {
 		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
-		return doSQLQuery(q -> template.getConstraints(catalog,schema, tableName, q, detail), "getConstraints");
+		return doSQLQuery(q -> template.getConstraints(catalog, schema, tableName, q, detail), "getConstraints");
 	}
 
 	public List<PartitionInfo> getPartitions(SchemaAndTable table) {
@@ -470,9 +481,11 @@ public abstract class MetadataQuerySupport {
 		final String tableName = processName(table.getTable(), Ops.EQ);
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
-		List<PartitionInfo> partitions = doSQLQuery(q -> template.getPartitions(policy.asCatalog(namespace),policy.asSchema(namespace), tableName, q), "getPartitions");
+		List<PartitionInfo> partitions = doSQLQuery(
+				q -> template.getPartitions(policy.asCatalog(namespace), policy.asSchema(namespace), tableName, q), "getPartitions");
 		if (partitions == null) {
-			throw new UnsupportedOperationException("Current database do not support PARTITION operation. " + getDriverInfo() .getDatabaseProductName());
+			throw new UnsupportedOperationException(
+					"Current database do not support PARTITION operation. " + getDriverInfo().getDatabaseProductName());
 		}
 		if (partitions.size() == 1 && partitions.get(0).getMethod() == PartitionMethod.NOT_PARTITIONED) {
 			return Collections.emptyList();
@@ -487,17 +500,17 @@ public abstract class MetadataQuerySupport {
 	public static final int INDEX_POLICY_MERGE_CONSTRAINTS = 2;
 
 	/**
-	 *  得到指定实体的所有索引(基于JDBC驱动实现，实际在不同数据库上可能不准确。)
+	 * 得到指定实体的所有索引(基于JDBC驱动实现，实际在不同数据库上可能不准确。)
 	 *
-	 *  @param table  指定实体类型
-	 *  @param fetchPolicy {@link #INDEX_POLICY_INDEX_ONLY} 去除传统意义上的constraint （纯Index）
-	 *                {@link #INDEX_POLICY_ALL_INDEX}
-	 *                不去除Constraint。直接返回JDBC的getIndex的结果（单 JDBC）
-	 *                {@link #INDEX_POLICY_MERGE_CONSTRAINTS}
-	 *                连同已知的Constraint一起返回，Constraint的数据以Constraint为准（合并结果）
+	 * @param table       指定实体类型
+	 * @param fetchPolicy {@link #INDEX_POLICY_INDEX_ONLY} 去除传统意义上的constraint
+	 *                    （纯Index） {@link #INDEX_POLICY_ALL_INDEX}
+	 *                    不去除Constraint。直接返回JDBC的getIndex的结果（单 JDBC）
+	 *                    {@link #INDEX_POLICY_MERGE_CONSTRAINTS}
+	 *                    连同已知的Constraint一起返回，Constraint的数据以Constraint为准（合并结果）
 	 *
-	 *  @see Constraint
-	 *  @return Constraints
+	 * @see Constraint
+	 * @return Constraints
 	 */
 	public List<Constraint> getIndexes(SchemaAndTable table, int fetchPolicy) {
 		table = getConfiguration().getOverride(table);
@@ -506,7 +519,7 @@ public abstract class MetadataQuerySupport {
 		SchemaPolicy policy = getConfiguration().getTemplates().getSchemaPolicy();
 		final String catalog = policy.asCatalog(namespace);
 		final String schema = policy.asSchema(namespace);
-		
+
 		List<Constraint> constraints = fetchPolicy == INDEX_POLICY_ALL_INDEX ? Collections.emptyList()
 				: getConstraints0(catalog, schema, tableName, fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS);
 		Set<String> constraintsNames = collectConstraintNames(constraints);
@@ -514,8 +527,8 @@ public abstract class MetadataQuerySupport {
 		if (fetchPolicy == INDEX_POLICY_MERGE_CONSTRAINTS) {
 			result.addAll(constraints);
 		}
-		
-		for(Constraint index: getIndex0(catalog,schema,tableName)) {
+
+		for (Constraint index : getIndex0(catalog, schema, tableName)) {
 			// 已经在约束数据中，从索引中去除
 			if (constraintsNames.contains(index.getName())) {
 				continue;
@@ -524,13 +537,12 @@ public abstract class MetadataQuerySupport {
 		}
 		return result;
 	}
-	
+
 	private List<Constraint> getIndex0(String catalog, String schema, String tableName) {
 		SchemaReader template = getConfiguration().getTemplates().getSchemaAccessor();
 		return doSQLQuery(q -> template.getIndexes(catalog, schema, tableName, q), "getIndexes");
 	}
-	
-	
+
 	private Set<String> collectConstraintNames(Collection<Constraint> constraints) {
 		if (constraints == null) {
 			return Collections.emptySet();
@@ -557,16 +569,22 @@ public abstract class MetadataQuerySupport {
 	}
 
 	private static String processName(String matchName, Ops oper) {
-		if (oper != null && oper != Ops.EQ) {
-			if (StringUtils.isEmpty(matchName)) {
-				matchName = "%";
-			} else if (oper == Ops.LIKE) {
-				matchName = "%" + matchName + "%";
-			} else if (oper == Ops.ENDS_WITH) {
-				matchName = "%" + matchName;
-			} else if (oper == Ops.STARTS_WITH) {
-				matchName = matchName + "%";
-			}
+		Assert.notNull(oper);
+		if (oper == Ops.EQ) {
+			return matchName;
+		}
+		if (StringUtils.isEmpty(matchName)) {
+			return "%";
+		}
+		if (matchName.startsWith("%") || matchName.endsWith("%")) {
+			return matchName;
+		}
+		if (oper == Ops.LIKE) {
+			matchName = "%" + matchName + "%";
+		} else if (oper == Ops.ENDS_WITH) {
+			matchName = "%" + matchName;
+		} else if (oper == Ops.STARTS_WITH) {
+			matchName = matchName + "%";
 		}
 		return matchName;
 	}
@@ -603,7 +621,8 @@ public abstract class MetadataQuerySupport {
 		}
 	}
 
-	private <T> List<T> doMetadataQuery(String action, QueryFunction<DatabaseMetaData, ResultSet> func, QueryFunction<ResultSet, T> resultExtractor) {
+	private <T> List<T> doMetadataQuery(String action, QueryFunction<DatabaseMetaData, ResultSet> func,
+			QueryFunction<ResultSet, T> resultExtractor) {
 		Assert.notNull(func);
 		Assert.notNull(resultExtractor);
 		Connection conn = getConnection();
@@ -658,15 +677,17 @@ public abstract class MetadataQuerySupport {
 
 	/**
 	 * 指定一个SQL脚本文件运行
-	 * @param url      the script file.
-	 * @param endChars 命令结束字符
-	 * @param charset charset
-	 * @param ignoreErrors 出现错误继续执行
+	 * 
+	 * @param url                the script file.
+	 * @param endChars           命令结束字符
+	 * @param charset            charset
+	 * @param ignoreErrors       出现错误继续执行
 	 * @param exceptionCollector 执行错误的SQL的异常信息将被写入这个Map
 	 * @return 所有指令返回的行数总和
 	 */
-	public int executeScriptFile(URL url, Charset charset, String endChars, boolean ignoreErrors, Map<String, RuntimeException> exceptionCollector) {
-		Assert.notNull(url,"Script file url is null.");
+	public int executeScriptFile(URL url, Charset charset, String endChars, boolean ignoreErrors,
+			Map<String, RuntimeException> exceptionCollector) {
+		Assert.notNull(url, "Script file url is null.");
 		char[] ends = endChars.toCharArray();
 		Connection conn = getConnection();
 		SQLListenerContextImpl context = startContext(conn);
