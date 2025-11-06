@@ -129,6 +129,10 @@ public class DbSchemaGenerator {
     public File generateTable(String name) {
         checkPackage();
         TableInfo table = metadata.getTable(new SchemaAndTable(null, name));
+        if(table==null) {
+        	log.warn("Table {} not exist.", name);
+        	return null;
+        }
         File file= generateTable(table).getFirst();
         tryRelease();
         return file;
