@@ -55,6 +55,9 @@ public class InitProcessor {
 		}
 	}
 
+	/*
+	 * 返回false表示不再执行后续初始化任务
+	 */
 	private boolean doInit() {
 		// 检查有无DDL权限
 		if (option.isDdlPermissionDetect()) {

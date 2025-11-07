@@ -10,6 +10,7 @@ import com.github.xuse.querydsl.entity.CustomAnnotation;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.init.DataInitBehavior;
+import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.sql.support.SimpleDataSource;
@@ -120,8 +121,13 @@ public abstract class AbstractTestBase {
 			.setAlterExistTable(false)
 			.allowDrops()
 			.withoutAnnotation(CustomAnnotation.class)
+			.addListener(AbstractTestBase::onScaned)
 			.setDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
+	}
+	
+	private static void onScaned(RelationalPathEx<?> entityPath) {
+		System.out.println("[REG LISTENER]:"+entityPath.getType());
 	}
 }
