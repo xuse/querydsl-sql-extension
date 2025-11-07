@@ -31,6 +31,7 @@ import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SimpleName;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -176,7 +177,12 @@ public class CompilationUnitBuilder {
         if (values.isEmpty()) {
             return new MarkerAnnotationExpr(name);
         } else {
-            return new NormalAnnotationExpr(name, NodeList.nodeList(values));
+        	MemberValuePair first=values.iterator().next();
+        	if(values.size()==1 && first.getName().getIdentifier().equals("value")) {
+        		return new SingleMemberAnnotationExpr(name, first.getValue());
+        	}else {
+        		return new NormalAnnotationExpr(name, NodeList.nodeList(values));
+        	}
         }
 
     }
