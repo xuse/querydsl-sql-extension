@@ -444,7 +444,8 @@ public class ConfigurationEx {
 	 */
 	public int scanPackages(String... pkgNames) {
 		ScanContext context=new ScanContext(this).withAnnotation(scanOptions.getWithAnnotation())
-		        .withoutAnnotation(scanOptions.getWithoutAnnotation());
+		        .withoutAnnotation(scanOptions.getWithoutAnnotation())
+		        .addListeners(scanOptions.getListeners());
 		context.scan(pkgNames);
 		return context.getCount();
 	}
