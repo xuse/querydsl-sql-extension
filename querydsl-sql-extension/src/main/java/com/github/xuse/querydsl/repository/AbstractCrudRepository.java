@@ -19,6 +19,8 @@ import com.github.xuse.querydsl.annotation.query.Order;
 import com.github.xuse.querydsl.annotation.query.StringCase;
 import com.github.xuse.querydsl.annotation.query.When;
 import com.github.xuse.querydsl.init.csv.Codecs;
+import com.github.xuse.querydsl.lambda.LambdaColumnBase;
+import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
@@ -566,6 +568,46 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return executor.count();
 	}
 
+	@Override
+	public <P> List<T> listBy(List<P> ids, Path<P> path) {
+		RelationalPath<T> entity = getPath();
+		SimpleExpression<P> expr=toSafePath(path);
+		return getFactory().selectFrom(entity).where(expr.in(ids)).fetch();
+	}
+
+	@Override
+	public List<T> list(Predicate p) {
+		RelationalPath<T> entity = getPath();
+		return getFactory().selectFrom(entity).where(p).fetch();
+	}
+
+	@Override
+	public List<T> list(Predicate p, int limit, int offset) {
+		RelationalPath<T> entity = getPath();
+		SQLQueryAlter<T> query = getFactory().selectFrom(entity).where(p);
+		if(limit>0) {
+			query.limit(limit);
+		}
+		if(offset>0) {
+			query.offset(offset);
+		}
+		return query.fetch();
+	}
+
+	@Override
+	public <P> T loadBy(P param, Path<P> path) {
+		RelationalPath<T> entity = getPath();
+		SimpleExpression<P> expr = toSafePath(path);
+		return getFactory().selectFrom(entity).where(expr.eq(param)).fetchFirst();
+	}
+
+	@Override
+	public <P> T getBy(P param, Path<P> path) {
+		RelationalPath<T> entity = getPath();
+		SimpleExpression<P> expr = toSafePath(path);
+		return getFactory().selectFrom(entity).where(expr.eq(param)).fetchOne();
+	}
+
 	private boolean isUnsavedValue(java.util.function.Predicate<Object> cm, Object value, Ops operator) {
 		if (operator == Ops.IN || operator == Ops.BETWEEN) {
 			if (value == null) {
@@ -757,7 +799,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 	
 	/*
-	 *将泛型对象转换为主键条件。对于复合主键的场景，支持解析java.util.List、com.mysema.commons.lang.Pair(2列)、org.apache.commons.lang3.tuple.Triple（3列）三种方式包装的复合主键
+	 *将泛型对象转换为主键条件。对于复合主键的场景，支持解析java.util.List、com.mysema.commons.lang.Pair(2列)三种方式包装的复合主键
 	 * @param key
 	 * @return
 	 */
@@ -786,15 +828,16 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 				c[0] = ps.get(0).eq(ConstantImpl.create(pair.getFirst()));
 				c[1] = ps.get(1).eq(ConstantImpl.create(pair.getSecond()));
 				return c;
-//			} else if (key instanceof Triple && ps.size() == 3) {
-//				Triple<?, ?, ?> triple = (Triple<?, ?, ?>) key;
-//				Predicate[] c = new Predicate[3];
-//				c[0] = ps.get(0).eq(ConstantImpl.create(triple.getLeft()));
-//				c[1] = ps.get(1).eq(ConstantImpl.create(triple.getMiddle()));
-//				c[2] = ps.get(2).eq(ConstantImpl.create(triple.getRight()));
-//				return c;
 			}
 		}
 		throw Exceptions.illegalArgument("input key must be a List, because the table {} has {} primary key columns", t, ps.size());
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <P> SimpleExpression<P> toSafePath(Path<P> p){
+		if(p instanceof LambdaColumnBase) {
+			return (SimpleExpression<P>)PathCache.getPath((LambdaColumnBase<?,P>)p);
+		}
+		return (SimpleExpression<P>)p;
 	}
 }

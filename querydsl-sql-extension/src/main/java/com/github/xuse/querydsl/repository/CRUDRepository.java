@@ -8,6 +8,7 @@ import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.Predicate;
 
 /**
  * <h1>Chinese:</h1> 基于QueryDSL封装的通用CRUD仓库。
@@ -232,6 +233,26 @@ public interface CRUDRepository<T, ID> {
 	 */
 	Pair<Integer, List<T>> findByCondition(Object conditionBean, int limit, int offset);
 	
+	<P> List<T> listBy(List<P> ids,Path<P> path);
+	
+	/**
+	 * 通用的条件查询. 
+	 * @param p 
+	 * @return result list
+	 */
+	List<T> list(Predicate p);
+	/**
+	 * 通用的条件查询. 
+	 * @param p
+	 * @param limit
+	 * @param offset 
+	 * @return result list
+	 */
+	List<T> list(Predicate p, int limit, int offset);
+	
+	<P> T loadBy(P param,Path<P> path);
+	
+	<P> T getBy(P param,Path<P> path);
 	
 	default Pair<Integer, List<T>> findByCondition(Object conditionBean){
 		return findByCondition(conditionBean,0,0);
