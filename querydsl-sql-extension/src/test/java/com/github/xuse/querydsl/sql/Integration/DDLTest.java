@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.entity.Aaa;
-import com.github.xuse.querydsl.entity.QAaa;
+import com.github.xuse.querydsl.entity.TableDataTypes;
+import com.github.xuse.querydsl.entity.QTableDataTypes;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
@@ -26,15 +26,15 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DDLTest extends AbstractTestBase {
-	private QAaa t1 = QAaa.aaa;
+	private QTableDataTypes t1 = QTableDataTypes.aaa;
 	
 	@Test
 	public void reCreateTables() {
 		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
 		meta.dropTable(QCaAsset.caAsset).ifExists(true).execute();
 		meta.createTable(QCaAsset.caAsset).ifExists().execute();
-		meta.dropTable(QAaa.aaa).ifExists(true).execute();
-		meta.createTable(QAaa.aaa).execute();
+		meta.dropTable(QTableDataTypes.aaa).ifExists(true).execute();
+		meta.createTable(QTableDataTypes.aaa).execute();
 	}
 	
 	@Test
@@ -45,7 +45,7 @@ public class DDLTest extends AbstractTestBase {
 		
 		
 		//meta.refreshTable(QCaAsset.caAsset).execute();
-		meta.refreshTable(QAaa.aaa).execute();
+		meta.refreshTable(QTableDataTypes.aaa).execute();
 	}
 	
 	
@@ -66,7 +66,7 @@ public class DDLTest extends AbstractTestBase {
 	
 	@Test
 	public void testTruncateTable() {
-		QAaa t=QAaa.aaa;
+		QTableDataTypes t=QTableDataTypes.aaa;
 		SQLMetadataQueryFactory metaFactory = factory.getMetadataFactory();
 		metaFactory.truncate(t).execute();
 	}
@@ -84,16 +84,16 @@ public class DDLTest extends AbstractTestBase {
 	public void testGetIndexConstraint() {
 		SQLMetadataQueryFactory metaFactory = factory.getMetadataFactory();
 		
-		Collection<ColumnDef> columns=metaFactory.getColumns(QAaa.aaa.getSchemaAndTable());
+		Collection<ColumnDef> columns=metaFactory.getColumns(QTableDataTypes.aaa.getSchemaAndTable());
 		for(ColumnDef c:columns) {
 			System.out.println(c);
 		}
 		
-		Collection<Constraint> cs = metaFactory.getConstraints(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> cs = metaFactory.getConstraints(QTableDataTypes.aaa.getSchemaAndTable());
 		for(Constraint c:cs) {
 			log.info("constraint:{}",c);
 		}
-		Collection<Constraint> is = metaFactory.getIndices(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> is = metaFactory.getIndices(QTableDataTypes.aaa.getSchemaAndTable());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
 		}
@@ -103,7 +103,7 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void testTableRefresh() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		RelationalPathExImpl<Aaa> table=QAaa.aaa.clone();
+		RelationalPathExImpl<TableDataTypes> table=QTableDataTypes.aaa.clone();
 		//修改列备注
 		PathMapping pathex = (PathMapping) table.getColumnMetadata(table.getColumn("version"));
 		pathex.setComment("新的版本列注解");
@@ -127,7 +127,7 @@ public class DDLTest extends AbstractTestBase {
 			log.info("constraint:{}",c);
 		}
 		//读取查看现有索引
-		Collection<Constraint> is = metadata.getIndices(QAaa.aaa.getSchemaAndTable());
+		Collection<Constraint> is = metadata.getIndices(QTableDataTypes.aaa.getSchemaAndTable());
 		for(Constraint c:is) {
 			log.info("index:{}",c);
 		}
@@ -167,7 +167,7 @@ public class DDLTest extends AbstractTestBase {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 //		metadata.dropTable(QAaa.aaa).execute();
 //		metadata.createTable(QAaa.aaa).execute();
-		metadata.refreshTable(QAaa.aaa)
+		metadata.refreshTable(QTableDataTypes.aaa)
 			.removeConstraintOrIndex("unq_${table}_name_version")
 			.addColumn(
 					ColumnMetadata.named("new_column").ofType(Types.VARCHAR).withSize(64).notNull(), String.class).defaultValue("").build()
@@ -180,7 +180,7 @@ public class DDLTest extends AbstractTestBase {
 	public void testCreateIndex() {
 		QCaAsset t=QCaAsset.caAsset;
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		metadata.refreshTable(QAaa.aaa)
+		metadata.refreshTable(QTableDataTypes.aaa)
 			.createIndex("idx_foo_gender", t.gender)
 			.execute();
 	}
@@ -199,15 +199,15 @@ public class DDLTest extends AbstractTestBase {
 	@Test
 	public void testGetIndex() {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
-		metadata.dropTable(QAaa.aaa).execute();
-		metadata.createTable(QAaa.aaa).execute();
+		metadata.dropTable(QTableDataTypes.aaa).execute();
+		metadata.createTable(QTableDataTypes.aaa).execute();
 		
 		Collection<Constraint> list;
-		for(Constraint index: list = metadata.getIndices(QAaa.aaa.getSchemaAndTable())) {
+		for(Constraint index: list = metadata.getIndices(QTableDataTypes.aaa.getSchemaAndTable())) {
 			System.err.println(index);
 		};
 		assertEquals(1, list.size());
-		for(Constraint index:list = metadata.getConstraints(QAaa.aaa.getSchemaAndTable())) {
+		for(Constraint index:list = metadata.getConstraints(QTableDataTypes.aaa.getSchemaAndTable())) {
 			System.out.println(index);
 		};
 		if(metadata.getDatabaseInfo().getDbType()==DbType.mysql) {

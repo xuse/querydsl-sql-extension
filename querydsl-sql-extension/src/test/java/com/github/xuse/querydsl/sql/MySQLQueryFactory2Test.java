@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.entity.Aaa;
-import com.github.xuse.querydsl.entity.QAaa;
+import com.github.xuse.querydsl.entity.TableDataTypes;
+import com.github.xuse.querydsl.entity.QTableDataTypes;
 import com.github.xuse.querydsl.mock.MockedTestBase;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
@@ -31,7 +31,7 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testInsertIgnore() {
-        QAaa aaa=QAaa.aaa;
+        QTableDataTypes aaa=QTableDataTypes.aaa;
         SQLInsertClauseAlter insertClause = mySQLQueryFactory2.insertIgnore(aaa);
 
         assertNotNull(insertClause);
@@ -40,7 +40,7 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testInsertOnDuplicateKeyUpdateWithStringClause() {
-        RelationalPath<?> entity = QAaa.aaa;
+        RelationalPath<?> entity = QTableDataTypes.aaa;
         String clause = "col1 = col1 + 1";
         SQLInsertClauseAlter insertClause = mySQLQueryFactory2.insertOnDuplicateKeyUpdate(entity, clause);
 
@@ -50,7 +50,7 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testInsertOnDuplicateKeyUpdateWithExpressionClause() {
-    	RelationalPath<?> entity = QAaa.aaa;
+    	RelationalPath<?> entity = QTableDataTypes.aaa;
         Expression<?> clause = Expressions.constant("col1 = col1 + 1");
         SQLInsertClauseAlter insertClause = mySQLQueryFactory2.insertOnDuplicateKeyUpdate(entity, clause);
 
@@ -60,7 +60,7 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testInsertOnDuplicateKeyUpdateWithMultipleExpressionClauses() {
-    	RelationalPath<?> entity = QAaa.aaa;
+    	RelationalPath<?> entity = QTableDataTypes.aaa;
         Expression<?> clause1 = Expressions.constant("col1 = col1 + 1");
         Expression<?> clause2 = Expressions.constant("col2 = col2 + 2");
         SQLInsertClauseAlter insertClause = mySQLQueryFactory2.insertOnDuplicateKeyUpdate(entity, clause1, clause2);
@@ -71,7 +71,7 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testInsert() {
-    	RelationalPath<?> entity = QAaa.aaa;
+    	RelationalPath<?> entity = QTableDataTypes.aaa;
         SQLInsertClauseAlter insertClause = mySQLQueryFactory2.insert(entity);
 
         assertNotNull(insertClause);
@@ -86,7 +86,7 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testReplace() {
-        QAaa aaa=QAaa.aaa;
+        QTableDataTypes aaa=QTableDataTypes.aaa;
         MySQLReplaceClause replaceClause = mySQLQueryFactory2.replace(aaa);
 
         assertNotNull(replaceClause);
@@ -110,8 +110,8 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testSelectFrom() {
-    	QAaa entity = QAaa.aaa;
-        MySQLQuery<Aaa> query = mySQLQueryFactory2.selectFrom(entity);
+    	QTableDataTypes entity = QTableDataTypes.aaa;
+        MySQLQuery<TableDataTypes> query = mySQLQueryFactory2.selectFrom(entity);
         assertNotNull(query);
     }
 
@@ -131,35 +131,35 @@ public class MySQLQueryFactory2Test extends MockedTestBase{
 
     @Test
     public void testUpdate() {
-    	RelationalPath<?> entity = QAaa.aaa;
+    	RelationalPath<?> entity = QTableDataTypes.aaa;
         SQLUpdateClauseAlter updateClause = mySQLQueryFactory2.update(entity);
         assertNotNull(updateClause);
     }
 
     @Test
     public void testMerge() {
-    	RelationalPath<?> entity = QAaa.aaa;
+    	RelationalPath<?> entity = QTableDataTypes.aaa;
     	SQLMergeClauseAlter updateClause = mySQLQueryFactory2.merge(entity);
         assertNotNull(updateClause);
     }
     
     @Test
     public void testDelete() {
-    	RelationalPath<?> entity = QAaa.aaa;
+    	RelationalPath<?> entity = QTableDataTypes.aaa;
     	SQLDeleteClauseAlter delClause = mySQLQueryFactory2.delete(entity);
         assertNotNull(delClause);
     }
     
     @Test
     public void select2() {
-    	QAaa entity = QAaa.aaa;
+    	QTableDataTypes entity = QTableDataTypes.aaa;
     	MySQLQuery<Tuple> delClause = mySQLQueryFactory2.select(entity.dataBigint,entity.dataDecimal).from(entity);
     	assertNotNull(delClause);
     }
     
     @Test
     public void testselectDistinct() {
-    	QAaa entity = QAaa.aaa;
+    	QTableDataTypes entity = QTableDataTypes.aaa;
     	MySQLQuery<Tuple> delClause = mySQLQueryFactory2.selectDistinct(entity.dataBigint,entity.dataDecimal).from(entity);
         assertNotNull(delClause);
     }

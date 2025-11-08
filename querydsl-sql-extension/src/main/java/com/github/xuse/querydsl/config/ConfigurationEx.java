@@ -54,7 +54,10 @@ import com.querydsl.sql.types.Type;
  */
 public class ConfigurationEx {
 
-	public static boolean FREE_PRIMITIVE = false;
+	/**
+	 * Set true to raise an exception while using primitive field without @UnsavedValue annotation.
+	 */
+	public static PrimitiveCheck primitiveCheck = PrimitiveCheck.NORMAL;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);

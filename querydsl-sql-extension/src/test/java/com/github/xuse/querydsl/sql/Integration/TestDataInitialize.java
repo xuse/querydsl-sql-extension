@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
-import com.github.xuse.querydsl.entity.QAaa;
+import com.github.xuse.querydsl.entity.QTableDataTypes;
 import com.github.xuse.querydsl.entity.QSeataStateMachineInst;
 import com.github.xuse.querydsl.init.InitDataExporter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
@@ -23,7 +23,7 @@ public class TestDataInitialize extends AbstractTestBase{
 		new InitDataExporter(factory).writeNullString()
 				.targetDirectory(new File(System.getProperty("user.dir"),"src/test/resources"))
 				.export(QSeataStateMachineInst.class)
-				.export(QAaa.class);
+				.export(QTableDataTypes.class);
 	}
 	
 	@Test
@@ -32,7 +32,7 @@ public class TestDataInitialize extends AbstractTestBase{
 		factory.getMetadataFactory();
 		
 		
-		QAaa t=QAaa.aaa;
+		QTableDataTypes t=QTableDataTypes.aaa;
 		factory.initializeTable(t)
 			.applyConfig(t.getInitializeData())
 			.updateNulls(true)

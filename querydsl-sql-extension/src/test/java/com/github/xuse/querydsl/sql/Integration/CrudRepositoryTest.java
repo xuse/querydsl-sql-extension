@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
-import com.github.xuse.querydsl.entity.Aaa;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.entity.FooHistory;
 import com.github.xuse.querydsl.entity.FooWith2ColumnPK;
@@ -250,11 +250,11 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 		 * 
 		 * }
 		 */
-		CRUDRepository<Aaa, Long> repo = factory.asRepository(() -> Aaa.class);
+		CRUDRepository<TableDataTypes, Long> repo = factory.asRepository(() -> TableDataTypes.class);
 
 		// 写法一，传统 repository风格，功能较弱，比如无法支持Between条件
 		{
-			Aaa foo = new Aaa();
+			TableDataTypes foo = new TableDataTypes();
 			foo.setName("张三");
 			foo.setCreated(new Date().toInstant());
 			repo.findByExample(foo);
@@ -263,25 +263,25 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 
 		// 写法二，MyBatis-Plus风格
 		{
-			LambdaQueryWrapper<Aaa> wrapper = new LambdaQueryWrapper<>();
-			wrapper.eq(Aaa::getName, "张三").between(Aaa::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
-					.orderBy($(Aaa::getCreated).asc(), $(Aaa::getId).desc()).limit(10).offset(20);
-			Pair<Integer, List<Aaa>> results = repo.findAndCount(wrapper);
+			LambdaQueryWrapper<TableDataTypes> wrapper = new LambdaQueryWrapper<>();
+			wrapper.eq(TableDataTypes::getName, "张三").between(TableDataTypes::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+					.orderBy($(TableDataTypes::getCreated).asc(), $(TableDataTypes::getId).desc()).limit(10).offset(20);
+			Pair<Integer, List<TableDataTypes>> results = repo.findAndCount(wrapper);
 		}
 
 		// 写法三，接近queryDSL原生风格，同时支持lambda
 		{
-			repo.query().eq(Aaa::getName, "张三")
-					.between(Aaa::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+			repo.query().eq(TableDataTypes::getName, "张三")
+					.between(TableDataTypes::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
 					// .groupBy(Aaa::getGender,Aaa::getTaskStatus)
-					.groupBy($(Aaa::getGender), s(Aaa::getName).upper()).findAndCount();
+					.groupBy($(TableDataTypes::getGender), s(TableDataTypes::getName).upper()).findAndCount();
 		}
 
 		// 写法四，QueryDSL风格
 		{
-			LambdaColumn<Aaa, String> name = Aaa::getName;
-			LambdaColumn<Aaa, Instant> created = Aaa::getCreated;
-			List<Aaa> list = repo.find(
+			LambdaColumn<TableDataTypes, String> name = TableDataTypes::getName;
+			LambdaColumn<TableDataTypes, Instant> created = TableDataTypes::getCreated;
+			List<TableDataTypes> list = repo.find(
 					q -> q.where(name.eq("张三").and(created.between(DateUtils.getInstant(2023, 12, 1), Instant.now()))));
 		}
 
@@ -297,11 +297,11 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 	// 如果涉及较为复杂的函数和处理，就要一个接口进行辅助了
 	@Test
 	public void testPureBean5() {
-		CRUDRepository<Aaa, Long> repo = factory.asRepository(() -> Aaa.class);
-		repo.query().eq(Aaa::getName, "张三").between(Aaa::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+		CRUDRepository<TableDataTypes, Long> repo = factory.asRepository(() -> TableDataTypes.class);
+		repo.query().eq(TableDataTypes::getName, "张三").between(TableDataTypes::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
 				// .groupBy(Aaa::getGender,Aaa::getTaskStatus)
-				.groupBy(column(Aaa::getGender), string(Aaa::getName).upper())
-				.having(column(Aaa::getName).count().goe(15)).findAndCount();
+				.groupBy(column(TableDataTypes::getGender), string(TableDataTypes::getName).upper())
+				.having(column(TableDataTypes::getName).count().goe(15)).findAndCount();
 	}
 
 	@Test

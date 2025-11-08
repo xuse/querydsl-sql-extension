@@ -31,11 +31,11 @@ import com.querydsl.sql.ColumnMetadata;
  * QAaa is a Querydsl query type for Aaa
  */
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa extends RelationalPathBaseEx<Aaa> {
+public class QTableDataTypes extends RelationalPathBaseEx<TableDataTypes> {
 
 	private static final long serialVersionUID = -1389588466;
 
-	public static final QAaa aaa = new QAaa("ta");
+	public static final QTableDataTypes aaa = new QTableDataTypes("ta");
 
 	public final DateTimePath<Instant> created = createDateTime("created", Instant.class);
 
@@ -82,30 +82,30 @@ public class QAaa extends RelationalPathBaseEx<Aaa> {
 	public final SimplePath<byte[]> dateVarBinary = super.createSimple("dateVarBinary", byte[].class);
 	
 	
-	public final com.querydsl.sql.PrimaryKey<Aaa> PK_Aaa = createPrimaryKey(id);
+	public final com.querydsl.sql.PrimaryKey<TableDataTypes> PK_Aaa = createPrimaryKey(id);
 
-	public QAaa(String variable) {
-		super(Aaa.class, forVariable(variable), "null", "AAA");
+	public QTableDataTypes(String variable) {
+		super(TableDataTypes.class, forVariable(variable), "null", "AAA");
 		addMetadata();
 	}
 
-	public QAaa(String variable, String schema, String table) {
-		super(Aaa.class, forVariable(variable), schema, table);
+	public QTableDataTypes(String variable, String schema, String table) {
+		super(TableDataTypes.class, forVariable(variable), schema, table);
 		addMetadata();
 	}
 
-	public QAaa(String variable, String schema) {
-		super(Aaa.class, forVariable(variable), schema, "AAA");
+	public QTableDataTypes(String variable, String schema) {
+		super(TableDataTypes.class, forVariable(variable), schema, "AAA");
 		addMetadata();
 	}
 
-	public QAaa(Path<? extends Aaa> path) {
+	public QTableDataTypes(Path<? extends TableDataTypes> path) {
 		super(path.getType(), path.getMetadata(), "null", "AAA");
 		addMetadata();
 	}
 
-	public QAaa(PathMetadata metadata) {
-		super(Aaa.class, metadata, "null", "AAA");
+	public QTableDataTypes(PathMetadata metadata) {
+		super(TableDataTypes.class, metadata, "null", "AAA");
 		addMetadata();
 	}
 

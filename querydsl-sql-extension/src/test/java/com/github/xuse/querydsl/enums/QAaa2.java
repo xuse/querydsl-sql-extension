@@ -7,7 +7,7 @@ import java.util.Date;
 
 import javax.annotation.Generated;
 
-import com.github.xuse.querydsl.entity.Aaa;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
@@ -24,7 +24,7 @@ import com.querydsl.sql.ColumnMetadata;
  * QAaa is a Querydsl query type for Aaa
  */
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
-public class QAaa2 extends RelationalPathBaseEx<Aaa> {
+public class QAaa2 extends RelationalPathBaseEx<TableDataTypes> {
 
 	private static final long serialVersionUID = -1389588466;
 
@@ -42,30 +42,30 @@ public class QAaa2 extends RelationalPathBaseEx<Aaa> {
 	
 	public final EnumPath<TaskStatus> taskStatus = super.createEnum("taskStatus", TaskStatus.class);
 
-	public final com.querydsl.sql.PrimaryKey<Aaa> PK_Aaa = createPrimaryKey(id,version);
+	public final com.querydsl.sql.PrimaryKey<TableDataTypes> PK_Aaa = createPrimaryKey(id,version);
 
 	public QAaa2(String variable) {
-		super(Aaa.class, forVariable(variable), "null", "AAA");
+		super(TableDataTypes.class, forVariable(variable), "null", "AAA");
 		addMetadata();
 	}
 
 	public QAaa2(String variable, String schema, String table) {
-		super(Aaa.class, forVariable(variable), schema, table);
+		super(TableDataTypes.class, forVariable(variable), schema, table);
 		addMetadata();
 	}
 
 	public QAaa2(String variable, String schema) {
-		super(Aaa.class, forVariable(variable), schema, "AAA");
+		super(TableDataTypes.class, forVariable(variable), schema, "AAA");
 		addMetadata();
 	}
 
-	public QAaa2(Path<? extends Aaa> path) {
+	public QAaa2(Path<? extends TableDataTypes> path) {
 		super(path.getType(), path.getMetadata(), "null", "AAA");
 		addMetadata();
 	}
 
 	public QAaa2(PathMetadata metadata) {
-		super(Aaa.class, metadata, "null", "AAA");
+		super(TableDataTypes.class, metadata, "null", "AAA");
 		addMetadata();
 	}
 

@@ -38,9 +38,11 @@ import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
 import io.github.xuse.querydsl.sql.code.generate.core.GenericTypes;
 
 public class JavaTypeToPropertyPathMappings {
-	static interface PathGenerator{
-		ClassOrInterfaceType pathType(Type fieldType,CompilationUnitBuilder builder); 
-		ClassOrInterfaceType lambdaType(Type type,ClassOrInterfaceType bean,CompilationUnitBuilder builder);
+	static interface PathGenerator {
+		ClassOrInterfaceType pathType(Type fieldType, CompilationUnitBuilder builder);
+
+		ClassOrInterfaceType lambdaType(Type type, ClassOrInterfaceType bean, CompilationUnitBuilder builder);
+
 		MethodCallExpr pathValue(Type type, String name, CompilationUnitBuilder builder);
 	}
 	

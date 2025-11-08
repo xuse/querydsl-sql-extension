@@ -478,21 +478,28 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * <h2>中文</h2>
 	 * 指定需要更新的字段，数据从传入对象中读取
 	 * 
-	 * @param obj   the data object. 数据对象
+	 * @param bean   the data object. 数据对象
 	 * @param paths Specify the fields to be updated; unspecified fields will be
 	 *              ignored. 指定需要更新的字段，未指定的字段将被忽略。
 	 * @return this
 	 */
-	public SQLUpdateClauseAlter populateFields(Object obj, Path<?>... paths) {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public SQLUpdateClauseAlter populateFields(Object bean, Path<?>... paths) {
+		boolean tuple = (bean instanceof Tuple);
+		Mapper mapper= Mappers.getUpdate(tuple, updateNulls);
 		RelationalPathEx<?> entity = (RelationalPathEx<?>) this.entity;
+		Map<Path<?>, Object> values = mapper.createMap(entity, bean);
 		for (Path<?> p : paths) {
 			ColumnMapping metadata = entity.getColumnMetadata(p);
-			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata,
-					AbstractMapperSupport.SCENARIO_UPDATE);
+			if(metadata==null) {
+				throw new IllegalArgumentException(p+" is not valid path in entity "+entity.getType());
+			}
+			Object value = values.get(p);
 			if (value instanceof Expression<?>) {
 				updates.put(p, (Expression<?>) value);
+			} else if(updateNulls) {
+				updates.put(p, value==null? Null.CONSTANT:ConstantImpl.create(value));
 			} else if (!metadata.isUnsavedValue(value)) {
-				assert value != null;
 				updates.put(p, ConstantImpl.create(value));
 			}
 		}

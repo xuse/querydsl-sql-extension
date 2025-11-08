@@ -13,7 +13,7 @@ import java.util.Date;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.entity.Aaa;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.init.TableDataInitializer;
@@ -160,9 +160,9 @@ public class CodecsTest {
 
 	@Test
 	public void testErrors() {
-		Aaa aaa = new Aaa();
+		TableDataTypes aaa = new TableDataTypes();
 		Assertions.assertThrows(UnsupportedOperationException.class, () -> {
-			Codecs.toString(aaa, Aaa.class);
+			Codecs.toString(aaa, TableDataTypes.class);
 		});
 	}
 }

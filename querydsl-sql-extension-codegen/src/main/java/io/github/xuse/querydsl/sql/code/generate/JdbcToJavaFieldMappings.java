@@ -28,7 +28,7 @@ public class JdbcToJavaFieldMappings {
         }
         
         public Type getFieldType(ColumnDef c) {
-            if(!c.isNullable()) {
+            if(!c.isNullable() && c.isAutoIncrement()) {
                 return Primitives.toPrimitiveClass(clz);
             }
             return clz;

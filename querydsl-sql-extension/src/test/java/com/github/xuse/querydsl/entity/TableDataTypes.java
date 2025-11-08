@@ -19,7 +19,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @InitializeData(value="table_aaa",mergeKeys = {"name"})
-public class Aaa {
+public class TableDataTypes {
 
 	private Instant created;
 
