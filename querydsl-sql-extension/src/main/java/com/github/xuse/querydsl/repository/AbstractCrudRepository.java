@@ -42,6 +42,7 @@ import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Ops;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.ComparableExpression;
@@ -508,6 +509,15 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		boolean asc = toAscDesc(sortValue);
 		List<Pair<Path<?>,Boolean>> result=new ArrayList<>();
 		for(String pathName:StringUtils.split(fieldNames,',')) {
+			//混合Expr模式
+			if(order.orderExpr()) {
+				int space=pathName.indexOf(' ');
+				if(space>0) {
+					sortValue = pathName.substring(space+1).trim();
+					pathName = pathName.substring(0, space).trim();
+					asc = toAscDesc(sortValue);
+				}
+			}
 			Path<?> path=bindings.get(pathName);
 			if (path == null) {
 				throw Exceptions.illegalArgument("Not found path {}", fieldNames);
@@ -555,6 +565,29 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.delete();
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public int deleteBatch(Collection<ID> keys) {
+		RelationalPath<T> t = getPath();
+		SQLDeleteClauseAlter query = getFactory().delete(t);
+		 List<? extends Path<?>> columns=getPkColumn();
+		if(columns.size()>1) {
+			throw Exceptions.unsupportedOperation("using batch delete on Complex primary keys on {}.", t);
+		}
+		if(columns.isEmpty()) {
+			throw Exceptions.unsupportedOperation("no primary key on {}.", t);
+		}
+		@SuppressWarnings("rawtypes")
+		SimpleExpression p=(SimpleExpression)columns.get(0);
+		return (int)query.where(p.in(keys)).execute();
+	}
+
+	@Override
+	public int deleteBy(Predicate... predicates) {
+		RelationalPath<T> t = getPath();
+		return (int)getFactory().delete(t).where(predicates).execute();
+	}
 
 	@Override
 	public int update(T t, QueryWrapper<T,T, ?> wrapper) {
@@ -569,20 +602,20 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public <P> List<T> listBy(List<P> ids, Path<P> path) {
+	public <P> List<T> listBy(Path<P> path, Collection<P> ids) {
 		RelationalPath<T> entity = getPath();
 		SimpleExpression<P> expr=toSafePath(path);
 		return getFactory().selectFrom(entity).where(expr.in(ids)).fetch();
 	}
 
 	@Override
-	public List<T> list(Predicate p) {
+	public List<T> list(Predicate... p) {
 		RelationalPath<T> entity = getPath();
 		return getFactory().selectFrom(entity).where(p).fetch();
 	}
 
 	@Override
-	public List<T> list(Predicate p, int limit, int offset) {
+	public List<T> list(Predicate p, int limit, int offset, OrderSpecifier<? extends Comparable<?>> order) {
 		RelationalPath<T> entity = getPath();
 		SQLQueryAlter<T> query = getFactory().selectFrom(entity).where(p);
 		if(limit>0) {
@@ -591,21 +624,46 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if(offset>0) {
 			query.offset(offset);
 		}
+		if(order!=null) {
+			query.orderBy(order);
+		}
 		return query.fetch();
 	}
 
 	@Override
-	public <P> T loadBy(P param, Path<P> path) {
+	public <P> T loadBy(Path<P> path, P param) {
 		RelationalPath<T> entity = getPath();
 		SimpleExpression<P> expr = toSafePath(path);
 		return getFactory().selectFrom(entity).where(expr.eq(param)).fetchFirst();
 	}
 
 	@Override
-	public <P> T getBy(P param, Path<P> path) {
+	public <P> T getBy(Path<P> path, P param) {
 		RelationalPath<T> entity = getPath();
 		SimpleExpression<P> expr = toSafePath(path);
 		return getFactory().selectFrom(entity).where(expr.eq(param)).fetchOne();
+	}
+	
+	@Override
+	public T loadBy(Predicate... p) {
+		RelationalPath<T> entity = getPath();
+		return getFactory().selectFrom(entity).where(p).fetchFirst();
+	}
+	
+	@Override
+	public T loadBy(Predicate p, OrderSpecifier<? extends Comparable<?>> order) {
+		RelationalPath<T> entity = getPath();
+		SQLQueryAlter<T> sql = getFactory().selectFrom(entity).where(p);
+		if (order != null) {
+			sql.orderBy(order);
+		}
+		return sql.fetchFirst();
+	}
+
+	@Override
+	public T getBy(Predicate p) {
+		RelationalPath<T> entity = getPath();
+		return getFactory().selectFrom(entity).where(p).fetchOne();
 	}
 
 	private boolean isUnsavedValue(java.util.function.Predicate<Object> cm, Object value, Ops operator) {

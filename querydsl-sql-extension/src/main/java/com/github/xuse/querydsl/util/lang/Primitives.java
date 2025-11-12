@@ -6,6 +6,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 
 /**
  * Utilities of operating Primitive types.
+ * 
  * @author Joey
  */
 public final class Primitives {
@@ -13,36 +14,37 @@ public final class Primitives {
 	}
 
 	/**
-	 * Return the default values of the eight primitive types (as their boxed instance).
+	 * Return the default values of the eight primitive types (as their boxed
+	 * instance).
 	 *
-	 * @param javaClass javaClass
-	 *            数据类型
+	 * @param javaClass javaClass 数据类型
 	 * @return 返回该种技术类型的默认数值
 	 * @throws IllegalArgumentException If encounter IllegalArgumentException
-	 *             如果传入的javaClass不是八种基础类型之一抛出。
+	 *                                  如果传入的javaClass不是八种基础类型之一抛出。
 	 */
 	public static Object defaultValueOfPrimitive(Class<?> javaClass) {
 		if (javaClass.isPrimitive()) {
-			String s=javaClass.getName();
-			//采用s.length()+s.charAt(0) 可以得到8个基元类型的最小数值分布，以确保被编译为tableswitch。
-			//{102=byte, 103=char, 105=boolean, 106=double, 107=float, 108=int, 112=long, 120=short}
-			switch(s.length()+s.charAt(0)) {
-				case 108://int
-					return 0;
-				case 112://long
-					return 0L;
-				case 106:
-					return 0d;
-				case 105:
-					return Boolean.FALSE;
-				case 107:
-					return 0f;
-				case 103:
-					return (char) 0;
-				case 102:
-					return Byte.valueOf((byte) 0);
-				default:
-					return Short.valueOf((short) 0);
+			String s = javaClass.getName();
+			// 采用s.length()+s.charAt(0) 可以得到8个基元类型的最小数值分布，以确保被编译为tableswitch。
+			// {102=byte, 103=char, 105=boolean, 106=double, 107=float, 108=int, 112=long,
+			// 120=short}
+			switch (s.length() + s.charAt(0)) {
+			case 108:// int
+				return 0;
+			case 112:// long
+				return 0L;
+			case 106:
+				return 0d;
+			case 105:
+				return Boolean.FALSE;
+			case 107:
+				return 0f;
+			case 103:
+				return (char) 0;
+			case 102:
+				return Byte.valueOf((byte) 0);
+			default:
+				return Short.valueOf((short) 0);
 			}
 		}
 		throw new IllegalArgumentException(javaClass + " is not Primitive Type.");
@@ -55,25 +57,25 @@ public final class Primitives {
 	 * @return 如果不能转换，则返回输入的类
 	 */
 	public static Class<?> toPrimitiveClass(Class<?> wrapperClass) {
-		switch(wrapperClass.getName()) {
-			case "java.lang.Integer":
-				return Integer.TYPE;
-			case "java.lang.Byte":
-				return Byte.TYPE;
-			case "java.lang.Short":
-				return Short.TYPE;
-			case "java.lang.Long":
-				return Long.TYPE;
-			case "java.lang.Float":
-				return Float.TYPE;
-			case "java.lang.Double":
-				return Double.TYPE;
-			case "java.lang.Character":
-				return Character.TYPE;
-			case "java.lang.Boolean":
-				return Boolean.TYPE;
-			default:
-				return wrapperClass;
+		switch (wrapperClass.getName()) {
+		case "java.lang.Integer":
+			return Integer.TYPE;
+		case "java.lang.Byte":
+			return Byte.TYPE;
+		case "java.lang.Short":
+			return Short.TYPE;
+		case "java.lang.Long":
+			return Long.TYPE;
+		case "java.lang.Float":
+			return Float.TYPE;
+		case "java.lang.Double":
+			return Double.TYPE;
+		case "java.lang.Character":
+			return Character.TYPE;
+		case "java.lang.Boolean":
+			return Boolean.TYPE;
+		default:
+			return wrapperClass;
 		}
 	}
 
@@ -85,26 +87,27 @@ public final class Primitives {
 	 */
 	public static Class<?> toWrapperClass(Class<?> primitiveClass) {
 		if (primitiveClass.isPrimitive()) {
-			//采用s.length()+s.charAt(0) 可以得到8个基元类型的最小数值分布，以确保被编译为tableswitch。
-			//{102=byte, 103=char, 105=boolean, 106=double, 107=float, 108=int, 112=long, 120=short}
-			String s=primitiveClass.getName();
-			switch(s.length()+s.charAt(0)) {
-				case 108:
-					return Integer.class;
-				case 112:
-					return Long.class;
-				case 106:
-					return Double.class;
-				case 105:
-					return Boolean.class;
-				case 107:
-					return Float.class;
-				case 103:
-					return Character.class;
-				case 102:
-					return Byte.class;
-				default:
-					return Short.class;
+			// 采用s.length()+s.charAt(0) 可以得到8个基元类型的最小数值分布，以确保被编译为tableswitch。
+			// {102=byte, 103=char, 105=boolean, 106=double, 107=float, 108=int, 112=long,
+			// 120=short}
+			String s = primitiveClass.getName();
+			switch (s.length() + s.charAt(0)) {
+			case 108:
+				return Integer.class;
+			case 112:
+				return Long.class;
+			case 106:
+				return Double.class;
+			case 105:
+				return Boolean.class;
+			case 107:
+				return Float.class;
+			case 103:
+				return Character.class;
+			case 102:
+				return Byte.class;
+			default:
+				return Short.class;
 			}
 		}
 		return primitiveClass;
@@ -113,8 +116,7 @@ public final class Primitives {
 	/**
 	 * 得到原生对象和String的缺省值。
 	 *
-	 * @param cls cls
-	 *            类型
+	 * @param cls cls 类型
 	 *
 	 * @return 指定类型数据的缺省值。如果传入类型是primitive和String之外的类型返回null。
 	 */
@@ -128,7 +130,40 @@ public final class Primitives {
 	}
 
 	/**
-	 * @param value value
+	 * 相当于Optional.ofNullable(value).orElse(0)
+	 * 
+	 * @param value
+	 * @param defaultValue
+	 * @return 安全拆箱为0
+	 */
+	public static short nullToZero(Short value) {
+		return value == null ? 0 : value.shortValue();
+	}
+
+	/**
+	 * 相当于Optional.ofNullable(value).orElse(0)
+	 * 
+	 * @param value
+	 * @param defaultValue
+	 * @return 安全拆箱为0
+	 */
+	public static int nullToZero(Integer value) {
+		return value == null ? 0 : value.intValue();
+	}
+
+	/**
+	 * 相当于Optional.ofNullable(value).orElse(0L)
+	 * 
+	 * @param value
+	 * @param defaultValue
+	 * @return 安全拆箱为0
+	 */
+	public static long nullToZero(Long value) {
+		return value == null ? 0 : value.longValue();
+	}
+
+	/**
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return 安全拆箱
 	 */
@@ -137,7 +172,7 @@ public final class Primitives {
 	}
 
 	/**
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return 安全拆箱
 	 */
@@ -146,7 +181,7 @@ public final class Primitives {
 	}
 
 	/**
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return 安全拆箱
 	 */
@@ -157,7 +192,7 @@ public final class Primitives {
 	/**
 	 * 安全拆箱
 	 *
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return double value
 	 */
@@ -168,7 +203,7 @@ public final class Primitives {
 	/**
 	 * 安全拆箱
 	 *
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return value
 	 */
@@ -179,7 +214,7 @@ public final class Primitives {
 	/**
 	 * 安全拆箱
 	 *
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return value
 	 */
@@ -190,7 +225,7 @@ public final class Primitives {
 	/**
 	 * 安全拆箱
 	 *
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return value
 	 */
@@ -201,7 +236,7 @@ public final class Primitives {
 	/**
 	 * 安全拆箱
 	 *
-	 * @param value value
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return value
 	 */
@@ -211,7 +246,8 @@ public final class Primitives {
 
 	/**
 	 * 安全拆箱（扩展）
-	 * @param value value
+	 * 
+	 * @param value        value
 	 * @param defaultValue defaultValue
 	 * @return value
 	 */
@@ -220,9 +256,10 @@ public final class Primitives {
 	}
 
 	/**
-	 *  将long安全的转换为int
-	 *  @param num long value
-	 *  @return int value
+	 * 将long安全的转换为int
+	 * 
+	 * @param num long value
+	 * @return int value
 	 */
 	public static int toIntSafely(long num) {
 		if (num > Integer.MAX_VALUE || num < Integer.MIN_VALUE) {
@@ -232,9 +269,10 @@ public final class Primitives {
 	}
 
 	/**
-	 *  将int安全的转换比为short
-	 *  @param num int value
-	 *  @return short value
+	 * 将int安全的转换比为short
+	 * 
+	 * @param num int value
+	 * @return short value
 	 */
 	public static short toShortSafely(int num) {
 		if (num > Short.MAX_VALUE || num < Short.MIN_VALUE) {
@@ -245,7 +283,7 @@ public final class Primitives {
 
 	/**
 	 * @param i i
-	 * @return  判断是否为奇数
+	 * @return 判断是否为奇数
 	 */
 	public static boolean isOdd(int i) {
 		return (i & 1) == 1;

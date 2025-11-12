@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -7,6 +8,7 @@ import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.mysema.commons.lang.Pair;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 
@@ -114,6 +116,13 @@ public interface CRUDRepository<T, ID> {
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int delete(ID key);
+	
+	/**
+	 * 根据主键批量删除
+	 * @param key
+	 * @return 删除记录数 / count of records deleted.
+	 */
+	int deleteBatch(Collection<ID> key);
 
 	/**
 	 * 按传入的Wrapper条件删除记录.
@@ -133,6 +142,15 @@ public interface CRUDRepository<T, ID> {
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int delete(Consumer<SQLDeleteClauseAlter> consumer);
+	
+	
+	/**
+	 * 根据条件删除记录
+	 * @param predicate
+	 * @return 删除记录数 / count of records deleted.
+	 */
+	int deleteBy(Predicate... predicate);
+	
 
 	/**
 	 * <h2>Chinese:</h2> 按示例对象删除记录。
@@ -233,26 +251,58 @@ public interface CRUDRepository<T, ID> {
 	 */
 	Pair<Integer, List<T>> findByCondition(Object conditionBean, int limit, int offset);
 	
-	<P> List<T> listBy(List<P> ids,Path<P> path);
+	/**
+	 * 根据指定字段条件批量加载
+	 * @param <P> 条件字段类型
+	 * @param ids 查询条件
+	 * @param path 条件字段
+	 * @return result list
+	 */
+	<P> List<T> listBy(Path<P> path, Collection<P> ids);
 	
 	/**
 	 * 通用的条件查询. 
 	 * @param p 
 	 * @return result list
 	 */
-	List<T> list(Predicate p);
+	List<T> list(Predicate... p);
 	/**
-	 * 通用的条件查询. 
-	 * @param p
-	 * @param limit
+	 * 带排序和分页条件的查询. 
+	 * @param p 条件
+	 * @param limit 
 	 * @param offset 
+	 * @param order 排序
 	 * @return result list
 	 */
-	List<T> list(Predicate p, int limit, int offset);
+	List<T> list(Predicate p, int limit, int offset, OrderSpecifier<? extends Comparable<?>> order);
 	
-	<P> T loadBy(P param,Path<P> path);
 	
-	<P> T getBy(P param,Path<P> path);
+	default List<T> list(Predicate p, int limit){
+		return list(p,limit,0,null);
+	};
+	
+	/**
+	 * 根据条件加载 
+	 * @param <P>
+	 * @param path 列
+	 * @param param 条件值
+	 * @return 第一条匹配记录
+	 */
+	<P> T loadBy(Path<P> path, P param);
+
+	/**
+	 * 带排序的首条加载
+	 * @param p
+	 * @param order 排序
+	 * @return
+	 */
+	T loadBy(Predicate p, OrderSpecifier<? extends Comparable<?>> order);
+	
+	T loadBy(Predicate... p);
+	
+	<P> T getBy(Path<P> path, P param);
+	
+	T getBy(Predicate p);
 	
 	default Pair<Integer, List<T>> findByCondition(Object conditionBean){
 		return findByCondition(conditionBean,0,0);

@@ -16,4 +16,6 @@ public @interface Order {
 	 */
 	String sortField() default "";
 	
+	boolean orderExpr() default false;
+	
 }

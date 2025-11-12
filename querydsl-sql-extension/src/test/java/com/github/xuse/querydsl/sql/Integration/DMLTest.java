@@ -584,7 +584,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		//Case 4 
 		{
 			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
-			List<Foo> foos=repo.listBy(Arrays.asList(1,2,3), column);
+			List<Foo> foos=repo.listBy(column, Arrays.asList(1,2,3));
 			System.out.println(foos.size());
 		}
 		
@@ -596,18 +596,25 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		
 		{
 			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
-			List<Foo> foos=repo.list(column.eq(1),10,10);
+			List<Foo> foos = repo.list(column.eq(1), 10, 10, null);
 			System.out.println(foos.size());
 		}
 		
 		{
 			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
-			Foo foos=repo.loadBy(1, column);
+			Foo foos=repo.loadBy(column, 1);
 		}
 		
 		{
 			LambdaColumn<Foo, String> column=Foo::getCode;
-			Foo foos=repo.getBy("1", column);
+			Foo foos=repo.getBy(column, "1");
+		}
+		{
+			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
+			Foo foo=repo.loadBy(column, 1);
+			System.out.println(foo);
+			foo.setGender(Gender.MALE);
+			repo.update(foo.getId(), foo);
 		}
 	}
 
