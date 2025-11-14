@@ -337,6 +337,36 @@ public class DbSchemaGenerator {
 		return this;
 	}
 
+	/**
+	 * 自定义Java映射类型。<br>
+	 * 例如下面的调用可以让生成的类使用Instant映射数据库的时间戳。
+	 *<p>
+	 * <code>
+	 * geneator.registerMapping(Types.TIMESTAMP, Instant.class);
+	 * </code>
+	 * 
+	 * @param jdbcType See java.sql.Types
+	 * @param javaType 对应的Java数据类型
+	 * @return this
+	 */
+	public DbSchemaGenerator registerMapping(int jdbcType,Class<?> javaType) {
+		JdbcToJavaFieldMappings.registerType(jdbcType, javaType);
+		return this;
+	}
+	
+	/**
+	 * 自定义Java映射类型（数字类）
+	 * @param jdbcType see java.sql.Types
+	 * @param javaType 对应的Java数据类型
+	 * @param noDigitType 如果没有小数位时对应的Java类型
+	 * @return this
+	 */
+	public DbSchemaGenerator registerNumberMapping(int jdbcType,Class<? extends Number> javaType,Class<? extends Number> noDigitType) {
+		JdbcToJavaFieldMappings.registerNumberType(jdbcType, javaType,noDigitType);
+		return this;
+	}
+	
+	
 	public Function<String, String> getRemarkProcessor() {
 		return remarkProcessor;
 	}

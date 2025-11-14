@@ -1,6 +1,8 @@
 package io.github.xuse.test;
 
 import java.io.File;
+import java.sql.Types;
+import java.time.Instant;
 
 import javax.sql.DataSource;
 
@@ -50,6 +52,7 @@ public class GenerateTest {
         .output(OutputDir.DIR_TARGET)
         .metafields(MetafieldGenerationType.LAMBDA)
         .useLombokAnnotation(false)
+        .registerMapping(Types.TIMESTAMP, Instant.class)
         .tableRefNameIs(s -> "_table")
         .generateTables(null, "sim_card_dev%");
     }

@@ -1,6 +1,9 @@
 package io.github.xuse.querydsl.sql.code.generate;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -16,6 +19,7 @@ import com.github.xuse.querydsl.util.lang.Primitives;
 
 import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder;
 import io.github.xuse.querydsl.sql.code.generate.core.CompilationUnitBuilder.AnnotationBuilder;
+import lombok.SneakyThrows;
 
 public class JdbcToJavaFieldMappings {
     static class FieldGenerator{
@@ -105,9 +109,44 @@ public class JdbcToJavaFieldMappings {
         }
     }
     
+    /**
+     * 自定注册替代的生成类型
+     * @param jdbcType java.sql.Types
+     * @param mapping 数值Java类型（带小数）
+     * @param ifNoDigits 数值Java类型（如果不含小数）
+     */
+    public static void registerNumberType(int jdbcType,Class<? extends Number> mapping, Class<? extends Number> ifNoDigits) {
+    	creators.put(jdbcType, new NumberGenerator(getJdbcFieldName(jdbcType), mapping, ifNoDigits));
+    }
+    
+    /**
+     * 自定义注册替代生成类型
+     * @param jdbcType java.sql.Types 
+     * @param mapping 生成的Java类中用这个类型映射对应的数据库字段
+     */
+    public static void registerType(int jdbcType,Class<?> mapping) {
+    	creators.put(jdbcType,new FieldGenerator(getJdbcFieldName(jdbcType), mapping));
+    }
     
     
-    private static final Map<Integer,FieldGenerator> creators = new HashMap<>();
+    @SneakyThrows
+    private static String getJdbcFieldName(int jdbcType) {
+    	for(Field field:Types.class.getDeclaredFields()) {
+    		int flag=field.getModifiers();
+    		if(field.getType()==int.class) {
+    			if(Modifier.isPublic(flag) && Modifier.isStatic(flag)) {
+        			int value = field.getInt(null);
+        			if(value==jdbcType) {
+        				return field.getName();
+        			}
+        		}	
+    		}
+    	}
+		throw new UnsupportedOperationException("No jdbc type value="+jdbcType);
+	}
+
+
+	private static final Map<Integer,FieldGenerator> creators = new HashMap<>();
     
     static {
         creators.put(Types.ARRAY, new ObjectGenerator("ARRAY"));
@@ -121,7 +160,7 @@ public class JdbcToJavaFieldMappings {
         creators.put(Types.CLOB, new FieldGenerator("CLOB",String.class));
         creators.put(Types.DATALINK, new ObjectGenerator("DATALINK"));
         creators.put(Types.DATE, new FieldGenerator("DATE", Date.class));
-        creators.put(Types.DECIMAL, new NumberGenerator("DECIMAL",Double.class,Long.class));
+        creators.put(Types.DECIMAL, new NumberGenerator("DECIMAL",BigDecimal.class,Long.class));
         creators.put(Types.DISTINCT,  new ObjectGenerator("DISTINCT"));
         creators.put(Types.DOUBLE,  new NumberGenerator("DOUBLE",Double.class));
         
