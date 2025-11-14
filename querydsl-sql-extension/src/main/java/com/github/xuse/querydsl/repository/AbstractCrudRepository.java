@@ -266,31 +266,64 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int)select.fetchCount();
 	}
 	
-	public final Pair<Integer,List<T>> findByCondition(Object conditionBean, int limit, int offset) {
+	@Override
+	public T loadByCondition(Object conditionBean) {
+		List<T> list = listByCondition0(conditionBean,2);
+		if(list.isEmpty()) {
+			return null;
+		}
+		return list.get(0);
+	}
+	
+	@Override
+	public List<T> listByCondition(Object conditionBean) {
+		return listByCondition0(conditionBean,0);
+	}
+	
+	private List<T> listByCondition0(Object conditionBean, int maxRows) {
 		Class<?> clz = conditionBean.getClass();
 		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
 		if (cb == null) {
 			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
 		}
 		Params p=new Params();
-		SQLQueryAlter<T> select = createSelectQuery(conditionBean,cb,p);
+		SQLQueryAlter<T> select = createSelectQuery(conditionBean, cb, p);
+		if(p.limit !=null && p.limit.intValue()>0){
+			select.limit(p.limit.longValue());
+		}
+		if(p.offset!=null && p.offset.intValue()>0) {
+			select.offset(p.offset.longValue());
+		}
+		if(maxRows>0) {
+			select.setMaxRows(maxRows);
+		}
+		return select.fetch();
+	}
+	
+	public final QueryResults<T> listByCondition(Object conditionBean, int limit, int offset) {
+		Class<?> clz = conditionBean.getClass();
+		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
+		if (cb == null) {
+			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
+		}
+		Params p=new Params();
+		SQLQueryAlter<T> select = createSelectQuery(conditionBean, cb, p);
 		if(limit>0) {
 			select.limit(limit);
 		}else if(p.limit !=null && p.limit.intValue()>0){
-			select.limit(p.limit.intValue());
+			select.limit(p.limit.longValue());
 		}
 		if(offset>0) {
 			select.offset(offset);
 		}else if(p.offset!=null && p.offset.intValue()>0) {
-			select.offset(p.offset.intValue());
+			select.offset(p.offset.longValue());
 		}
 		if(p.fetchTotal==null || p.fetchTotal) {
 			QueryResults<T> results=select.fetchResults();
-			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
+			return results;
 		}
-		return Pair.of(-1, select.fetch());
+		return new QueryResults<T>(select.fetch(),(long)limit, (long)offset, -1L);
 	}
-	
 	static class Params{
 		Number limit;
 		Number offset;
@@ -544,20 +577,9 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public  <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T,R, ?> wrapper) {
+	public  <R> QueryResults<R> listAndCount(QueryWrapper<T,R, ?> wrapper) {
 		QueryExecutor<T,R> executor=new QueryExecutor<>(wrapper, this);
 		return executor.findAndCount();
-	}
-	
-	@Override
-	public <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset) {
-		if(limit>0) {
-			wrapper.limit(limit);
-		}
-		if(offset>0) {
-			wrapper.offset(offset);
-		}
-		return findAndCount(wrapper);
 	}
 
 	@Override

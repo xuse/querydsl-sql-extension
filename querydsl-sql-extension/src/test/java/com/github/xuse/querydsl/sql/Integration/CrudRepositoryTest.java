@@ -14,12 +14,12 @@ import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
-import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.entity.FooHistory;
 import com.github.xuse.querydsl.entity.FooWith2ColumnPK;
 import com.github.xuse.querydsl.entity.FooWithoutPK;
 import com.github.xuse.querydsl.entity.StateMachine;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
@@ -32,6 +32,7 @@ import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Pair;
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.ComparableExpression;
 
@@ -116,7 +117,7 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 			LambdaQueryWrapper<Foo> wrapper = new LambdaQueryWrapper<>();
 			wrapper.eq(Foo::getName, "张三").between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now());
 
-			Pair<Integer, List<Foo>> results = repo.findAndCount(wrapper);
+			QueryResults<Foo> results = repo.listAndCount(wrapper);
 		}
 
 		// 写法三，接近queryDSL原生风格，同时支持lambda
@@ -266,7 +267,7 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 			LambdaQueryWrapper<TableDataTypes> wrapper = new LambdaQueryWrapper<>();
 			wrapper.eq(TableDataTypes::getName, "张三").between(TableDataTypes::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
 					.orderBy($(TableDataTypes::getCreated).asc(), $(TableDataTypes::getId).desc()).limit(10).offset(20);
-			Pair<Integer, List<TableDataTypes>> results = repo.findAndCount(wrapper);
+			QueryResults<TableDataTypes> results = repo.listAndCount(wrapper);
 		}
 
 		// 写法三，接近queryDSL原生风格，同时支持lambda

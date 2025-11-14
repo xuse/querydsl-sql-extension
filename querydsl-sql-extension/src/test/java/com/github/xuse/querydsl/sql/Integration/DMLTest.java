@@ -47,7 +47,6 @@ import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.mysema.commons.lang.Pair;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.DateTimeExpression;
@@ -457,12 +456,12 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	public void testConditionBeanException() {
 		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
 		assertThrows(UnsupportedOperationException.class, ()->{
-			Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+			QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 					AvsAuthParamsEr.builder().authContent("a").build()
 			);
 		});
 		assertThrows(IllegalArgumentException.class, ()->{
-			Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+			QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 					AvsAuthParams.builder().createTime(new Date[] {new Date()}).build()
 			);
 		});
@@ -477,81 +476,81 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		
 		assertThrows(IllegalArgumentException.class,()->factory.asRepository(t).findByCondition(new TableDataTypes()));
 		
-		Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+		QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 			AvsAuthParams.builder().authContent("123").limit(100).offset(2).order("authType").orderAsc(true).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).authTypeGoe(1).devId(null).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		System.out.println("--------------");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).authType(2).fetchTotal(true).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids2(new int[] {1,2,3,4}).channelNo(2).authTypeLt(2).devId("001").fetchTotal(true).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).createTime(new Date[3]).devIdGoe("001").devIdLoe("005").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).createTime2(Arrays.asList(new Date(),new Date())).devIdGoe("001").devIdLoe("005").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).createTime(new Date[3]).devIdGt("003").devIdLt("005").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		
 		System.out.println("======");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).channelNo(0).createTime(new Date[0]).authTypeLoe(2).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		System.out.println("===Test EndWith===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdEndWith("z").devIdStartWith("a").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdEndWithIC("z").devIdStartWithIC("a").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		System.out.println("===Test Like===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdLike("z%z").devIdIsNotNull(true).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdLikeIC("z").devIdIsNull(true).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		System.out.println("===Test MixedField===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().mixField("z").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		System.out.println("++++");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().caseType(3).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 	}
 	

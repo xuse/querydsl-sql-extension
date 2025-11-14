@@ -8,6 +8,7 @@ import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.dml.SQLDeleteClauseAlter;
 import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
 import com.mysema.commons.lang.Pair;
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
@@ -68,9 +69,35 @@ public interface CRUDRepository<T, ID> {
 
 	<R> List<R> find(QueryWrapper<T, R, ?> wrapper);
 
-	<R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper);
+	/**
+	 * @deprecated Please use {@link #listAndCount(QueryWrapper)}
+	 */
+	@Deprecated
+	default  <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper){
+		QueryResults<R> r = listAndCount(wrapper);
+		return Pair.of((int)r.getTotal(), r.getResults());
+	};
 
-	<R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset);
+	/**
+	 * @deprecated Please use {@link #listAndCount(QueryWrapper, int, int)}
+	 */
+	@Deprecated
+	default <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset){
+		QueryResults<R> r = listAndCount(wrapper, limit, offset);
+		return Pair.of((int)r.getTotal(), r.getResults());
+	};
+	
+	<R> QueryResults<R> listAndCount(QueryWrapper<T, R, ?> wrapper);
+
+	default <R> QueryResults<R> listAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset) {
+		if (limit > 0) {
+			wrapper.limit(limit);
+		}
+		if (offset > 0) {
+			wrapper.offset(offset);
+		}
+		return listAndCount(wrapper);
+	};
 
 	/**
 	 * <h2>Chinese:</h2> 插入一条数据
@@ -93,12 +120,11 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * <h2>Chinese:</h2> 批量插入数据
-	 * <h2>English:</h2> 
-	 * In Batch mode, setting {@code selective} to true can have side effects. It
-	 * checks for null fields based on the first object in the list. If the fields
-	 * of the first object are null, subsequent objects, even if they have values,
-	 * will not be written. Unless you accurately understand what is happening,
-	 * please use {@link #insertBatch(List)}.
+	 * <h2>English:</h2> In Batch mode, setting {@code selective} to true can have
+	 * side effects. It checks for null fields based on the first object in the
+	 * list. If the fields of the first object are null, subsequent objects, even if
+	 * they have values, will not be written. Unless you accurately understand what
+	 * is happening, please use {@link #insertBatch(List)}.
 	 * 
 	 * @param ts        插入记录对象列表 / list of records.
 	 * @param selective 空字段不插入。
@@ -110,15 +136,16 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * <h2>Chinese:</h2> 按主键删除记录
-	 * <h2>English:</h2>
-	 * Delete records by primary key
+	 * <h2>English:</h2> Delete records by primary key
+	 * 
 	 * @param key 主键值 / value of primary key
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int delete(ID key);
-	
+
 	/**
 	 * 根据主键批量删除
+	 * 
 	 * @param key
 	 * @return 删除记录数 / count of records deleted.
 	 */
@@ -136,21 +163,20 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * <h2>Chinese:</h2> 根据用户自行填写的查询条件删除记录
-	 * <h2>English:</h2>
-	 * Delete records based on the query conditions.
+	 * <h2>English:</h2> Delete records based on the query conditions.
+	 * 
 	 * @param consumer 函数对象用于填入条件 / functional object to populate conditions.
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int delete(Consumer<SQLDeleteClauseAlter> consumer);
-	
-	
+
 	/**
 	 * 根据条件删除记录
+	 * 
 	 * @param predicate
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int deleteBy(Predicate... predicate);
-	
 
 	/**
 	 * <h2>Chinese:</h2> 按示例对象删除记录。
@@ -175,6 +201,7 @@ public interface CRUDRepository<T, ID> {
 	 * 按传入的对象更新记录.
 	 * <p>
 	 * Update records based on the provided object.
+	 * 
 	 * @param t   object
 	 * @param key 更新的条件封装
 	 * @return 更新记录数 / records affected.
@@ -213,8 +240,9 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * <h2>Chinese:</h2> 按传入的Wrapper条件查询数量
-	 * <h2>English:</h2>
-	 * Perform a Count query by assembling conditions independently.
+	 * <h2>English:</h2> Perform a Count query by assembling conditions
+	 * independently.
+	 * 
 	 * @param wrapper 查询条件封装
 	 * @return 查询记录数 / count of records.
 	 */
@@ -240,51 +268,84 @@ public interface CRUDRepository<T, ID> {
 	QueryExecutor<T, T> query();
 
 	/**
-	 * <h2>Chinese:</h2>
-	 * 传入一个带有@ConditionBean注解的类，使用该对象作为查询条件
-	 * <h2>English:</h2>
-	 * Pass in a class annotated with @ConditionBean and use this object as the query condition.
-	 * @param conditionBean conditionBean
-	 * @param offset <=0 for unset
-	 * @param limit <=0 for unset
-	 * @return SQLQueryAlter
+	 * @deprecated use {@link #listByCondition(Object, int, int)}
+	 * @param conditionBean
+	 * @param limit
+	 * @param offset
+	 * @return
 	 */
-	Pair<Integer, List<T>> findByCondition(Object conditionBean, int limit, int offset);
-	
+	@Deprecated
+	default Pair<Integer, List<T>> findByCondition(Object conditionBean, int limit, int offset){
+		QueryResults<T> r=listByCondition(conditionBean, limit, offset);
+		return Pair.of((int)r.getTotal(), r.getResults());
+	}
+
+	/**
+	 * <h2>Chinese:</h2> 传入一个带有@ConditionBean注解的类，使用该对象作为查询条件
+	 * <h2>English:</h2> Pass in a class annotated with @ConditionBean and use this
+	 * object as the query condition.
+	 * 
+	 * @param conditionBean conditionBean
+	 * @param offset        <=0 for unset
+	 * @param limit         <=0 for unset
+	 * @return QueryResults<T>
+	 */
+	QueryResults<T> listByCondition(Object conditionBean, int limit, int offset);
+
+	/**
+	 * 根据Condition Bean进行查询。不计算总数
+	 * 
+	 * @param conditionBean conditions
+	 * @return List
+	 */
+	List<T> listByCondition(Object conditionBean);
+
+	/**
+	 * 根据Condition Bean进行查询。取结果第一个。
+	 * 
+	 * @param conditionBean
+	 * @return T
+	 */
+	T loadByCondition(Object conditionBean);
+
 	/**
 	 * 根据指定字段条件批量加载
-	 * @param <P> 条件字段类型
-	 * @param ids 查询条件
+	 * 
+	 * @param <P>  条件字段类型
+	 * @param ids  查询条件
 	 * @param path 条件字段
 	 * @return result list
 	 */
 	<P> List<T> listBy(Path<P> path, Collection<P> ids);
-	
+
 	/**
-	 * 通用的条件查询. 
-	 * @param p 
+	 * 通用的条件查询.
+	 * 
+	 * @param p
 	 * @return result list
 	 */
 	List<T> list(Predicate... p);
+
 	/**
-	 * 带排序和分页条件的查询. 
-	 * @param p 条件
-	 * @param limit 
-	 * @param offset 
-	 * @param order 排序
+	 * 带排序和分页条件的查询.
+	 * 
+	 * @param p      条件
+	 * @param limit
+	 * @param offset
+	 * @param order  排序
 	 * @return result list
 	 */
 	List<T> list(Predicate p, int limit, int offset, OrderSpecifier<? extends Comparable<?>> order);
-	
-	
-	default List<T> list(Predicate p, int limit){
-		return list(p,limit,0,null);
+
+	default List<T> list(Predicate p, int limit) {
+		return list(p, limit, 0, null);
 	};
-	
+
 	/**
-	 * 根据条件加载 
+	 * 根据条件加载
+	 * 
 	 * @param <P>
-	 * @param path 列
+	 * @param path  列
 	 * @param param 条件值
 	 * @return 第一条匹配记录
 	 */
@@ -292,21 +353,22 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * 带排序的首条加载
+	 * 
 	 * @param p
 	 * @param order 排序
 	 * @return
 	 */
 	T loadBy(Predicate p, OrderSpecifier<? extends Comparable<?>> order);
-	
+
 	T loadBy(Predicate... p);
-	
+
 	<P> T getBy(Path<P> path, P param);
-	
+
 	T getBy(Predicate p);
-	
-	default Pair<Integer, List<T>> findByCondition(Object conditionBean){
-		return findByCondition(conditionBean,0,0);
+
+	default QueryResults<T> findByCondition(Object conditionBean) {
+		return listByCondition(conditionBean, 0, 0);
 	}
-	
+
 	int countByCondition(Object conditionBean);
 }

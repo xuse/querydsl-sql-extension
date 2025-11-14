@@ -84,9 +84,9 @@ public class QueryExecutor<T,R> extends QueryWrapper<T,R, QueryExecutor<T,R>> {
 		return createQuery(true).fetchResults();
 	}
 	
-	public Pair<Integer, List<R>> findAndCount(){
+	public QueryResults<R> findAndCount(){
 		QueryResults<R> result=createQuery(true).fetchResults();
-		return new Pair<>((int)result.getTotal(),result.getResults());
+		return result;
 	}
 
 	public List<R> fetch() {
