@@ -358,9 +358,9 @@ public interface CRUDRepository<T, ID> {
 	 * @param order 排序
 	 * @return
 	 */
-	T loadBy(Predicate p, OrderSpecifier<? extends Comparable<?>> order);
+	T load(Predicate p, OrderSpecifier<? extends Comparable<?>> order);
 
-	T loadBy(Predicate... p);
+	T load(Predicate... p);
 
 	<P> T getBy(Path<P> path, P param);
 

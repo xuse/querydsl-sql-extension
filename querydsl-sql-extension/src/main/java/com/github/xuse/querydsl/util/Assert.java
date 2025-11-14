@@ -11,22 +11,6 @@ import java.util.Objects;
  * 断言工具类，用于检查
  */
 public class Assert {
-
-	/**
-	 *  断言对象不为null
-	 *  @param obj obj
-	 *  @param template 错误信息模板
-	 *  @param args 错误信息参数
-	 *  @return t
-	 *  @param <T> The type of target object.
-	 */
-	public static <T> T nonNull(T obj, String template, Object... args) {
-		if (obj == null) {
-			throw Exceptions.illegalArgument(template, args);
-		}
-		return obj;
-	}
-
 	/**
 	 *  断言对象不为null
 	 *  @param obj obj
@@ -336,6 +320,18 @@ public class Assert {
 		if (text == null || text.length() == 0)
 			throw new IllegalArgumentException(msg);
 	}
+	
+	public static void hasText(String text) {
+		if(StringUtils.isBlank(text)) {
+			throw new IllegalArgumentException();
+		}
+	}
+	
+	public static void hasText(String text, String msg) {
+		if(StringUtils.isBlank(text)) {
+			throw new IllegalArgumentException(msg);
+		}
+	}
 
 	public static<T> Collection<T> hasElements(Collection<T> collection) {
 		if (collection == null || collection.isEmpty()) {
@@ -437,8 +433,22 @@ public class Assert {
 		noNullElements(array, "[Assertion failed] - this array must not contain any null elements");
 	}
 	
-	public static int notNegative(int value) {
-	    if(value>=0) {
+	public static int notPositive(int value) {
+	    if(value<=0) {
+	        return value;
+	    }
+	    throw new IllegalArgumentException(value+" is a negative number.");
+	}
+	
+	public static float notPositive(float value) {
+	    if(value<=0) {
+	        return value;
+	    }
+	    throw new IllegalArgumentException(value+" is a negative number.");
+	}
+	
+	public static double notPositive(double value) {
+	    if(value<=0) {
 	        return value;
 	    }
 	    throw new IllegalArgumentException(value+" is a negative number.");
@@ -451,7 +461,50 @@ public class Assert {
 	    throw new IllegalArgumentException(value+" is not a positive number.");
 	}
 	
-    public static Object nonNull(Object value) {
+	public static int notNegative(int value) {
+		if (value >= 0) {
+			return value;
+		}
+		throw new IllegalArgumentException(value + " is a negative number.");
+	}
+	
+	public static long notNegative(long value) {
+		if (value >= 0) {
+			return value;
+		}
+		throw new IllegalArgumentException(value + " is not a positive number.");
+	}
+	
+	public static float notNegative(float value) {
+		if (value >= 0) {
+			return value;
+		}
+		throw new IllegalArgumentException(value + " is not a positive number.");
+	}
+
+	public static double notNegative(double value) {
+		if (value >= 0) {
+			return value;
+		}
+		throw new IllegalArgumentException(value + " is not a positive number.");
+	}
+	
+	/**
+	 *  断言对象不为null
+	 *  @param obj obj
+	 *  @param template 错误信息模板
+	 *  @param args 错误信息参数
+	 *  @return t
+	 *  @param <T> The type of target object.
+	 */
+	public static <T> T nonNull(T obj, String template, Object... args) {
+		if (obj == null) {
+			throw Exceptions.illegalArgument(template, args);
+		}
+		return obj;
+	}
+	
+    public static <T> T nonNull(T value) {
         if (value != null) {
             return value;
         }

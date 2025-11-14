@@ -667,13 +667,13 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 	
 	@Override
-	public T loadBy(Predicate... p) {
+	public T load(Predicate... p) {
 		RelationalPath<T> entity = getPath();
 		return getFactory().selectFrom(entity).where(p).fetchFirst();
 	}
 	
 	@Override
-	public T loadBy(Predicate p, OrderSpecifier<? extends Comparable<?>> order) {
+	public T load(Predicate p, OrderSpecifier<? extends Comparable<?>> order) {
 		RelationalPath<T> entity = getPath();
 		SQLQueryAlter<T> sql = getFactory().selectFrom(entity).where(p);
 		if (order != null) {
