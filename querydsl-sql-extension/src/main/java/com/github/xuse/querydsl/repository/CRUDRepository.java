@@ -186,6 +186,23 @@ public interface CRUDRepository<T, ID> {
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int deleteByExample(T t);
+	
+	/**
+	 * Delete records by condition bean.
+	 * @param conditionBean
+	 * @return records count. 
+	 */
+	default int deleteByCondition(Object conditionBean) {
+		return deleteByCondition(conditionBean,0);
+	}
+	
+	/**
+	 * Delete records by condition bean.
+	 * @param conditionBean 
+	 * @param maxRows limit delete count.
+	 * @return records count.
+	 */
+	int deleteByCondition(Object conditionBean, int maxRows);
 
 	/**
 	 * <h2>Chinese:</h2> 按主键更新对象
@@ -247,6 +264,13 @@ public interface CRUDRepository<T, ID> {
 	 * @return 查询记录数 / count of records.
 	 */
 	int count(QueryWrapper<T, ?, ?> wrapper);
+	
+	/**
+	 * 计算数量
+	 * @param p
+	 * @return
+	 */
+	int count(Predicate... p);
 
 	/**
 	 * <h2>Chinese:</h2> 根据示例对象进行Count查询

@@ -118,6 +118,12 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int) query.fetchCount();
 	}
 
+	@Override
+	public int count(Predicate... p) {
+		RelationalPath<T> entity = getPath();
+		return (int) getFactory().selectFrom(entity).where(p).fetchCount();
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public ID insert(T t) {
@@ -251,6 +257,17 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return pk.getLocalColumns();
 	}
 	
+	@Override
+	public int deleteByCondition(Object conditionBean, int limit) {
+		Class<?> clz = conditionBean.getClass();
+		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
+		if (cb == null) {
+			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
+		}
+		SQLDeleteClauseAlter delete = createDeleteQuery(conditionBean, cb, limit);
+		return (int)delete.execute();
+	}
+
 	/**
 	 * Fetch count for a condition bean
 	 * @param conditionBean
@@ -453,6 +470,112 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 			}
 		}
 		return select;
+	}
+	
+	private SQLDeleteClauseAlter createDeleteQuery(Object conditionBean,ConditionBean cb, int limit) {
+		RelationalPath<T> beanPath= getPath();
+		SQLDeleteClauseAlter delete= getFactory().delete(beanPath);
+		RelationalPathEx<T> beanPathEx=null;
+		if(beanPath instanceof RelationalPathEx) {
+			beanPathEx=(RelationalPathEx<T>)beanPath;
+		}
+		
+		BeanCodec codec = BeanCodecManager.getInstance().getCodec(conditionBean.getClass());
+		Property[] fields = codec.getFields();
+		Object[] values = codec.values(conditionBean);
+		Map<String, Path<?>> bindings = new HashMap<>();
+		for (Path<?> p : beanPath.getColumns()) {
+			bindings.put(p.getMetadata().getName(), p);
+		}
+		for (int i = 0; i < fields.length; i++) {
+			Property field = fields[i];
+			Object value = values[i];
+			String fieldName=field.getName();
+			if (fieldName.equals(cb.limitField())) {
+				if(value!=null && limit<=0) {
+					limit=((Number) value).intValue();
+				}
+				continue;
+			}
+			Condition condition = field.getAnnotation(Condition.class);
+			When when=field.getAnnotation(When.class);
+			if(ArrayUtils.countNonNull(condition,when)>1) {
+				throw Exceptions.illegalArgument("These annotation (@Condition @When @Order) must appear once on a field. {}", field);
+			}
+			if (condition != null) {
+				Predicate where = null;
+				if (condition.otherPaths().length > 0) {
+					for (String op : condition.otherPaths()) {
+						if (StringUtils.isEmpty(op)) {
+							continue;
+						}
+						Path<?> path = bindings.get(op);
+						if (path == null) {
+							throw Exceptions.illegalArgument("Not found path {} in bean {}", op, beanPath);
+						}
+						if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx, path, condition.value())) {
+						}else {
+							where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));
+						}
+					}
+				}
+				{
+					String pathName = condition.path();
+					if (StringUtils.isEmpty(pathName)) {
+						pathName = field.getName();
+					}
+					Path<?> path = bindings.get(pathName);
+					if (path == null) {
+						throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
+					}
+					if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx,path,condition.value())) {
+					}else {
+						where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));				
+					}
+					delete.where(where);
+				}
+			}
+			if(when!=null) {
+				Class<?> fieldType=field.getType();
+				if(fieldType.isPrimitive()) {
+					throw Exceptions.illegalArgument("@When must not on a field of primitive type. {}", field);
+				}
+				String pathName = when.path();
+				if (StringUtils.isEmpty(pathName)) {
+					pathName = field.getName();
+				}
+				Path<?> path = bindings.get(pathName);
+				if(value!=null) {
+					Pair<Ops,Object> matchExpr;
+					if(field.getType()==Boolean.class) {
+						matchExpr = getMatchExpr(value, when.forBool(),path.getType());
+					} else if (field.getType() == Integer.class) {
+						matchExpr = getMatchExpr(value, when.forInt(),path.getType());
+					} else if (field.getType() == String.class) {
+						matchExpr = getMatchExpr(value, when.value(),path.getType());
+					}else {
+						throw Exceptions.illegalArgument("@When only supports field in these types('Integer','Boolean','String'), the field {}", field);
+					}
+					if(matchExpr==null) {
+						if(!when.ignoreIfNoMatchCase()) {
+							throw Exceptions.illegalArgument("@When has no match case for value {}, on the field {}", value, field);	
+						}
+					}else {
+						Predicate where;
+						if(matchExpr.getFirst()==null) {
+							where=Expressions.booleanTemplate((String)matchExpr.getSecond());	
+						}else {
+							where = toPredicate(matchExpr.getSecond(), path, matchExpr.getFirst(),field.getName());
+						}
+						delete.where(where);
+					}
+				}
+			}
+		}
+		if(limit>0) {
+			delete.limit(limit);
+		}
+		return delete;
 	}
 
 	private Pair<Ops, Object> getMatchExpr(Object value, StringCase[] cases,Class<?> pathType) {
