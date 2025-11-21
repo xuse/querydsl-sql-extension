@@ -78,8 +78,9 @@ public abstract class MetadataQuerySupport {
 		DriverInfo result = doConnectionAccess(c -> {
 			DriverInfo r = new DriverInfo();
 			DatabaseMetaData e = c.getMetaData();
-			r.catalog = c.getCatalog();
-			r.schema = c.getSchema();
+			
+			r.catalog = e.supportsCatalogsInDataManipulation() ? c.getCatalog() : "";
+			r.schema = e.supportsSchemasInDataManipulation() ? c.getSchema() : "";
 			r.driverName = e.getDriverName();
 			r.driverVersion = e.getDriverVersion() + " " + e.getDatabaseMinorVersion();
 			r.databaseProductName = e.getDatabaseProductName();

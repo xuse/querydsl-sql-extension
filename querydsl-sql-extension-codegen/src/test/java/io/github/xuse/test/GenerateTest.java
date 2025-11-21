@@ -51,6 +51,7 @@ public class GenerateTest {
         DbSchemaGenerator.from(getDataSource())
         .output(OutputDir.DIR_TARGET)
         .metafields(MetafieldGenerationType.LAMBDA)
+        .overwriteFiles(true)
         .useLombokAnnotation(false)
         .registerMapping(Types.TIMESTAMP, Instant.class)
         .tableRefNameIs(s -> "_table")
