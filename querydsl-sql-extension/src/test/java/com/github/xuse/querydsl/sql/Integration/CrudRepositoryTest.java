@@ -216,11 +216,27 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 
 	@Test
 	public void testSelectItems2() {
-		CRUDRepository<Foo, Integer> repo = factory.asRepository(() -> Foo.class);
+		LambdaTable<Foo> t= () -> Foo.class;
+		
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(t);
 
-		List<Pair<Integer, String>> list = repo.query().eq(Foo::getName, "张三")
-				.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now()).groupBy(Foo::getName)
-				.having($(Foo::getId).count().goe(100)).selectPair(num(Foo::getId).max(), string(Foo::getName)).fetch();
+		List<Pair<Integer, String>> list = repo.query()
+//				.eq(Foo::getName, "张三")
+//				.between(Foo::getCreated, DateUtils.getInstant(2023, 12, 1), Instant.now())
+				.groupBy(Foo::getName)
+				.having($(Foo::getId).count().loe(100)).
+				selectPair(num(Foo::getId).max(), string(Foo::getName))
+				.fetch();
+		System.out.println(list.size());
+		
+		for(Pair<Integer,String> p:list) {
+			System.out.println(p.getFirst()+","+p.getSecond());
+		}
+		
+		LambdaColumn<Foo, Integer> _id=Foo::getId;
+		Pair<Integer, Integer> p=repo.query()
+		.selectPair(_id.min(), _id.max()).load();
+		System.out.println(p.getFirst()+","+p.getSecond());
 	}
 
 	/*

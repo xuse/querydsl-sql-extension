@@ -52,8 +52,7 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 
 	SQLMetadataFactoryImpl(SQLQueryFactory factory) {
 		this.connection = factory;
-		this.configuration = factory.getConfiguration();
-		this.metadataQuery = new MetadataQuerySupport() {
+		this.metadataQuery = new MetadataQuerySupport(this.configuration = factory.getConfiguration()) {
 			@Override
 			protected ConfigurationEx getConfiguration() {
 				return configuration;

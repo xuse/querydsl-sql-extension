@@ -61,9 +61,9 @@ public class JdbcToJavaFieldMappings {
 
         @Override
         public void setAttribs(AnnotationBuilder<ColumnSpec> anno, ColumnDef c) {
+        	super.setAttribs(anno, c);
             CompilationUnitBuilder cu = anno.getParent();
             anno.add("size", cu.literal(c.getColumnSize()));
-            super.setAttribs(anno, c);
         }
     }
 

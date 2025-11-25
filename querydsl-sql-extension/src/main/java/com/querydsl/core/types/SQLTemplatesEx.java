@@ -17,6 +17,7 @@ import com.github.xuse.querydsl.sql.dialect.PrivilegeDetector;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.sql.dialect.SimpleDetector;
 import com.github.xuse.querydsl.sql.dialect.SizeParser;
+import com.github.xuse.querydsl.sql.expression.FunctionOps;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.querydsl.sql.SQLTemplates;
@@ -126,11 +127,13 @@ public interface SQLTemplatesEx {
 		TypeUtils.add(templates, AlterColumnOps.SET_GENERATED, "SET GENERATED {0}");
 		TypeUtils.add(templates, AlterColumnOps.SET_NOTNULL, "SET NOT NULL");
 		TypeUtils.add(templates, AlterColumnOps.SET_NULL, "SET NULL");
-	/*
+		/*
 		 * if you dialect supports FULLTEXT INDEX (such as MySQL), add these statment to you SQLTemplates
 		 * add(templates, ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");Just for mysql
 		 * add(templates, IndexConstraintOps.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}"); 
 		 */
+		
+		TypeUtils.add(templates, FunctionOps.IF_NULL, "IFNULL({0},{1})");
 	}
 	
 	

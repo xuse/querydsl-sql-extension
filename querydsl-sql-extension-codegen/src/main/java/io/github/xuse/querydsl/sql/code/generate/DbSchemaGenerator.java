@@ -44,6 +44,7 @@ import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.IOUtils;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.sql.SchemaAndTable;
@@ -74,6 +75,7 @@ public class DbSchemaGenerator {
 	private boolean ignoreColumnCase = false;
 	private boolean uselombokData = true;
 	private boolean overwrite = false;
+	private boolean keepBackupFile = false;
 
 	private final CachedConnection cachedConnection;
 
@@ -295,12 +297,23 @@ public class DbSchemaGenerator {
 	 * 是否覆盖已有文件
 	 * 
 	 * @param overwrite
-	 * @return
+	 * @return this
 	 */
 	public DbSchemaGenerator overwriteFiles(boolean overwrite) {
 		this.overwrite = overwrite;
 		return this;
 	}
+	
+	/**
+	 * 是否保存备份，仅当overwrite=true时有效
+	 * @param flag
+	 * @return this
+	 */
+	public DbSchemaGenerator keepBackup(boolean flag) {
+		this.keepBackupFile = flag;
+		return this;
+	}
+	
 
 	/**
 	 * 覆盖默认的列引用字段名称。默认为Java字段名前加下划线，仅当Lambda模式下生效
@@ -554,9 +567,16 @@ public class DbSchemaGenerator {
 
 	private File save(CompilationUnitBuilder cu, String simpleName) {
 		File file = getFile(simpleName);
-		File parent = file.getParentFile();
-		if (!parent.exists()) {
-			parent.mkdirs();
+		if(file.exists()) {
+			if(keepBackupFile && file.isFile()) {
+				File bak=new File(file.getParent(),IOUtils.removeExt(file.getName())+".bak");
+				file.renameTo(bak);
+			}
+		}else {
+			File parent = file.getParentFile();
+			if (!parent.exists()) {
+				parent.mkdirs();
+			}	
 		}
 		try (FileWriter writer = new FileWriter(file)) {
 			writer.write(cu.build().toString());

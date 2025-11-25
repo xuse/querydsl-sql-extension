@@ -22,7 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MySQLPrivilegeDetector implements PrivilegeDetector{
 	@Override
 	public boolean check(SQLQueryFactory connection, Privilege... privileges) {
-		MetadataQuerySupport metadataQuery = new MetadataQuerySupport() {
+		ConfigurationEx config=connection.getConfiguration();
+		MetadataQuerySupport metadataQuery = new MetadataQuerySupport(config) {
 			@Override
 			protected ConfigurationEx getConfiguration() {
 				return connection.getConfiguration();

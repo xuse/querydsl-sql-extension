@@ -115,8 +115,8 @@ public abstract class MetadataQuerySupport {
 		return dbTimeDelta;
 	}
 
-	public MetadataQuerySupport() {
-		listeners = new SQLListeners(getConfiguration().get().getListeners());
+	public MetadataQuerySupport(ConfigurationEx config) {
+		listeners = new SQLListeners(config.get().getListeners());
 	}
 
 	/**
