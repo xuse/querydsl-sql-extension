@@ -130,7 +130,7 @@ public class DbInvoke {
         private <T> T fetch0(QueryFunction<ResultSet, T> func) {
             try (Connection conn = ds.getConnection()) {
                 try (PreparedStatement st = conn.prepareStatement(sql)) {
-                    setParams(st, Arrays.asList(params));
+                    setParams(st, params);
                     if (max > 0) {
                         st.setMaxRows(max);
                     }
