@@ -44,6 +44,16 @@ public class KVSplitter {
         return this;
     }
 
+    public KVSplitter functionOfHeadChar(IntUnaryOperator func) {
+    	this.ignoreSpace=func;
+    	return this;
+    }
+    
+    public KVSplitter functionOfTailChar(IntUnaryOperator func) {
+    	this.ignorePrevSpace=func;
+    	return this;
+    }
+    
     public Map<String, String> collect(Supplier<Map<String, String>> supplier) {
         Map<String, String> map = supplier.get();
         try {
