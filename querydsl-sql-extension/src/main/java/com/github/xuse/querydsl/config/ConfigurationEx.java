@@ -312,7 +312,7 @@ public class ConfigurationEx {
 	 * @return true if registered.
 	 */
 	public boolean registerRelation(RelationalPathEx<?> table) {
-		if(registededRelations.add(table.getClass())) {
+		if(registededRelations.add(table.getType())) {
 			PathCache.register(table);
 			for (Path<?> p : table.getColumns()) {
 				ColumnMapping c = table.getColumnMetadata(p);
