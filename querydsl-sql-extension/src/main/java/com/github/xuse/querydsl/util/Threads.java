@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.util;
+package com.github.xuse.querydsl.util;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -12,10 +12,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.github.xuse.querydsl.util.Assert;
-import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -307,9 +303,9 @@ public abstract class Threads {
     }
     
     static class BasicFuture<T> implements Future<T>{
-        private volatile boolean completed;
-        private volatile T result;
-        private volatile Exception ex;
+        volatile boolean completed;
+        volatile T result;
+        volatile Exception ex;
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             throw new UnsupportedOperationException();

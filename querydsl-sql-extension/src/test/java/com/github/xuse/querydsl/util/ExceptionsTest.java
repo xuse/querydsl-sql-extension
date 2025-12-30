@@ -2,14 +2,12 @@ package com.github.xuse.querydsl.util;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -125,20 +123,6 @@ public class ExceptionsTest {
 		assertEquals("", Exceptions.applyNotNull((a, b) -> getString(false), "a", "b", DEFAULT));
 		assertEquals(DEFAULT, Exceptions.applyNotNull((a, b) -> getNull(false), "a", "b", DEFAULT));
 		assertEquals(DEFAULT, Exceptions.applyNotNull((a, b) -> getNull(true), "a", "b", DEFAULT));
-	}
-	
-	@Test
-	public void testRetry() {
-		boolean result = Exceptions.retry(3, "a", e->{
-			return false;
-		});
-		assertFalse(result);
-		
-		final AtomicInteger count=new AtomicInteger();
-		result = Exceptions.retry(3, "a", e->{
-			return count.incrementAndGet()>2;
-		});
-		assertTrue(result);
 	}
 
 	private String getString(boolean rise) {

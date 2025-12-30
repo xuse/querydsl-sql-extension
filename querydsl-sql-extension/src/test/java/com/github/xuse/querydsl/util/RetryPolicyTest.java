@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -40,13 +41,43 @@ public class RetryPolicyTest {
 		});
 	}
 
+	
+	@Test
+	public void testRetry() {
+		System.out.println("===============CASE 1===========");
+		{
+			boolean result = Exceptions.retry(3, "a", e->{
+				System.out.println("执行Case1");
+				return false;
+			});
+			assertFalse(result);
+		}
+		System.out.println("===============CASE 2===========");
+		{
+			final AtomicInteger count = new AtomicInteger();
+			boolean result = Exceptions.retry(3, "", e -> {
+				System.out.println("执行Case2 第"+(count.get()+1)+"次");
+				return count.incrementAndGet() > 2;
+			});
+			assertTrue(result);	
+		}
+		
+		System.out.println("===============CASE 3===========");
+		Assertions.assertThrows(IllegalArgumentException.class, ()->{
+			final AtomicInteger count = new AtomicInteger();
+			Exceptions.retry(3, "", e -> {
+				System.out.println("执行Case3 第"+(count.incrementAndGet())+"次");
+				throw new IllegalArgumentException();
+			});			
+		});
+	}
 
     // 测试用例1：正常执行不抛异常
     @Test
     public void testExecuteSuccess() {
         Runnable task = () -> {};
-        Callable<String> task2=()->"";
-        Function<String,String> task3=(s)->s;
+        Callable<String> task2=()->{System.out.println("CALL");return "";};
+        Function<String,String> task3=(s)->{System.out.println("FUNC");return s;};
         
         RetryDelayCalculator delay = new RetryDelayCalculator();
         RetryPolicy policy = new RetryPolicy(delay, 3, RuntimeException.class);

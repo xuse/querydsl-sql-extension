@@ -2,9 +2,15 @@ package com.github.xuse.querydsl.util;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import com.github.xuse.querydsl.util.Threads.BasicFuture;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,11 +61,24 @@ public class RetryPolicy {
 	private int attempts;
 
 	final RetryDelayCalculator delay;
+	
+	/** 不打印异常堆栈 **/
+	private boolean noStackTrace;
+	
+	/**
+	 *  设置了线程池后，可以进行异步重试
+	 */
+	private ScheduledThreadPoolExecutor executor;
 
 	RetryPolicy(RetryDelayCalculator delay, int maxAttempts, Class<? extends Throwable> retryFor) {
+		this(delay, maxAttempts, retryFor, null);
+	}
+	
+	RetryPolicy(RetryDelayCalculator delay, int maxAttempts, Class<? extends Throwable> retryFor, ScheduledThreadPoolExecutor executor) {
 		this.delay = delay;
 		this.maxAttempts = maxAttempts;
 		this.retryFor = retryFor;
+		this.executor = executor;
 		Assert.notNull(retryFor);
 	}
 
@@ -68,10 +87,18 @@ public class RetryPolicy {
 		return attempts;
 	}
 	
+	
+	public boolean executeUntilReturnTrue(Supplier<Boolean> task) {
+		return execute0(()->{
+			Assert.isTrue(task.get());
+			return true;
+		});
+	}
+	
 	/**
 	 * Execute the retry task until it returns true.
 	 * <p>
-	 * 执行重试任务，直到返回true。
+	 * 执行重试任务，直到返回true。如果有异常也会重试。最后一次如果还是异常，将会抛出。
 	 * 
 	 * @param task  重试任务，返回true表示成功，false表示失败。/ The task to execute. Returns true on
 	 *              success, false to retry.
@@ -82,40 +109,17 @@ public class RetryPolicy {
 	 */
 	public <P> boolean executeUntilReturnTrue(Predicate<P> task, P input) {
 		attempts = 0;
-		return executeUntilReturnTrue0(task,input);
+		return execute0(() -> {
+			Boolean result = task.test(input);
+			if(Boolean.TRUE.equals(result)) {
+				return true;
+			} else if (getAttempts() >= maxAttempts) {
+				return false;
+			}
+			throw new IllegalStateException();
+		});
 	}
 		
-	private <P> boolean executeUntilReturnTrue0(Predicate<P> task, P input) {
-		attempts++;
-		try {
-			boolean result = task.test(input);
-			if (result) {
-				return result;
-			}
-		} catch (Throwable t) {
-			if (attempts <= maxAttempts && retryFor.isInstance(t)) {
-				long wait = delay.getDelay(attempts);
-				log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
-				if (wait > 0) {
-					doSleep(wait);
-				}
-				return executeUntilReturnTrue0(task, input);
-			} else {
-				throw t;
-			}
-		}
-		if (attempts <= maxAttempts) {
-			long wait = delay.getDelay(attempts);
-			log.info("Result is false in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait);
-			if (wait > 0) {
-				doSleep(wait);
-			}
-			return executeUntilReturnTrue0(task, input);
-		} else {
-			return false;
-		}
-	}
-
 	/**
 	 * Execute the retry task.
 	 * <p>
@@ -125,27 +129,28 @@ public class RetryPolicy {
 	 */
 	public void execute(Runnable task) {
 		attempts = 0;
-		execute0(task);
+		execute0(()->{
+			task.run();
+			return null;
+		});
 	}
 	
-	private void execute0(Runnable task) {
-		attempts++;
-		try {
-			task.run();
-		} catch (Throwable t) {
-			if (attempts <= maxAttempts && retryFor.isInstance(t)) {
-				long wait = delay.getDelay(attempts);
-				log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
-				if (wait > 0) {
-					doSleep(wait);
-				}
-				execute0(task);
-			} else {
-				throw t;
-			}
-		}
+	/**
+	 * Execute the retry task.
+	 * <p>
+	 * 执行重试任务。
+	 * 
+	 * @param task  重试任务 / The retry task
+	 * @param <T>   返回值类型 / The return type
+	 * @param <P>   参数类型 / The type of the parameter
+	 * @param param 执行参数
+	 * @return 返回值 / The return value
+	 */
+	public <T, P> T execute(Function<P, T> task, P param) {
+		attempts = 0;
+		return execute0(() -> task.apply(param));
 	}
-
+	
 	/**
 	 * Execute the retry task.
 	 * <p>
@@ -160,14 +165,83 @@ public class RetryPolicy {
 		return execute0(task);
 	}
 	
+	/**
+	 * 异步执行，需要在构造时指定线程池
+	 * @param <T> 泛型
+	 * @param task  任务
+	 * @return Future<T>
+	 */
+	public <T> Future<T> runAsync(Callable<T> task) {
+		attempts =0 ;
+		Assert.notNull(executor);
+		return runAsync0(task);
+	}
+	
+	/**
+	 * 异步重试执行任务。(首次执行为同步，如异常则异步重试)
+	 * @param task 任务
+	 * @return Future<Boolean>
+	 */
+	public Future<Boolean> runAsyncUntilTrue(Supplier<Boolean> task) {
+		attempts =0 ;
+		Assert.notNull(executor);
+		return runAsync0(()->{
+			Assert.isTrue(task.get());
+			return true;
+		});
+	}
+
+	private <T> Void innerAsyncCall(BasicFuture<T> f, Callable<T> task) {
+		try {
+			f.result = task.call();
+			f.completed = true;
+			Threads.doNotifyAll(f);
+			return null;
+		} catch (Exception t) {
+			if (attempts < maxAttempts && retryFor.isInstance(t)) {
+				long wait = delay.getDelay(attempts);
+				if(noStackTrace) {
+					log.info("Caught {} in task [{}]. Message:{}, will retry(attempts={}) after {}ms:", t.getClass().getName(), task,t.getMessage(), attempts, wait);
+				}else {
+					log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);	
+				}
+				Callable<Void> newCall = ()->this.innerAsyncCall(f,task);
+				executor.schedule(newCall, wait, TimeUnit.MILLISECONDS);
+			} else {
+				f.completed=true;
+				f.ex=t;
+				Threads.doNotifyAll(f);
+			}
+		}
+		return null;
+	}
+	
+	
+	private <T> Future<T> runAsync0(Callable<T> task) {
+		attempts++;
+		BasicFuture<T> f=new BasicFuture<>();
+		Callable<Void> newCall = ()->this.innerAsyncCall(f,task);
+		try {
+			newCall.call();
+		} catch (Exception e) {
+			log.error("Will not be thrown.", e);
+		}
+		return f;
+	}
+
 	private <T> T execute0(Callable<T> task) {
 		attempts++;
 		try {
 			return task.call();
 		} catch (Throwable t) {
-			if (attempts <= maxAttempts && retryFor.isInstance(t)) {
+			if (attempts < maxAttempts && retryFor.isInstance(t)) {
 				long wait = delay.getDelay(attempts);
-				log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
+				if (noStackTrace) {
+					log.info("Caught {} in task [{}]. Message:{}, will retry(attempts={}) after {}ms:", t.getClass().getName(), task,
+							t.getMessage(), attempts, wait);
+				} else {
+					log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
+				}
 				if (wait > 0) {
 					doSleep(wait);
 				}
@@ -181,40 +255,7 @@ public class RetryPolicy {
 			}
 		}
 	}
-
-	/**
-	 * Execute the retry task.
-	 * <p>
-	 * 执行重试任务。
-	 * 
-	 * @param task  重试任务 / The retry task
-	 * @param <T>   返回值类型 / The return type
-	 * @param <P>   参数类型 / The type of the parameter
-	 * @param param 执行参数
-	 * @return 返回值 / The return value
-	 */
-	public <T, P> T execute(Function<P, T> task, P param) {
-		attempts = 0;
-		return execute0(task,param);
-	}
 	
-	private <T, P> T execute0(Function<P, T> task, P param) {
-		attempts++;
-		try {
-			return task.apply(param);
-		} catch (Throwable t) {
-			if (attempts <= maxAttempts && retryFor.isInstance(t)) {
-				long wait = delay.getDelay(attempts);
-				log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
-				if (wait > 0) {
-					doSleep(wait);
-				}
-				return execute0(task, param);
-			} else {
-				throw t;
-			}
-		}
-	};
 
 	/** 线程等待 / Thread waiting */
 	static final boolean doSleep(long l) {
@@ -327,6 +368,31 @@ public class RetryPolicy {
 		private final RetryDelayCalculator delay = new RetryDelayCalculator();
 
 		private Class<? extends Throwable> retryFor = Exception.class;
+		
+		private  ScheduledThreadPoolExecutor executor = null;
+		
+		private boolean noStackTrace;
+
+		/**
+		 * 设置一个异步用的线城池
+		 * @param executor 线程池
+		 * @return this;
+		 */
+		public PolicyBuilder enablAsync(ScheduledThreadPoolExecutor executor) {
+			this.executor=executor;
+			return this;
+		}
+		
+		/**
+		 * 不打印异常堆栈（异常仅打印名称和Message）
+		 * @return
+		 */
+		public PolicyBuilder noStackTrace() {
+			noStackTrace= true;
+			return this;
+		}
+
+		
 
 		/**
 		 * 指定最大延迟，防止在指数退避中出现特别大的重试延迟。
@@ -348,7 +414,7 @@ public class RetryPolicy {
 		 * delay. 设置重试策略以使用具有指定最小延迟的退避策略。
 		 * 
 		 * @param minDelay The minimum delay before the next retry attempt.
-		 *                 下次重试尝试之前的最小延迟。
+		 *                 下次重试尝试之前的最小延迟。即首次重试的延迟时间，之后每次重试延迟时间加倍。
 		 * @see Duration
 		 * @return The current PolicyBuilder instance for method chaining.
 		 *         当前的PolicyBuilder实例，用于方法链式调用。
@@ -428,7 +494,11 @@ public class RetryPolicy {
 		}
 
 		/**
-		 * 设置最大重试次数.
+		 * 设置最大尝试次数。
+		 * <p>
+		 * 尝试次数=1: 执行1次=无重试。
+		 * <br>
+		 * 尝试次数=2：执行1次+重试1次，共计2次。
 		 * 
 		 * @param attempts The maximum number of attempts. / 最大尝试次数
 		 * @return Returns the current instance of PolicyBuilder, allowing for method
@@ -453,7 +523,9 @@ public class RetryPolicy {
 		 *         exception class. 返回一个RetryPolicy实例。
 		 */
 		public RetryPolicy build() {
-			return new RetryPolicy(this.delay, maxAttempts, retryFor);
+			RetryPolicy p= new RetryPolicy(this.delay, maxAttempts, retryFor,executor);
+			p.noStackTrace = this.noStackTrace;
+			return p;
 		}
 	}
 

@@ -10,8 +10,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.datatype.util.Threads;
-
 public class ThreadPoolTest {
 	/**
 	 * 正压线程池测试。
