@@ -6,6 +6,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -64,6 +65,10 @@ public class RetryPolicy {
 	
 	/** 不打印异常堆栈 **/
 	private boolean noStackTrace;
+	
+	private Consumer<Exception> onFailure;
+	
+	private Runnable onSuccess;
 	
 	/**
 	 *  设置了线程池后，可以进行异步重试
@@ -193,7 +198,7 @@ public class RetryPolicy {
 	private <T> Void innerAsyncCall(BasicFuture<T> f, Callable<T> task) {
 		attempts++;
 		try {
-			f.result = task.call();
+			f.result = success(task.call());
 			f.completed = true;
 			Threads.doNotifyAll(f);
 			return null;
@@ -212,8 +217,9 @@ public class RetryPolicy {
 					executor.schedule(newCall, wait, TimeUnit.MILLISECONDS);
 				}
 			} else {
-				f.completed=true;
-				f.ex=t;
+				f.completed = true;
+				f.ex = t;
+				fail(t);
 				Threads.doNotifyAll(f);
 			}
 		}
@@ -235,8 +241,8 @@ public class RetryPolicy {
 	private <T> T execute0(Callable<T> task) {
 		attempts++;
 		try {
-			return task.call();
-		} catch (Throwable t) {
+			return success(task.call());
+		} catch (Exception t) {
 			if (attempts < maxAttempts && retryFor.isInstance(t)) {
 				long wait = delay.getDelay(attempts);
 				if (noStackTrace) {
@@ -248,13 +254,31 @@ public class RetryPolicy {
 				if (wait > 0) {
 					doSleep(wait);
 				}
-				return execute0(task);
+				return success(execute0(task));
 			} else {
-				if (t instanceof Error) {
-					throw (Error) t;
-				} else {
-					throw Exceptions.toRuntime(t);
-				}
+				fail(t);
+				throw Exceptions.toRuntime(t);
+			}
+		}
+	}
+	
+	private <T> T success(T t) {
+		if(onSuccess!=null) {
+			try {
+				onSuccess.run();
+			}catch(Exception e) {
+				log.error("onSuccess of task",e);
+			}
+		}
+		return t;
+	}
+	
+	private void fail(Exception e) {
+		if(onFailure!=null) {
+			try {
+				onFailure.accept(e);
+			}catch(Exception ex) {
+				log.error("onSuccess of task",ex);
 			}
 		}
 	}
@@ -375,6 +399,10 @@ public class RetryPolicy {
 		private  ScheduledThreadPoolExecutor executor = null;
 		
 		private boolean noStackTrace;
+		
+		private Consumer<Exception> onFailure;
+		
+		private Runnable onSuccess;
 
 		/**
 		 * 设置一个异步用的线城池
@@ -394,8 +422,16 @@ public class RetryPolicy {
 			noStackTrace= true;
 			return this;
 		}
-
 		
+		public PolicyBuilder onFailure(Consumer<Exception> e) {
+			this.onFailure = e;
+			return this;
+		}
+		
+		public PolicyBuilder onSuccess(Runnable e) {
+			this.onSuccess = e;
+			return this;
+		}
 
 		/**
 		 * 指定最大延迟，防止在指数退避中出现特别大的重试延迟。
@@ -528,6 +564,8 @@ public class RetryPolicy {
 		public RetryPolicy build() {
 			RetryPolicy p= new RetryPolicy(this.delay, maxAttempts, retryFor,executor);
 			p.noStackTrace = this.noStackTrace;
+			p.onFailure = this.onFailure;
+			p.onSuccess = this.onSuccess;
 			return p;
 		}
 	}

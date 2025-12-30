@@ -82,7 +82,10 @@ public class RetryPolicyTest {
 	public void testAsyncRetry() throws InterruptedException, ExecutionException {
 		final AtomicInteger count = new AtomicInteger();
 		Future<Void> future=
-				RetryPolicy.newBuilder().backoff(Duration.ofSeconds(1)).maxAttempts(4).noStackTrace().enablAsync(executors).build()
+				RetryPolicy.newBuilder().backoff(Duration.ofSeconds(1)).maxAttempts(4).noStackTrace().enablAsync(executors)
+				.onFailure((e)->System.out.println("失败了"+e))
+				.onSuccess(()->System.out.print("成功了"))
+				.build()
 		.runAsync(()->{
 			System.out.println("执行第"+(count.incrementAndGet())+"次@"+DateUtils.format(System.currentTimeMillis()));
 			throw new IllegalArgumentException();

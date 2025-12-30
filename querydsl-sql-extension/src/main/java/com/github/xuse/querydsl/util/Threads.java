@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.util;
 
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -13,6 +14,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import com.github.xuse.querydsl.jmx.IntrospectedMXBean;
+
+import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -348,6 +356,51 @@ public abstract class Threads {
             return getResult();
         }
     }
+    
+    @AllArgsConstructor
+    public static class PoolMonitor implements FrontPressurePoolMXBean{
+    	@NonNull
+    	private final ThreadPoolExecutor pool;
+    	@NonNull
+    	private final FrontPressureBlockingQueue<Runnable> queue;
+
+    	private String name;
+    	
+    	private int queueCapacity;
+    	
+		@Override
+		public int getCoreSize() {
+			return pool.getCorePoolSize();
+		}
+		@Override
+		public int getCurrentSize() {
+			return pool.getPoolSize();
+		}
+		@Override
+		public int getMaximumSize() {
+			return pool.getMaximumPoolSize();
+		}
+		@Override
+		public int getLargestSize() {
+			return pool.getLargestPoolSize();
+		}
+		@Override
+		public int getQueueLength() {
+			return queue.size();
+		}
+		@Override
+		public int getQueueMaximumLength() {
+			return queueCapacity;
+		}
+		@Override
+		public int getQueuePressureLength() {
+			return queue.pressureSize;
+		}
+		@Override
+		public int getActiveCount() {
+			return pool.getActiveCount();
+		}
+    }
 
 	/**
 	 * 构造器，用于创建一个在任务队列未满前开始扩容的线程池。
@@ -359,6 +412,8 @@ public abstract class Threads {
 		private int queueSize = Integer.MAX_VALUE;
 		private int queuePressureSize = 0;
 		private RejectedExecutionHandler rejectionHandler;
+		private ThreadPoolListener listener = ThreadPoolListener.EMPTY;
+		private boolean noJmx;
 
 		public ThreadPoolExecutor build() {
 			if (queueSize <= 0) {
@@ -375,9 +430,49 @@ public abstract class Threads {
 			}
 			ThreadFactory factory = StringUtils.isEmpty(namePrefix) ? Executors.defaultThreadFactory()
 					: threadFactory(namePrefix);
-			FrontPressureBlockingQueue<Runnable> queue = new FrontPressureBlockingQueue<>(queueSize, queuePressureSize);
-			return new ThreadPoolExecutor(coreSize, maximumSize, 60L, TimeUnit.SECONDS, queue, factory,
+			FrontPressureBlockingQueue<Runnable> queue = new FrontPressureBlockingQueue<>(queueSize, queuePressureSize, listener);
+			ThreadPoolExecutor pool = new ThreadPoolExecutor(coreSize, maximumSize, 60L, TimeUnit.SECONDS, queue, factory,
 					new TempQueuedPolicy(queue, rejectionHandler));
+			if(!noJmx) {
+				PoolMonitor monitor=new PoolMonitor(pool, queue, namePrefix, queueSize);
+				registeJmx(monitor);	
+			}
+			return pool;
+		}
+
+		private void registeJmx(PoolMonitor monitor) {
+			String name = monitor.name;
+			if (name == null) {
+				name = "";
+			}
+			name = name + "-" + StringUtils.truncate(StringUtils.randomString(), 5);
+			try {
+				ObjectName mxbeanName = new ObjectName("querydsl-ext.utils:type=ThreadPool-"+name);
+				MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+				mbs.registerMBean(new IntrospectedMXBean(monitor, FrontPressurePoolMXBean.class), mxbeanName);	
+				log.info("Thread Pool {} was registed in JMX Server.", name);
+			}catch(Exception ex) {
+				log.error("JMX Registe fail. name={}", name, ex);
+			}
+		}
+		
+		/**
+		 * 注册一个监听器
+		 * @param listener 监听器
+		 * @return this
+		 */
+		public ThreadPoolBuilder withListener(ThreadPoolListener listener) {
+			this.listener = listener;
+			return this;
+		}
+		
+		/**
+		 * 不自动注册JMX Bean.
+		 * @return this
+		 */
+		public ThreadPoolBuilder noJMX() {
+			this.noJmx=true;
+			return this;
 		}
 
 		/**
@@ -453,21 +548,33 @@ public abstract class Threads {
 	static final class FrontPressureBlockingQueue<E> extends LinkedBlockingQueue<E> {
 		private static final long serialVersionUID = 1L;
 		private final int pressureSize;
+		private final ThreadPoolListener listener;
 
-		public FrontPressureBlockingQueue(int queueSize, int pressureSize) {
+		public FrontPressureBlockingQueue(int queueSize, int pressureSize,ThreadPoolListener listener) {
 			super(queueSize);
 			this.pressureSize = pressureSize;
+			this.listener = listener;
 		}
 
 		@Override
 		public boolean offer(E e) {
-			if (size() >= pressureSize)
-				return false;
-			return super.offer(e);
+			int size = size();
+			boolean result = size < pressureSize && super.offer(e);
+			if(result) {
+				 listener.onTaskAdd(size);;
+			}
+			return result;
 		}
 
 		public boolean offerWithoutPressure(E e) {
-			return super.offer(e);
+			boolean result=super.offer(e);
+			int size = size();
+			if (result) {
+				listener.onTaskForceAdd(size);
+			} else {
+				listener.onTaskReject(size);
+			}
+			return result;
 		}
 	}
 
@@ -484,6 +591,7 @@ public abstract class Threads {
 		@Override
 		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 			if (!queue.offerWithoutPressure(r)) {
+				
 				nextRejectHandler.rejectedExecution(r, executor);
 			}
 		}

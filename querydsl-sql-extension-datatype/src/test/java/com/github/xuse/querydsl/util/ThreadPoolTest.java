@@ -26,6 +26,13 @@ public class ThreadPoolTest {
 		.maximumSize(5)
 		.queueSize(5)
 		.queuePressureSize(3)
+		.namePrefix("test-pool")
+		.withListener(new ThreadPoolListener() {
+			@Override
+			protected void onStatusChange(int state) {
+				System.out.println("线程池进入"+state+"状态");
+			}
+		})
 		.onReject(new ThreadPoolExecutor.AbortPolicy())
 		.build();
 		
@@ -53,11 +60,13 @@ public class ThreadPoolTest {
 		RejectedExecutionException ex = null;
 		try {
 			pool.submit(task);
-		}catch(RejectedExecutionException e) {
-			ex=e;
+		} catch (RejectedExecutionException e) {
+			ex = e;
 		}
-		//第11个任务，因为队列满，触发RejectedExecutionException。
+		// 第11个任务，因为队列满，触发RejectedExecutionException。
 		assertNotNull(ex);
+		Threads.doSleep(8000);
+		pool.submit(task);
 	}
 	
 	

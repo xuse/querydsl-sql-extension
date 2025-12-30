@@ -428,7 +428,7 @@ public class IntrospectedMXBean implements DynamicMBean {
                 anno = writer.getAnnotation(JMXText.class);
             }
         }
-        String text = anno.value();
+		String text = anno == null ? null : anno.value();
         if(StringUtils.isBlank(text)) {
             return property.getName();
         }else {
