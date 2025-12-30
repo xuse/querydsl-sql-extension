@@ -25,4 +25,8 @@ public interface FrontPressurePoolMXBean {
 	int getQueueMaximumLength();
 	
 	int getQueuePressureLength();
+	
+	void setMaximumSize(int size);
+	
+	void setCoreSize(int size);
 }

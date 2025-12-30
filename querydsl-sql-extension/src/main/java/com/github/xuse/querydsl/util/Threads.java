@@ -400,6 +400,22 @@ public abstract class Threads {
 		public int getActiveCount() {
 			return pool.getActiveCount();
 		}
+		@Override
+		public void setMaximumSize(int size) {
+			int from = pool.getMaximumPoolSize();
+			if (from > size) {
+				throw Exceptions.illegalArgument("RISK is Too high to adjust pool size from {} to {} once in a PRD enviroment.", from, size);
+			}
+			pool.setMaximumPoolSize(size);
+		}
+		@Override
+		public void setCoreSize(int size) {
+			int from = pool.getCorePoolSize(); 
+			if (from > size) {
+				throw Exceptions.illegalArgument("RISK is Too high to adjust core pool size from {} to {} once in a PRD enviroment.", from, size);
+			}
+			pool.setCorePoolSize(size);
+		}
     }
 
 	/**
