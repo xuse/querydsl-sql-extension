@@ -87,7 +87,6 @@ public class RetryPolicy {
 		return attempts;
 	}
 	
-	
 	public boolean executeUntilReturnTrue(Supplier<Boolean> task) {
 		return execute0(()->{
 			Assert.isTrue(task.get());
@@ -192,6 +191,7 @@ public class RetryPolicy {
 	}
 
 	private <T> Void innerAsyncCall(BasicFuture<T> f, Callable<T> task) {
+		attempts++;
 		try {
 			f.result = task.call();
 			f.completed = true;
@@ -206,7 +206,11 @@ public class RetryPolicy {
 					log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);	
 				}
 				Callable<Void> newCall = ()->this.innerAsyncCall(f,task);
-				executor.schedule(newCall, wait, TimeUnit.MILLISECONDS);
+				if(wait==0) {
+					executor.submit(newCall);	
+				}else {
+					executor.schedule(newCall, wait, TimeUnit.MILLISECONDS);
+				}
 			} else {
 				f.completed=true;
 				f.ex=t;
@@ -218,9 +222,8 @@ public class RetryPolicy {
 	
 	
 	private <T> Future<T> runAsync0(Callable<T> task) {
-		attempts++;
 		BasicFuture<T> f=new BasicFuture<>();
-		Callable<Void> newCall = ()->this.innerAsyncCall(f,task);
+		Callable<Void> newCall = () -> this.innerAsyncCall(f, task);
 		try {
 			newCall.call();
 		} catch (Exception e) {

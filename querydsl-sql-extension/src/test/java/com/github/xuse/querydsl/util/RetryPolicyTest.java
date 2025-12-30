@@ -14,6 +14,9 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -70,6 +73,22 @@ public class RetryPolicyTest {
 				throw new IllegalArgumentException();
 			});			
 		});
+		
+	}
+	
+	public static final ScheduledThreadPoolExecutor executors = new ScheduledThreadPoolExecutor(2,Threads.threadFactory("TEST"));
+	
+	@Test
+	public void testAsyncRetry() throws InterruptedException, ExecutionException {
+		final AtomicInteger count = new AtomicInteger();
+		Future<Void> future=
+				RetryPolicy.newBuilder().backoff(Duration.ofSeconds(1)).maxAttempts(4).noStackTrace().enablAsync(executors).build()
+		.runAsync(()->{
+			System.out.println("执行第"+(count.incrementAndGet())+"次@"+DateUtils.format(System.currentTimeMillis()));
+			throw new IllegalArgumentException();
+		});
+		System.out.println("方法已返回。");
+		System.out.println(future.get());
 	}
 
     // 测试用例1：正常执行不抛异常
