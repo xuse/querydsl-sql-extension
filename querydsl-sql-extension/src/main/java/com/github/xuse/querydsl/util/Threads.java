@@ -471,7 +471,7 @@ public abstract class Threads {
 		 * @return this
 		 */
 		public ThreadPoolBuilder noJMX() {
-			this.noJmx=true;
+			this.noJmx = true;
 			return this;
 		}
 
