@@ -83,7 +83,8 @@ public class RetryPolicyTest {
 		final AtomicInteger count = new AtomicInteger();
 		Future<Void> future=
 				RetryPolicy.newBuilder().backoff(Duration.ofSeconds(1)).maxAttempts(4).noStackTrace().enablAsync(executors)
-				.onFailure((e)->System.out.println("失败了"+e))
+				.replaceTentativeFailure((ex, time, wait, task)->{System.out.println("拦截："+time+"重试等待"+wait+"异常"+ex);})
+				.onFinalFailure((isAsync, e)->System.out.println("失败了"+e))
 				.onSuccess(()->System.out.print("成功了"))
 				.build()
 		.runAsync(()->{

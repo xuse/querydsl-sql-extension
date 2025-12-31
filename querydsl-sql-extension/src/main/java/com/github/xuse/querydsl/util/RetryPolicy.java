@@ -1,12 +1,13 @@
 package com.github.xuse.querydsl.util;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -66,7 +67,12 @@ public class RetryPolicy {
 	/** 不打印异常堆栈 **/
 	private boolean noStackTrace;
 	
-	private Consumer<Exception> onFailure;
+	private TentativeFailHandler onTentativeFailure = this::logFail;
+	
+	private BiConsumer<Boolean, Exception> onFinalFailure = (isAsync, error) -> {
+		if (!isAsync)
+			throw Exceptions.toRuntime(error);
+	};
 	
 	private Runnable onSuccess;
 	
@@ -205,11 +211,9 @@ public class RetryPolicy {
 		} catch (Exception t) {
 			if (attempts < maxAttempts && retryFor.isInstance(t)) {
 				long wait = delay.getDelay(attempts);
-				if(noStackTrace) {
-					log.info("Caught {} in task [{}]. Message:{}, will retry(attempts={}) after {}ms:", t.getClass().getName(), task,t.getMessage(), attempts, wait);
-				}else {
-					log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);	
-				}
+				
+				onTentativeFailure(t, attempts, wait, task);
+				
 				Callable<Void> newCall = ()->this.innerAsyncCall(f,task);
 				if(wait==0) {
 					executor.submit(newCall);	
@@ -219,8 +223,8 @@ public class RetryPolicy {
 			} else {
 				f.completed = true;
 				f.ex = t;
-				fail(t);
 				Threads.doNotifyAll(f);
+				onFinalFailure.accept(true, t);
 			}
 		}
 		return null;
@@ -245,23 +249,26 @@ public class RetryPolicy {
 		} catch (Exception t) {
 			if (attempts < maxAttempts && retryFor.isInstance(t)) {
 				long wait = delay.getDelay(attempts);
-				if (noStackTrace) {
-					log.info("Caught {} in task [{}]. Message:{}, will retry(attempts={}) after {}ms:", t.getClass().getName(), task,
-							t.getMessage(), attempts, wait);
-				} else {
-					log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, wait, t);
-				}
+				onTentativeFailure(t, attempts, wait, task);
 				if (wait > 0) {
 					doSleep(wait);
 				}
 				return success(execute0(task));
 			} else {
-				fail(t);
-				throw Exceptions.toRuntime(t);
+				onFinalFailure.accept(false, t);
 			}
 		}
+		return null;
 	}
 	
+	private void onTentativeFailure(Exception t, int attempts2, long wait, Callable<?> task) {
+		try {
+			onTentativeFailure.accept(t, attempts, wait, task);
+		}catch(Exception e) {
+			log.error("the TentativeFailHandler raise exception:", e);
+		}
+	}
+
 	private <T> T success(T t) {
 		if(onSuccess!=null) {
 			try {
@@ -273,13 +280,25 @@ public class RetryPolicy {
 		return t;
 	}
 	
-	private void fail(Exception e) {
-		if(onFailure!=null) {
-			try {
-				onFailure.accept(e);
-			}catch(Exception ex) {
-				log.error("onSuccess of task",ex);
-			}
+	@FunctionalInterface
+	public interface TentativeFailHandler{
+		void accept(Exception t, int attemps, long willwait, Callable<?> task);
+		
+		default TentativeFailHandler andThen(TentativeFailHandler after) {
+			Objects.requireNonNull(after);
+			return (Exception t, int attemps, long willwait, Callable<?> task) -> {
+				accept(t, attemps, willwait, task);
+				after.accept(t, attemps, willwait, task);
+			};
+		}
+	}
+	
+	private void logFail(Exception t, int attemps, long willwait, Callable<?> task) {
+		if (noStackTrace) {
+			log.info("Caught {} in task [{}]. Message:{}, will retry(attempts={}) after {}ms:", t.getClass().getName(), task,
+					t.getMessage(), attempts, willwait);
+		} else {
+			log.info("Caught exception in task [{}]. will retry(attempts={}) after {}ms:", task, attempts, willwait, t);
 		}
 	}
 	
@@ -400,7 +419,13 @@ public class RetryPolicy {
 		
 		private boolean noStackTrace;
 		
-		private Consumer<Exception> onFailure;
+		private TentativeFailHandler onTentativeFailure;
+		
+		private boolean tentativeFailureReplace = false;
+		
+		private BiConsumer<Boolean, Exception> onFinalFailure;
+		
+		private boolean finalFailureReplace = false;
 		
 		private Runnable onSuccess;
 
@@ -423,11 +448,53 @@ public class RetryPolicy {
 			return this;
 		}
 		
-		public PolicyBuilder onFailure(Consumer<Exception> e) {
-			this.onFailure = e;
+		/**
+		 * 设定当整个重试联调最终失败时的处理.
+		 * @param handler 处理器
+		 * @return this
+		 */
+		public PolicyBuilder onFinalFailure(BiConsumer<Boolean, Exception> handler) {
+			this.onFinalFailure = handler;
 			return this;
 		}
 		
+		/**
+		 *  设定当整个重试联调最终失败时的处理. (替代默认的最终处理器——抛出异常)
+		 * @param handler 处理器，可以抛出异常。如不抛出整个处理链最终返回值为null。
+		 * @return this
+		 */
+		public PolicyBuilder replaceFinalFailure(BiConsumer<Boolean, Exception> handler) {
+			this.onFinalFailure = handler;
+			this.finalFailureReplace = true;
+			return this;
+		}
+		
+		/**
+		 * 设定当过程中失败时的处理。一般用于用户自定义日志输出。
+		 * @param handler 处理器，请勿故意抛出异常，后续还有重试任务。(即便抛出异常也不影响后续重试)
+		 * @return this
+		 */
+		public PolicyBuilder onTentativeFailure(TentativeFailHandler handler) {
+			this.onTentativeFailure = handler;
+			return this;
+		}
+		
+		/**
+		 * 设定当过程中失败时的处理(替代默认的过程处理器——打印日志)。一般用于用户自定义日志输出。
+		 * @param handler 处理器，请勿故意抛出异常，后续还有重试任务。(即便抛出异常也不影响后续重试)
+		 * @return this
+		 */
+		public PolicyBuilder replaceTentativeFailure(TentativeFailHandler handler) {
+			this.onTentativeFailure = handler;
+			this.tentativeFailureReplace = true;
+			return this;
+		}
+		
+		/**
+		 * 设定当操作成功时的处理内容
+		 * @param e
+		 * @return
+		 */
 		public PolicyBuilder onSuccess(Runnable e) {
 			this.onSuccess = e;
 			return this;
@@ -564,7 +631,20 @@ public class RetryPolicy {
 		public RetryPolicy build() {
 			RetryPolicy p= new RetryPolicy(this.delay, maxAttempts, retryFor,executor);
 			p.noStackTrace = this.noStackTrace;
-			p.onFailure = this.onFailure;
+			if(this.onFinalFailure!=null) {
+				if(finalFailureReplace) {
+					p.onFinalFailure = this.onFinalFailure;
+				}else {
+					p.onFinalFailure = this.onFinalFailure.andThen(p.onFinalFailure);
+				}
+			}
+			if (this.onTentativeFailure != null) {
+				if(tentativeFailureReplace) {
+					p.onTentativeFailure = this.onTentativeFailure;	
+				}else {
+					p.onTentativeFailure = p.onTentativeFailure.andThen(this.onTentativeFailure);
+				}
+			}
 			p.onSuccess = this.onSuccess;
 			return p;
 		}
