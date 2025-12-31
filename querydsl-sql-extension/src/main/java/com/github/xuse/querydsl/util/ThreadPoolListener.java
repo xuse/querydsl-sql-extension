@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class ThreadPoolListener {
 	
-	public static final ThreadPoolListener EMPTY=new ThreadPoolListener() {protected void onStatusChange(int state) {}};
+	public static final ThreadPoolListener EMPTY=new ThreadPoolListener() {protected void onStatusChange(int state, int queueSize) {}};
 	
 	private final AtomicInteger ctl = new AtomicInteger();
 	
@@ -28,21 +28,21 @@ public abstract class ThreadPoolListener {
 	public final void onTaskAdd(int queueSize) {
 		int value = ctl.get();
 		if (value!=NORMAL && ctl.compareAndSet(value, NORMAL)) {
-			onStatusChange(NORMAL);
+			onStatusChange(NORMAL,queueSize);
 		}
 	}
 	
 	public final void onTaskForceAdd(int queueSize) {
 		int value = ctl.get();
 		if (value!=PRESSED && ctl.compareAndSet(value, PRESSED)) {
-			onStatusChange(PRESSED);
+			onStatusChange(PRESSED,queueSize);
 		}
 	}
 
 	public final void onTaskReject(int queueSize) {
 		int value = ctl.get();
 		if (value!=FULL && ctl.compareAndSet(value, FULL)) {
-			onStatusChange(FULL);
+			onStatusChange(FULL,queueSize);
 		}
 	}
 	
@@ -50,5 +50,5 @@ public abstract class ThreadPoolListener {
 	 * 监听，线程池进入哪种状态。当线程池恢复时。需要依赖新任务添加来触发，因此监听会有滞后。
 	 * @param state 状态
 	 */
-	protected abstract void onStatusChange(int state);
+	protected abstract void onStatusChange(int state, int queueSize);
 }

@@ -29,7 +29,7 @@ public class ThreadPoolTest {
 		.namePrefix("test-pool")
 		.withListener(new ThreadPoolListener() {
 			@Override
-			protected void onStatusChange(int state) {
+			protected void onStatusChange(int state, int queueSize) {
 				System.out.println("线程池进入"+state+"状态");
 			}
 		})
