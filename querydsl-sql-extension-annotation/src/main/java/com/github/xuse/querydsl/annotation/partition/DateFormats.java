@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.annotation.partition;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.function.Function;
@@ -16,6 +18,6 @@ final class DateFormats {
 	
 	
 	static String format(DateTimeFormatter f, Date d) {
-		return d == null ? "" : f.format(d.toInstant());
+		return d == null ? "" : f.format(LocalDateTime.ofInstant(d.toInstant(), ZoneId.systemDefault()));
 	}
 }

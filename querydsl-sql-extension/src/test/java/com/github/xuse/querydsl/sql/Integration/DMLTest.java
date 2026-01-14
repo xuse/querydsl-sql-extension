@@ -452,10 +452,11 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		System.err.println("返回:" + count);
 
 	}
+	
 	@Test
 	public void testConditionBeanException() {
 		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
-		assertThrows(UnsupportedOperationException.class, ()->{
+		assertThrows(IllegalArgumentException.class, ()->{
 			QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 					AvsAuthParamsEr.builder().authContent("a").build()
 			);

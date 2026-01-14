@@ -389,9 +389,11 @@ public class CrudRepositoryTest extends AbstractTestBase  implements LambdaHelpe
 		Foo foo = new Foo();
 		foo.setCode("Test1");
 		foo.setName("test1");
+		foo.setCodeType(1);
 		Foo foo2 = new Foo();
 		foo2.setCode("Test2");
 		foo2.setName("test2");
+		foo2.setCodeType(2);
 
 		factory.getMetadataFactory().truncate(() -> Foo.class).execute();
 
