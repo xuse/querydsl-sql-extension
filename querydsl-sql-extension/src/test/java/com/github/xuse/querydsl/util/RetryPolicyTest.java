@@ -82,7 +82,7 @@ public class RetryPolicyTest {
 	public void testAsyncRetry() throws InterruptedException, ExecutionException {
 		final AtomicInteger count = new AtomicInteger();
 		Future<Void> future=
-				RetryPolicy.newBuilder().backoff(Duration.ofSeconds(1)).maxAttempts(4).noStackTrace().enablAsync(executors)
+				RetryPolicy.newBuilder().backoff(Duration.ofMillis(200)).maxAttempts(4).noStackTrace().enablAsync(executors)
 				.replaceTentativeFailure((ex, time, wait, task)->{System.out.println("拦截："+time+"重试等待"+wait+"异常"+ex);})
 				.onFinalFailure((isAsync, e)->System.out.println("失败了"+e))
 				.onSuccess(()->System.out.print("成功了"))
@@ -92,7 +92,7 @@ public class RetryPolicyTest {
 			throw new IllegalArgumentException();
 		});
 		System.out.println("方法已返回。");
-		System.out.println(future.get());
+		Assertions.assertThrows(IllegalArgumentException.class, ()->future.get());
 	}
 
     // 测试用例1：正常执行不抛异常
@@ -122,7 +122,7 @@ public class RetryPolicyTest {
         when(mockDelay.getDelay(1)).thenReturn(100L);
         when(mockDelay.getDelay(2)).thenReturn(200L);
 
-        RetryPolicy policy = new RetryPolicy(mockDelay, 2, RuntimeException.class);
+        RetryPolicy policy = new RetryPolicy(mockDelay, 3, RuntimeException.class);
         Runnable task = () -> { throw new RuntimeException(); };
 
         try (MockedStatic<RetryPolicy> mockedDoSleep = mockStatic(RetryPolicy.class)) {
@@ -170,7 +170,7 @@ public class RetryPolicyTest {
         when(mockDelay.getDelay(1)).thenReturn(2000L);
         when(mockDelay.getDelay(2)).thenReturn(2000L);
 
-        RetryPolicy policy = new RetryPolicy(mockDelay, 2, RuntimeException.class);
+        RetryPolicy policy = new RetryPolicy(mockDelay, 3, RuntimeException.class);
         Runnable task = () -> { throw new RuntimeException(); };
 
         try (MockedStatic<RetryPolicy> mockedDoSleep = mockStatic(RetryPolicy.class)) {

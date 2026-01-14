@@ -99,7 +99,7 @@ public class RetryPolicy {
 	}
 	
 	public boolean executeUntilReturnTrue(Supplier<Boolean> task) {
-		return execute0(()->{
+		return syncExecute(()->{
 			Assert.isTrue(task.get());
 			return true;
 		});
@@ -119,7 +119,7 @@ public class RetryPolicy {
 	 */
 	public <P> boolean executeUntilReturnTrue(Predicate<P> task, P input) {
 		attempts = 0;
-		return execute0(() -> {
+		return syncExecute(() -> {
 			Boolean result = task.test(input);
 			if(Boolean.TRUE.equals(result)) {
 				return true;
@@ -139,7 +139,7 @@ public class RetryPolicy {
 	 */
 	public void execute(Runnable task) {
 		attempts = 0;
-		execute0(()->{
+		syncExecute(()->{
 			task.run();
 			return null;
 		});
@@ -158,7 +158,7 @@ public class RetryPolicy {
 	 */
 	public <T, P> T execute(Function<P, T> task, P param) {
 		attempts = 0;
-		return execute0(() -> task.apply(param));
+		return syncExecute(() -> task.apply(param));
 	}
 	
 	/**
@@ -172,7 +172,7 @@ public class RetryPolicy {
 	 */
 	public <T> T execute(Callable<T> task) {
 		attempts = 0;
-		return execute0(task);
+		return syncExecute(task);
 	}
 	
 	/**
@@ -200,8 +200,28 @@ public class RetryPolicy {
 			return true;
 		});
 	}
+	
 
-	private <T> Void innerAsyncCall(BasicFuture<T> f, Callable<T> task) {
+	private <T> T syncExecute(Callable<T> task) {
+		attempts++;
+		try {
+			return success(task.call());
+		} catch (Exception t) {
+			if (willRetry(t)) {
+				long wait = delay.getDelay(attempts);
+				onTentativeFailure(t, attempts, wait, task);
+				if (wait > 0) {
+					doSleep(wait);
+				}
+				return success(syncExecute(task));
+			} else {
+				onFinalFailure.accept(false, t);
+			}
+		}
+		return null;
+	}
+
+	private <T> Void asyncExecute(Callable<T> task,BasicFuture<T> f) {
 		attempts++;
 		try {
 			f.result = success(task.call());
@@ -209,12 +229,12 @@ public class RetryPolicy {
 			Threads.doNotifyAll(f);
 			return null;
 		} catch (Exception t) {
-			if (attempts < maxAttempts && retryFor.isInstance(t)) {
+			if (willRetry(t)) {
 				long wait = delay.getDelay(attempts);
 				
 				onTentativeFailure(t, attempts, wait, task);
 				
-				Callable<Void> newCall = ()->this.innerAsyncCall(f,task);
+				Callable<Void> newCall = ()->this.asyncExecute(task,f);
 				if(wait==0) {
 					executor.submit(newCall);	
 				}else {
@@ -231,34 +251,19 @@ public class RetryPolicy {
 	}
 	
 	
+	private boolean willRetry(Exception t) {
+		return attempts < maxAttempts && retryFor.isInstance(t);
+	}
+
 	private <T> Future<T> runAsync0(Callable<T> task) {
 		BasicFuture<T> f=new BasicFuture<>();
-		Callable<Void> newCall = () -> this.innerAsyncCall(f, task);
+		Callable<Void> newCall = () -> this.asyncExecute(task,f);
 		try {
 			newCall.call();
 		} catch (Exception e) {
 			log.error("Will not be thrown.", e);
 		}
 		return f;
-	}
-
-	private <T> T execute0(Callable<T> task) {
-		attempts++;
-		try {
-			return success(task.call());
-		} catch (Exception t) {
-			if (attempts < maxAttempts && retryFor.isInstance(t)) {
-				long wait = delay.getDelay(attempts);
-				onTentativeFailure(t, attempts, wait, task);
-				if (wait > 0) {
-					doSleep(wait);
-				}
-				return success(execute0(task));
-			} else {
-				onFinalFailure.accept(false, t);
-			}
-		}
-		return null;
 	}
 	
 	private void onTentativeFailure(Exception t, int attempts2, long wait, Callable<?> task) {

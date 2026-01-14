@@ -328,7 +328,7 @@ public abstract class Threads {
         }
         private T getResult() {
             if (this.ex != null) {
-                throw new IllegalStateException(this.ex);
+            	throw Exceptions.toRuntime(this.ex);
             }
             return this.result;
         }
