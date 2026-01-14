@@ -108,7 +108,7 @@ public class DDLMetadataBuilder {
 			if (keys != null && !keys.getLocalColumns().isEmpty()) {
 				if(!ignoreKeysOnPartitionedTable) {
 					Expression<?> columns = DDLExpressions.wrap(ExpressionUtils.list(Tuple.class, keys.getLocalColumns()));
-					tableDefExpressions.add(DDLExpressions.constraintDefinition(ConstraintType.PRIMARY_KEY, table,
+					tableDefExpressions.add(DDLExpressions.constraintDefinition(ConstraintTypeDef.PRIMARY_KEY, table,
 							new SchemaAndTable(null, ""), columns));	
 				}
 			}
@@ -165,9 +165,9 @@ public class DDLMetadataBuilder {
 	}
 
 	private DDLMetadata addIndependConstraintMeta(Constraint c) {
-		ConstraintType type = c.getConstraintType();
+		ConstraintTypeDef type = c.getConstraintType();
 		if (type == null) {
-			type = ConstraintType.KEY;
+			type = ConstraintTypeDef.KEY;
 		}
 		if (configuration.getTemplates().supports(type.getIndependentCreateOps())) {
 			DDLMetadata meta = new DDLMetadata(false, true);
@@ -442,7 +442,7 @@ public class DDLMetadataBuilder {
 		}
 		//Drop constraints
 		for (Constraint constraint : compareResults.getDropConstraints()) {
-			ConstraintType type = constraint.getConstraintType();
+			ConstraintTypeDef type = constraint.getConstraintType();
 			AlterTableConstraintOps ops = type.getDropOpsInAlterTable();
 			if (ops == null || configuration.getTemplates().notSupports(ops)) {
 				serialzeConstraintIndepentDrop(constraint);
@@ -456,7 +456,7 @@ public class DDLMetadataBuilder {
 		//Add constraints
 		if(!ignoreKeysOnPartitionedTable) {
 			for (Constraint constraint : compareResults.getAddConstraints()) {
-				ConstraintType type = constraint.getConstraintType();
+				ConstraintTypeDef type = constraint.getConstraintType();
 				if (!configuration.getTemplates().supportCreateInTableDefinition(type)) {
 					addIndependConstraintMeta(constraint);
 				} else {

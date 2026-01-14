@@ -27,6 +27,7 @@ import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
@@ -161,7 +162,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	protected Constraint createCheck(String name, Expression<Boolean> checkExpression) {
 		Constraint constraint = new Constraint();
 		constraint.setName(name);
-		constraint.setConstraintType(ConstraintType.CHECK);
+		constraint.setConstraintType(ConstraintTypeDef.CHECK);
 		constraint.setCheckClause(checkExpression);
 		this.constraints.add(constraint);
 		return constraint;
@@ -197,12 +198,13 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	 * @return Constraint
 	 */
 	protected Constraint createConstraint(String name, ConstraintType type, boolean ignore, Path<?>... columns) {
+		Assert.notNull(type);
 		if (type == ConstraintType.PRIMARY_KEY) {
 			throw Exceptions.unsupportedOperation("please use #createPrimaryKey() method for columns", Arrays.toString(columns));
 		}
 		Constraint constraint = new Constraint();
 		constraint.setName(name);
-		constraint.setConstraintType(type);
+		constraint.setConstraintType(ConstraintTypeDef.of(type));
 		constraint.setPaths(Arrays.asList(columns));
 		constraint.setAllowIgnore(ignore);
 		this.constraints.add(constraint);

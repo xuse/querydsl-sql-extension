@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -84,7 +84,7 @@ public class InformationSchemaReader implements SchemaReader {
 			c.setName(rs.getString("CONSTRAINT_NAME"));
 			c.setTableName(rs.getString("TABLE_NAME"));
 			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			ConstraintType type = ConstraintType.valueOf(rs.getString("CONSTRAINT_TYPE").replace(' ', '_'));
+			ConstraintTypeDef type = ConstraintTypeDef.valueOf(rs.getString("CONSTRAINT_TYPE").replace(' ', '_'));
 			c.setConstraintType(type);
 			if(hasCheck) {
 				String check=rs.getString("check_clause");

@@ -1,9 +1,7 @@
 package com.github.xuse.querydsl.annotation.query;
 
-import com.querydsl.core.types.Ops;
-
-public @interface BoolCase {
-	boolean is() default false;
+public @interface IntCase {
+	int is() default 0;
 	/**
 	 * 运算符
 	 */

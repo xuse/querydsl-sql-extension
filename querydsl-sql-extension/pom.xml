@@ -16,6 +16,11 @@
 	</properties>
 	<dependencies>
 		<dependency>
+			<groupId>io.github.xuse</groupId>
+			<artifactId>querydsl-sql-extension-annotation</artifactId>
+			<version>5.0.0-r166</version>
+		</dependency>
+		<dependency>
 			<groupId>javax.annotation</groupId>
 			<artifactId>javax.annotation-api</artifactId>
 			<version>1.3.2</version>

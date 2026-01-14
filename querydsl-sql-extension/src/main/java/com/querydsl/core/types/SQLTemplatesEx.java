@@ -4,7 +4,7 @@ import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
@@ -54,7 +54,7 @@ public interface SQLTemplatesEx {
 	 *  @param type ConstraintType
 	 *  @return true if the ConstraintType supported in a create/alter table clause;
 	 */
-	default boolean supportCreateInTableDefinition(ConstraintType type) {
+	default boolean supportCreateInTableDefinition(ConstraintTypeDef type) {
 		return true;
 	}
 
@@ -112,12 +112,12 @@ public interface SQLTemplatesEx {
 		TypeUtils.add(templates, CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}");
 		TypeUtils.add(templates, CreateStatement.CREATE_BITMAP, "CREATE BITMAP INDEX {1} ON {0} {2}");
 		// All Constraint inline def
-		TypeUtils.add(templates, ConstraintType.CHECK, "CONSTRAINT {1} CHECK ({2})");
-		TypeUtils.add(templates, ConstraintType.UNIQUE, "UNIQUE KEY {1} {2}");
-		TypeUtils.add(templates, ConstraintType.FOREIGN_KEY, "CONSTRAINT {1} FOREIGN KEY {2}");
-		TypeUtils.add(templates, ConstraintType.KEY, "KEY {1} {2}");
-		TypeUtils.add(templates, ConstraintType.HASH, "KEY {1} {2} USING HASH");
-		TypeUtils.add(templates, ConstraintType.PRIMARY_KEY, "PRIMARY KEY {2}");
+		TypeUtils.add(templates, ConstraintTypeDef.CHECK, "CONSTRAINT {1} CHECK ({2})");
+		TypeUtils.add(templates, ConstraintTypeDef.UNIQUE, "UNIQUE KEY {1} {2}");
+		TypeUtils.add(templates, ConstraintTypeDef.FOREIGN_KEY, "CONSTRAINT {1} FOREIGN KEY {2}");
+		TypeUtils.add(templates, ConstraintTypeDef.KEY, "KEY {1} {2}");
+		TypeUtils.add(templates, ConstraintTypeDef.HASH, "KEY {1} {2} USING HASH");
+		TypeUtils.add(templates, ConstraintTypeDef.PRIMARY_KEY, "PRIMARY KEY {2}");
 		// all alter table columns
 		TypeUtils.add(templates, AlterColumnOps.RESTART_WITH, "RESTART WITH {0}");
 		TypeUtils.add(templates, AlterColumnOps.SET_INCREMENT_BY, "SET INCREMENT BY {0}");
@@ -129,7 +129,7 @@ public interface SQLTemplatesEx {
 		TypeUtils.add(templates, AlterColumnOps.SET_NULL, "SET NULL");
 		/*
 		 * if you dialect supports FULLTEXT INDEX (such as MySQL), add these statment to you SQLTemplates
-		 * add(templates, ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");Just for mysql
+		 * add(templates, ConstraintTypeDef.FULLTEXT, "FULLTEXT KEY {1} {2}");Just for mysql
 		 * add(templates, IndexConstraintOps.CREATE_FULLTEXT, "FULLTEXT INDEX {1} ON {0} {2}"); 
 		 */
 		

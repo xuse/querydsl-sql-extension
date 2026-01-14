@@ -24,7 +24,7 @@ import com.querydsl.core.types.Operator;
  * {2}=Definition expression
  *
  */
-public enum ConstraintType implements Operator{
+public enum ConstraintTypeDef implements Operator{
 	/**
 	 * SPATIAL索引
 	 */
@@ -103,7 +103,7 @@ public enum ConstraintType implements Operator{
 	 * @param createOps 独立创建操作符(大部分数据库倾向于在表内维护约束，使用独立语句维护索引。)
 	 * @param alterDropOps 表内删除操作符(大部分数据库倾向于在表内维护约束，使用独立语句维护索引。)
 	 */
-	private ConstraintType(String typeName, String typeFullName, ConstraintClassify classify, CreateStatement createOps, AlterTableConstraintOps alterDropOps){
+	private ConstraintTypeDef(String typeName, String typeFullName, ConstraintClassify classify, CreateStatement createOps, AlterTableConstraintOps alterDropOps){
 		this.typeName = typeName;
 		this.typeFullName = typeFullName;
 		this.classify = classify;
@@ -111,9 +111,9 @@ public enum ConstraintType implements Operator{
 		this.dropOpsInAlterTable = alterDropOps;
 	}
 	
-	public static ConstraintType parseName(String name){
+	public static ConstraintTypeDef parseName(String name){
 		
-		for (ConstraintType a : ConstraintType.values()) {  
+		for (ConstraintTypeDef a : ConstraintTypeDef.values()) {  
             if (a.typeName.equalsIgnoreCase(name)) {  
                 return a;  
             }  
@@ -121,9 +121,9 @@ public enum ConstraintType implements Operator{
 		return null;
 	}
 	
-	public static ConstraintType parseFullName(String name){
+	public static ConstraintTypeDef parseFullName(String name){
 		
-		for (ConstraintType a : ConstraintType.values()) {  
+		for (ConstraintTypeDef a : ConstraintTypeDef.values()) {  
             if (a.typeFullName.equalsIgnoreCase(name)) {  
                 return a;  
             }  
@@ -179,5 +179,9 @@ public enum ConstraintType implements Operator{
 	
 	public boolean isCheckClause() {
 		return classify == ConstraintClassify.CHECK;
+	}
+	
+	public static ConstraintTypeDef of(ConstraintType raw) {
+		return ConstraintTypeDef.values()[raw.ord];
 	}
 }

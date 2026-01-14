@@ -19,7 +19,8 @@ import java.lang.annotation.Target;
 public @interface CustomType {
 
 	/**
-	 * @implNote 自定义的Type类型可以继承 {@link com.querydsl.sql.types.AbstractType}。
+	 * @implNote 自定义的Type类型必须是 com.querydsl.sql.types.Type的子类;
+	 * 参考继承 {@link com.querydsl.sql.types.AbstractType}。
 	 * 可以通过构造器接收参数，构造器接收参数方法:
 	 * <ol>
 	 * <li>1. 空构造</li>
@@ -30,8 +31,14 @@ public @interface CustomType {
 	 * @return 自定义的java和数据库类型映射实现 / The mapping type of java and database
 	 * @see com.querydsl.sql.types.Type
 	 */
-	@SuppressWarnings("rawtypes")
-	Class<? extends com.querydsl.sql.types.Type> value();
+	Class<?> value() default Object.class;
+	
+	/**
+	 * 效果同value(), 
+	 * 如果位于实体定义所在位置无法引用映射类的class对象，那么使用类全名的方式引用。
+	 * @return 自定义的java和数据库类型映射实现 / The mapping type of java and database
+	 */
+	String name() default "";
 
 	/**
 	 * @return 参数 / Any configuration parameters for the named type.

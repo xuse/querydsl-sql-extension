@@ -15,6 +15,7 @@ import com.github.xuse.querydsl.annotation.query.BoolCase;
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.annotation.query.IntCase;
+import com.github.xuse.querydsl.annotation.query.Ops;
 import com.github.xuse.querydsl.annotation.query.Order;
 import com.github.xuse.querydsl.annotation.query.StringCase;
 import com.github.xuse.querydsl.annotation.query.When;
@@ -41,7 +42,6 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.ConstantImpl;
-import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
@@ -472,6 +472,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return select;
 	}
 	
+	@SuppressWarnings("deprecation")
 	private SQLDeleteClauseAlter createDeleteQuery(Object conditionBean,ConditionBean cb, int limit) {
 		RelationalPath<T> beanPath= getPath();
 		SQLDeleteClauseAlter delete= getFactory().delete(beanPath);
@@ -633,7 +634,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if(p2==null) {
 			return p1;
 		}
-		return  Expressions.booleanOperation(Ops.OR, p1, p2);
+		return  Expressions.booleanOperation(com.querydsl.core.types.Ops.OR, p1, p2);
 	}
 
 	private boolean isUnsaved(Object value,RelationalPathEx<T> beanPathEx,Path<?> path,Ops op) {
@@ -841,13 +842,13 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Predicate toPredicate(Object value, Path<?> path, Ops operator, String fieldName) {
+	private Predicate toPredicate(Object value, Path<?> path, com.github.xuse.querydsl.annotation.query.Ops operator, String fieldName) {
 		try {
-		if (operator == Ops.IN) {
+		if (operator == com.github.xuse.querydsl.annotation.query.Ops.IN) {
 			if (value == null || elements(value)<1) {
 				return null;
 			}
-		} else if (operator == Ops.BETWEEN) {
+		} else if (operator == com.github.xuse.querydsl.annotation.query.Ops.BETWEEN) {
 			int paramCount=elements(value);
 			if (value == null || paramCount==0) {
 				return null;

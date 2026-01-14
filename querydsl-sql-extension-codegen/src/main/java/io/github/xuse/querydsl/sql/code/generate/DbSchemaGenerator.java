@@ -42,6 +42,7 @@ import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.log.QueryDSLSQLListener;
 import com.github.xuse.querydsl.util.Assert;
@@ -467,9 +468,9 @@ public class DbSchemaGenerator {
 			List<AnnotationExpr> checkAnnos = new ArrayList<>();
 
 			for (Constraint c : constraints) {
-				ConstraintType type = c.getConstraintType();
+				ConstraintTypeDef type = c.getConstraintType();
 				if (type.isColumnList()) {
-					if (type == ConstraintType.PRIMARY_KEY) {
+					if (type == ConstraintTypeDef.PRIMARY_KEY) {
 						pkFields = c.getColumnNames().stream().map(n -> columnToFieldName.get(normalizeColumn(n)))
 								.collect(Collectors.toList());
 					} else {
@@ -668,7 +669,7 @@ public class DbSchemaGenerator {
 
 		builder.add("name", cu.literal(index.getName()));
 
-		ConstraintType type = index.getConstraintType();
+		ConstraintTypeDef type = index.getConstraintType();
 		builder.add("type", cu.createFieldAccess(ConstraintType.class, type.name()));
 
 		List<String> paths = index.getColumnNames().stream().map((e) -> columnToFieldName.get(normalizeColumn(e)))

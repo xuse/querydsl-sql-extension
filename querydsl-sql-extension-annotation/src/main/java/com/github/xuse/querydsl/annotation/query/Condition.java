@@ -4,7 +4,6 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import com.querydsl.core.types.Ops;
 
 /**
  * 满足这样一种场景。有一些固定的组合条件查询。（比如从前端页面传入若干字段）其中一些字段可以为空，即不作为过滤条件。凡是传入有效数值的条件，都要参与查询过滤。

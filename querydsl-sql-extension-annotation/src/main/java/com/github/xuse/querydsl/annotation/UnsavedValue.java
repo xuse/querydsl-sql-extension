@@ -7,9 +7,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.function.Predicate;
 
-import com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter;
-import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
-
 /**
  * <h2>English</h2> UnsavedValue is used to define the range of invalid values
  * in business logic.
@@ -41,8 +38,8 @@ import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
  * anything you want, including updating primary key fields.
  * <p>
  * If you insist on using the automatically calculated field features, you can
- * use {@link SQLUpdateClauseAlter#updateNulls(boolean)} and
- * {@link SQLInsertClauseAlter#writeNulls(boolean)} to request null values to be
+ * use {@link com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter#updateNulls(boolean)} and
+ * {@link com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter#writeNulls(boolean)} to request null values to be
  * updated into the database. In this case, only {@code null} value will be written to these columns. 
  * This is because the feature is designed to distinguish between valid and invalid 
  * business data and is not intended to satisfy other special purposes. </blockquote>
@@ -83,7 +80,7 @@ import com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter;
  * QueryDSL的API大多是显式操作set/values/where，显式操作Query对象可以做任何你想做的事，包括更新主键字段。
  * <p>
  * 如果坚持要用自动计算字段的功能，可以使用
- * {@link SQLUpdateClauseAlter#updateNulls(boolean)}和{@link SQLInsertClauseAlter#writeNulls(boolean)}要求将null值更新到数据中。
+ * {@link com.github.xuse.querydsl.sql.dml.SQLUpdateClauseAlter#updateNulls(boolean)}和{@link com.github.xuse.querydsl.sql.dml.SQLInsertClauseAlter#writeNulls(boolean)}要求将null值更新到数据中。
  * 即便强行将无效值写入数据库，也只会写入null值。因为无效就意味着在业务上无意义，等同与null.
  * </blockquote>
  * <p>

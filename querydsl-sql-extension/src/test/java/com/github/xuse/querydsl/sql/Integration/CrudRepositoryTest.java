@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
+import com.github.xuse.querydsl.annotation.query.Ops;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.entity.FooHistory;
 import com.github.xuse.querydsl.entity.FooWith2ColumnPK;
@@ -33,7 +34,6 @@ import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.QueryResults;
-import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.ComparableExpression;
 
 import lombok.Data;

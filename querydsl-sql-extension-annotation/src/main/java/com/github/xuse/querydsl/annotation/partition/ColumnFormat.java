@@ -1,9 +1,9 @@
 package com.github.xuse.querydsl.annotation.partition;
 
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 
-import com.github.xuse.querydsl.util.DateFormats;
-import com.github.xuse.querydsl.util.DateUtils;
 
 /**
  * 用于进行时间分区的数据库列的格式。
@@ -19,7 +19,7 @@ public enum ColumnFormat {
 	TIMESTAMP {
 		@Override
 		public String generateExpression(Date d) {
-			return "'" + DateFormats.DATE_CS.format(d) + "'";
+			return "'" + DateFormats.DATE_CS.apply(d) + "'";
 		}
 	},
 	
@@ -32,7 +32,7 @@ public enum ColumnFormat {
 	NUMBER_YMD {
 		@Override
 		public String generateExpression(Date d) {
-			return DateFormats.DATE_SHORT.format(d);
+			return DateFormats.DATE_SHORT.apply(d);
 		}
 	},
 	
@@ -44,7 +44,7 @@ public enum ColumnFormat {
 	STRING_YMD {
 		@Override
 		public String generateExpression(Date d) {
-			return "'"+DateFormats.DATE_SHORT.format(d)+"'";
+			return "'"+DateFormats.DATE_SHORT.apply(d)+"'";
 		}
 	},
 
@@ -56,7 +56,7 @@ public enum ColumnFormat {
 	NUMBER_YM{
 		@Override
 		public String generateExpression(Date d) {
-			return DateFormats.YEAR_MONTH.format(d);
+			return DateFormats.YEAR_MONTH.apply(d);
 		}
 	},
 	
@@ -68,7 +68,7 @@ public enum ColumnFormat {
 	STRING_YM {
 		@Override
 		public String generateExpression(Date d) {
-			return "'"+DateFormats.YEAR_MONTH.format(d)+"'";
+			return "'"+DateFormats.YEAR_MONTH.apply(d)+"'";
 		}
 	},
 	
@@ -80,9 +80,18 @@ public enum ColumnFormat {
 	NUMBER_YEAR{
 		@Override
 		public String generateExpression(Date d) {
-			return String.valueOf(DateUtils.getYear(d));
+			return String.valueOf(getYear(d));
 		}
 	};
 
 	public abstract String generateExpression(Date d);
+	
+	private static int getYear(Date d) {
+		if (d == null)
+			return 0;
+		final Calendar c = new GregorianCalendar();
+		c.setTime(d);
+		return c.get(Calendar.YEAR);
+	}
+	
 }

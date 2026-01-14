@@ -1,9 +1,8 @@
 package com.github.xuse.querydsl.annotation.query;
 
-import com.querydsl.core.types.Ops;
-
-public @interface IntCase {
-	int is() default 0;
+public @interface StringCase {
+	String is();
+	
 	/**
 	 * 运算符
 	 */

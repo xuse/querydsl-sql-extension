@@ -125,7 +125,7 @@ public class DDLExpressions {
 	 * @param definition     definition
 	 * @return expression
 	 */
-	public static Expression<?> constraintDefinition(ConstraintType type, RelationalPath<?> table,
+	public static Expression<?> constraintDefinition(ConstraintTypeDef type, RelationalPath<?> table,
 			SchemaAndTable constraintName, Expression<?> definition) {
 		String name = constraintName == null ? null : constraintName.getTable();
 		SimplePath<?> thisPath = Expressions.path(Object.class, table, name);

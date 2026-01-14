@@ -52,7 +52,7 @@ public class ConstraintOperation implements Operation<Object>{
 	}
 
 	@Override
-	public ConstraintType getOperator() {
-		return (ConstraintType)op.getOperator();
+	public ConstraintTypeDef getOperator() {
+		return (ConstraintTypeDef)op.getOperator();
 	}
 }

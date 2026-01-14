@@ -132,18 +132,46 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 		}
 		if (anno != null) {
 			@SuppressWarnings("rawtypes")
-			Class<? extends Type> clz = anno.value();
-			try {
-				customType = SQLTypeUtils.createInstance(clz, anno.parameters(), path.getType(),field.getGenericType());
-				setCustomType(customType);
-			} catch (Exception e) {
-				log.error("customType on {} error", path, e);
+			Class<? extends Type> clz = toTypeClass(anno, field);
+			if(clz!=null) {
+				try {
+					customType = SQLTypeUtils.createInstance(clz, anno.parameters(), path.getType(),field.getGenericType());
+					setCustomType(customType);
+				} catch (Exception e) {
+					log.error("customType on {} error", path, e);
+				}
 			}
 		}else {
 			if(fieldType.isEnum()){
 				customType = tryAddEnumMapping(column.getJdbcType(),fieldType,path);
 			}
 		}
+	}
+
+	@SuppressWarnings("rawtypes")
+	private Class<? extends Type> toTypeClass(CustomType anno,AccessibleElement field) {
+		Class<?> clz;
+		if(StringUtils.isNotEmpty(anno.name())) {
+			try {
+				clz=Class.forName(anno.name());
+			} catch (ClassNotFoundException e) {
+				throw Exceptions.illegalArgument(
+						"The class {} in annotaton @CustomType on {} is not exist.", anno.name(),
+						field);
+			}
+		}else {
+			clz=anno.value();
+		}
+		if(clz!=Object.class) {
+			if(Type.class.isAssignableFrom(anno.value())) {
+				return anno.value().asSubclass(Type.class);
+			}else {
+				throw Exceptions.illegalArgument(
+						"The class {} in annotaton @CustomType on {} is not a subclass of com.querydsl.sql.types.Type.", anno.value(),
+						field);
+			}
+		}
+		return null;
 	}
 
 	/*

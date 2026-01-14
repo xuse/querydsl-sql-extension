@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Invoker<T> {
 	private Object[] params;
-	private String errorText;
+	private String errorText = "Invocation error.";
 	private T defaultValue;
 	private Callable<T> call;
 	private Consumer<T> onSuccess = (e) -> {
@@ -26,12 +26,8 @@ public class Invoker<T> {
 		this.call = call;
 	}
 
-	Invoker(T defaultValue) {
-		this.defaultValue = defaultValue;
-	}
-
-	public static <T> Invoker<T> withDefaultValue(T defaultValue) {
-		return new Invoker<>(defaultValue);
+	public static <T> T getResultOrDefault(Callable<T> call,T defaultValue) {
+		return call(call).defaultValue(defaultValue).invoke();
 	}
 
 	public static <T> Invoker<T> call(Callable<T> call) {

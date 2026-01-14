@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.types.Constant;
@@ -85,7 +85,7 @@ public class Constraint {
 	/**
 	 * 约束类型
 	 */
-	private ConstraintType constraintType;
+	private ConstraintTypeDef constraintType;
 	
 	/**
 	 * 检测延迟
@@ -204,7 +204,7 @@ public class Constraint {
 	}
 	
 	public boolean contentEquals(Constraint rhs) {
-		ConstraintType type=getConstraintType();
+		ConstraintTypeDef type=getConstraintType();
 		if(type.isIgnored() || rhs.getConstraintType().isIgnored()) {
 			return false;
 		}
@@ -270,7 +270,7 @@ public class Constraint {
 			return null;
 		}
 		Constraint c=new Constraint();
-		c.setConstraintType(ConstraintType.PRIMARY_KEY);
+		c.setConstraintType(ConstraintTypeDef.PRIMARY_KEY);
 		c.setTableName(primaryKey.getEntity().getTableName());
 		c.setPaths(new ArrayList<>(primaryKey.getLocalColumns()));
 		return c;

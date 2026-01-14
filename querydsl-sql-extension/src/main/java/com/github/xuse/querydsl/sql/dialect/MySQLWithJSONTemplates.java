@@ -16,7 +16,7 @@ import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
@@ -141,7 +141,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		initJsonFunctions();
 		initPartitionOps();
 		
-		add(ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");
+		add(ConstraintTypeDef.FULLTEXT, "FULLTEXT KEY {1} {2}");
 		
 		
 		
@@ -164,7 +164,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY,"");
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
 		if(!supportsCheckConstraint) {
-			unsupports.add(ConstraintType.CHECK);
+			unsupports.add(ConstraintTypeDef.CHECK);
 		}
 		unsupports.add(CreateStatement.CREATE_BITMAP);
 		
