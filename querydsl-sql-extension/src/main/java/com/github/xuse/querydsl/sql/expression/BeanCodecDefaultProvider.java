@@ -79,7 +79,7 @@ public class BeanCodecDefaultProvider implements BeanCodecProvider {
 			PropertyDescriptor[] props = beanInfo.getPropertyDescriptors();
 			Map<String, FieldProperty> maps = new HashMap<>();
 			for (PropertyDescriptor p : props) {
-				if (p.getReadMethod().getDeclaringClass() == Object.class) {
+				if (p.getReadMethod()==null || p.getReadMethod().getDeclaringClass() == Object.class) {
 					continue;
 				}
 				String name = p.getName();
