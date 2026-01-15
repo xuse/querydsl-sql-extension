@@ -20,6 +20,8 @@ import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.annotation.partition.HashPartition;
 import com.github.xuse.querydsl.annotation.partition.ListPartition;
 import com.github.xuse.querydsl.annotation.partition.RangePartition;
+import com.github.xuse.querydsl.lambda.LambdaColumnBase;
+import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.column.ColumnBuilder;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
@@ -483,8 +485,12 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		return table;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
+		if(column instanceof LambdaColumnBase) {
+			column = PathCache.getPath((LambdaColumnBase)column);
+		}	
 		ColumnMapping metadata = columnMetadata.get(column);
 		return metadata != null ? metadata.getColumn():null;
 	}
