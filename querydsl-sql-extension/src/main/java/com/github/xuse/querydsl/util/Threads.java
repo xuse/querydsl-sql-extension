@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.util;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -18,6 +19,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import com.github.xuse.querydsl.jmx.IntrospectedMXBean;
+import com.github.xuse.querydsl.util.Exceptions.WrapException;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -200,26 +202,36 @@ public abstract class Threads {
 		}
 	}
 
-	public static Thread doTask(String name, Runnable runnable) {
-		Thread t = new Thread(runnable);
-		t.setName(name);
-		t.setDaemon(true);
-		t.start();
-		return t;
-	}
-
 	/**
-	 * Execute the runnable in a new thread.
-	 * <p>
-	 * 在新的线程中运行指定的任务
-	 * 
-	 * @param runnable Runnable
+	 * 将StackTrace转换为字符串，添加到指定的Appendable对象中。
+	 * @param stacks stack trace.
+	 * @param skipLines ingore first n lines.
+	 * @param output Appendable.
+	 * @See Appendable
 	 */
-	public static final Thread doTask(Runnable runnable) {
-		Thread t = new Thread(runnable);
-		t.setDaemon(true);
-		t.start();
-		return t;
+	public static void toStackTraceString(StackTraceElement[] stacks, int skipLines,Appendable output) {
+		String newLine = ")\r\n";
+		try {
+			for (int i = skipLines; i < stacks.length; i++) {
+				StackTraceElement e = stacks[i];
+				output.append('\t').append(e.getClassName()).append('.').append(e.getMethodName());
+				output.append("(").append(e.getFileName()).append(':').append(String.valueOf(e.getLineNumber())).append(newLine);
+			}	
+		}catch(IOException e) {
+			throw new WrapException(e);
+		}
+	}
+	
+	/**
+	 * 将StackTrace转换为字符串。
+	 * @param stacks StackTraceElement
+	 * @param skipLines 跳过的Stack，传入1或以上的数字。
+	 * @return text of the StackTrace
+	 */
+	public static String toStackTraceString(StackTraceElement[] stacks, int skipLines) {
+		StringBuilder sb = new StringBuilder();
+		toStackTraceString(stacks,skipLines,sb);
+		return sb.toString();
 	}
 
 	/**
@@ -309,6 +321,23 @@ public abstract class Threads {
         }).start();
         return f;
     }
+    
+	
+	/**
+	 * Start a daemon thread.
+	 * @param name thread name
+	 * @param runnable daemon task.
+	 * @return Thread
+	 */
+	public static Thread startDaemon(String name, Runnable runnable) {
+		Thread t = new Thread(runnable);
+		if (name != null && !name.isEmpty()) {
+			t.setName(name);
+		}
+		t.setDaemon(true);
+		t.start();
+		return t;
+	}
     
     static class BasicFuture<T> implements Future<T>{
         volatile boolean completed;
