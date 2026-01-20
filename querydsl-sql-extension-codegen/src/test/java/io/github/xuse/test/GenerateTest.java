@@ -43,7 +43,9 @@ public class GenerateTest {
     @Test
     public void testGenerateEntity() {
         DbSchemaGenerator.from(getDataSource()).output(OutputDir.DIR_TARGET).metafields(MetafieldGenerationType.QCLASS).useLombokAnnotation(true)
-                .tableRefNameIs(s -> "_table").generateAll("sim_card");
+                .tableRefNameIs(s -> "_table")
+                .overwriteFiles(true)
+                .generateTables( "sim_card", "sim_card_device%");
     }
 
     @Test

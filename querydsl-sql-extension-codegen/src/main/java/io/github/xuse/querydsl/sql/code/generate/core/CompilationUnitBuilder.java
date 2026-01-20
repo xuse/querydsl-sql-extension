@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.github.javaparser.JavaParser;
@@ -37,10 +38,12 @@ import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.StringUtils;
 
 public class CompilationUnitBuilder {
     private Map<String, Class<?>> simpleNames = new HashMap<>();
     private Set<String> stringImports = new HashSet<>();
+    private String pkg;
 
     private final JavaParser parser;
     private final CompilationUnit unit;
@@ -122,6 +125,10 @@ public class CompilationUnitBuilder {
     }
 
     public void addImport(String type) {
+    	String pkg=StringUtils.substringBeforeLast(type, ".");
+    	if(Objects.equals(pkg, this.pkg)) {
+    		return;
+    	}
         if (stringImports.add(type)) {
             unit.addImport(type);
         }
@@ -130,6 +137,10 @@ public class CompilationUnitBuilder {
     public void addImport(Class<?> t) {
         if (t.isPrimitive()) {
             return;
+        }
+        String pkg=t.getPackage().getName();
+        if(Objects.equals(pkg, this.pkg)) {
+        	return;
         }
         Class<?> old = simpleNames.put(t.getSimpleName(), t);
         if (old != null && old != t) {
@@ -147,6 +158,7 @@ public class CompilationUnitBuilder {
 
     public void setPackageDeclaration(String pkg) {
         unit.setPackageDeclaration(pkg);
+		this.pkg = pkg;
     }
 
     public ClassOrInterfaceDeclaration addClass(String className) {

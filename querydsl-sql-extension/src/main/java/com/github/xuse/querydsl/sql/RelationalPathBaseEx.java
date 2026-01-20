@@ -21,7 +21,6 @@ import com.github.xuse.querydsl.annotation.partition.HashPartition;
 import com.github.xuse.querydsl.annotation.partition.ListPartition;
 import com.github.xuse.querydsl.annotation.partition.RangePartition;
 import com.github.xuse.querydsl.lambda.LambdaColumnBase;
-import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.column.ColumnBuilder;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
@@ -42,7 +41,9 @@ import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.Lambdas;
 import com.github.xuse.querydsl.util.lang.Primitives;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Operator;
@@ -485,12 +486,14 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		return table;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
-		if(column instanceof LambdaColumnBase) {
-			column = PathCache.getPath((LambdaColumnBase)column);
-		}	
+		if (column instanceof LambdaColumnBase) {
+			Pair<Class<?>, String> content = Lambdas.analysis(column);
+			if (content.getFirst() == this.getType()) {
+				column = getColumn(content.getSecond());
+			}
+		}
 		ColumnMapping metadata = columnMetadata.get(column);
 		return metadata != null ? metadata.getColumn():null;
 	}
