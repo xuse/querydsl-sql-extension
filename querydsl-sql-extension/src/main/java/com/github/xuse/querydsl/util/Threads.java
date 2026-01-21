@@ -379,7 +379,7 @@ public abstract class Threads {
                     throw new TimeoutException();
                 }
                 synchronized (this) {
-                    wait();
+                    wait(wait);
                 }
             }
             return getResult();
@@ -387,7 +387,7 @@ public abstract class Threads {
     }
     
     @AllArgsConstructor
-    public static class PoolMonitor implements FrontPressurePoolMXBean{
+	public static class PoolMonitor implements FrontPressurePoolMXBean {
     	@NonNull
     	private final ThreadPoolExecutor pool;
     	@NonNull
