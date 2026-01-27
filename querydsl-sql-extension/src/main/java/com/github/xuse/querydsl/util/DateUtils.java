@@ -800,13 +800,26 @@ public class DateUtils {
 	 * @param date  date 原日期时间
 	 * @param mills mills 毫秒数（可为负数）
 	 * @return 调整后的日期时间（新的日期对象）
+	 * @deprecated use {@link #adjustMillis(Date, long)}
 	 */
-	public static Date adjust(Date date, long mills) {
+	public static Date adjust(Date date, long millis) {
+		return adjustMillis(date, millis);
+	}
+	
+	/**
+	 * 在原日期上调整指定的毫秒并返回新对象。这个方法不会修改传入的Date对象，而是一个新的Date对象。
+	 * 
+	 * @param date  date 原日期时间
+	 * @param mills mills 毫秒数（可为负数）
+	 * @return 调整后的日期时间（新的日期对象）
+	 */
+	public static Date adjustMillis(Date date, long millis) {
 		if(date == null) {
 			return null;
 		}
-		return new Date(date.getTime() + mills);
+		return new Date(date.getTime() + millis);
 	}
+	
 
 	/**
 	 * 获取一个日期对象(java.util.Date)
