@@ -3,12 +3,11 @@ package com.github.xuse.querydsl.init;
 import java.util.Date;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
-import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.dialect.Privilege;
 import com.github.xuse.querydsl.sql.support.DbDistributedLockProvider;
 import com.github.xuse.querydsl.sql.support.DistributedLock;
 import com.github.xuse.querydsl.util.Assert;
@@ -60,9 +59,9 @@ public class InitProcessor {
 	 */
 	private boolean doInit() {
 		// 检查有无DDL权限
-		if (option.isDdlPermissionDetect()) {
-			boolean permission = metadata.hasPrivilege(Privilege.CREATE, Privilege.ALTER);
-			if (!permission) {
+		if (option.isDdlPermissionDetect() && option.getDetectPrivileges() != null && option.getDetectPrivileges().length > 0) {
+			boolean hasPermission = metadata.hasPrivilege(option.getDetectPrivileges());
+			if (!hasPermission) {
 				factory.getConfiguration().setMissDDLPermissions();
 				if(!option.isIgnoreIfNoPermission()) {
 					throw new IllegalStateException("There's no Privilege to execute DDL on current database");
