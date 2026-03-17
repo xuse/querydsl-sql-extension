@@ -26,8 +26,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import com.github.xuse.querydsl.util.Exceptions.WrapException;
 import com.github.xuse.querydsl.util.RetryPolicy.RetryDelayCalculator;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class RetryPolicyTest {
 	@Test
 	public void retryPolicyTest() {
@@ -297,5 +301,16 @@ public class RetryPolicyTest {
         calculator.jitter = Duration.ofMillis(1);
         long jitteredValue = calculator.jitter(1000);
         assertTrue(jitteredValue >= 999 && jitteredValue <= 1001);
+    }
+    
+    @Test
+    public void testRetryLogs() {
+    	String subSerial="ABC";
+    	RetryPolicy.newBuilder().fixedDelay(Duration.ofMillis(800))
+		.maxAttempts(3)
+		.replaceFinalFailure((a,e)->log.error("获取失败:{},不再重试",subSerial,e))
+		.retryForException(IllegalStateException.class)
+		.noStackTrace().build()
+		.execute(()->{throw Exceptions.illegalState("错误", subSerial);});
     }
 }
