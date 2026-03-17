@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 public @interface TableSpec {
 
 	/**
-	 * @return Namespace
+	 * @return namespace
 	 */
 	String schema() default "";
 
@@ -45,4 +45,9 @@ public @interface TableSpec {
 	 *  @return 字符集
 	 */
 	String collate() default "";
+	
+	/**
+	 * @return 短别名
+	 */
+	String alias() default "";
 }

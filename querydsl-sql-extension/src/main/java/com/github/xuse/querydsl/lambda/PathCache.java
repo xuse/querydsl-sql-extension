@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.sql.RelationalPathBaseEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
@@ -30,8 +31,10 @@ public class PathCache {
 
 		TablePathHolder(Class<?> beanType) {
 			this.beanType = beanType;
-			log.info("Generate dynamic table path for {}", beanType);
-			this.defaultPath = RelationalPathExImpl.valueOf(beanType, null);
+			TableSpec tableSpec = beanType.getAnnotation(TableSpec.class);
+			String variable = tableSpec != null ? tableSpec.alias() : null;
+			log.info("Generate dynamic table path for {}={}", variable, beanType);
+			this.defaultPath = RelationalPathExImpl.valueOf(beanType, variable);
 			this.defaultPathVariable = defaultPath.getMetadata().getName();
 		}
 		
