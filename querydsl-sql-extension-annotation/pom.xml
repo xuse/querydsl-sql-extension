@@ -4,9 +4,12 @@
 	xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>io.github.xuse</groupId>
+	<parent>
+		<groupId>io.github.xuse</groupId>
+		<artifactId>querydsl-sql-extension-parent</artifactId>
+		<version>5.0.0-r170</version>
+	</parent>
 	<artifactId>querydsl-sql-extension-annotation</artifactId>
-	<version>5.0.0-r170</version>
 	<description>annotations for querdsl-sql-extension</description>
 	<name>querydsl-sql-extension-annotation</name>
 	<dependencies>

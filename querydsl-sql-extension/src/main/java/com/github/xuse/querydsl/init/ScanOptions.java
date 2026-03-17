@@ -12,9 +12,9 @@ import java.util.function.Consumer;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.github.xuse.querydsl.sql.dialect.Privilege;
 
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * <h2>Database Operation Control Accompanied with the Entity Scanning</h2>
@@ -46,7 +46,6 @@ import lombok.Setter;
  * </ul>
  */
 @Getter
-@Setter
 public class ScanOptions {
 
 	private static final String DEFAULT_DISTRIBUTED_LOCK_NAME = "lock#table_initialize";
@@ -74,6 +73,8 @@ public class ScanOptions {
 	private Class<? extends Annotation> withoutAnnotation;
 	
 	private final List<Consumer<RelationalPathEx<?>>> listeners = new ArrayList<>();
+	
+	private Privilege[] detectPrivileges = new Privilege[] {Privilege.CREATE, Privilege.DROP};
 	
 	    
 	/**
@@ -177,43 +178,109 @@ public class ScanOptions {
 		return DEFAULT;
 	}
 
+	/**
+	 * @deprecated Use {@link #canCreateMissingTable(boolean)}
+	 * @param createMissingTable
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setCreateMissingTable(boolean createMissingTable) {
 		this.createMissingTable = createMissingTable;
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #canAlterExistTable(boolean)}
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setAlterExistTable(boolean alterExistTable) {
 		this.alterExistTable = alterExistTable;
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #canDropColumns(boolean)}
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setAllowDropColumn(boolean allowDropColumn) {
 		this.allowDropColumn = allowDropColumn;
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #canDropIndices(boolean)}
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setAllowDropIndex(boolean allowDropIndex) {
 		this.allowDropIndex = allowDropIndex;
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #canDropConstraints(boolean)}
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setAllowDropConstraint(boolean allowDropConstraint) {
 		this.allowDropConstraint = allowDropConstraint;
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #withDataInitBehavior(DataInitBehavior)}
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setDataInitBehavior(DataInitBehavior dataInitBehavior) {
 		this.dataInitBehavior = dataInitBehavior;
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #dataInitFileSuffixIs(String)}
+	 * @return this
+	 */
+	@Deprecated
 	public ScanOptions setDataInitFileSuffix(String dataInitFileSuffix) {
 		this.dataInitFileSuffix = dataInitFileSuffix;
 		return this;
 	}
+	
+	public ScanOptions canCreateMissingTable(boolean createMissingTable) {
+		this.createMissingTable = createMissingTable;
+		return this;
+	}
 
-	public ScanOptions setUseDataInitTable(boolean useDataInitTable) {
-		this.useDataInitTable = useDataInitTable;
+	public ScanOptions canAlterExistTable(boolean alterExistTable) {
+		this.alterExistTable = alterExistTable;
+		return this;
+	}
+
+	public ScanOptions canDropColumns(boolean allowDropColumn) {
+		this.allowDropColumn = allowDropColumn;
+		return this;
+	}
+
+	public ScanOptions canDropIndices(boolean allowDropIndex) {
+		this.allowDropIndex = allowDropIndex;
+		return this;
+	}
+
+	public ScanOptions canDropConstraints(boolean allowDropConstraint) {
+		this.allowDropConstraint = allowDropConstraint;
+		return this;
+	}
+
+	public ScanOptions withDataInitBehavior(DataInitBehavior dataInitBehavior) {
+		this.dataInitBehavior = dataInitBehavior;
+		return this;
+	}
+
+	public ScanOptions dataInitFileSuffixIs(String dataInitFileSuffix) {
+		this.dataInitFileSuffix = dataInitFileSuffix;
 		return this;
 	}
 	
@@ -292,7 +359,7 @@ public class ScanOptions {
 		return "ScanOptions [createMissingTable=" + createMissingTable + ", alterExistTable=" + alterExistTable + ", allowDropColumn=" + allowDropColumn + ", allowDropIndex=" + allowDropIndex + ", allowDropConstraint=" + allowDropConstraint + ", dataInitBehavior=" + dataInitBehavior + ", dataInitFileSuffix=" + dataInitFileSuffix + ", useDataInitTable=" + useDataInitTable + "]";
 	}
 
-	public ScanOptions setIgnoreIfNoPermission(boolean ignoreIfNoPermission) {
+	public ScanOptions ignoreErrorIfNoPermission(boolean ignoreIfNoPermission) {
 		this.ignoreIfNoPermission = ignoreIfNoPermission;
 		return this;
 	}
@@ -311,9 +378,9 @@ public class ScanOptions {
 		this.useDistributedLock=flag;
 		return this;
 	}
-	
-	   public ScanOptions setInitTableWhiteList(Class<?>... clazz) {
-	        this.initEntityWhiteList.addAll(Arrays.asList(clazz));
-	        return this;
-	    }
+
+	public ScanOptions setInitTableWhiteList(Class<?>... clazz) {
+		this.initEntityWhiteList.addAll(Arrays.asList(clazz));
+		return this;
+	}
 }
