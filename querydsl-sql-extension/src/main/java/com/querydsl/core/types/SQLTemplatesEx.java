@@ -85,14 +85,12 @@ public interface SQLTemplatesEx {
 		TypeUtils.add(templates, AlterTableOps.ALTER_COLUMN, "ALTER COLUMN {0} {1}");
 		TypeUtils.add(templates, AlterTableOps.RENAME_KEY, "RENAME KEY {0} TO {1}");
 		TypeUtils.add(templates, AlterTableOps.ALTER_TABLE_ADD, "ADD {0}");
-		TypeUtils.add(templates, DDLOps.COLUMN_SPEC, "{0} {1} {2}");
-		TypeUtils.add(templates, DDLOps.DATA_TYPE, "{0} {1} {2}");
 		TypeUtils.add(templates, DDLOps.UNSIGNED, "{0} UNSIGNED");
 		TypeUtils.add(templates, DDLOps.DEFAULT, "DEFAULT {0}");
 		TypeUtils.add(templates, DDLOps.COMMENT_ON_COLUMN, "{0}");
 		TypeUtils.add(templates, DDLOps.COMMENT_ON_TABLE, "{0}");
-		TypeUtils.add(templates, DDLOps.CHARSET, "{0} CHARSET = {1}");
-		TypeUtils.add(templates, DDLOps.COLLATE, "{0} COLLATE = {1}");
+		TypeUtils.add(templates, DDLOps.CHARSET, "{0} CHARSET={1}");
+		TypeUtils.add(templates, DDLOps.COLLATE, "{0} COLLATE={1}");
 		TypeUtils.add(templates, DDLOps.COLUMN_ALLOW_NULL, "NULL");
 		TypeUtils.add(templates, DDLOps.TABLE_DEFINITIONS, "{0},\n  {1}");
 		TypeUtils.add(templates, DDLOps.DEF_LIST, "{0} {1}");

@@ -24,7 +24,6 @@ import com.querydsl.sql.PrimaryKey;
 import com.querydsl.sql.SchemaAndTable;
 
 public interface LambdaTable<T> extends Supplier<Class<T>>,RelationalPathEx<T>{
-	
 	default BeanCodec getBeanCodec(){
 		return PathCache.getPath(this, null).getBeanCodec();
 	}
@@ -125,4 +124,8 @@ public interface LambdaTable<T> extends Supplier<Class<T>>,RelationalPathEx<T>{
 		}
     	return ((RelationalPathBaseEx<T>)result).clone();
     }
+
+	default int getAutoIncreamentStartAt() {
+    	return PathCache.getPath(this, null).getAutoIncreamentStartAt();
+	}
 }

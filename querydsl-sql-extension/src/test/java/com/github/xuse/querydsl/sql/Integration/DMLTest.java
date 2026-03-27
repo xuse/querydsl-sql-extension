@@ -46,6 +46,7 @@ import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
+import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
@@ -690,7 +691,26 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		LambdaColumn<Foo, String> p = Foo::getName;
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 		metadata.createTable(table).ifExists().execute();
+		metadata.truncate(table).execute();
+		
+		java.sql.Date d= DateUtils.toSqlDate(new Date());
+		Foo foo = new Foo();
+		foo.setCode("code1");
+		foo.setCodeType(10);
+		foo.setContent("aksdkasdks");
+		foo.setGender(Gender.FEMALE);
+		foo.setInDay(d);
+		foo.setName("1");
+		factory.insert(table).populate(foo).execute();
+		
 		List<Foo> list = factory.selectFrom(table).where(p.eq("1")).fetch();
+		assertEquals(1,list.size());
+		System.err.println(list.get(0).getInDay());
+		
+		LambdaColumn<Foo, Date> DAY = Foo::getInDay;
+		list = factory.selectFrom(table).where(DAY.eq(d)).fetch();
+		
+		list = factory.selectFrom(table).where(DAY.eq(DateUtils.truncateToDay(d))).fetch();
 	}
 
 	/**

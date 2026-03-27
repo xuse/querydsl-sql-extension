@@ -9,10 +9,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.entity.TableDataTypes;
-import com.github.xuse.querydsl.entity.QTableDataTypes;
+import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
+import com.github.xuse.querydsl.entity.QTableDataTypes;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -35,6 +36,16 @@ public class DDLTest extends AbstractTestBase {
 		meta.createTable(QCaAsset.caAsset).ifExists().execute();
 		meta.dropTable(QTableDataTypes.aaa).ifExists(true).execute();
 		meta.createTable(QTableDataTypes.aaa).execute();
+	}
+	
+	@Test
+	public void testShowCreateTable() {
+		SQLMetadataQueryFactory meta = factory.getMetadataFactory();
+		List<String> sql = meta.createTable(()->Foo.class).toSQLs();
+		for(String s:sql) {
+			System.err.println(s);	
+		}
+		
 	}
 	
 	@Test

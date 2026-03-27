@@ -38,7 +38,7 @@ public class CreateTableQuery extends AbstractDDLClause<CreateTableQuery> {
 
 	@Override
 	protected List<String> generateSQLs() {
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing, connection.getDriverInfo());
 		builder.serializeTableCreate(processPartition);
 		return builder.getSqls();
 	}

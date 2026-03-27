@@ -55,6 +55,11 @@ public interface RelationalPathEx<T> extends RelationalPath<T> {
 	 * @return 表的字符集
 	 */
 	Collate getCollate();
+	
+	/**
+	 * @return 自增起始值，仅对支持的数据库有效
+	 */
+	int getAutoIncreamentStartAt();
 
 	/**
 	 * @return 表注释

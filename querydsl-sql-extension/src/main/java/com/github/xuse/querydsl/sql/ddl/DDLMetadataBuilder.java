@@ -15,6 +15,7 @@ import com.github.xuse.querydsl.sql.column.ColumnMetadataEx;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
@@ -55,11 +56,13 @@ public class DDLMetadataBuilder {
 	final private ConfigurationEx configuration;
 	final private RelationalPath<?> table;
 	final private RoutingStrategy routing;
+	final private DriverInfo dbType;
 	final private List<DDLMetadata> result = new ArrayList<>();
 
-	public DDLMetadataBuilder(ConfigurationEx configuration, RelationalPath<?> table, RoutingStrategy routing) {
+	public DDLMetadataBuilder(ConfigurationEx configuration, RelationalPath<?> table, RoutingStrategy routing, DriverInfo dbType) {
 		this.configuration = configuration;
 		this.table = table;
+		this.dbType = dbType;
 		this.routing = routing == null ? RoutingStrategy.DEFAULT : routing;
 	}
 
@@ -130,6 +133,10 @@ public class DDLMetadataBuilder {
 		//Add collate engine and etc..
 		if (tableEx != null) {
 			tableCreateExpression = DDLExpressions.charsetAndCollate(tableCreateExpression, tableEx.getCollate());
+			if(tableEx.getAutoIncreamentStartAt()>0) {
+				tableCreateExpression = DDLExpressions.simple(
+						DDLOps.AUTOINCREMENT_BEGIN,tableCreateExpression,DDLExpressions.text(String.valueOf(tableEx.getAutoIncreamentStartAt())));
+			}
 			if (StringUtils.isNotEmpty(tableEx.getComment())) {
 				Expression<String> content = ConstantImpl.create(tableEx.getComment());
 				if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
@@ -139,7 +146,6 @@ public class DDLMetadataBuilder {
 							content);
 				}
 			}
-
 		}
 		meta.addExpression(tableCreateExpression);
 		// 处理建表时的Partition定义
@@ -299,17 +305,16 @@ public class DDLMetadataBuilder {
 		SQLTemplatesEx template = configuration.getTemplates();
 		Expression<?> dataType = generateDataTypeAndDefaultDefinition(cx, isPk);
 		// append features
-		List<Expression<?>> columnLevelConstraints = new ArrayList<>();
 		if (cx != null && cx.getFeatures() != null) {
 			for (ColumnFeature f : cx.getFeatures()) {
 				Expression<?> value = f.get(template);
 				if (value != null) {
-					columnLevelConstraints.add(value);
+					dataType = DDLExpressions.connect(dataType, value);
 				}
 			}
 		}
-		Expression<?> columnSpec = DDLExpressions.columnSpec(p, dataType,
-				DDLExpressions.defList(columnLevelConstraints));
+		Expression<?> columnSpec = DDLExpressions.columnSpec(p, dataType);
+		
 		if (cx != null && StringUtils.isNotEmpty(cx.getComment())) {
 			Expression<String> content = ConstantImpl.create(cx.getComment());
 			if (configuration.has(SpecialFeature.INDEPENDENT_COMMENT_STATEMENT)) {
@@ -327,8 +332,15 @@ public class DDLMetadataBuilder {
 		ColumnDef exp = template.getColumnDataType(cx.getJdbcType(), cx.getSize(), cx.getDigits());
 		boolean unsigned = cx != null && cx.isUnsigned() && SQLTypeUtils.isNumeric(cx.getJdbcType());
 		Expression<?> defaultValue = cx.getDefaultExpression();
-		Expression<?> dataType = DDLExpressions.dataType(DDLOps.DATA_TYPE, exp.getDataType(), cx.isNullable() && !isPk, unsigned,
+		Expression<?> dataType = DDLExpressions.dataType(DDLOps.DEF_LIST, exp.getDataType(), cx.isNullable() && !isPk, unsigned,
 				defaultValue);
+		Map<String,String> sp=cx.getSpecialSpec();
+		if(sp!=null && !sp.isEmpty()) {
+			String value = sp.get(dbType.dbTypeName());
+			if(StringUtils.isNotEmpty(value)) {
+				dataType = DDLExpressions.connect(dataType, DDLExpressions.text(value));
+			}
+		}
 		return dataType;
 	}
 

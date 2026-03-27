@@ -52,7 +52,7 @@ public class ScanOptions {
 
 	public static final ScanOptions DEFAULT = new ScanOptions();
 
-    final Set<Class<?>> initEntityWhiteList = new HashSet<>();
+    final Set<Class<?>> initTaskWhiteList = new HashSet<>();
 	// 是否创建不存在的表
 	private boolean createMissingTable = true;
 
@@ -379,8 +379,22 @@ public class ScanOptions {
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link #initTaskJustOn(Class...)}
+	 */
+	@Deprecated
 	public ScanOptions setInitTableWhiteList(Class<?>... clazz) {
-		this.initEntityWhiteList.addAll(Arrays.asList(clazz));
+		this.initTaskWhiteList.addAll(Arrays.asList(clazz));
+		return this;
+	}
+	
+	/**
+	 * 仅对这些表执行初始化任务。如不配置，则所有扫描的到实体会进行初始化任务。
+	 * @param clazz 实体类
+	 * @return this
+	 */
+	public ScanOptions initTaskJustOn(Class<?>... clazz) {
+		this.initTaskWhiteList.addAll(Arrays.asList(clazz));
 		return this;
 	}
 }

@@ -163,7 +163,7 @@ public class ScanContext {
 
 	private void scanned(RelationalPathEx<?> table) {
 		if (scannedEntities.add(table.getType().getName()) && parent.registerRelation(table)) {
-			Set<Class<?>> whiteList = parent.getScanOptions().getInitEntityWhiteList();
+			Set<Class<?>> whiteList = parent.getScanOptions().getInitTaskWhiteList();
 			if (whiteList.isEmpty() || whiteList.contains(table.getType())) {
 				TableInitTask task = new TableInitTask(table);
 				parent.initTasks.offer(task);

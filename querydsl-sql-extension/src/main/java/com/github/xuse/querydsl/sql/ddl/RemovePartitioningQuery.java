@@ -43,7 +43,7 @@ public class RemovePartitioningQuery extends AbstractDDLClause<RemovePartitionin
 				return null;
 			}
 		}
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing,connection.getDriverInfo());
 		//", ALGORITHM=INPLACE, LOCK=NONE" not support on mysql
 		builder.serilizeSimple(AlterTablePartitionOps.REMOVE_PARTITIONING, table);
 		return builder.getSql();

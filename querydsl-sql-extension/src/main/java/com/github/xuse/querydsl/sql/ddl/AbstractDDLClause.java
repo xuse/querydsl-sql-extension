@@ -178,4 +178,8 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 		this.useDDLLock = true;
 		return (C)this;
 	}
+
+	public List<String> toSQLs() {
+		return generateSQLs();
+	}
 }

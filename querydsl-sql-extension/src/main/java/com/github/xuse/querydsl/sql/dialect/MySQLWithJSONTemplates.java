@@ -137,6 +137,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		super(escape, quote);
 		super.setPrintSchema(false);
 		this.batchToBulk = batchToBulk;
+		setAutoIncrement("AUTO_INCREMENT");
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
 		initJsonFunctions();
 		initPartitionOps();
@@ -146,6 +147,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
+		add(DDLOps.AUTOINCREMENT_BEGIN, "{0} AUTO_INCREMENT={1}");
 		add(DDLOps.COMMENT_ON_COLUMN, "{0} COMMENT {1}");
 		add(DDLOps.COMMENT_ON_TABLE, "{0} COMMENT {1}");
 		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1},ALGORITHM=INPLACE, LOCK=NONE");

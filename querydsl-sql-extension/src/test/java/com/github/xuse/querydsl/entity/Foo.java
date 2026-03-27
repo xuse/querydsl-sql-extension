@@ -84,5 +84,8 @@ public class Foo implements Serializable {
 	
 	@ColumnSpec(type=Types.INTEGER,nullable = false,defaultValue = "1")
 	private int codeType;
+	
+	@ColumnSpec(type=Types.DATE)
+	private java.sql.Date inDay;
 
 }

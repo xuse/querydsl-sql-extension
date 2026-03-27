@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.sql.column;
 
+import java.util.Map;
+
 import com.querydsl.core.types.Expression;
 import com.querydsl.sql.ColumnMetadata;
 
@@ -69,4 +71,6 @@ public interface ColumnMetadataEx {
 	default String getName() {
 		return getColumn().getName();
 	}
+	
+	Map<String,String> getSpecialSpec();
 }

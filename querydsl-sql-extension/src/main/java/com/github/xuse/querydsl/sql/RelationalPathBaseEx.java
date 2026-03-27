@@ -103,6 +103,8 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	private Collate collate;
 
 	private PartitionBy partitionBy;
+	
+	private int autoIncreamentStartAt;
 
 	private InitializeData initializeData;
 
@@ -576,6 +578,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 			spec = beanType.getAnnotation(TableSpec.class);
 		}
 		if (spec != null) {
+			this.autoIncreamentStartAt = spec.autoIncreamentStartAt();
 			if (StringUtils.isNotEmpty(spec.collate())) {
 				this.setCollate(Collate.findValueOf(spec.collate()));
 			}
@@ -684,11 +687,16 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		this.initializeData = initializeData;
 	}
 
+	public int getAutoIncreamentStartAt() {
+		return autoIncreamentStartAt;
+	}
+
 	@Override
 	public RelationalPathExImpl<T> clone() {
 		RelationalPathBaseEx<T> t = new RelationalPathExImpl<T>(this.getType(), this.getMetadata(), schema, table);
 		t.collate = this.collate;
 		t.comment = this.comment;
+		t.autoIncreamentStartAt = this.autoIncreamentStartAt;
 		t.partitionBy = this.partitionBy;
 		t.primaryKey = this.primaryKey;
 		t.columnMetadata.putAll(this.columnMetadata);
@@ -706,6 +714,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		RelationalPathBaseEx<T> t = new RelationalPathExImpl<T>(this.getType(),PathMetadataFactory.forVariable(variable) , schema, table);
 		t.collate = this.collate;
 		t.comment = this.comment;
+		t.autoIncreamentStartAt = this.autoIncreamentStartAt;
 		t.partitionBy = this.partitionBy;
 		
 		Map<Path<?>,Path<?>> pathMapping=new HashMap<>();

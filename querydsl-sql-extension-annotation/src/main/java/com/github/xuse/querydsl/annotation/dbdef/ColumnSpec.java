@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.annotation.dbdef;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -90,4 +91,9 @@ public @interface ColumnSpec {
 	 *         Whether participate in automatic field extraction during insert.
 	 */
 	boolean insertable() default true;
+	
+	/**
+	 * 额外的SQL定义，列定义时生成在DEFAULT之后
+	 */
+	SpecialSpec[] special() default {};
 }

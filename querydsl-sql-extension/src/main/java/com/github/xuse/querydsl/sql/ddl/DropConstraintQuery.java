@@ -132,7 +132,7 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	}
 
 	private String dropStatement(Constraint c) {
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table, routing,connection.getDriverInfo());
 		builder.serialzeConstraintIndepentDrop(c);
 		return builder.getSql();
 	}

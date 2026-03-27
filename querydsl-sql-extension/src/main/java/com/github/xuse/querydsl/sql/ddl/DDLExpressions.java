@@ -79,8 +79,12 @@ public class DDLExpressions {
 		return simple(DDLOps.UNSIGNED, path);
 	}
 
-	public static Expression<?> columnSpec(Path<?> column, Expression<?> dataType, Expression<?> columnConstraints) {
-		return simple(DDLOps.COLUMN_SPEC, column, dataType, columnConstraints);
+	public static Expression<?> columnSpec(Path<?> column, Expression<?> dataType) {
+		return simple(DDLOps.DEF_LIST, column, dataType);
+	}
+	
+	public static Expression<?> connect(Expression<?> source, Expression<?> dataType) {
+		return simple(DDLOps.DEF_LIST, source, dataType);
 	}
 
 	public static Expression<?> dataType(Operator op, String dataType, Boolean isNullable, boolean unsigned,
@@ -89,9 +93,12 @@ public class DDLExpressions {
 		if (unsigned) {
 			datatype = withUnsigned(datatype);
 		}
-		Expression<?> nullablity = nullAblity(isNullable);
-		Expression<?> defaultExp = defaultValue == null ? EMPTY : simple(DDLOps.DEFAULT, defaultValue);
-		return simple(op, datatype, nullablity, defaultExp);
+		datatype = simple(op, datatype, nullAblity(isNullable));	
+		Expression<?> defaultExp = defaultValue == null ? null : simple(DDLOps.DEFAULT, defaultValue);
+		if(defaultExp!=null) {
+			datatype = DDLExpressions.connect(datatype, defaultExp);
+		}
+		return datatype;
 	}
 
 	public static Expression<?> defList(List<Expression<?>> exprs) {

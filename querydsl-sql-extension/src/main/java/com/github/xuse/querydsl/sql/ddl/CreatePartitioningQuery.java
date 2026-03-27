@@ -27,7 +27,7 @@ public class CreatePartitioningQuery extends AbstractDDLClause<CreatePartitionin
 
 	@Override
 	protected List<String> generateSQLs() {
-		DDLMetadataBuilder builder = new DDLMetadataBuilder(configuration, table, routing);
+		DDLMetadataBuilder builder = new DDLMetadataBuilder(configuration, table, routing,connection.getDriverInfo());
 		builder.serializePartitionBy(partitionBy, checkField);
 		return builder.getSqls();
 	}

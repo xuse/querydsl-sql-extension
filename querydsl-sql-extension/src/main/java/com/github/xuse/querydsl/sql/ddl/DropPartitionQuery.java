@@ -120,7 +120,7 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 	}
 
 	protected String generateSQL(String partition) {
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing,connection.getDriverInfo());
 		Expression<?> pName=DDLExpressions.text(partition);
 		builder.serilizeSimple(AlterTablePartitionOps.DROP_PARTITION, pName, table);
 		// ,", ALGORITHM=INPLACE, LOCK=NONE" not support on mysql

@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.sql.column;
 
+import java.util.Map;
+
 import com.github.xuse.querydsl.util.ArrayUtils;
 import com.querydsl.core.types.Expression;
 import com.querydsl.sql.ColumnMetadata;
@@ -41,6 +43,11 @@ public abstract class AbstractColumnMetadataEx implements ColumnMetadataEx{
 	 * 列注释
 	 */
 	protected String comment;
+	
+	/**
+	 * 附加SpecialSpec
+	 */
+	protected Map<String,String> specialSpec;
 
 	protected abstract Class<?> getType();
 
