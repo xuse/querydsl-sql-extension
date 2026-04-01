@@ -18,6 +18,7 @@ import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
+import com.querydsl.core.types.dsl.ArrayPath;
 import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.DateTimePath;
 import com.querydsl.core.types.dsl.EnumPath;
@@ -81,6 +82,7 @@ public class QTableDataTypes extends RelationalPathBaseEx<TableDataTypes> {
 	
 	public final SimplePath<byte[]> dateVarBinary = super.createSimple("dateVarBinary", byte[].class);
 	
+	public final ArrayPath<String[],String> stringArray = super.createArray("stringArray", String[].class);
 	
 	public final com.querydsl.sql.PrimaryKey<TableDataTypes> PK_Aaa = createPrimaryKey(id);
 
@@ -132,6 +134,9 @@ public class QTableDataTypes extends RelationalPathBaseEx<TableDataTypes> {
 		addMetadata(dataLongText, ColumnMetadata.named("C_LONGTEXT").withIndex(20).ofType(Types.VARCHAR).withSize(10000));
 		addMetadata(dateBinary, ColumnMetadata.named("C_BIN").withIndex(21).ofType(Types.BINARY).withSize(512)).comment("测试二进制");
 		addMetadata(dateVarBinary, ColumnMetadata.named("C_VARBIN").withIndex(22).ofType(Types.VARBINARY).withSize(1024)).comment("测试VARBIN123");
+		
+		addMetadata(stringArray, ColumnMetadata.named("C_SARR").withIndex(23).ofType(Types.VARCHAR).withSize(1024)).comment("测试StringArray");
+		
 		
 		createConstraint("unq_${table}_name_version",ConstraintType.UNIQUE,name, version);
 		createConstraint("idx_${table}_taskstatus",ConstraintType.KEY,taskStatus);

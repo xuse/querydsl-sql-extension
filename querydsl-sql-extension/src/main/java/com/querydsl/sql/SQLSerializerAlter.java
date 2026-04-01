@@ -58,7 +58,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		// 新增支持的常量表达形式，如果是对象数组，就转成不带小括号的多值。
 		String leftBucket = "(";
 		String rightBucket = ")";
-		if (constant instanceof Object[]) {
+		if (configurationEx.isObjectArrayAsCollection() && constant instanceof Object[]) {
 			constant = Arrays.asList((Object[]) constant);
 			leftBucket = rightBucket = "";
 		}

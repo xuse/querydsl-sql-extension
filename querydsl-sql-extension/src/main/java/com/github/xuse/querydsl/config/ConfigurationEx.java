@@ -99,6 +99,11 @@ public class ConfigurationEx {
 	 * 达到最大maxRows后按错误日志记录
 	 */
 	private Level levelOfReachMaxRows = Level.ERROR;
+	
+	/**
+	 * Object[]常量在处理时视作Collection。（影响用String[]作为IN条件查询时） 
+	 */
+	private boolean objectArrayAsCollection;
 
 	/**
 	 * Allow the deletion and re-creation of tables, or not.
@@ -464,6 +469,15 @@ public class ConfigurationEx {
 
 	public ConfigurationEx setLevelOfReachMaxRows(Level levelOfReachMaxRows) {
 		this.levelOfReachMaxRows = levelOfReachMaxRows;
+		return this;
+	}
+	
+	public boolean isObjectArrayAsCollection() {
+		return objectArrayAsCollection;
+	}
+
+	public ConfigurationEx setObjectArrayAsCollection(boolean objectArrayAsCollection) {
+		this.objectArrayAsCollection = objectArrayAsCollection;
 		return this;
 	}
 

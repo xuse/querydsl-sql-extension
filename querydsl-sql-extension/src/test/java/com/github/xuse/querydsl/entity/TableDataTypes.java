@@ -5,8 +5,8 @@ import java.sql.Time;
 import java.time.Instant;
 import java.util.Date;
 
-import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.annotation.InitializeData;
+import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 
@@ -67,6 +67,7 @@ public class TableDataTypes {
 	
 	private byte[] dateVarBinary;
 	
+	private String[] stringArray;
 
 	@UnsavedValue("-1")
 	private int version;

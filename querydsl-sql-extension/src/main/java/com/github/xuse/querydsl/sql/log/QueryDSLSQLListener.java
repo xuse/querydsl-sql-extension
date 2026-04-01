@@ -1,10 +1,12 @@
 package com.github.xuse.querydsl.sql.log;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,15 +96,24 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	private final Formatter errorFormatter;
 
 	private final Formatter infoFormatter;
-
+	
+	static final TLDateFormat DATE_FORMAT = DateFormats.DATE_TIME_CS;
+	static final Map<Class<?>,Function<Object,String>> VALUE_APPENDERS=new HashMap<>();
+	static {
+		VALUE_APPENDERS.put(java.util.Date.class, (value) -> DATE_FORMAT.format((java.util.Date) value));
+		//VALUE_APPENDERS.put(java.sql.Date.class, (value) -> DateFormats.DATE_CS.format((java.sql.Date) value));
+		VALUE_APPENDERS.put(String[].class, (value) -> Arrays.toString((Object[])value));
+		VALUE_APPENDERS.put(byte[].class, (value) -> ((byte[]) value).length +" bytes");
+		VALUE_APPENDERS.put(int[].class, (value) -> Arrays.toString((int[])value));
+		VALUE_APPENDERS.put(long[].class, (value) -> Arrays.toString((long[])value));
+		VALUE_APPENDERS.put(double[].class, (value) -> Arrays.toString((double[])value));
+		VALUE_APPENDERS.put(float[].class, (value) -> Arrays.toString((float[])value));
+	}
 	/**
 	 *  初级格式，仅输出SQL
 	 *  @author Joey
 	 */
 	static class Formatter {
-
-		protected final TLDateFormat DATE_FORMAT = DateFormats.DATE_TIME_CS;
-
 		private final int maxBatchOutput;
 
 		public Formatter(int maxBatchOutput) {
@@ -184,18 +195,12 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 				sb.append("null");
 				return;
 			}
-			appendValue(sb, value);
-		}
-
-		protected void appendValue(StringBuilder sb, Object value) {
-			Class<?> vClass = value.getClass();
-			if (vClass == byte[].class) {
-				sb.append(((byte[]) value).length).append(" bytes");
-			} else if (value instanceof Date) {
-				sb.append(DATE_FORMAT.format((Date) value));
-			} else {
+			Function<Object, String> appender = VALUE_APPENDERS.get(value.getClass());
+			if (appender == null) {
 				String valStr = String.valueOf(value);
 				appendString(sb, valStr);
+			} else {
+				sb.append(appender.apply(value));
 			}
 		}
 
@@ -211,7 +216,6 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	}
 
 	static class Formatter1 extends Formatter {
-
 		protected Formatter1(int n) {
 			super(n);
 		}
@@ -257,7 +261,13 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 			if (value == null || value == Null.DEFAULT) {
 				sb.append("null");
 			} else {
-				appendValue(sb, value);
+				Function<Object, String> appender = VALUE_APPENDERS.get(value.getClass());
+				if (appender == null) {
+					String valStr = String.valueOf(value);
+					appendString(sb, valStr);
+				} else {
+					sb.append(appender.apply(value));
+				}
 			}
 		}
 	}

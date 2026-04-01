@@ -14,7 +14,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@TableSpec(name="ca_foo_history",collate = "utf8mb4_general_ci",
+@TableSpec(name="ca_foo_history",collate = "utf8mb4_general_ci",primaryKeys = "id",
 keys = {
 		@Key(path= {"code","version"},type=ConstraintType.UNIQUE),
 	}

@@ -42,7 +42,7 @@ public abstract class AbstractTestBase {
 		dsDerby.setUrl("jdbc:derby:db;create=true");
 
 		dsMySQL.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dsMySQL.setUrl("jdbc:mysql://10.86.15.203:3306/test?useSSL=false");
+		dsMySQL.setUrl("jdbc:mysql://10.86.16.12:3306/test?useSSL=false");
 		dsMySQL.setUsername(System.getProperty("mysql.user"));
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
 		
@@ -62,7 +62,7 @@ public abstract class AbstractTestBase {
 		dsH2.setUrl("jdbc:h2:~/h2test");
 	}
 
-	private static final SimpleDataSource effectiveDs = dsH2;
+	private static final SimpleDataSource effectiveDs = dsMySQL;
 	
 	
 	public static  SimpleDataSource getEffectiveDs() {

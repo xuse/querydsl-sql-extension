@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.sql.Integration;
 
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +37,7 @@ import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.repository.Selects;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
@@ -103,6 +105,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		a.setDataTime(new Time(1000));
 		a.setDateTimestamp(new Date());
 		a.setDataBit(false);
+		a.setStringArray(new String[] {"a","b","c"});
 		return a;
 	}
 
@@ -165,6 +168,9 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		System.err.println("===========查询t1===========");
 
 		TableDataTypes b = factory.selectFrom(t1).where(t1.id.eq(id)).fetchFirst();
+		assertArrayEquals(b.getStringArray(), new String[] {"a","b","c"});
+		System.err.println("======1");
+		System.err.println(Arrays.toString(b.getStringArray()));
 		System.err.println(b);
 
 		System.err.println("===========更新t1===========");
@@ -555,6 +561,18 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		assertTrue(result.getResults().isEmpty());
 		
 	}
+	
+	
+	@Test
+	public void testInArrayOrCollection() {
+		LambdaTable<Foo> t=()->Foo.class;
+		StringLambdaColumn<Foo> code= Foo::getCode;
+		{
+			factory.selectFrom(t).where(code.in("a","b","c"));
+		}
+		
+	}
+
 	
 	@Test
 	public void testPrimitiveSuspectOper() {

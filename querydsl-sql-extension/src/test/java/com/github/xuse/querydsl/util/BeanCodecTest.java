@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,8 @@ public class BeanCodecTest {
 		BeanCodec codec = BeanCodecManager.getInstance().getCodec(Foo.class);
 
 		Object[] values = codec.values(foo);
+		
+		System.out.println(Stream.of(codec.getFields()).map(com.github.xuse.querydsl.sql.expression.Property::properName).collect(Collectors.toList()));
 		System.out.println(Arrays.toString(values));
 		{
 			Foo foo2 = (Foo) codec.newInstance(values);
@@ -42,7 +46,7 @@ public class BeanCodecTest {
 			codec.sets(values, foo3);
 			assertEquals(foo2, foo3);
 		}
-		values[1] = 123456;
+		values[2] = 123456;
 		{
 			Foo foo2 = (Foo) codec.newInstance(values);
 			System.out.println(foo2);
