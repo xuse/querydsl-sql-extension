@@ -149,6 +149,9 @@ public abstract class MetadataQuerySupport {
 		if (tables.isEmpty()) {
 			return null;
 		}
+		if(tables.size()>1) {
+			log.warn("getTable({}) matches {}:{}",table, tables.size(), tables);
+		}
 		return tables.get(0);
 	}
 

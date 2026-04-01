@@ -153,7 +153,7 @@ public class DbSchemaGenerator {
 	 */
 	public File generateTable(String name) {
 		checkPackage();
-		TableInfo table = metadata.getTable(new SchemaAndTable(null, name));
+		TableInfo table = metadata.getTable(new SchemaAndTable(metadata.getDatabaseInfo().getNamespace(), name));
 		if (table == null) {
 			log.warn("Table {} not exist.", name);
 			return null;
@@ -173,6 +173,9 @@ public class DbSchemaGenerator {
 	public int generateTables(String namespace, String namePattern) {
 		checkPackage();
 		List<File> files = new ArrayList<>();
+		if(StringUtils.isEmpty(namespace)) {
+			namespace = metadata.getDatabaseInfo().getNamespace();
+		}
 		List<TableInfo> tables = metadata.listTables(namespace, namePattern);
 		for (TableInfo table : tables) {
 			Pair<File, Boolean> result = generateTable(table);

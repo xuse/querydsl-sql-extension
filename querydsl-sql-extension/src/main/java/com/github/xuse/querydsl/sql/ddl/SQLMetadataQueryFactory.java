@@ -345,7 +345,7 @@ public interface SQLMetadataQueryFactory {
 	
 	/**
 	 *  Fetch information of the table
-	 * @param schemaAndTable
+	 * @param schemaAndTable namespace and table
 	 * @return  Table information.
 	 */
 	TableInfo getTable(SchemaAndTable schemaAndTable);

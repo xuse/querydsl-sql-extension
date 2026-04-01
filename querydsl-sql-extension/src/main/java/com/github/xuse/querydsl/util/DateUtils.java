@@ -1197,6 +1197,13 @@ public class DateUtils {
         return truncateToDay(new Date(System.currentTimeMillis() + (long) MILLISECONDS_IN_DAY * i));
     }
 
+    /**
+     * @return 返回今天 java.sql.Date
+     */
+    public static java.sql.Date sqlToday() {
+    	return new java.sql.Date(truncateToDay(new Date()).getTime());
+    }
+    
 	/**
 	 * @return 返回现在
 	 */
