@@ -137,9 +137,11 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 		context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, "DDL");
-		if(this.configuration.getSlowSqlWarnMillis()<=cost) {
-			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+		int value = ContextKeyConstants.DDL;
+		if (this.configuration.getSlowSqlWarnMillis() <= cost) {
+			value = value | ContextKeyConstants.SLOW;
 		}
+		context.setData(ContextKeyConstants.IMPORTANT, value);
 		listeners.executed(context);
 	}
 

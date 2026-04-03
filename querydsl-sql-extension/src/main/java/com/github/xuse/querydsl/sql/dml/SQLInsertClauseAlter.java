@@ -560,6 +560,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 		if (!batches.isEmpty() && batchToBulk) {
 			//这个实现是有问题的,所有Batch都必须有完全相同的Column，必须先按Column分组
+			//2026-04-03 修复BATCH第二批开始无Path造成字段上的CustomType无效的问题
 			serializer.serializeInsert(metadata, entity, batches);
 		} else {
 			serializer.serializeInsert(metadata, entity, columns, values, subQuery);
@@ -676,7 +677,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
 		if (this.configuration.getSlowSqlWarnMillis() <= cost) {
-			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 		}
 		listeners.executed(context);
 	}

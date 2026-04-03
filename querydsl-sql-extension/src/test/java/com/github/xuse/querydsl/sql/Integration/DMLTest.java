@@ -272,7 +272,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	public void testUpdateAll() {
 		QTableDataTypes t1 = QTableDataTypes.aaa;
 		// 清理
-		factory.getMetadataFactory().truncate(t1);
+		factory.getMetadataFactory().truncate(t1).execute();
 
 		factory.insert(t1).populate(generateEntity()).addBatch().populate(generateEntity()).addBatch().execute();
 

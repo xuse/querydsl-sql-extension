@@ -73,7 +73,7 @@ public class RangePartitionBy extends PartitionAssigned {
 		if (autoPartition != null && autoPartition.length > 0) {
 			//配置了自动计算分区的，就不再使用手工配置了
 			AutoTimePartitions auto=this.autoPartition[0];
-			partitionDefs = generateAutoPartitions(auto);
+			partitionDefs = generateAutoPartitions(auto, null);
 		}else {
 			if (this.partitions == null) {
 				return Collections.emptyList();
@@ -83,14 +83,15 @@ public class RangePartitionBy extends PartitionAssigned {
 		return partitionDefs;
 	}
 
-	public static List<Partition>  generateAutoPartitions(AutoTimePartitions auto) {
+	public static List<Partition>  generateAutoPartitions(AutoTimePartitions auto, Integer beginPeriods) {
 		List<Partition> partitions=new ArrayList<>();
 		Date current=new Date();
 		ColumnFormat format=auto.columnFormat();
 		Date cutOffPoint = null;
+		int beginPeriodOffset = beginPeriods==null? auto.periodsBegin():beginPeriods.intValue();
 		switch(auto.unit()) {
 		case DAY:
-			for(Date d:DateUtils.dayIterator(DateUtils.adjustDate(current, 0, 0, auto.periodsBegin()), DateUtils.adjustDate(current, 0,0,auto.periodsEnd()))) {
+			for(Date d:DateUtils.dayIterator(DateUtils.adjustDate(current, 0, 0, beginPeriodOffset), DateUtils.adjustDate(current, 0,0,auto.periodsEnd()))) {
 				String name="p"+DateFormats.DATE_SHORT.format(d);
 				Date begin=d;
 				cutOffPoint = DateUtils.adjustDate(d, 0, 0, 1);
@@ -98,7 +99,7 @@ public class RangePartitionBy extends PartitionAssigned {
 			}
 			break;
 		case MONTH:
-			for(Date d:DateUtils.monthIterator(DateUtils.adjustDate(current, 0, auto.periodsBegin(), 0), DateUtils.adjustDate(current, 0,auto.periodsEnd(),0))) {
+			for(Date d:DateUtils.monthIterator(DateUtils.adjustDate(current, 0, beginPeriodOffset, 0), DateUtils.adjustDate(current, 0,auto.periodsEnd(),0))) {
 				String name="p"+DateFormats.YEAR_MONTH.format(d);
 				Date begin = d;
 				cutOffPoint = DateUtils.adjustDate(d, 0, 1, 0);
@@ -109,20 +110,20 @@ public class RangePartitionBy extends PartitionAssigned {
 			int weekDay=DateUtils.getWeekDay(current);
 			current=DateUtils.adjustDate(current, 0,0,-weekDay);
 			current=DateUtils.truncateToDay(current);//得到本周的开始时间。
-			for (int i = auto.periodsBegin(); i <= auto.periodsEnd(); i++) {
+			for (int i = beginPeriodOffset; i <= auto.periodsEnd(); i++) {
 				Date d=DateUtils.adjustDate(current, 0,0,i*7);
 				int year=DateUtils.getYear(d);
 				int weekNum=DateUtils.getWeekOfYear(d);
-				String name = "p" + year + "w" + weekNum;
+				String name = "p" + year + "w" + (weekNum < 10 ? "0" + weekNum : weekNum);
 				Date begin = d; 
-				cutOffPoint = DateUtils.adjust(d, TimeUnit.DAYS.toMillis(7));
+				cutOffPoint = DateUtils.adjustMillis(d, TimeUnit.DAYS.toMillis(7));
 				partitions.add(new PartitionDef(name, format.generateExpression(begin), format.generateExpression(cutOffPoint)));
 			}
 			break;
 		case YEAR:
 			int year=DateUtils.getYear(current);
 			int max = year + auto.periodsEnd();
-			for (int i = year + auto.periodsBegin(); i <= max; i++) {
+			for (int i = year + beginPeriodOffset; i <= max; i++) {
 				String name = "p" + i;
 				Date begin = DateUtils.get(i, 1, 1);
 				cutOffPoint = DateUtils.get(i + 1, 1, 1);

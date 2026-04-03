@@ -665,7 +665,7 @@ public abstract class MetadataQuerySupport {
 		context.setData(ContextKeyConstants.COUNT, String.valueOf(rst));
 		context.setData(ContextKeyConstants.ACTION, action);
 		if (getConfiguration().getSlowSqlWarnMillis() <= cost) {
-			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 		}
 		listeners.executed(context);
 	}

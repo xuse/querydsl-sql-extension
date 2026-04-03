@@ -28,6 +28,9 @@ public class SQLBindingsAlter extends com.querydsl.sql.SQLBindings {
 
 	public SQLBindingsAlter(String sql, List<Object> bindings, List<Path<?>> paths) {
 		super(sql, bindings);
+//		if(paths!=null && paths.size()!=bindings.size()) {
+//			throw new IllegalStateException();
+//		}
 		this.paths = paths;
 	}
 

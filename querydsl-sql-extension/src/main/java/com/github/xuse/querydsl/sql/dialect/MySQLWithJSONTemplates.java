@@ -189,7 +189,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		typeNames.put(Types.VARCHAR, 16383, "varchar($l)");
 		typeNames.put(Types.VARBINARY, 16383, "varbinary($l)");
 
-		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.CLOB).noSize();
+		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.LONGVARCHAR).noSize();
 		typeNames.put(Types.VARBINARY, 65535, "blob").type(Types.BLOB).noSize();
 
 		typeNames.put(Types.LONGVARCHAR, 65535, "text").type(Types.CLOB).noSize();

@@ -62,7 +62,7 @@ public abstract class AbstractTestBase {
 		dsH2.setUrl("jdbc:h2:~/h2test");
 	}
 
-	private static final SimpleDataSource effectiveDs = dsMySQL;
+	private static final SimpleDataSource effectiveDs = dsH2;
 	
 	
 	public static  SimpleDataSource getEffectiveDs() {

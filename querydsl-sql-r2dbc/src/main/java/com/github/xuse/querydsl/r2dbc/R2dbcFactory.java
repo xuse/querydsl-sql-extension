@@ -190,7 +190,7 @@ public class R2dbcFactory {
 			context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
 			context.setData(ContextKeyConstants.COUNT, count);
 			if (configEx.getSlowSqlWarnMillis() <= cost) {
-				context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+				context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 			}
 			listeners.executed(context);
 			endContext(context);
@@ -387,7 +387,7 @@ public class R2dbcFactory {
 			context.setData(ContextKeyConstants.ELAPSED_TIME, cost);
 			context.setData(ContextKeyConstants.COUNT, count);
 			if (configEx.getSlowSqlWarnMillis() <= cost) {
-				context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+				context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 			}
 			listeners.executed(context);
 		}

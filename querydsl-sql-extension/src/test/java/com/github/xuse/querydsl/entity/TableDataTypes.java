@@ -5,10 +5,12 @@ import java.sql.Time;
 import java.time.Instant;
 import java.util.Date;
 
+import com.github.xuse.querydsl.annotation.CustomType;
 import com.github.xuse.querydsl.annotation.InitializeData;
 import com.github.xuse.querydsl.annotation.UnsavedValue;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
+import com.github.xuse.querydsl.types.StringArrayAsVarcharType;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -67,6 +69,7 @@ public class TableDataTypes {
 	
 	private byte[] dateVarBinary;
 	
+	@CustomType(StringArrayAsVarcharType.class)
 	private String[] stringArray;
 
 	@UnsavedValue("-1")

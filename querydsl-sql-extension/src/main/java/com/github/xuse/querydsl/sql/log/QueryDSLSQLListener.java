@@ -101,7 +101,6 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	static final Map<Class<?>,Function<Object,String>> VALUE_APPENDERS=new HashMap<>();
 	static {
 		VALUE_APPENDERS.put(java.util.Date.class, (value) -> DATE_FORMAT.format((java.util.Date) value));
-		//VALUE_APPENDERS.put(java.sql.Date.class, (value) -> DateFormats.DATE_CS.format((java.sql.Date) value));
 		VALUE_APPENDERS.put(String[].class, (value) -> Arrays.toString((Object[])value));
 		VALUE_APPENDERS.put(byte[].class, (value) -> ((byte[]) value).length +" bytes");
 		VALUE_APPENDERS.put(int[].class, (value) -> Arrays.toString((int[])value));
@@ -353,9 +352,10 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 
 	@Override
 	public final void executed(SQLListenerContext context) {
-		boolean slow = Boolean.TRUE.equals(context.getData(ContextKeyConstants.SLOW_SQL));
-		int maxExceed = Primitives.unbox((Integer) context.getData(ContextKeyConstants.EXCEED), 0);
-		if (slow || log.isInfoEnabled()) {
+		boolean sqlLog= log.isInfoEnabled();
+		int important = Primitives.unbox((Integer) context.getData(ContextKeyConstants.IMPORTANT), 0)
+				& (sqlLog ? 1 : 3);
+		if (important>0 || log.isInfoEnabled()) {
 			String action = (String) context.getData(ContextKeyConstants.ACTION);
 			if (action == null || action.length() == 0) {
 				// 兼容官方版本
@@ -374,11 +374,13 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 				time = -1L;
 			}
 			sb.append("Records ").append(action).append(':').append(count).append(", elapsed ").append(time).append("ms.");
+			int maxExceed = Primitives.unbox((Integer) context.getData(ContextKeyConstants.EXCEED), 0);
 			if (maxExceed > 0) {
 				sb.append("NOTE: result set was truncated since it exceeds the MaxRows = ").append(maxExceed);
 			}
-			if (slow) {
-				log.error("SlowSQL:[{}].\n{}", errorFormatter.format(context.getAllSQLBindings()), sb);
+			if (important>0) {
+				log.error("{}[{}].\n{}", ContextKeyConstants.IMPORTANT_HINT[important],
+						errorFormatter.format(context.getAllSQLBindings()), sb);
 			} else {
 				log.info(sb.toString());
 			}
