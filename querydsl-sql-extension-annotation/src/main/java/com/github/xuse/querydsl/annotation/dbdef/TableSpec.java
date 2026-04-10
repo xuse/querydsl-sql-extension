@@ -54,5 +54,5 @@ public @interface TableSpec {
 	/**
 	 * @return 自增值开始于，0表示不指定，采用默认。
 	 */
-	int autoIncreamentStartAt() default 0;
+	int autoIncrementStartAt() default 0;
 }
