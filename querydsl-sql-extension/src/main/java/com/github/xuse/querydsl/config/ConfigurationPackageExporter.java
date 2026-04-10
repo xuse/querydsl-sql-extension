@@ -6,6 +6,11 @@ import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
 
 /**
+ * <h2>English:</h2>
+ * Configuration package exporter class.
+ * Provides static methods for handling configuration information, such as
+ * retrieving initialization tasks and computing driver information.
+ * <h2>Chinese:</h2>
  * 配置包导出器类
  * 该类提供了一些静态方法用于处理配置信息，例如从配置中获取初始化任务以及计算驱动信息
  */

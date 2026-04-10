@@ -144,7 +144,8 @@ public interface CRUDRepository<T, ID> {
 	int delete(ID key);
 
 	/**
-	 * 根据主键批量删除
+	 * <h2>English:</h2> Delete records by primary keys in batch.
+	 * <h2>Chinese:</h2> 根据主键批量删除
 	 * 
 	 * @param key
 	 * @return 删除记录数 / count of records deleted.
@@ -152,11 +153,10 @@ public interface CRUDRepository<T, ID> {
 	int deleteBatch(Collection<ID> key);
 
 	/**
-	 * 按传入的Wrapper条件删除记录.
-	 * <p>
-	 * Delete records based on the conditions provided by the Wrapper.
+	 * <h2>English:</h2> Delete records based on the conditions provided by the Wrapper.
+	 * <h2>Chinese:</h2> 按传入的Wrapper条件删除记录.
 	 * 
-	 * @param wrapper 条件封装
+	 * @param wrapper 条件封装 / condition wrapper
 	 * @return 删除记录数 / count of records deleted.
 	 */
 	int delete(QueryWrapper<T, ?, ?> wrapper);
@@ -171,7 +171,8 @@ public interface CRUDRepository<T, ID> {
 	int delete(Consumer<SQLDeleteClauseAlter> consumer);
 
 	/**
-	 * 根据条件删除记录
+	 * <h2>English:</h2> Delete records by predicates.
+	 * <h2>Chinese:</h2> 根据条件删除记录
 	 * 
 	 * @param predicate
 	 * @return 删除记录数 / count of records deleted.
@@ -215,12 +216,11 @@ public interface CRUDRepository<T, ID> {
 	int update(ID key, T t);
 
 	/**
-	 * 按传入的对象更新记录.
-	 * <p>
-	 * Update records based on the provided object.
+	 * <h2>English:</h2> Update records based on the provided object.
+	 * <h2>Chinese:</h2> 按传入的对象更新记录.
 	 * 
 	 * @param t   object
-	 * @param key 更新的条件封装
+	 * @param key 更新的条件封装 / condition wrapper for update
 	 * @return 更新记录数 / records affected.
 	 */
 	int update(T t, QueryWrapper<T, T, ?> key);
@@ -248,7 +248,7 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * <h2>Chinese:</h2> 自行拼装条件进行Count查询
-	 * <h2>English:</h2>
+	 * <h2>English:</h2> Perform a Count query by assembling conditions independently.
 	 * 
 	 * @param consumer 函数对象，用于填充条件 / Function object, used to populate conditions.
 	 * @return 查询记录数 / count of records.
@@ -266,9 +266,10 @@ public interface CRUDRepository<T, ID> {
 	int count(QueryWrapper<T, ?, ?> wrapper);
 	
 	/**
-	 * 计算数量
-	 * @param p
-	 * @return
+	 * <h2>English:</h2> Count records by predicates.
+	 * <h2>Chinese:</h2> 计算数量
+	 * @param p predicates
+	 * @return count of records.
 	 */
 	int count(Predicate... p);
 
@@ -317,7 +318,8 @@ public interface CRUDRepository<T, ID> {
 	QueryResults<T> listByCondition(Object conditionBean, int limit, int offset);
 
 	/**
-	 * 根据Condition Bean进行查询。不计算总数
+	 * <h2>English:</h2> Query by Condition Bean. Does not calculate total count.
+	 * <h2>Chinese:</h2> 根据Condition Bean进行查询。不计算总数
 	 * 
 	 * @param conditionBean conditions
 	 * @return List
@@ -325,7 +327,8 @@ public interface CRUDRepository<T, ID> {
 	List<T> listByCondition(Object conditionBean);
 
 	/**
-	 * 根据Condition Bean进行查询。取结果第一个。
+	 * <h2>English:</h2> Query by Condition Bean. Returns the first result.
+	 * <h2>Chinese:</h2> 根据Condition Bean进行查询。取结果第一个。
 	 * 
 	 * @param conditionBean
 	 * @return T
@@ -333,30 +336,33 @@ public interface CRUDRepository<T, ID> {
 	T loadByCondition(Object conditionBean);
 
 	/**
-	 * 根据指定字段条件批量加载
+	 * <h2>English:</h2> Batch load by a specified field condition.
+	 * <h2>Chinese:</h2> 根据指定字段条件批量加载
 	 * 
-	 * @param <P>  条件字段类型
-	 * @param ids  查询条件
-	 * @param path 条件字段
+	 * @param <P>  条件字段类型 / type of the condition field
+	 * @param ids  查询条件 / query conditions
+	 * @param path 条件字段 / condition field
 	 * @return result list
 	 */
 	<P> List<T> listBy(Path<P> path, Collection<P> ids);
 
 	/**
-	 * 通用的条件查询.
+	 * <h2>English:</h2> General condition query.
+	 * <h2>Chinese:</h2> 通用的条件查询.
 	 * 
-	 * @param p
+	 * @param p predicates
 	 * @return result list
 	 */
 	List<T> list(Predicate... p);
 
 	/**
-	 * 带排序和分页条件的查询.
+	 * <h2>English:</h2> Query with ordering and pagination.
+	 * <h2>Chinese:</h2> 带排序和分页条件的查询.
 	 * 
-	 * @param p      条件
-	 * @param limit
-	 * @param offset
-	 * @param order  排序
+	 * @param p      条件 / predicate
+	 * @param limit  limit
+	 * @param offset offset
+	 * @param order  排序 / order
 	 * @return result list
 	 */
 	List<T> list(Predicate p, int limit, int offset, OrderSpecifier<? extends Comparable<?>> order);
@@ -366,21 +372,23 @@ public interface CRUDRepository<T, ID> {
 	};
 
 	/**
-	 * 根据条件加载
+	 * <h2>English:</h2> Load the first matching record by a field condition.
+	 * <h2>Chinese:</h2> 根据条件加载第一条匹配记录
 	 * 
-	 * @param <P>
-	 * @param path  列
-	 * @param param 条件值
-	 * @return 第一条匹配记录
+	 * @param <P>   type of the field
+	 * @param path  列 / column
+	 * @param param 条件值 / condition value
+	 * @return 第一条匹配记录 / the first matching record
 	 */
 	<P> T loadBy(Path<P> path, P param);
 
 	/**
-	 * 带排序的首条加载
+	 * <h2>English:</h2> Load the first record with ordering.
+	 * <h2>Chinese:</h2> 带排序的首条加载
 	 * 
-	 * @param p
-	 * @param order 排序
-	 * @return
+	 * @param p     predicate
+	 * @param order 排序 / order
+	 * @return the first matching record
 	 */
 	T load(Predicate p, OrderSpecifier<? extends Comparable<?>> order);
 

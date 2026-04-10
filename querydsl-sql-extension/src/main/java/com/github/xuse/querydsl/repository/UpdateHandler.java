@@ -35,6 +35,9 @@ public class UpdateHandler<B> {
 	}
 	
 	/**
+	 * <h2>English:</h2>
+	 * Provides richer arithmetic operation API for Number type fields.
+	 * <h2>Chinese:</h2>
 	 * 针对Number类型的字段，提供更丰富的算术运算API
 	 * @param <C> type of column
 	 * @param path column
@@ -45,6 +48,9 @@ public class UpdateHandler<B> {
 	}
 
 	/**
+	 * <h2>English:</h2>
+	 * Provides richer string operation API for String type fields.
+	 * <h2>Chinese:</h2>
 	 * 针对String类型的字段，提供更丰富的算术运算API
 	 * @param path 字段
 	 * @return UpdateSetString
@@ -55,6 +61,9 @@ public class UpdateHandler<B> {
 	
 	
 	/**
+	 * <h2>English:</h2>
+	 * Update the field value to the result of a string operation on the original value.
+	 * <h2>Chinese:</h2>
 	 * 将字段值更新为原值进行字符串运算后的数值
 	 * <p>Example:
 	 * {@code .setMathExpr(Foo::getCode,code-> code.concat("Suffix"))}
@@ -97,6 +106,9 @@ public class UpdateHandler<B> {
 	
 	
 	/**
+	 * <h2>English:</h2>
+	 * Provides some function operations for String type fields.
+	 * <h2>Chinese:</h2>
 	 * 提供针对String类字段的一些函数运算
 	 * @param <B> bean type.
 	 */
@@ -130,6 +142,9 @@ public class UpdateHandler<B> {
 	}
 	
 	/**
+	 * <h2>English:</h2>
+	 * Provides some function operations for Number type fields.
+	 * <h2>Chinese:</h2>
 	 * 提供针对Number类字段的一些函数运算
 	 * @param <B> bean type.
 	 * @param <C> type of number.

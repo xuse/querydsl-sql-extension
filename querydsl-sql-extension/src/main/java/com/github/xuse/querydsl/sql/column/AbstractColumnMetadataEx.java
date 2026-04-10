@@ -10,6 +10,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
+ * <h2>English:</h2>
+ * Column metadata. Extends QueryDSL's ColumnMetadata with four additional column descriptors.
+ * <h2>Chinese:</h2>
  * 列的元数据。 在QueryDSL的ColumnMetadata六个描述的基础上，补充了四个列描述。
  * 
  * @implNote the member value of this class mean metadata within the database
@@ -20,32 +23,38 @@ import lombok.Setter;
 @Setter
 public abstract class AbstractColumnMetadataEx implements ColumnMetadataEx{
 	/**
-	 * QueryDSL的元数据对象
+	 * <h2>English:</h2> QueryDSL metadata object.
+	 * <h2>Chinese:</h2> QueryDSL的元数据对象
 	 */
 	private final ColumnMetadata column;
 
 	/**
-	 * 无符号数修饰
+	 * <h2>English:</h2> Unsigned number modifier.
+	 * <h2>Chinese:</h2> 无符号数修饰
 	 */
 	protected boolean unsigned;
 
 	/**
-	 * 列默认值（表达式）
+	 * <h2>English:</h2> Column default value (expression).
+	 * <h2>Chinese:</h2> 列默认值（表达式）
 	 */
 	protected Expression<?> defaultExpression;
 
 	/**
-	 * 其他修饰，如自增等，今后可能考虑支持unique、key、Check等实际为约束或索引的特性。
+	 * <h2>English:</h2> Other modifiers such as auto-increment. May support unique, key, check in the future.
+	 * <h2>Chinese:</h2> 其他修饰，如自增等，今后可能考虑支持unique、key、Check等实际为约束或索引的特性。
 	 */
 	protected ColumnFeature[] features;
 
 	/**
-	 * 列注释
+	 * <h2>English:</h2> Column comment.
+	 * <h2>Chinese:</h2> 列注释
 	 */
 	protected String comment;
 	
 	/**
-	 * 附加SpecialSpec
+	 * <h2>English:</h2> Additional special specifications.
+	 * <h2>Chinese:</h2> 附加SpecialSpec
 	 */
 	protected Map<String,String> specialSpec;
 
