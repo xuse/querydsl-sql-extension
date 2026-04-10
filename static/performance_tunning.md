@@ -71,9 +71,9 @@ try(PreparedStatement stmt = connection.prepareStatement(sql)){
 } 
 ```
 
-上述方式起到了一个SQL语句写入10条记录的效果。性能较好 ，但有以下缺点——
+上述方式起到了一个SQL语句写入10条记录的效果。性能较好，但有以下缺点——
 
-* 写入条数不同。SQL语句就不同，需要根据记录数变化SQL语句。对业务实现干扰较大。
+* 写入条数不同，SQL语句就不同，需要根据记录数动态变化SQL语句，对业务实现干扰较大。
 * 当一批写入数据量很大时，SQL语句会非常的长，内存计算和占用也比较大，需要对批次做更精准的平衡。
 
 ### QueryDSL对上述功能支持
@@ -120,15 +120,15 @@ MySQL服务端并非原生支持多组绑定变量参数，因此Batch模式是�
 
 为了让没看过这篇文档的开发者得到较好的性能，本框架在MySQL的方言中，指定默认使用Batch to Bulk模式插入数据。
 
-默认情况下，MySQL的批量写入性能可以达到是逐条写入的20倍~30倍吞吐， 数据库特性决定了Batch与逐条插入两者无法达到100倍的以上的性能差距。
+默认情况下，MySQL的批量写入性能可以达到逐条写入的20倍~30倍吞吐，数据库特性决定了Batch与逐条插入两者无法达到100倍以上的性能差距。
 
 **修改JDBC URL参数：&rewriteBatchedStatements=true**
 
-然而MySQL的JDBC驱动有非常丰富的特性，您可以在JDBC URL上增加上述参数，情况会完全改变。上述参数使得JDBC驱动主动重写SQL，执行了类似Batch to Bulk的动作。在这种情况下。使用JDBC Batch反而会更快。
+然而MySQL的JDBC驱动有非常丰富的特性，您可以在JDBC URL上增加上述参数，情况会完全改变。上述参数使得JDBC驱动主动重写SQL，执行了类似Batch to Bulk的动作。在这种情况下，使用JDBC Batch反而会更快。
 
 因此，在为MySQL的驱动开启`rewriteBatchedStatements`特性后，将MySQL方言修改为JDBC Batch方式反而能将性能进一步提升15%以上。
 
-当您开启构`rewriteBatchedStatements`， 建议您关闭BatchToBulk功能，即可得到这部分性能提升，方法如下——
+当您开启`rewriteBatchedStatements`后，建议您关闭BatchToBulk功能，即可得到这部分性能提升，方法如下——
 
 ```java
 Templates templates = MySQLWithJSONTemplates.builder().usingBatchToBulkInDefault(false).build();
@@ -205,14 +205,14 @@ Templates templates = MySQLWithJSONTemplates.builder().usingBatchToBulkInDefault
 
 ## on PostgreSql （2024）
 
-* PostgreSQL 10.3 3
-* PostgreSQL JDBC Driver 42.7.3 3
+* PostgreSQL 10.3
+* PostgreSQL JDBC Driver 42.7.3
 * URL：postgresql://localhost:5432/test
 * jvm version=17
 
 > 这组测试使用本机的数据库，网络开销几乎忽略不计，因此放大了内存访问上的性能差距，所以数据会比较悬殊。
 >
-> 数据修订记录(2024-09-18)：MyBatis前一次测试时使用了foreach方式， 但MyBatis实际上是支持JDBC Batch方式的，2024-09-18以JDBC Batch方式重新测试，MyBatis这种方式下性能更好，故更新MyBatis成绩。
+> 数据修订记录(2024-09-18)：MyBatis前一次测试时使用了foreach方式，但MyBatis实际上是支持JDBC Batch方式的，2024-09-18以JDBC Batch方式重新测试，MyBatis在这种方式下性能更好，故更新MyBatis成绩。
 
 | Case                                                     | Mybatis 3.5.9（单位ms）                                | querydsl-sql-extension<br /> 5.0.0-r110（单位ms） | A/B     |
 | -------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------- | ------- |

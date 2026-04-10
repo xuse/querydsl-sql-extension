@@ -2,7 +2,7 @@
 
 ### 方法1 传入DataSource
 
-如果传入带有连接池的DataSource，, 每次操作完成后可以自动归还连接。
+如果传入带有连接池的DataSource，每次操作完成后可以自动归还连接。
 
 ```java
 //Create your datasource

@@ -34,7 +34,7 @@
 		- [MySQL Online DDL (Partial Support)](#mysql-online-ddl-partial-support)
 	- [8. FAQs / Miscellaneous Features](#8-faqs--miscellaneous-features)
 		- [Compatibility for Sharding in Business Layer](#compatibility-for-sharding-in-business-layer)
-		- [For developers move from QueryDSL](#for-developers-move-from-querydsl)
+		- [For Developers Moving from QueryDSL](#for-developers-moving-from-querydsl)
 			- [Code Generation](#code-generation)
 			- [Using SQLQueryFactory](#using-sqlqueryfactory)
 
@@ -61,14 +61,14 @@ The examples in the subsequent sections of this article will be based on scenari
 | find              | Retrieve records based on user-specified query conditions.   |      |
 | insert            | Insert a record.                                             |      |
 | insertBatch       | Batch insert records.                                        |      |
-| delete(ID)        | Delete one record by primark key.                            |      |
+| delete(ID)        | Delete one record by primary key.                            |      |
 | delete            | Delete records based on user-specified query conditions.     |      |
 | deleteByExample   | Delete records based on an example query object.             |      |
 | update(ID,Object) | Update one record by primary key.                            |      |
 | updateByKeys      | Update other fields of the object based on the specified fields as the WHERE condition. |      |
 | update            | Update records on user-specified query conditions.           |      |
 | count             | Count records based on user-specified query conditions.      |      |
-| countByExample    | Count records based on  an example query object.             |      |
+| countByExample    | Count records based on an example query object.              |      |
 | query             | Create a generic query builder.                              |      |
 | findByCondition   | Use the @ConditionBean annotation to create a query parameter class. Fields in this class can use the @Condition annotation for query operators to facilitate typical web pagination queries. |      |
 
@@ -99,7 +99,7 @@ public class Foo {
 }
 ```
 
-Step.2 Ceating Table
+Step.2 Creating the Table
 You can create it manually. If you are sure the program has DDL operation permissions, you can also use the following Java code to create the database table.
 
 ```java
@@ -117,7 +117,7 @@ SQLQueryFactory factory=SQLQueryFactory.from(dataSource);
 CRUDRepository<Foo, Integer> repository = factory.asRepository(()->Foo.class);
 ```
 
-The code above can quickly obtain a database access object, but it may lose some advanced features. For the complete initialization method, please refer to  [Chapter 3: Usage Overview](#3-usage-overview).
+The code above can quickly obtain a database access object, but it may lose some advanced features. For the complete initialization method, please refer to [Chapter 3: Usage Overview](#3-usage-overview).
 
 ### Usage
 
@@ -147,7 +147,7 @@ repository.query()
 
 **MyBatis-Plus Style**
 
-MyBatis supports lambda style usage, with the difference that it relatively traditionally divides the query into two objects — one for recording query conditions and another for the framework session (commonly SqlSession or Mapper in MyBatis. In other frameworks, there may be Session, Context, EntityManager, etc., under different names).
+MyBatis supports lambda style usage, with the difference that it relatively traditionally divides the query into two objects — one for recording query conditions and another for the framework session (commonly SqlSession or Mapper in MyBatis; in other frameworks, there may be Session, Context, EntityManager, etc., under different names).
 
 ```java
 	LambdaQueryWrapper<Foo> wrapper=new LambdaQueryWrapper<>();
@@ -194,7 +194,7 @@ MyBatis supports lambda style usage, with the difference that it relatively trad
 **Import the Library**
 
 This document uses a Spring integration example, so it depends on the `querydsl-sql-extension-spring` package. If Spring integration is not used, you can rely solely on the `querydsl-sql-extension`.
-> If you want to use without Springframework, Refer to this document [Without Springframework](static/without_springfrwmework.md)
+> If you want to use without Springframework, refer to this document [Without Springframework](without_springframework.md)
 
 ```xml
 <dependency>
@@ -205,7 +205,6 @@ This document uses a Spring integration example, so it depends on the `querydsl-
 ```
 
 This framework directly depends on the `querydsl-sql` library, and its primary usage is consistent with QueryDSL. However, the initialization method differs from QueryDSL.
-
 
 **Initialization** (Work together with the Spring transaction management)
 
@@ -257,7 +256,7 @@ DataSource ds = createDataSource();
         .generateTables(null, "%");  //Generate entity mappings for all tables under the current schema.
 ```
 
-There are three options for the meta model genration.
+There are three options for the meta model generation.
 
 ```java
 /**
@@ -321,7 +320,7 @@ public record Foo(
 	){}
 ```
 
-The genral usage is the same as previously mentioned, but referencing field names of record types is more concise.
+The general usage is the same as previously mentioned, but referencing field names of record types is more concise.
 
 ```java
 	CRUDRepository<Foo, Long> repository = factory.asRepository(()->Foo.class);
@@ -335,7 +334,6 @@ The genral usage is the same as previously mentioned, but referencing field name
 When using record types, be aware of the following characteristics:
 
 * Since Record objects are immutable and all fields cannot be set, the `@AutoGenerated` write-back feature will automatically become ineffective. (A log message will indicate that the write-back values are discarded, but no exception will be thrown.)
-
   
 
 ## 4 Table Structure Annotations
@@ -374,7 +372,7 @@ Can only be added to fields, describing the characteristics of database columns.
     unsigned = true,  //Is the number unsigned (if the database supports unsigned number)
     nullable = false,  //Is the column nullable.
     defaultValue = "0", //Default value expression, for example, to define as an empty string, it should be written as "''".
-	autoIncrement = false,//Is a auto increamenet column or not.
+    autoIncrement = false,//Is a auto increamenet column or not.
     size = 5,  //Defines the field length. For Decimal, it indicates the maximum length of the number. while for time and timestamp/datetime types, it indicates the precision of the fractional seconds.
     digits = 0 //When using the Decimal type, it defines the number of decimal places.
 )
@@ -449,7 +447,7 @@ Extended usage refers to the functionalities encapsulated by the framework. The 
 
 ### @InitializeData
 
-These annotations can only be added to a class. During initialization, a resource file is used to merge the initialization data into the table.
+These annotations can only be added to a class. During initialization, a resource file is used to merge initialization data into the table.
 
 ```java
 @InitializeData(
@@ -509,9 +507,9 @@ Only applicable to fields. If no value is specified before writing to the databa
 
  @ConditionBean annotation example that supports designing query objects.
 
- This function is mainly suitable for relatively fixed query patterns. 
+ This function is mainly suitable for relatively fixed query patterns.
 
- For instance, a web page that supports retrieval with several conditions, where the requirements are generally as follows: supports combined retrieval with several conditions, with the name condition supporting fuzzy matching (Like ?%), date condition supporting range setting, and other conditions requiring exact matches. All the above fields can be left empty to indicate no restriction. 
+ For instance, a web page that supports retrieval with several conditions, where the requirements are generally as follows: supports combined retrieval with several conditions, with the name condition supporting fuzzy matching (Like ?%), the date condition supporting range setting, and other conditions requiring exact matches. All the above fields can be left empty to indicate no restriction.
 
  For this scenario, you can design the conditions as corresponding query objects and use the @ConditionBean and @Condition annotations to mark the operation of each field.
 
@@ -538,7 +536,7 @@ public class FooQueryParams {
 }
 ```
 
-When use the bean which defined above:
+When using the bean defined above:
 
   ````java
   	QFoo t = QFoo.foo;
@@ -558,19 +556,19 @@ The package scanning feature is generally configured during system initializatio
 
 **Introduction:** When the application starts, it scans the entities under the specified package. Then—
 
-* Find entities classes, scan the annotation, then register custom data type mappings into a  global context.
+* Find entity classes, scan the annotations, then register custom data type mappings into a global context.
 * Automatically creates tables, indexes, constraints, etc., in the database.
 * If the table already exists in the database, it automatically modifies the table structure to align with the Java model. (Features like column deletion and index deletion can be disabled)
 * If initialized data is configured, it can merge the preset initialization data into the data table.
-* It can create an initialization configuration table in the database to let user control whether to modify or merge data in this table in the future.
+* It can create an initialization configuration table in the database to let users control whether to modify or merge data in this table in the future.
 
-All of DDL features come with multiple control switches to prevent accidental deletion of tables or columns, which could result in data loss.
+All DDL features come with multiple control switches to prevent accidental deletion of tables or columns, which could result in data loss.
 
 ```java
 configuration.getScanOptions()
 	.allowDrops()    //Allows modification of existing tables, and allows deletion of columns, indexes, and constraints
-	.setCreateMissingTable(true) //Allows creation of missing tables
-    .setDataInitBehavior(DataInitBehavior.FOR_ALL_TABLE) //Initializes data for all scanned entities
+	.canCreateMissingTable(true) //Allows creation of missing tables
+    .withDataInitBehavior(DataInitBehavior.FOR_ALL_TABLE) //Initializes data for all scanned entities
 	.detectPermissions(true)  //First attempts to check if the current account has DDL permissions; if not, subsequent DDL operations will not be executed
 	.useDistributedLock(true) //When enabled, table structure modifications and initialization actions will attempt to obtain a distributed lock, see below for details
 	.useDataInitTable(true);  //Enables the initialization configuration table, automatically creating a table that records initialization behaviors, also used as a distributed lock. It is recommended to enable this in multi-instance concurrency scenarios.
@@ -580,7 +578,7 @@ configuration.scanPackages("com.xxx.xxx");
 
 **Disable DDL execution**
 
-Although the framework uses 'Online SQL' to modify existing database tables, there is still a possibility that executing DDL might lock tables. In high-load production environments with particularly high availability requirements, it is recommended to disable the feature of executing DDL during startup. 
+Although the framework uses 'Online SQL' to modify existing database tables, there is still a possibility that executing DDL might lock tables. In high-load production environments with particularly high availability requirements, it is recommended to disable DDL execution during startup.
 
 ```java
 configuration.getScanOptions()
@@ -717,7 +715,7 @@ metadata.createPartitioning(table)
 		.execute();
 ```
 
-**Query Partition Informations**
+**Query Partition Information**
 
 ```java
 List<PartitionInfo> list=metadata.getPartitions(table.getSchemaAndTable());
@@ -746,7 +744,7 @@ Note: Since the range of the new partition is included in the old partition, dat
 It is necessary to reorganize the data in the old partition into the new partition. Hence, the system will automatically use REORGANIZE PARTITION to move the data from the first partition to the new partition.
 
 ```java
-metadata.addParition(table)
+metadata.addPartition(table)
 		.add("p20200101", "'2021-01-01'")
 		.execute();
 ```
@@ -760,14 +758,14 @@ metadata.dropPartition(table)
 
 ### Permission Issues
 
-The previous section on [Automatic Scanning and Initializing Database] introduces the action of sniffing operation permissions when starting the scan. If it is found that there are no permissions such as CREATE, DROP, etc., then all DDL operations will not be executed.
+The previous section on [Automatic Scanning and Initializing Database] introduces the action of detecting operation permissions when starting the scan. If it is found that there are no permissions such as CREATE, DROP, etc., then all DDL operations will not be executed.
 
 ### MySQL Online DDL (Partial Support)
 
->  MySQL began supporting Online DDL from version 5.x and improved it by version 8.x. The scope of Online DDL needs to be controlled based on specific environments. The current MySQL environment in hand is 5.6, so it has been adapted accordingly.
+>  MySQL began supporting Online DDL from version 5.x and improved it in version 8.x. The scope of Online DDL needs to be controlled based on specific environments. The current MySQL environment at hand is 5.6, so it has been adapted accordingly.
 > The optimization for MySQL 8.x has not been done yet.
 
-Online DDL can prevent blocking due to locks during DDL execution and avoid affecting users' DML operations. Online DDL means that during the execution of DDL, users are allowed to perform DML operations.
+Online DDL can prevent blocking due to locks during DDL execution, avoiding impact on users' DML operations. Online DDL means that during DDL execution, users are allowed to continue performing DML operations.
 
 When executing DDL on MySQL databases, it will automatically be performed in Online mode to minimize interference with production environment business access.
 For example, when modifying a data table, the algorithm and lock will be specified to ensure that the DDL operation does not affect the business during execution.
@@ -806,16 +804,16 @@ However, there is a scenario where the sharding rules and usage are relatively s
 		.build();
 ```
 
-Hint: If the rules for database and table sharding are complex, it is recommended to use a special sharding layer under this framework, such as Sharding JDBC/Sharding Sphere.
+Hint: If the rules for database and table sharding are complex, it is recommended to use specialized sharding frameworks such as Sharding JDBC/Sharding Sphere.
 
 
 
-### For developers move from QueryDSL
+### For Developers Moving from QueryDSL
 
 #### Code Generation
 
 This section introduces how to use the code generation tool based on QueryDSL within this framework.
-Since there is no current functionality to automatically generate Java code from the database, you can first use the "code generation via maven" section in the official documentation to generate the code. Some modifications to the generated code may be necessary.
+You can use the Maven plugin from the official QueryDSL documentation to generate the code. Some modifications to the generated code may be necessary.
 
 
 
@@ -849,7 +847,7 @@ Since there is no current functionality to automatically generate Java code from
 
 **Modifications on generated code**
 
-The generated code still needs some modifications. For example, the generated code is as follows
+The generated code still needs some modifications. For example, the generated code is as follows:
 
 ```java
 @Generated("com.querydsl.sql.codegen.MetaDataSerializer")
@@ -945,7 +943,7 @@ long count = factory.update(t1)
 
 **Update with comparisons**
 
-*  For comparison updates, only the changed fields are set. If there are no differences between the two objects, the database will not be written to.
+*  For comparison updates, only the changed fields are SET. If there are no differences between the two objects, no database write will occur.
 
 ```java
 Foo oldRecord = factory.selectFrom(t1)
@@ -978,7 +976,7 @@ factory.delete(t1).where(t1.id.eq(id)).execute();
 
 
 
-For more usage methods, refer to the QueryDSL documentation:** [Querydsl-sql Documentation](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html).
+For more usage methods, refer to the QueryDSL documentation: [Querydsl-sql Documentation](http://querydsl.com/static/querydsl/latest/reference/html/ch02s03.html).
 
-The `querydsl-sql-extension` extends many functionalities based on the native version. For details, refer to the javadoc.
+The `querydsl-sql-extension` extends many functionalities based on the native version. For details, refer to the Javadoc.
 
