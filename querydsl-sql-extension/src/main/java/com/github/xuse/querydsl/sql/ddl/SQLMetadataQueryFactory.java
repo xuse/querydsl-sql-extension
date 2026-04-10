@@ -251,9 +251,10 @@ public interface SQLMetadataQueryFactory {
 	List<String> getNames(String catalog, String schema, ObjectType... types);
 
 	/**
+	 * <h2>English:</h2>
+	 * Fetch the information of primary key on table.
+	 * <h2>Chinese:</h2>
 	 * 得到表的主键信息.
-	 * <p>
-	 * fetch the information of primary key on table.
 	 * @param table the table
 	 * @return information of primary keys.
 	 */
