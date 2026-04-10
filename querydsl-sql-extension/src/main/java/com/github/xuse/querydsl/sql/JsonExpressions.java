@@ -16,6 +16,9 @@ import com.querydsl.core.types.dsl.SimpleOperation;
 import com.querydsl.core.types.dsl.StringOperation;
 
 /**
+ * <h2>English:</h2>
+ * Extends QueryDSL to support functions for JSON data structures.
+ * <h2>Chinese:</h2>
  * 扩展QueryDSL，支持JSON数据结构的函数
  *
  * @author Joey

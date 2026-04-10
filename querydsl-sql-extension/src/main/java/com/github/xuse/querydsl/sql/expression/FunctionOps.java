@@ -3,10 +3,10 @@ package com.github.xuse.querydsl.sql.expression;
 import com.querydsl.core.types.Operator;
 
 /**
- * 扩展QueryDSL的一些常用函数
+ * Common function extensions for QueryDSL.
+ * <p>扩展QueryDSL的一些常用函数
  * 
  * @author Joey
- *
  */
 public enum FunctionOps implements Operator {
 	IF_NULL(Object.class)

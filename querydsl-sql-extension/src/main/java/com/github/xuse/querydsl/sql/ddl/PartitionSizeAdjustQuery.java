@@ -19,9 +19,9 @@ import com.querydsl.sql.SchemaAndTable;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 仅针对KEY HASH等
+ * Adjusts partition size for KEY, HASH, and similar partition methods only.
+ * <p>仅针对KEY HASH等
  * @author Joey
- *
  */
 @Slf4j
 public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdjustQuery> {

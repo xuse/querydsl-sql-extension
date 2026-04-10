@@ -7,10 +7,10 @@ import com.github.xuse.querydsl.util.TypeUtils;
 import lombok.SneakyThrows;
 
 /**
- * 基于反射的对象访问器，万一ASM失效后启用
+ * Reflection-based object accessor, used as a fallback when ASM is unavailable.
+ * <p>基于反射的对象访问器，万一ASM失效后启用
  * 
  * @author Joey
- *
  */
 public class ReflectCodec extends BeanCodec {
 	private final Class<?> targetClass;

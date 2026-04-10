@@ -4,10 +4,12 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Operator;
 
 /**
+ * <h2>English:</h2>
+ * Extends QueryDSL to implement JSON functions.
+ * <h2>Chinese:</h2>
  * 扩展QueryDSL，实现JSON函数
  * 
  * @author Joey
- *
  */
 public enum JsonOps implements Operator {
 

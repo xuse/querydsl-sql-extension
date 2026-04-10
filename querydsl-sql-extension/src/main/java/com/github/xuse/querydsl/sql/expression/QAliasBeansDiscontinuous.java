@@ -13,9 +13,11 @@ import com.querydsl.sql.QBeans;
 import com.querydsl.sql.RelationalPath;
 
 /**
- * 提供一个 字段不重复（可被多个Bean重复使用），字段可自由定义，并且表字段顺序不连续情况下的多Bean拼装器。
+ * A multi-bean assembler that supports non-duplicate fields (reusable across multiple beans),
+ * freely defined fields, and discontinuous column ordering in the result set.
+ * <p>提供一个 字段不重复（可被多个Bean重复使用），字段可自由定义，并且表字段顺序不连续情况下的多Bean拼装器。
  * 
- * @see QBeans 官方版本基于查询表所有字段，并且字段在SQL中连续的场景。
+ * @see QBeans The official version is based on querying all table fields with continuous column ordering in SQL.
  * @author Joey
  */
 public class QAliasBeansDiscontinuous extends DiscontinuousFieldBeans<AliasMapBeans> {

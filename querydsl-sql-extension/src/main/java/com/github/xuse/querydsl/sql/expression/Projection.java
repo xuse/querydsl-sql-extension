@@ -9,7 +9,8 @@ import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.sql.SQLListenerContext;
 
 /**
- * 结果处理器
+ * Result set projection handler.
+ * <p>结果处理器
  * @author Joey
  * @param <T> The type of target object.
  */

@@ -22,7 +22,8 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
 
 /**
- * 注意：DROP PARTITION会清除分区内的表数据，仅用于旧数据清理。
+ * Note: DROP PARTITION will remove all data within the partition. Use only for cleaning up old data.
+ * <p>注意：DROP PARTITION会清除分区内的表数据，仅用于旧数据清理。
  */
 public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 

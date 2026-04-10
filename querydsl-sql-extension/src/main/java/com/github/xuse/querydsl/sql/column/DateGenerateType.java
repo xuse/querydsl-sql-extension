@@ -1,8 +1,8 @@
 package com.github.xuse.querydsl.sql.column;
 
 /**
- * 对应时间自动自动生成功能 有四种时间自动生成规则
- * 
+ * Automatic date/time generation types. There are four auto-generation rules for timestamps.
+ * <p>对应时间自动生成功能，有四种时间自动生成规则
  */
 public enum DateGenerateType {
 	/**

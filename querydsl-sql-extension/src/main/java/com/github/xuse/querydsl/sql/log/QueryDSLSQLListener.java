@@ -31,6 +31,12 @@ import com.querydsl.sql.dml.SQLUpdateBatch;
 import com.querydsl.sql.types.Null;
 
 /**
+ * <h2>English:</h2>
+ * This class contains many empty methods marked as {@code final} to facilitate JIT compilation optimization.
+ *
+ * Regarding SQL statement line breaks, there is no need to use {@code .replace('\n', ' ')} in this class.
+ * Instead, use {@code com.querydsl.sql.SQLTemplates.Builder.newLineToSingleSpace()} when creating SQLTemplates.
+ * <h2>Chinese:</h2>
  * 本类包含大量空方法，增加final修饰有利于虚拟机进行即时编译优化。
  *
  * 关于SQL语句换行问题，无需在本类中使用.replace('\n', ' ')进行转换，应该在创建SQLTemplate的时候就使用

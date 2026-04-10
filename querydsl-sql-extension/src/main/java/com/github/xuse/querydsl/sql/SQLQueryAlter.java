@@ -441,7 +441,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private StatementOptions statementOptions = StatementOptions.DEFAULT;
 
 	/**
-	 * 设置本次查询载入的最大行数
+	 * Set the maximum number of rows to load for this query.
+	 * <p>设置本次查询载入的最大行数
 	 *
 	 * @param maxRows maxRows
 	 * @return this
@@ -454,7 +455,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 * 设置本次查询载入的最大行数，并且当达到最大行数时记录截断警告
+	 * Set the maximum number of rows to load, and log a truncation warning when the limit is reached.
+	 * <p>设置本次查询载入的最大行数，并且当达到最大行数时记录截断警告
 	 *
 	 * @param maxRows maxRows
 	 * @return this
@@ -466,7 +468,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 * 设置本次查询每批获取大小
+	 * Set the fetch size for this query.
+	 * <p>设置本次查询每批获取大小
 	 *
 	 * @param fetchSize fetchSize
 	 * @return this
@@ -479,7 +482,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 * 设置查询超时（秒）
+	 * Set query timeout in seconds.
+	 * <p>设置查询超时（秒）
 	 *
 	 * @param queryTimeout queryTimeout
 	 * @return this
@@ -678,7 +682,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 * 设置Limit，如果传入值为null或零或负数，则设置无效
+	 * Set limit. If the value is null, zero, or negative, the setting is ignored.
+	 * <p>设置Limit，如果传入值为null或零或负数，则不生效
 	 *
 	 * @param limit limit
 	 * @return this
@@ -691,7 +696,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	}
 
 	/**
-	 * 设置Offset，如果传入值为null或负数，则设置无效
+	 * Set offset. If the value is null or negative, the setting is ignored.
+	 * <p>设置Offset，如果传入值为null或负数，则不生效
 	 *
 	 * @param offset offset
 	 * @return this

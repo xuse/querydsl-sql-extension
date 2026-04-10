@@ -14,12 +14,14 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
 
 /**
- * 约束/索引创建
+ * Constraint/index creation operation.
+ * <p>约束/索引创建
  * 
- * Operator= 索引类型
- * Args{0} 上级Path
- * Args{1} 约束/索引Path(用来提供名称)
- * Args{2} 内部字段或CHECK表达式。如果是外键就是引用关系（待扩展）
+ * <p>Operator = index type / 索引类型
+ * <br>Args{0} parent Path / 上级Path
+ * <br>Args{1} constraint/index Path (provides the name) / 约束/索引Path(用来提供名称)
+ * <br>Args{2} column fields or CHECK expression; for foreign keys, the reference relationship (to be extended) /
+ * 内部字段或CHECK表达式。如果是外键就是引用关系（待扩展）
  */
 public class ConstraintOperation implements Operation<Object>{
 	private static final long serialVersionUID = 1L;

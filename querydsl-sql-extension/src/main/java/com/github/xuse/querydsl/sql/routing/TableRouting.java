@@ -18,7 +18,8 @@ public abstract class TableRouting implements RoutingStrategy {
 	protected abstract String adjustTable(String table);
 
 	/**
-	 * 分表场合：为表名添加指定后缀
+	 * For sharding: add a suffix to the table name.
+	 * <p>分表场合：为表名添加指定后缀
 	 * @param suffix suffix
 	 * @return TableRouting
 	 */
@@ -34,7 +35,8 @@ public abstract class TableRouting implements RoutingStrategy {
 	}
 
 	/**
-	 * 分表场合：为表名添加指定前缀
+	 * For sharding: add a prefix to the table name.
+	 * <p>分表场合：为表名添加指定前缀
 	 * @param prefix prefix
 	 * @return TableRouting
 	 */
@@ -50,7 +52,8 @@ public abstract class TableRouting implements RoutingStrategy {
 	}
 
 	/**
-	 * 分表场合：更换表名
+	 * For sharding: replace the table name entirely.
+	 * <p>分表场合：替换表名
 	 * @param newName newName
 	 * @return TableRouting
 	 */
@@ -66,7 +69,8 @@ public abstract class TableRouting implements RoutingStrategy {
 	}
 
 	/**
-	 * 分表场合：查找替换
+	 * For sharding: find and replace a substring in the table name.
+	 * <p>分表场合：查找替换表名中的子串
 	 * @param find find
 	 * @param replace replace
 	 * @return TableRouting
@@ -82,7 +86,8 @@ public abstract class TableRouting implements RoutingStrategy {
 	}
 
 	/**
-	 *  有多张表需要指定不同的表名修改策略的场合。使用Builder进行构造
+	 * For scenarios where multiple tables need different routing strategies. Use Builder to construct.
+	 * <p>当多张表需要指定不同的表名修改策略时，使用Builder进行构造。
 	 *  @return Builder.
 	 */
 	public static final TableRoutingBuilder builder() {

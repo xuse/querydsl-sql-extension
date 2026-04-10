@@ -14,8 +14,8 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 
 /**
- * <h1>Chinese:</h1> 基于QueryDSL封装的通用CRUD仓库。
- * 如果是复合主键，可以使用java.util.List、com.mysema.commons.lang.Pair中的任意一种容器来传递主键字段。但要注意其顺序必须和数据库主键定义的顺序一致。
+ * <h1>Chinese:</h1> 基于QueryDSL封装的通用CRUD仓库接口。
+ * 对于复合主键，可以使用{@code java.util.List}或{@code com.mysema.commons.lang.Pair}来传递主键值，但顺序必须与数据库主键定义的顺序一致。
  * <h1>English:</h1> A general repository implementation for accessing entity.
  * 
  * @author Joey
@@ -103,8 +103,8 @@ public interface CRUDRepository<T, ID> {
 	 * <h2>Chinese:</h2> 插入一条数据
 	 * <h2>English:</h2> Insert one record.
 	 * 
-	 * @param t 插入记录对象
-	 * @return 自动生成的主键(如果不是自动生成主键不一定会返回，取决于各个数据库JDBC实现，如Oracle也会返回，Postgresql不会)。
+	 * @param t 插入的记录对象
+	 * @return 自动生成的主键。对于非自增主键的表，返回值取决于数据库JDBC驱动的实现。
 	 */
 	ID insert(T t);
 
@@ -232,7 +232,7 @@ public interface CRUDRepository<T, ID> {
 	 * 
 	 * @param t       object
 	 * @param bizKeys 用于where条件的字段 / the columns in where condition.
-	 * @return 写入记录数 / records affected.
+	 * @return 更新记录数 / records affected.
 	 */
 	int updateByKeys(T t, Path<?>... bizKeys);
 
@@ -242,7 +242,7 @@ public interface CRUDRepository<T, ID> {
 	 * 
 	 * @param consumer 函数对象，用于填充条件和更新字段 / Function object, used to populate
 	 *                 conditions and update fields.
-	 * @return 写入记录数 / records affected.
+	 * @return 更新记录数 / records affected.
 	 */
 	int update(Consumer<SQLUpdateClauseAlter> consumer);
 

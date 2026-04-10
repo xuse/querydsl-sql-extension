@@ -16,9 +16,8 @@ import com.querydsl.sql.ColumnMetadata;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 检查是否具有完整的Create table, alter table等权限
- *
- *
+ * Checks whether the current database user has full DDL privileges such as CREATE TABLE, ALTER TABLE, etc.
+ * <p>检查是否具有完整的Create table, alter table等权限
  */
 @Slf4j
 public final class SimpleDetector implements PrivilegeDetector {

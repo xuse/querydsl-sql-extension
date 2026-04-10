@@ -12,10 +12,14 @@ import com.querydsl.sql.dml.SQLUpdateBatch;
 
 
 /**
+ * <h2>English:</h2>
+ * A listener that prevents accidental full-table updates or deletes when the WHERE clause is missing.
+ * This is recommended for general business code development to avoid catastrophic data loss.
+ * If an update or delete without a WHERE condition is detected, the operation will be rejected.
+ * <h2>Chinese:</h2>
  * 为了防止开发者不小心遗漏where条件，造成全表记录被误写或者全表被删除的严重后果，一般业务代码开发中可以添加这个监听器。
  * 一旦发现where条件为空的删除或更新，将阻止操作。
  * @author Joey
- *
  */
 public class UpdateDeleteProtectListener  extends SQLBaseListener {
 

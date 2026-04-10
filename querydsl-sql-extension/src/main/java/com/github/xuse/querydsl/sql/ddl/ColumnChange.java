@@ -4,7 +4,8 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterColumnOps;
 import com.querydsl.core.types.Expression;
 
 /**
- * 描述一个数据库列上的一种变化
+ * Describes a single change on a database column.
+ * <p>描述一个数据库列上的一种变化
  *
  * @author Administrator
  */

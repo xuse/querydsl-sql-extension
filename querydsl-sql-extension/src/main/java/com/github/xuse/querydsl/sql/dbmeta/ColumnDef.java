@@ -21,8 +21,8 @@ import lombok.Setter;
 
 
 /**
- * 描述一个列对象
- *
+ * Describes a database column object.
+ * <p>描述一个列对象
  */
 @Setter
 public class ColumnDef{

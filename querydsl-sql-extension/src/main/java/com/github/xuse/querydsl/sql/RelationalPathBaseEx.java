@@ -63,6 +63,10 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
 
 /**
+ * <h2>English:</h2>
+ * Overrides some default behaviors of QueryDSL-generated table metadata. It is recommended
+ * that generated classes extend this class.
+ * <h2>Chinese:</h2>
  * 覆盖QueryDSL生成的表元数据的一些默认行为，建议让生成类继承本类.
  * @param <T> type of entity
  */

@@ -13,7 +13,10 @@ import com.querydsl.core.types.Path;
 import com.querydsl.sql.RelationalPath;
 
 /**
- * 扩展后的元数据存储类，可以存储一些优化后的反射对象
+ * <h2>English:</h2>
+ * Extended metadata storage class that can store optimized reflection objects.
+ * <h2>Chinese:</h2>
+ * 扩展后的元数据存储类，可以存储优化后的反射对象和额外的列信息。
  *
  * @author Joey
  * @param <T> the type of entity
@@ -32,7 +35,8 @@ public interface RelationalPathEx<T> extends RelationalPath<T> {
 	ColumnMapping getColumnMetadata(Path<?> path);
 
 	/**
-	 * 根据名称获得path
+	 * Get path by field name.
+	 * <p>根据Java字段名获得Path对象
 	 * 
 	 * @param name of the path.(not column name)
 	 * @return Path
@@ -45,7 +49,8 @@ public interface RelationalPathEx<T> extends RelationalPath<T> {
 	List<ColumnMapping> getAutoColumns();
 
 	/**
-	 * 获得各类约束(含索引)
+	 * Get all constraints (including indexes).
+	 * <p>获得各类约束（含索引）
 	 * 
 	 * @return collection of Constraint
 	 */
