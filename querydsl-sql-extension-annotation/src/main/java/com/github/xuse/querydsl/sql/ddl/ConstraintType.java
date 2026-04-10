@@ -47,8 +47,9 @@ public enum ConstraintType{
 	BITMAP(4),
 	
 	/**
-	 * Equivalent to 'UNIQUE INDEX'
-	 * 本框架中UNIQUE按约束处理，其实现索引不视为用户管理的索引。
+	 * Equivalent to 'UNIQUE INDEX'.
+	 * In this framework, UNIQUE is treated as a constraint; its underlying index is not considered a user-managed index.
+	 * <p>本框架中UNIQUE按约束处理，其实现索引不视为用户管理的索引。
 	 */
 	UNIQUE(5),  //Unique Key，唯一索引或唯一约束，取决于RDBMS的实现方式
 	

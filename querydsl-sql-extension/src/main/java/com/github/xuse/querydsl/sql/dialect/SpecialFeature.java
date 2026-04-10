@@ -4,9 +4,9 @@ import com.querydsl.core.types.Operator;
 
 /**
  * <h2>English:</h2>
- * Database-specific features. Most are not yet used and will be cleaned up in the future.
+ * Enumeration of database-specific features used to control DDL generation behavior.
  * <h2>Chinese:</h2>
- * 从我的上一个框架复制来的代码。大部分都还没有用到，后续将清理掉不再使用的特性
+ * 数据库特有功能枚举，用于控制DDL生成行为。部分特性尚未启用，后续将清理。
  */
 
 public enum SpecialFeature implements Operator{

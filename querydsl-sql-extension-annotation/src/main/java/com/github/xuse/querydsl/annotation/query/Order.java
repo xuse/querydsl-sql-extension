@@ -10,7 +10,10 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface Order {
 	/**
-	 * @return 配置一个字段名，用于描述本排序字段是ASC还是DESC。
+	 * @return Configure a field name to describe whether this sort field is ASC or DESC.
+	 * If the target field is boolean, true means ASC, false means DESC.
+	 * If the target field is String, the value should be asc/desc (case-insensitive); other values are ignored.
+	 * <p>配置一个字段名，用于描述本排序字段是ASC还是DESC。
 	 * 如果目标字段为boolean类型，则true表示 ASC， false表示DESC。
 	 * 如果目标字段为String类型，则需要值为 asc/desc （无视大小写），其他值会被忽略。
 	 */

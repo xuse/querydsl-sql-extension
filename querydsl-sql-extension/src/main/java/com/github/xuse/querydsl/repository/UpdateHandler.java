@@ -51,7 +51,7 @@ public class UpdateHandler<B> {
 	 * <h2>English:</h2>
 	 * Provides richer string operation API for String type fields.
 	 * <h2>Chinese:</h2>
-	 * 针对String类型的字段，提供更丰富的算术运算API
+	 * 针对String类型的字段，提供更丰富的字符串运算API
 	 * @param path 字段
 	 * @return UpdateSetString
 	 */

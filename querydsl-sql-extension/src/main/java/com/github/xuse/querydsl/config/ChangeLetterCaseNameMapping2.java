@@ -21,12 +21,17 @@ public abstract class ChangeLetterCaseNameMapping2 implements NameMapping {
 	}
 
 	/**
+	 * <h2>English:</h2>
+	 * Override the getColumnOverride method to provide column override logic.
+	 * This method retrieves the override name for a column in the specified table.
+	 * Returns an empty Optional if the column is not overridden.
+	 * <h2>Chinese:</h2>
 	 * 重写 getColumnOverride 方法以提供列覆盖逻辑
 	 * 此方法用于获取指定表中列的覆盖名称如果列没有被覆盖，则返回空的 Optional
 	 * 
-	 * @param key    表的模式和表名，用于定位特定的数据库表
-	 * @param column 列的原始名称，可能需要根据某些规则进行转换或覆盖
-	 * @return 返回一个 Optional 对象，其中可能包含列的覆盖名称如果列没有被覆盖，则返回 Optional.empty()
+	 * @param key    表的模式和表名，用于定位特定的数据库表 / schema and table name
+	 * @param column 列的原始名称 / the original column name
+	 * @return 返回一个 Optional 对象，其中可能包含列的覆盖名称 / Optional containing the overridden name, or empty
 	 */
 	@Override
 	public Optional<String> getColumnOverride(SchemaAndTable key, String column) {

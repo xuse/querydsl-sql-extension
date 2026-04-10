@@ -90,11 +90,15 @@ public class ConfigurationEx {
 	private int defaultQueryTimeout;
 
 	/**
-	 * 需要显式指定schema的表。 原框架在方言中指定了是否要携带schema进行where查询，但是没有表维度的schema指定。
+	 * Tables that require explicit schema in SQL statements. The original framework
+	 * only controls schema at the dialect level, not per-table.
+	 * <p>
+	 * 需要在SQL中显式携带schema的表。原框架仅在方言级别控制是否携带schema，缺少表维度的控制。
 	 */
 	private final Set<RelationalPath<?>> withSchemas = new HashSet<>();
 
 	/**
+	 * Log as error when max rows is reached.
 	 * <p>
 	 * 达到最大maxRows后按错误日志记录
 	 */
@@ -120,6 +124,9 @@ public class ConfigurationEx {
 	private int maxRecordsLogInBatch = 5;
 
 	/**
+	 * Configuration for data initialization: which database initialization actions
+	 * to perform after package scanning.
+	 * <p>
 	 * 数据初始化相关配置：在包扫描后执行哪些数据库初始化动作。
 	 */
 	private final ScanOptions scanOptions = new ScanOptions();
@@ -131,7 +138,7 @@ public class ConfigurationEx {
 	 * locks are required, the framework will use a default database table as the
 	 * distributed lock.
 	 * <h2>中文</h2> 分布式锁提供器。 在系统启动或执行DDL时，可以使用分布式锁防止多个实例并发操作数据库。
-	 * 如果不设置此项，而使用时由要求使用分布式锁，框架会使用默认的数据库表作为分布式锁。
+	 * 如果不设置此项，而运行时需要使用分布式锁，框架会使用默认的数据库表作为分布式锁。
 	 */
 	private DistributedLockProvider distributedLockProvider;
 
@@ -147,6 +154,9 @@ public class ConfigurationEx {
 	private static Method getType;
 
 	/*
+	 * Initialization tasks identified during package scanning. Since SQLQueryFactory
+	 * is not yet instantiated at that time, the tasks are cached for later execution.
+	 * <p>
 	 * 在包扫描时识别到的数据库初始化任务，由于当时没有SQLQueryFactory实例化无法执行，故将初始化任务缓存起来，以便后续执行
 	 */
 	final BlockingQueue<TableInitTask> initTasks = new LinkedBlockingQueue<>();

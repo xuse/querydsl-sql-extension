@@ -8,7 +8,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * 试验性功能，允许加在@ConditionBean的字段上用于映射界面条件与数据库条件
+ * <h2>English:</h2> Experimental feature. Can be placed on @ConditionBean fields to map UI conditions to database conditions.
+ * <h2>Chinese:</h2> 试验性功能，允许加在@ConditionBean的字段上用于映射界面条件与数据库条件
  */
 @Target({ FIELD })
 @Retention(RUNTIME)

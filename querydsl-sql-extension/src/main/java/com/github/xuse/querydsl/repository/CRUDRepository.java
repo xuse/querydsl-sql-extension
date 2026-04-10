@@ -127,9 +127,9 @@ public interface CRUDRepository<T, ID> {
 	 * is happening, please use {@link #insertBatch(List)}.
 	 * 
 	 * @param ts        插入记录对象列表 / list of records.
-	 * @param selective 空字段不插入。
-	 *                  在Batch方式下这种方式会有副作用，判空以列表第一个对象为准，如果第一个对象为空的字段，后续对象即便有值也无法写入。
-	 *                  除非您准确理解实际发生的事，否则请使用{@link #insertBatch(List)}
+	 * @param selective 为true时，null字段不参与插入（使用数据库默认值）。
+	 *                  注意：在Batch方式下，判空以列表第一个对象为准。如果第一个对象某字段为null，后续对象即便有值也无法写入该字段。
+	 *                  除非您准确理解此行为，否则请使用{@link #insertBatch(List)}
 	 * @return 写入记录数 / count of records inserted.
 	 */
 	int insertBatch(List<T> ts, boolean selective);

@@ -6,7 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * 描述一个类文件为查询表单类。
+ * <h2>English:</h2> Describes a class as a query form bean.
+ * <h2>Chinese:</h2> 描述一个类文件为查询表单类。
  * @author Joey
  */
 @Target({ TYPE })

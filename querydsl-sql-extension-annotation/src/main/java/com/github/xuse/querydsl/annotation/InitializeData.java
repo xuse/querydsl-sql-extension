@@ -105,7 +105,8 @@ public @interface InitializeData {
 	boolean ensureFileExists() default true;
 
 	/**
-	 * 在数据库中列有值的情况下，数据文件中的null值是否要更新到数据库中，
+	 * When null values in the data file should be updated to the database when the column already has a value.
+	 * <p>在数据库中列有值的情况下，数据文件中的null值是否要更新到数据库中，
 	 * 
 	 * @return if true, null values will be written to db.
 	 */
