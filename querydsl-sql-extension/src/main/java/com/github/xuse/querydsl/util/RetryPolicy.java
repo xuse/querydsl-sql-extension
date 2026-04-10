@@ -287,18 +287,18 @@ public class RetryPolicy {
 	
 	@FunctionalInterface
 	public interface TentativeFailHandler{
-		void accept(Exception t, int attemps, long willwait, Callable<?> task);
+		void accept(Exception t, int attempts, long willwait, Callable<?> task);
 		
 		default TentativeFailHandler andThen(TentativeFailHandler after) {
 			Objects.requireNonNull(after);
-			return (Exception t, int attemps, long willwait, Callable<?> task) -> {
-				accept(t, attemps, willwait, task);
-				after.accept(t, attemps, willwait, task);
+			return (Exception t, int attempts, long willwait, Callable<?> task) -> {
+				accept(t, attempts, willwait, task);
+				after.accept(t, attempts, willwait, task);
 			};
 		}
 	}
 	
-	private void logFail(Exception t, int attemps, long willwait, Callable<?> task) {
+	private void logFail(Exception t, int attempts, long willwait, Callable<?> task) {
 		if (noStackTrace) {
 			log.info("Caught {} in task [{}]. Message:{}, will retry(attempts={}) after {}ms:", t.getClass().getName(), task,
 					t.getMessage(), attempts, willwait);

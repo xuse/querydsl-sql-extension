@@ -55,7 +55,7 @@ public abstract class AbstractColumnMetadataEx implements ColumnMetadataEx{
 		this.column = metadata;
 	}
 	
-	public boolean isAutoIncreament() {
+	public boolean isAutoIncrement() {
 		return features!=null && ArrayUtils.contains(features, ColumnFeature.AUTO_INCREMENT);
 	}
 }

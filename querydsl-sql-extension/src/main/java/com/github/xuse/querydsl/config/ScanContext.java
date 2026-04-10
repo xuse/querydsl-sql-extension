@@ -172,7 +172,7 @@ public class ScanContext {
 				try {
 					listener.accept(table);
 				} catch (Exception e) {
-					log.error("Notify entity {} to listener {} raise a error.", table.getTableName(), listener, e);
+					log.error("Notify entity {} to listener {} raised an error.", table.getTableName(), listener, e);
 				}
 			}
 			count++;

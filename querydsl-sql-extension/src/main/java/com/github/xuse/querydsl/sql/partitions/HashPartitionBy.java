@@ -71,7 +71,7 @@ public class HashPartitionBy implements PartitionBy{
 		boolean hasExpr = StringUtils.isNotBlank(exprText);
 		boolean isColumns = columns != null && columns.length > 0;
 		if (isColumns == hasExpr) {
-			throw Exceptions.illegalArgument("A partition config must hava a expression or a column list. table=[{}]",
+			throw Exceptions.illegalArgument("A partition config must have an expression or a column list. table=[{}]",
 					table);
 		}
 		if(isColumns) {

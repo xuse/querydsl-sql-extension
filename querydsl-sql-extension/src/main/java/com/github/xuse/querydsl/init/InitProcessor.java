@@ -3,7 +3,7 @@ package com.github.xuse.querydsl.init;
 import java.util.Date;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
-import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
+import com.github.xuse.querydsl.config.ConfigurationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
@@ -35,14 +35,14 @@ public class InitProcessor {
 		int count = 0;
 		try {
 			TableInitTask task;
-			if ((task = ConfigrationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
+			if ((task = ConfigurationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
 				if (!doInit()) {
 					return;
 				}
 				execute(task);
 				count++;
 			}
-			while ((task = ConfigrationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
+			while ((task = ConfigurationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
 				execute(task);
 				count++;
 			}
@@ -64,7 +64,7 @@ public class InitProcessor {
 			if (!hasPermission) {
 				factory.getConfiguration().setMissDDLPermissions();
 				if(!option.isIgnoreIfNoPermission()) {
-					throw new IllegalStateException("There's no Privilege to execute DDL on current database");
+					throw new IllegalStateException("There is no privilege to execute DDL on the current database");
 				}
 			}
 		}
@@ -94,8 +94,8 @@ public class InitProcessor {
 		ConfigurationEx configuration = factory.getConfiguration();
 		ScanOptions option = this.option;
 		// 自动，看当前有什么实现可以用
-		if (configuration.getExtenalDistributedLockProvider() != null) {
-			return configuration.getExtenalDistributedLockProvider().getLock(option.getLockName(),
+		if (configuration.getExternalDistributedLockProvider() != null) {
+			return configuration.getExternalDistributedLockProvider().getLock(option.getLockName(),
 					option.getLockExpireMinutes());
 		} else if (option.isUseDataInitTable()) {
 			return configuration.computeLockProvider(() -> DbDistributedLockProvider.create(factory))

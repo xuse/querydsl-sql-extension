@@ -133,9 +133,9 @@ public class DDLMetadataBuilder {
 		//Add collate engine and etc..
 		if (tableEx != null) {
 			tableCreateExpression = DDLExpressions.charsetAndCollate(tableCreateExpression, tableEx.getCollate());
-			if(tableEx.getAutoIncreamentStartAt()>0) {
+			if(tableEx.getAutoIncrementStartAt()>0) {
 				tableCreateExpression = DDLExpressions.simple(
-						DDLOps.AUTOINCREMENT_BEGIN,tableCreateExpression,DDLExpressions.text(String.valueOf(tableEx.getAutoIncreamentStartAt())));
+						DDLOps.AUTOINCREMENT_BEGIN,tableCreateExpression,DDLExpressions.text(String.valueOf(tableEx.getAutoIncrementStartAt())));
 			}
 			if (StringUtils.isNotEmpty(tableEx.getComment())) {
 				Expression<String> content = ConstantImpl.create(tableEx.getComment());

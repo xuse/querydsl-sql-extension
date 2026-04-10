@@ -327,7 +327,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * 设置字段值，如果doSet为false，则不会设置该字段的值。
 	 * 
 	 * @param <T>   The type of target object.
-	 * @param doSet weather to set the value of the given path.
+	 * @param doSet whether to set the value of the given path.
 	 * @param path  The path of target object.
 	 * @param value The value of target object.
 	 * @return SQLUpdateClauseAlter
@@ -351,7 +351,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * 设置字段值，如果doSet为false，则不会设置该字段的值。
 	 * 
 	 * @param <T>        The type of target object.
-	 * @param doSet      weather to set the value of the given path.
+	 * @param doSet      whether to set the value of the given path.
 	 * @param path       The path of target object.
 	 * @param expression The expression of target object.
 	 * @return SQLUpdateClauseAlter

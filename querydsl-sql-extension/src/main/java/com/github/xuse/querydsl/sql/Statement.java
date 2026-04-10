@@ -4,7 +4,7 @@ import com.querydsl.core.types.Operator;
 
 /**
  * 
- * This operator means this operation is a independent SQL statement.
+ * This operator means this operation is an independent SQL statement.
  *
  */
 public interface Statement extends Operator{

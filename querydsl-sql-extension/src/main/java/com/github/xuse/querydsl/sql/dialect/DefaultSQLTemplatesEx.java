@@ -19,7 +19,7 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	
 	protected final Set<Operator> unsupports=new HashSet<>();
 	
-	protected boolean bacthToBulk;
+	protected boolean batchToBulk;
 	
 	public DefaultSQLTemplatesEx(SQLTemplates template) {
 		Assert.notNull(template);
@@ -59,6 +59,6 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 
 	@Override
 	public boolean isBatchToBulkInDefault() {
-		return bacthToBulk;
+		return batchToBulk;
 	}
 }

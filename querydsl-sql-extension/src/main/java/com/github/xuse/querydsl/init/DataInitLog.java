@@ -33,7 +33,7 @@ import lombok.Data;
  */
 @Data
 @TableSpec(name = "querydsl_auto_init_data_log", primaryKeys = { "tableName" })
-@Comment("informations about data initialize by querydsl-sql-extenstion")
+@Comment("information about data initialization by querydsl-sql-extension")
 public class DataInitLog {
 
 	/**

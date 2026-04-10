@@ -205,9 +205,9 @@ public abstract class Threads {
 	/**
 	 * 将StackTrace转换为字符串，添加到指定的Appendable对象中。
 	 * @param stacks stack trace.
-	 * @param skipLines ingore first n lines.
+	 * @param skipLines ignore first n lines.
 	 * @param output Appendable.
-	 * @See Appendable
+	 * @see Appendable
 	 */
 	public static void toStackTraceString(StackTraceElement[] stacks, int skipLines,Appendable output) {
 		String newLine = ")\r\n";
@@ -433,7 +433,7 @@ public abstract class Threads {
 		public void setMaximumSize(int size) {
 			int from = pool.getMaximumPoolSize();
 			if (from > size) {
-				throw Exceptions.illegalArgument("RISK is Too high to adjust pool size from {} to {} once in a PRD enviroment.", from, size);
+				throw Exceptions.illegalArgument("RISK is too high to adjust pool size from {} to {} once in a PRD environment.", from, size);
 			}
 			pool.setMaximumPoolSize(size);
 		}
@@ -441,7 +441,7 @@ public abstract class Threads {
 		public void setCoreSize(int size) {
 			int from = pool.getCorePoolSize(); 
 			if (from > size) {
-				throw Exceptions.illegalArgument("RISK is Too high to adjust core pool size from {} to {} once in a PRD enviroment.", from, size);
+				throw Exceptions.illegalArgument("RISK is too high to adjust core pool size from {} to {} once in a PRD environment.", from, size);
 			}
 			pool.setCorePoolSize(size);
 		}
@@ -495,9 +495,9 @@ public abstract class Threads {
 				ObjectName mxbeanName = new ObjectName("querydsl-ext.utils:type=ThreadPool-"+name);
 				MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 				mbs.registerMBean(new IntrospectedMXBean(monitor, FrontPressurePoolMXBean.class), mxbeanName);	
-				log.info("Thread Pool {} was registed in JMX Server.", name);
+				log.info("Thread Pool {} was registered in JMX Server.", name);
 			}catch(Exception ex) {
-				log.error("JMX Registe fail. name={}", name, ex);
+				log.error("JMX Register fail. name={}", name, ex);
 			}
 		}
 		

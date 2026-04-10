@@ -34,7 +34,7 @@ public final class ReaderSettings {
 	public char comment;
 
 	/**
-	 * If the qualifier character contains in field value. how to escape.
+	 * If the qualifier character is contained in the field value, how to escape.
 	 */
 	public EscapeMode escapeMode;
 

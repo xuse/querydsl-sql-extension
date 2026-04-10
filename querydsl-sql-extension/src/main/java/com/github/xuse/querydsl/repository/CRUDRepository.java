@@ -180,7 +180,7 @@ public interface CRUDRepository<T, ID> {
 
 	/**
 	 * <h2>Chinese:</h2> 按示例对象删除记录。
-	 * <h2>English:</h2> delete records by a example object.
+	 * <h2>English:</h2> delete records by an example object.
 	 * 
 	 * @param t 示例对象 / example object
 	 * @return 删除记录数 / count of records deleted.

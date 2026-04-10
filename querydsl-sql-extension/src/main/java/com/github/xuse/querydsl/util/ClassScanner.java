@@ -100,8 +100,8 @@ public class ClassScanner {
 	}
 	
 	public List<Resource> findResources(URLClassLoader cl, String packageName) {
-		String prifix = rootClasspath == null ? "classpath*:" : "classpath:";
-		String locationPattern = prifix
+		String prefix = rootClasspath == null ? "classpath*:" : "classpath:";
+		String locationPattern = prefix
 				+ (StringUtils.isBlank(packageName) ? "**/*.class" : packageName.replace('.', '/') + "/**/*.class");
 		ResourcePatternResolver rl = new PathMatchingResourcePatternResolver(cl);
 		Resource[] res = rl.getResources(locationPattern);

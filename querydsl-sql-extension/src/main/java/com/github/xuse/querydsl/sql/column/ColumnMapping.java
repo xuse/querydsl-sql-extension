@@ -81,5 +81,5 @@ public interface ColumnMapping extends ColumnMetadataEx {
 	 */
 	void writeback(Object bean, Object value);
 	
-	boolean isAutoIncreament();
+	boolean isAutoIncrement();
 }

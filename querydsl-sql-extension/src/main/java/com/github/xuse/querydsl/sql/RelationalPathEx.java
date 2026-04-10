@@ -59,7 +59,7 @@ public interface RelationalPathEx<T> extends RelationalPath<T> {
 	/**
 	 * @return 自增起始值，仅对支持的数据库有效
 	 */
-	int getAutoIncreamentStartAt();
+	int getAutoIncrementStartAt();
 
 	/**
 	 * @return 表注释

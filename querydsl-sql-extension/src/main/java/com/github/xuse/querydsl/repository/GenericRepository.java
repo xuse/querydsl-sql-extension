@@ -98,7 +98,7 @@ public abstract class GenericRepository<T, ID> extends AbstractCrudRepository<T,
 		try {
 			clz = entity.getClassLoader().loadClass(qClassName);
 		} catch (ClassNotFoundException e) {
-			log.warn("Query Class not found {}, will generate a dynanamic model.", qClassName);
+			log.warn("Query Class not found {}, will generate a dynamic model.", qClassName);
 			return PathCache.get(entity, null);
 		}
 		RelationalPath<?> result= SQLTypeUtils.getMetaModel(clz);

@@ -62,7 +62,7 @@ public class ConfigurationEx {
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);
 	
-	final Set<Class<?>> registededRelations = new HashSet<>();
+	final Set<Class<?>> registeredRelations = new HashSet<>();
 
 	/**
 	 * configuration of the original Querydsl.
@@ -113,7 +113,7 @@ public class ConfigurationEx {
 	private boolean allowTableDropAndCreate = false;
 
 	/**
-	 * How many objects of the log prints out in a batch processing operations
+	 * Maximum number of records to log in batch operations.
 	 * <p>
 	 * batch操作时日志最多打印条数
 	 */
@@ -259,7 +259,7 @@ public class ConfigurationEx {
 	}
 
 	/**
-	 * Got the database dialect.
+	 * Get the database dialect.
 	 * <p>
 	 * 
 	 * @return 获得扩展方言对象
@@ -317,7 +317,7 @@ public class ConfigurationEx {
 	 * @return true if registered.
 	 */
 	public boolean registerRelation(RelationalPathEx<?> table) {
-		if(registededRelations.add(table.getType())) {
+		if(registeredRelations.add(table.getType())) {
 			PathCache.register(table);
 			for (Path<?> p : table.getColumns()) {
 				ColumnMapping c = table.getColumnMetadata(p);
@@ -528,12 +528,12 @@ public class ConfigurationEx {
 		return noDDLPermission;
 	}
 
-	public DistributedLockProvider getExtenalDistributedLockProvider() {
+	public DistributedLockProvider getExternalDistributedLockProvider() {
 		return distributedLockProvider;
 	}
 
-	public void setExternalDistributedLockProvider(DistributedLockProvider extenalDistributedLockProvider) {
-		this.distributedLockProvider = extenalDistributedLockProvider;
+	public void setExternalDistributedLockProvider(DistributedLockProvider externalDistributedLockProvider) {
+		this.distributedLockProvider = externalDistributedLockProvider;
 	}
 
 	public synchronized DistributedLockProvider computeLockProvider(Supplier<DistributedLockProvider> supplier) {

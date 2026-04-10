@@ -23,7 +23,7 @@ public abstract class BeanCodec {
 	
 	/**
 	 * 相同类型间字段浅拷贝。
-	 * @param from soruce
+	 * @param from source
 	 * @param target target
 	 */
 	public abstract void copy(Object from, Object target);

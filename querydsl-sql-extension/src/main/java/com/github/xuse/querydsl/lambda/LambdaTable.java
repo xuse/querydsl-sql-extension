@@ -125,7 +125,7 @@ public interface LambdaTable<T> extends Supplier<Class<T>>,RelationalPathEx<T>{
     	return ((RelationalPathBaseEx<T>)result).clone();
     }
 
-	default int getAutoIncreamentStartAt() {
-    	return PathCache.getPath(this, null).getAutoIncreamentStartAt();
+	default int getAutoIncrementStartAt() {
+    	return PathCache.getPath(this, null).getAutoIncrementStartAt();
 	}
 }

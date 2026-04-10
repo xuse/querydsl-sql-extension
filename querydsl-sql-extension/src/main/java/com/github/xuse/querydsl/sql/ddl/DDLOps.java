@@ -216,7 +216,7 @@ public enum DDLOps implements Operator {
 		 */
 		REORGANIZE_PARTITION,
 		
-		OPTMIZE_PARTITION,
+		OPTIMIZE_PARTITION,
 
 		//以下是维护分区（包括迁移）等操作
 		/**

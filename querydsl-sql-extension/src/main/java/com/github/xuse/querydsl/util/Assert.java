@@ -252,7 +252,7 @@ public class Assert {
 	 */
 	public static void fileExist(File file) {
 		if (!file.exists()) {
-			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
+			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " does not exist."));
 		} else if (file.isDirectory()) {
 			throw new IllegalArgumentException(new FileNotFoundException(file.getAbsolutePath() + " is a Directory."));
 		}
@@ -264,7 +264,7 @@ public class Assert {
 	 */
 	public static void exist(File file) {
 		if (!file.exists()) {
-			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
+			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " does not exist."));
 		}
 	}
 
@@ -274,7 +274,7 @@ public class Assert {
 	 */
 	public static void folderExist(File file) {
 		if (!file.exists()) {
-			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " is not exist."));
+			throw new IllegalArgumentException(new FileNotFoundException("File " + file.getAbsolutePath() + " does not exist."));
 		} else if (file.isFile()) {
 			throw new IllegalArgumentException(new FileNotFoundException(file.getAbsolutePath() + " is a File."));
 		}
@@ -437,21 +437,21 @@ public class Assert {
 	    if(value<=0) {
 	        return value;
 	    }
-	    throw new IllegalArgumentException(value+" is a negative number.");
+	    throw new IllegalArgumentException(value+" is a positive number.");
 	}
 	
 	public static float notPositive(float value) {
 	    if(value<=0) {
 	        return value;
 	    }
-	    throw new IllegalArgumentException(value+" is a negative number.");
+	    throw new IllegalArgumentException(value+" is a positive number.");
 	}
 	
 	public static double notPositive(double value) {
 	    if(value<=0) {
 	        return value;
 	    }
-	    throw new IllegalArgumentException(value+" is a negative number.");
+	    throw new IllegalArgumentException(value+" is a positive number.");
 	}
 	
 	public static int isPositive(int value) {

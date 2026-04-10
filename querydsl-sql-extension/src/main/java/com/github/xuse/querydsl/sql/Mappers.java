@@ -21,7 +21,7 @@ public final class Mappers {
 	
 	public static final int NULLS_BIND = 1;
 	public static final int TYPE_TUPLE = 2;
-	public static final int PRIMARKKEY_IGNORED = 4;
+	public static final int PRIMARYKEY_IGNORED = 4;
 	
 	
 	

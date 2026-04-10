@@ -9,7 +9,7 @@ import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
  * 配置包导出器类
  * 该类提供了一些静态方法用于处理配置信息，例如从配置中获取初始化任务以及计算驱动信息
  */
-public class ConfigrationPackageExporter {
+public class ConfigurationPackageExporter {
 
 	/**
 	 * 从配置对象中获取并移除初始化任务

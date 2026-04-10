@@ -384,7 +384,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	private List<ColumnChange> compareDataType(ColumnMetadataExImpl c1, ColumnMetadataExImpl c2, ColumnDef java, ColumnDef db) {
 		List<ColumnChange> result = new ArrayList<ColumnChange>();
 		// 忽略字段顺序和列名称，仅对比其他8个属性
-		if (dataTypeChanged(c1, c2) || c1.isAutoIncreament() != c2.isAutoIncreament()) {
+		if (dataTypeChanged(c1, c2) || c1.isAutoIncrement() != c2.isAutoIncrement()) {
 			Expression<?> from = DDLExpressions.dataType(DDLOps.DEF_LIST, db.getDataType(), c2.isNullable(), c2.isUnsigned(), null);
 			Expression<?> to = DDLExpressions.dataType(AlterColumnOps.SET_DATATYPE,java.getDataType(), c1.isNullable(), c1.isUnsigned(), null);
 			

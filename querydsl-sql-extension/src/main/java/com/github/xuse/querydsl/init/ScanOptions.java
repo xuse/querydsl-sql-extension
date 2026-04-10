@@ -95,12 +95,12 @@ public class ScanOptions {
 	 * <h1>Function 2: Provide a global data initialization switch.</h1>
 	 * The record with `table_name='*'` and setting `is_disabled = 1` can disable
 	 * the data initialization function for all tables.
-	 * <h1>Function 3: Provide a distributed lock function in default.</h1>
+	 * <h1>Function 3: Provide a default distributed lock function.</h1>
 	 * Every time before creating DDL for data tables and performing DML for table
 	 * data initialization, an attempt will be made to acquire a distributed lock
 	 * (`table_name=lock#table_initialize`). Processes that do not acquire the lock
 	 * will not perform database operations. The maximum effective lock period is 5
-	 * minutes, If a process that has acquired the lock is abnormally killed, other
+	 * minutes. If a process that has acquired the lock is abnormally killed, other
 	 * services can attempt to acquire the lock again after 5 minutes.
 	 * If this feature is not enabled, the service will attempt to compare database
 	 * structures and initialization data every time it starts. If inconsistencies

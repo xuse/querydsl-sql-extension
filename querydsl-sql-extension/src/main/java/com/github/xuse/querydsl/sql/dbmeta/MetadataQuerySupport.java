@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
+import com.github.xuse.querydsl.config.ConfigurationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
@@ -71,7 +71,7 @@ public abstract class MetadataQuerySupport {
 	private final SQLListeners listeners;
 
 	public DriverInfo getDriverInfo() {
-		return ConfigrationPackageExporter.computeDriverInfo(getConfiguration(), this::generateDriverInfo);
+		return ConfigurationPackageExporter.computeDriverInfo(getConfiguration(), this::generateDriverInfo);
 	}
 
 	private DriverInfo generateDriverInfo() {
