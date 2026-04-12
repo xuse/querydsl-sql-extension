@@ -1,6 +1,7 @@
 package com.github.xuse.querydsl.sql.Integration;
 
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,20 +23,21 @@ import java.util.List;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.entity.Aaa;
 import com.github.xuse.querydsl.entity.AvsAuthParams;
 import com.github.xuse.querydsl.entity.AvsAuthParamsEr;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.CaAsset;
 import com.github.xuse.querydsl.entity.Foo;
-import com.github.xuse.querydsl.entity.QAaa;
 import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
+import com.github.xuse.querydsl.entity.QTableDataTypes;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.repository.Selects;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
@@ -46,8 +48,8 @@ import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.routing.TableRouting;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
+import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.StringUtils;
-import com.mysema.commons.lang.Pair;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.DateTimeExpression;
@@ -71,8 +73,8 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void testTupleResult() {
-		QAaa t1 = QAaa.aaa;
-		Aaa a = generateEntity();
+		QTableDataTypes t1 = QTableDataTypes.aaa;
+		TableDataTypes a = generateEntity();
 		factory.insert(t1).populate(a).execute();
 
 		List<Tuple> maps = factory.select(t1.id, t1.name).from(t1).fetch();
@@ -86,8 +88,8 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		}
 	}
 
-	private Aaa generateEntity() {
-		Aaa a = new Aaa();
+	private TableDataTypes generateEntity() {
+		TableDataTypes a = new TableDataTypes();
 		a.setName(StringUtils.randomString());
 		a.setGender(Gender.FEMALE);
 		a.setTaskStatus(TaskStatus.INIT);
@@ -103,6 +105,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		a.setDataTime(new Time(1000));
 		a.setDateTimestamp(new Date());
 		a.setDataBit(false);
+		a.setStringArray(new String[] {"a","b","c"});
 		return a;
 	}
 
@@ -117,12 +120,12 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void reCreateTable() {
 		SQLMetadataQueryFactory metadataFactory = factory.getMetadataFactory();
-		metadataFactory.dropTable(QAaa.aaa).ifExists(true).execute();
+		metadataFactory.dropTable(QTableDataTypes.aaa).ifExists(true).execute();
 		metadataFactory.dropTable(QAvsUserAuthority.avsUserAuthority).ifExists(true).execute();
 		metadataFactory.dropTable(QCaAsset.caAsset).ifExists(true).execute();
 		metadataFactory.dropTable(() -> Foo.class).ifExists(true).execute();
 
-		metadataFactory.createTable(QAaa.aaa).execute();
+		metadataFactory.createTable(QTableDataTypes.aaa).execute();
 		metadataFactory.createTable(QAvsUserAuthority.avsUserAuthority).execute();
 		metadataFactory.createTable(QCaAsset.caAsset).execute();
 		metadataFactory.createTable(() -> Foo.class).execute();
@@ -130,10 +133,10 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void testSelect() throws SQLException {
-		QAaa t1 = QAaa.aaa;
-		Aaa a = generateEntity();
+		QTableDataTypes t1 = QTableDataTypes.aaa;
+		TableDataTypes a = generateEntity();
 		factory.insert(t1).populate(a).execute();
-		List<Aaa> list = factory.selectFrom(t1).fetch();
+		List<TableDataTypes> list = factory.selectFrom(t1).fetch();
 		assertTrue(list.size() > 0);
 
 		try (ResultSet rs = factory.selectFrom(t1).getResults()) {
@@ -154,9 +157,9 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void testGroup1() {
 		boolean flag = false;
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		factory.getMetadataFactory().truncate(t1).execute();
-		Aaa a = generateEntity();
+		TableDataTypes a = generateEntity();
 		a.setName("张三");
 		Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
 		if (flag) {
@@ -164,7 +167,10 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		}
 		System.err.println("===========查询t1===========");
 
-		Aaa b = factory.selectFrom(t1).where(t1.id.eq(id)).fetchFirst();
+		TableDataTypes b = factory.selectFrom(t1).where(t1.id.eq(id)).fetchFirst();
+		assertArrayEquals(b.getStringArray(), new String[] {"a","b","c"});
+		System.err.println("======1");
+		System.err.println(Arrays.toString(b.getStringArray()));
 		System.err.println(b);
 
 		System.err.println("===========更新t1===========");
@@ -203,25 +209,25 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	@Test
 	public void test2() {
 		boolean prepareData = false;
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 
 		if (prepareData) {
-			Aaa a = new Aaa();
+			TableDataTypes a = new TableDataTypes();
 			a.setName("张三");
 			a.setGender(Gender.FEMALE);
 			a.setTaskStatus(TaskStatus.INIT);
 			Integer id = factory.insert(t1).populate(a).executeWithKey(Integer.class);
 
 			System.err.println("===========查询t1===========");
-			for (Aaa aaa : factory.selectFrom(t1).fetch()) {
+			for (TableDataTypes aaa : factory.selectFrom(t1).fetch()) {
 				System.err.println(aaa);
 			}
 			// assertEquals("[Aaa [created=2023-02-27 14:48:19.0, id=1, name=张三,
 			// gender=FEMALE,taskStatus=INIT, version=0]]",aaa.toString())
 		}
-		Aaa old = factory.selectFrom(t1).where(t1.id.eq(1)).fetchOne();
+		TableDataTypes old = factory.selectFrom(t1).where(t1.id.eq(1)).fetchOne();
 
-		Aaa b = new Aaa();
+		TableDataTypes b = new TableDataTypes();
 		b.setName("李四");
 		b.setGender(Gender.MALE);
 		b.setTaskStatus(TaskStatus.RUNNING);
@@ -244,7 +250,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void testUpdateSQL() {
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 
 		Integer id = factory.select(t1.id.max()).from(t1).fetchFirst();
 		System.err.println(id);
@@ -252,21 +258,21 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 				.where(t1.id.eq(id)).execute();
 		assertTrue(count > 0);
 
-		Aaa a = new Aaa();
+		TableDataTypes a = new TableDataTypes();
 		a.setName("Wang Wu");
 		a.setGender(Gender.MALE);
 		a.setVersion(2);
 
-		Aaa oldRecord = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
+		TableDataTypes oldRecord = factory.selectFrom(t1).where(t1.id.eq(id)).fetchOne();
 		factory.update(t1).populateWithCompare(a, oldRecord).where(t1.id.eq(id)).execute();
 
 	}
 
 	@Test
 	public void testUpdateAll() {
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		// 清理
-		factory.getMetadataFactory().truncate(t1);
+		factory.getMetadataFactory().truncate(t1).execute();
 
 		factory.insert(t1).populate(generateEntity()).addBatch().populate(generateEntity()).addBatch().execute();
 
@@ -277,36 +283,36 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void testDeleteAll() {
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		factory.delete(t1).where(Expressions.TRUE).execute();
 	}
 
 	@Test
 	public void testInertBatch1() {
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		factory.getMetadataFactory().truncate(t1).execute();
-		Aaa a = new Aaa();
+		TableDataTypes a = new TableDataTypes();
 		a.setName("张三");
 		a.setGender(Gender.FEMALE);
 		a.setTaskStatus(TaskStatus.RUNNING);
 		a.setCreated(new Date().toInstant());
 		a.setTrantField("aaaa");
 
-		Aaa b = new Aaa();
+		TableDataTypes b = new TableDataTypes();
 		b.setName("王五");
 		b.setGender(Gender.FEMALE);
 		b.setTaskStatus(TaskStatus.RUNNING);
 		b.setCreated(new Date().toInstant());
 		b.setTrantField("bbbb");
 
-		Aaa c = new Aaa();
+		TableDataTypes c = new TableDataTypes();
 		c.setName("sadfsfsdfs");
 		c.setGender(Gender.MALE);
 		c.setTaskStatus(TaskStatus.RUNNING);
 		c.setCreated(new Date().toInstant());
 		c.setTrantField("cccc");
 
-		Aaa d = new Aaa();
+		TableDataTypes d = new TableDataTypes();
 		d.setName("李四");
 		d.setGender(Gender.MALE);
 		d.setTaskStatus(TaskStatus.RUNNING);
@@ -320,7 +326,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void testUpdateBatch() {
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		long count = factory.update(t1)
 				.where(t1.name.eq("1")).set(t1.version, t1.version.add(1)).addBatch()
 				.where(t1.name.eq("2")).set(t1.version, t1.version.add(2)).addBatch()
@@ -333,7 +339,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		try (Connection conn = factory.getConnection()) {
 			System.err.println("得到连接成功 ");
 		}
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		long count = factory.delete(t1)
 				.where(t1.name.eq("1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 				.addBatch().where(t1.name.eq("2")).addBatch().execute();
@@ -427,8 +433,8 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 	@Test
 	public void testMerge() {
-		QAaa t1 = QAaa.aaa;
-		Aaa a = new Aaa();
+		QTableDataTypes t1 = QTableDataTypes.aaa;
+		TableDataTypes a = new TableDataTypes();
 //		a.setId(1);
 		a.setName("张222");
 		a.setGender(Gender.FEMALE);
@@ -453,16 +459,17 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		System.err.println("返回:" + count);
 
 	}
+	
 	@Test
 	public void testConditionBeanException() {
 		QAvsUserAuthority t = QAvsUserAuthority.avsUserAuthority;
-		assertThrows(UnsupportedOperationException.class, ()->{
-			Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+		assertThrows(IllegalArgumentException.class, ()->{
+			QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 					AvsAuthParamsEr.builder().authContent("a").build()
 			);
 		});
 		assertThrows(IllegalArgumentException.class, ()->{
-			Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+			QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 					AvsAuthParams.builder().createTime(new Date[] {new Date()}).build()
 			);
 		});
@@ -475,89 +482,164 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		factory.getMetadataFactory().truncate(t).execute();
 		
 		
-		assertThrows(IllegalArgumentException.class,()->factory.asRepository(t).findByCondition(new Aaa()));
+		assertThrows(IllegalArgumentException.class,()->factory.asRepository(t).findByCondition(new TableDataTypes()));
 		
-		Pair<Integer, List<AvsUserAuthority>> result = factory.asRepository(t).findByCondition(
+		QueryResults<AvsUserAuthority> result = factory.asRepository(t).findByCondition(
 			AvsAuthParams.builder().authContent("123").limit(100).offset(2).order("authType").orderAsc(true).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).authTypeGoe(1).devId(null).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		System.out.println("--------------");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList(1,2,3,4)).authType(2).fetchTotal(true).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids2(new int[] {1,2,3,4}).channelNo(2).authTypeLt(2).devId("001").fetchTotal(true).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).createTime(new Date[3]).devIdGoe("001").devIdLoe("005").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).createTime2(Arrays.asList(new Date(),new Date())).devIdGoe("001").devIdLoe("005").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).createTime(new Date[3]).devIdGt("003").devIdLt("005").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		
 		System.out.println("======");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().ids(Arrays.asList()).channelNo(0).createTime(new Date[0]).authTypeLoe(2).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		System.out.println("===Test EndWith===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdEndWith("z").devIdStartWith("a").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdEndWithIC("z").devIdStartWithIC("a").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		System.out.println("===Test Like===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdLike("z%z").devIdIsNotNull(true).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().devIdLikeIC("z").devIdIsNull(true).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		System.out.println("===Test MixedField===");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().mixField("z").fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
 		System.out.println("++++");
 		result =factory.asRepository(t).findByCondition(
 				AvsAuthParams.builder().caseType(3).fetchTotal(false).build()
 		);
-		assertTrue(result.getSecond().isEmpty());
+		assertTrue(result.getResults().isEmpty());
 		
+	}
+	
+	
+	@Test
+	public void testInArrayOrCollection() {
+		LambdaTable<Foo> t=()->Foo.class;
+		StringLambdaColumn<Foo> code= Foo::getCode;
+		{
+			factory.selectFrom(t).where(code.in("a","b","c"));
+		}
+		
+	}
+
+	
+	@Test
+	public void testPrimitiveSuspectOper() {
+		LambdaTable<Foo> t=()->Foo.class;
+		//Case 1
+		{
+			Foo c=new Foo();
+			c.setName("test1");
+			c.setCode(StringUtils.randomString());
+			c.setCodeType(0);//被忽略,但在插入场合，数据库默认值也是0的情况下，不太严重。但如果数据库默认值是其他，那就不对了。
+			factory.insert(t).populate(c).execute();	
+		}
+		CRUDRepository<Foo, Integer> repo=factory.asRepository(t);
+		//Case 2
+		{
+			Foo c=new Foo();
+			c.setName("test1");
+			c.setCodeType(0);//被忽略,
+			repo.update(1, c);
+		}
+		//Case 3
+		{
+			Foo c=new Foo();
+			c.setName("test1");
+			c.setCodeType(0);//被忽略,
+			repo.countByExample(c);
+		}		
+		//Case 4 
+		{
+			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
+			List<Foo> foos=repo.listBy(column, Arrays.asList(1,2,3));
+			System.out.println(foos.size());
+		}
+		
+		{
+			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
+			List<Foo> foos=repo.list(column.eq(1).and(column.goe(0)));
+			System.out.println(foos.size());
+		}
+		
+		{
+			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
+			List<Foo> foos = repo.list(column.eq(1), 10, 10, null);
+			System.out.println(foos.size());
+		}
+		
+		{
+			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
+			Foo foos=repo.loadBy(column, 1);
+		}
+		
+		{
+			LambdaColumn<Foo, String> column=Foo::getCode;
+			Foo foos=repo.getBy(column, "1");
+		}
+		{
+			LambdaColumn<Foo, Integer> column=Foo::getCodeType;
+			Foo foo=repo.loadBy(column, 1);
+			System.out.println(foo);
+			foo.setGender(Gender.MALE);
+			repo.update(foo.getId(), foo);
+		}
 	}
 
 	@Test
 	public void testRouting() {
-		QAaa t1 = QAaa.aaa;
+		QTableDataTypes t1 = QTableDataTypes.aaa;
 		QCaAsset t2 = QCaAsset.caAsset;
 
 		TableRouting routing = TableRouting.builder().suffix(t1, "202406").suffix(t2, "2024Q2").build();
@@ -627,7 +709,26 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		LambdaColumn<Foo, String> p = Foo::getName;
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 		metadata.createTable(table).ifExists().execute();
+		metadata.truncate(table).execute();
+		
+		java.sql.Date d= DateUtils.toSqlDate(new Date());
+		Foo foo = new Foo();
+		foo.setCode("code1");
+		foo.setCodeType(10);
+		foo.setContent("aksdkasdks");
+		foo.setGender(Gender.FEMALE);
+		foo.setInDay(d);
+		foo.setName("1");
+		factory.insert(table).populate(foo).execute();
+		
 		List<Foo> list = factory.selectFrom(table).where(p.eq("1")).fetch();
+		assertEquals(1,list.size());
+		System.err.println(list.get(0).getInDay());
+		
+		LambdaColumn<Foo, Date> DAY = Foo::getInDay;
+		list = factory.selectFrom(table).where(DAY.eq(d)).fetch();
+		
+		list = factory.selectFrom(table).where(DAY.eq(DateUtils.truncateToDay(d))).fetch();
 	}
 
 	/**
@@ -640,11 +741,11 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		SQLMetadataQueryFactory metadata = factory.getMetadataFactory();
 		LambdaTable<Foo> foo = () -> Foo.class;
 		{
-			List<Aaa> aaas = factory.select(Selects.bean(Aaa.class, foo)).from(foo).fetch();
+			List<TableDataTypes> aaas = factory.select(Selects.bean(TableDataTypes.class, foo)).from(foo).fetch();
 			System.out.println(aaas);
 		}
 		{
-			List<Aaa> aaas = factory.select(Selects.bean(Aaa.class, $(Foo::getName), $(Foo::getId),
+			List<TableDataTypes> aaas = factory.select(Selects.bean(TableDataTypes.class, $(Foo::getName), $(Foo::getId),
 					$(Foo::getVolume).as("version"), $(Foo::getCreated))).from(foo).fetch();
 			System.out.println(aaas);
 		}

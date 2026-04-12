@@ -8,10 +8,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.Radix;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.mysema.commons.lang.Assert;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class BeanCodecManager {
 	private static final BeanCodecManager INSTANCE = new BeanCodecManager();
 	
@@ -107,8 +111,12 @@ public class BeanCodecManager {
 				provider = BeanCodecDefaultProvider.INSTANCE;
 			}
 		}
-		BeanCodec bc= provider.generateAccessor(key, bindings, cl);
-		return bc;
+		try {
+			BeanCodec bc= provider.generateAccessor(key, bindings, cl);
+			return bc;
+		}catch(Exception ex) {
+			throw Exceptions.illegalState("Generating codec class error:{}[{}]",key.getClassName(),key.fieldNames,ex);
+		}
 	}
 
 	public static BeanCodecManager getInstance() {

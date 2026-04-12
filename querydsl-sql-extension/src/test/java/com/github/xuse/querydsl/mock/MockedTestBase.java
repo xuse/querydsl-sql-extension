@@ -68,8 +68,9 @@ public class MockedTestBase {
 		configuration.allowTableDropAndCreate();
 		configuration.getScanOptions()
 		
-		.setCreateMissingTable(false)
-		.setAlterExistTable(false).setDataInitBehavior(DataInitBehavior.NONE);
+		.canCreateMissingTable(false)
+		.canAlterExistTable(false)
+		.withDataInitBehavior(DataInitBehavior.NONE);
 		configuration.scanPackages("com.github.xuse.querydsl.entity");
 		return configuration;
 	}

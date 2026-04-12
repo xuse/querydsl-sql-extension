@@ -79,6 +79,45 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 	}
 
 	/**
+	 * 移除过期的分区。配合 {@link AutoTimePartitions} 注解使用。
+	 * @param timePeriodToKeep 要保留的过去时间周期数。>0 
+	 */
+	public DropPartitionQuery removeExpiredPartitions(int timePeriodToKeep) {
+		PartitionBy partitionBy = table.getPartitionBy();
+		if (partitionBy instanceof RangePartitionBy) {
+			AutoTimePartitions[] auto = ((RangePartitionBy) partitionBy).getAutoPartition();
+			if (auto != null && auto.length > 0) {
+				//当前周期分区名
+				List<Partition> autoPartitionsFuture = RangePartitionBy.generateAutoPartitions(auto[0], 0);
+				String futureName = "pmax";
+				if(autoPartitionsFuture.get(0)!=null) {
+					futureName = autoPartitionsFuture.get(0).name();
+				}
+				//计算未过期分区
+				List<Partition> unExpiredPartitions = RangePartitionBy.generateAutoPartitions(auto[0], -timePeriodToKeep);
+				Set<String> unExpiredPartitionNames = unExpiredPartitions.stream().map(Partition::name).collect(Collectors.toSet());
+				
+				List<PartitionInfo> result = new ArrayList<>(getCurrentPartitions());
+				//防止删除未来分区
+				for(PartitionInfo exist:result) {
+					if("pmax".equals(exist.getName())) {
+						continue;
+					}
+					if(unExpiredPartitionNames.contains(exist.getName())) {
+						continue;
+					}
+					if(exist.getName().compareTo(futureName)>=0) {
+						continue;
+					}
+					//加入待删除分区名列表
+					partitions.add(exist.getName());
+				}
+				return this;
+			}
+		}
+		throw new UnsupportedOperationException("Table " + table.getSchemaAndTable() + " is not a table with RANGE Partition with AutoTimePartitions.");
+	}
+	/**
 	 *  当使用RangePartitionBy并且根据当前时间自动生成了分区后，可以对比出数据库中额外的分区（一般是已经过期的分区）。
 	 *  @return 数据库中存在，但table的AutoTimePartitions中不包含的分区。
 	 */
@@ -87,7 +126,7 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 		if (partitionBy instanceof RangePartitionBy) {
 			AutoTimePartitions[] auto = ((RangePartitionBy) partitionBy).getAutoPartition();
 			if (auto != null && auto.length > 0) {
-				List<Partition> autoPartitions = RangePartitionBy.generateAutoPartitions(auto[0]);
+				List<Partition> autoPartitions = RangePartitionBy.generateAutoPartitions(auto[0], null);
 				Set<String> effective = autoPartitions.stream().map(Partition::name).collect(Collectors.toSet());
 				List<PartitionInfo> result = new ArrayList<>(getCurrentPartitions());
 				result.removeIf(info -> effective.contains(info.getName()));
@@ -120,7 +159,7 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 	}
 
 	protected String generateSQL(String partition) {
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing,connection.getDriverInfo());
 		Expression<?> pName=DDLExpressions.text(partition);
 		builder.serilizeSimple(AlterTablePartitionOps.DROP_PARTITION, pName, table);
 		// ,", ALGORITHM=INPLACE, LOCK=NONE" not support on mysql

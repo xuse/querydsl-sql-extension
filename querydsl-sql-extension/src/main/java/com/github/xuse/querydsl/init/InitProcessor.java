@@ -3,12 +3,11 @@ package com.github.xuse.querydsl.init;
 import java.util.Date;
 
 import com.github.xuse.querydsl.annotation.InitializeData;
+import com.github.xuse.querydsl.config.ConfigurationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.config.ConfigrationPackageExporter;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.dialect.Privilege;
 import com.github.xuse.querydsl.sql.support.DbDistributedLockProvider;
 import com.github.xuse.querydsl.sql.support.DistributedLock;
 import com.github.xuse.querydsl.util.Assert;
@@ -36,14 +35,14 @@ public class InitProcessor {
 		int count = 0;
 		try {
 			TableInitTask task;
-			if ((task = ConfigrationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
+			if ((task = ConfigurationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
 				if (!doInit()) {
 					return;
 				}
 				execute(task);
 				count++;
 			}
-			while ((task = ConfigrationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
+			while ((task = ConfigurationPackageExporter.pollFrom(factory.getConfiguration())) != null) {
 				execute(task);
 				count++;
 			}
@@ -60,12 +59,12 @@ public class InitProcessor {
 	 */
 	private boolean doInit() {
 		// 检查有无DDL权限
-		if (option.isDdlPermissionDetect()) {
-			boolean permission = metadata.hasPrivilege(Privilege.CREATE, Privilege.ALTER);
-			if (!permission) {
+		if (option.isDdlPermissionDetect() && option.getDetectPrivileges() != null && option.getDetectPrivileges().length > 0) {
+			boolean hasPermission = metadata.hasPrivilege(option.getDetectPrivileges());
+			if (!hasPermission) {
 				factory.getConfiguration().setMissDDLPermissions();
 				if(!option.isIgnoreIfNoPermission()) {
-					throw new IllegalStateException("There's no Privilege to execute DDL on current database");
+					throw new IllegalStateException("There is no privilege to execute DDL on the current database");
 				}
 			}
 		}
@@ -95,8 +94,8 @@ public class InitProcessor {
 		ConfigurationEx configuration = factory.getConfiguration();
 		ScanOptions option = this.option;
 		// 自动，看当前有什么实现可以用
-		if (configuration.getExtenalDistributedLockProvider() != null) {
-			return configuration.getExtenalDistributedLockProvider().getLock(option.getLockName(),
+		if (configuration.getExternalDistributedLockProvider() != null) {
+			return configuration.getExternalDistributedLockProvider().getLock(option.getLockName(),
 					option.getLockExpireMinutes());
 		} else if (option.isUseDataInitTable()) {
 			return configuration.computeLockProvider(() -> DbDistributedLockProvider.create(factory))

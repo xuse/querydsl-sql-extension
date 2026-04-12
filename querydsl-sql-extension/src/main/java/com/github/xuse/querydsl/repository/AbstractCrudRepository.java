@@ -15,10 +15,13 @@ import com.github.xuse.querydsl.annotation.query.BoolCase;
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.annotation.query.IntCase;
+import com.github.xuse.querydsl.annotation.query.Ops;
 import com.github.xuse.querydsl.annotation.query.Order;
 import com.github.xuse.querydsl.annotation.query.StringCase;
 import com.github.xuse.querydsl.annotation.query.When;
 import com.github.xuse.querydsl.init.csv.Codecs;
+import com.github.xuse.querydsl.lambda.LambdaColumnBase;
+import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.SQLQueryAlter;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
@@ -39,7 +42,7 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.ConstantImpl;
-import com.querydsl.core.types.Ops;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.ComparableExpression;
@@ -113,6 +116,12 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		SQLQueryAlter<T> query = factory.selectFrom(getPath());
 		consumer.accept(query);
 		return (int) query.fetchCount();
+	}
+
+	@Override
+	public int count(Predicate... p) {
+		RelationalPath<T> entity = getPath();
+		return (int) getFactory().selectFrom(entity).where(p).fetchCount();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -248,6 +257,17 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return pk.getLocalColumns();
 	}
 	
+	@Override
+	public int deleteByCondition(Object conditionBean, int limit) {
+		Class<?> clz = conditionBean.getClass();
+		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
+		if (cb == null) {
+			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
+		}
+		SQLDeleteClauseAlter delete = createDeleteQuery(conditionBean, cb, limit);
+		return (int)delete.execute();
+	}
+
 	/**
 	 * Fetch count for a condition bean
 	 * @param conditionBean
@@ -263,31 +283,64 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		return (int)select.fetchCount();
 	}
 	
-	public final Pair<Integer,List<T>> findByCondition(Object conditionBean, int limit, int offset) {
+	@Override
+	public T loadByCondition(Object conditionBean) {
+		List<T> list = listByCondition0(conditionBean,2);
+		if(list.isEmpty()) {
+			return null;
+		}
+		return list.get(0);
+	}
+	
+	@Override
+	public List<T> listByCondition(Object conditionBean) {
+		return listByCondition0(conditionBean,0);
+	}
+	
+	private List<T> listByCondition0(Object conditionBean, int maxRows) {
 		Class<?> clz = conditionBean.getClass();
 		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
 		if (cb == null) {
 			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
 		}
 		Params p=new Params();
-		SQLQueryAlter<T> select = createSelectQuery(conditionBean,cb,p);
+		SQLQueryAlter<T> select = createSelectQuery(conditionBean, cb, p);
+		if(p.limit !=null && p.limit.intValue()>0){
+			select.limit(p.limit.longValue());
+		}
+		if(p.offset!=null && p.offset.intValue()>0) {
+			select.offset(p.offset.longValue());
+		}
+		if(maxRows>0) {
+			select.setMaxRows(maxRows);
+		}
+		return select.fetch();
+	}
+	
+	public final QueryResults<T> listByCondition(Object conditionBean, int limit, int offset) {
+		Class<?> clz = conditionBean.getClass();
+		ConditionBean cb = clz.getAnnotation(ConditionBean.class);
+		if (cb == null) {
+			throw new IllegalArgumentException("Condition bean must annotated with @ConditionBean");
+		}
+		Params p=new Params();
+		SQLQueryAlter<T> select = createSelectQuery(conditionBean, cb, p);
 		if(limit>0) {
 			select.limit(limit);
 		}else if(p.limit !=null && p.limit.intValue()>0){
-			select.limit(p.limit.intValue());
+			select.limit(p.limit.longValue());
 		}
 		if(offset>0) {
 			select.offset(offset);
 		}else if(p.offset!=null && p.offset.intValue()>0) {
-			select.offset(p.offset.intValue());
+			select.offset(p.offset.longValue());
 		}
 		if(p.fetchTotal==null || p.fetchTotal) {
 			QueryResults<T> results=select.fetchResults();
-			return new Pair<Integer,List<T>>((int)results.getTotal(),results.getResults());
+			return results;
 		}
-		return Pair.of(-1, select.fetch());
+		return new QueryResults<T>(select.fetch(),(long)limit, (long)offset, -1L);
 	}
-	
 	static class Params{
 		Number limit;
 		Number offset;
@@ -418,6 +471,113 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		}
 		return select;
 	}
+	
+	@SuppressWarnings("deprecation")
+	private SQLDeleteClauseAlter createDeleteQuery(Object conditionBean,ConditionBean cb, int limit) {
+		RelationalPath<T> beanPath= getPath();
+		SQLDeleteClauseAlter delete= getFactory().delete(beanPath);
+		RelationalPathEx<T> beanPathEx=null;
+		if(beanPath instanceof RelationalPathEx) {
+			beanPathEx=(RelationalPathEx<T>)beanPath;
+		}
+		
+		BeanCodec codec = BeanCodecManager.getInstance().getCodec(conditionBean.getClass());
+		Property[] fields = codec.getFields();
+		Object[] values = codec.values(conditionBean);
+		Map<String, Path<?>> bindings = new HashMap<>();
+		for (Path<?> p : beanPath.getColumns()) {
+			bindings.put(p.getMetadata().getName(), p);
+		}
+		for (int i = 0; i < fields.length; i++) {
+			Property field = fields[i];
+			Object value = values[i];
+			String fieldName=field.getName();
+			if (fieldName.equals(cb.limitField())) {
+				if(value!=null && limit<=0) {
+					limit=((Number) value).intValue();
+				}
+				continue;
+			}
+			Condition condition = field.getAnnotation(Condition.class);
+			When when=field.getAnnotation(When.class);
+			if(ArrayUtils.countNonNull(condition,when)>1) {
+				throw Exceptions.illegalArgument("These annotation (@Condition @When @Order) must appear once on a field. {}", field);
+			}
+			if (condition != null) {
+				Predicate where = null;
+				if (condition.otherPaths().length > 0) {
+					for (String op : condition.otherPaths()) {
+						if (StringUtils.isEmpty(op)) {
+							continue;
+						}
+						Path<?> path = bindings.get(op);
+						if (path == null) {
+							throw Exceptions.illegalArgument("Not found path {} in bean {}", op, beanPath);
+						}
+						if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx, path, condition.value())) {
+						}else {
+							where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));
+						}
+					}
+				}
+				{
+					String pathName = condition.path();
+					if (StringUtils.isEmpty(pathName)) {
+						pathName = field.getName();
+					}
+					Path<?> path = bindings.get(pathName);
+					if (path == null) {
+						throw Exceptions.illegalArgument("Not found path {} in bean {}", pathName, beanPath);
+					}
+					if (condition.ignoreUnsavedValue() && isUnsaved(value, beanPathEx,path,condition.value())) {
+					}else {
+						where = appendOr(where, toPredicate(value, path, condition.value(),field.getName()));				
+					}
+					delete.where(where);
+				}
+			}
+			if(when!=null) {
+				Class<?> fieldType=field.getType();
+				if(fieldType.isPrimitive()) {
+					throw Exceptions.illegalArgument("@When must not on a field of primitive type. {}", field);
+				}
+				String pathName = when.path();
+				if (StringUtils.isEmpty(pathName)) {
+					pathName = field.getName();
+				}
+				Path<?> path = bindings.get(pathName);
+				if(value!=null) {
+					Pair<Ops,Object> matchExpr;
+					if(field.getType()==Boolean.class) {
+						matchExpr = getMatchExpr(value, when.forBool(),path.getType());
+					} else if (field.getType() == Integer.class) {
+						matchExpr = getMatchExpr(value, when.forInt(),path.getType());
+					} else if (field.getType() == String.class) {
+						matchExpr = getMatchExpr(value, when.value(),path.getType());
+					}else {
+						throw Exceptions.illegalArgument("@When only supports field in these types('Integer','Boolean','String'), the field {}", field);
+					}
+					if(matchExpr==null) {
+						if(!when.ignoreIfNoMatchCase()) {
+							throw Exceptions.illegalArgument("@When has no match case for value {}, on the field {}", value, field);	
+						}
+					}else {
+						Predicate where;
+						if(matchExpr.getFirst()==null) {
+							where=Expressions.booleanTemplate((String)matchExpr.getSecond());	
+						}else {
+							where = toPredicate(matchExpr.getSecond(), path, matchExpr.getFirst(),field.getName());
+						}
+						delete.where(where);
+					}
+				}
+			}
+		}
+		if(limit>0) {
+			delete.limit(limit);
+		}
+		return delete;
+	}
 
 	private Pair<Ops, Object> getMatchExpr(Object value, StringCase[] cases,Class<?> pathType) {
 		String v=String.valueOf(value);
@@ -474,7 +634,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		if(p2==null) {
 			return p1;
 		}
-		return  Expressions.booleanOperation(Ops.OR, p1, p2);
+		return  Expressions.booleanOperation(com.querydsl.core.types.Ops.OR, p1, p2);
 	}
 
 	private boolean isUnsaved(Object value,RelationalPathEx<T> beanPathEx,Path<?> path,Ops op) {
@@ -506,6 +666,15 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 		boolean asc = toAscDesc(sortValue);
 		List<Pair<Path<?>,Boolean>> result=new ArrayList<>();
 		for(String pathName:StringUtils.split(fieldNames,',')) {
+			//混合Expr模式
+			if(order.orderExpr()) {
+				int space=pathName.indexOf(' ');
+				if(space>0) {
+					sortValue = pathName.substring(space+1).trim();
+					pathName = pathName.substring(0, space).trim();
+					asc = toAscDesc(sortValue);
+				}
+			}
 			Path<?> path=bindings.get(pathName);
 			if (path == null) {
 				throw Exceptions.illegalArgument("Not found path {}", fieldNames);
@@ -532,26 +701,38 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@Override
-	public  <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T,R, ?> wrapper) {
+	public  <R> QueryResults<R> listAndCount(QueryWrapper<T,R, ?> wrapper) {
 		QueryExecutor<T,R> executor=new QueryExecutor<>(wrapper, this);
 		return executor.findAndCount();
-	}
-	
-	@Override
-	public <R> Pair<Integer, List<R>> findAndCount(QueryWrapper<T, R, ?> wrapper, int limit, int offset) {
-		if(limit>0) {
-			wrapper.limit(limit);
-		}
-		if(offset>0) {
-			wrapper.offset(offset);
-		}
-		return findAndCount(wrapper);
 	}
 
 	@Override
 	public int delete(QueryWrapper<T,?, ?> wrapper) {
 		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.delete();
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public int deleteBatch(Collection<ID> keys) {
+		RelationalPath<T> t = getPath();
+		SQLDeleteClauseAlter query = getFactory().delete(t);
+		 List<? extends Path<?>> columns=getPkColumn();
+		if(columns.size()>1) {
+			throw Exceptions.unsupportedOperation("using batch delete on Complex primary keys on {}.", t);
+		}
+		if(columns.isEmpty()) {
+			throw Exceptions.unsupportedOperation("no primary key on {}.", t);
+		}
+		@SuppressWarnings("rawtypes")
+		SimpleExpression p=(SimpleExpression)columns.get(0);
+		return (int)query.where(p.in(keys)).execute();
+	}
+
+	@Override
+	public int deleteBy(Predicate... predicates) {
+		RelationalPath<T> t = getPath();
+		return (int)getFactory().delete(t).where(predicates).execute();
 	}
 
 	@Override
@@ -564,6 +745,71 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	public int count(QueryWrapper<T,?, ?> wrapper) {
 		QueryExecutor<T,?> executor=new QueryExecutor<>(wrapper, this);
 		return executor.count();
+	}
+
+	@Override
+	public <P> List<T> listBy(Path<P> path, Collection<P> ids) {
+		RelationalPath<T> entity = getPath();
+		SimpleExpression<P> expr=toSafePath(path);
+		return getFactory().selectFrom(entity).where(expr.in(ids)).fetch();
+	}
+
+	@Override
+	public List<T> list(Predicate... p) {
+		RelationalPath<T> entity = getPath();
+		return getFactory().selectFrom(entity).where(p).fetch();
+	}
+
+	@Override
+	public List<T> list(Predicate p, int limit, int offset, OrderSpecifier<? extends Comparable<?>> order) {
+		RelationalPath<T> entity = getPath();
+		SQLQueryAlter<T> query = getFactory().selectFrom(entity).where(p);
+		if(limit>0) {
+			query.limit(limit);
+		}
+		if(offset>0) {
+			query.offset(offset);
+		}
+		if(order!=null) {
+			query.orderBy(order);
+		}
+		return query.fetch();
+	}
+
+	@Override
+	public <P> T loadBy(Path<P> path, P param) {
+		RelationalPath<T> entity = getPath();
+		SimpleExpression<P> expr = toSafePath(path);
+		return getFactory().selectFrom(entity).where(expr.eq(param)).fetchFirst();
+	}
+
+	@Override
+	public <P> T getBy(Path<P> path, P param) {
+		RelationalPath<T> entity = getPath();
+		SimpleExpression<P> expr = toSafePath(path);
+		return getFactory().selectFrom(entity).where(expr.eq(param)).fetchOne();
+	}
+	
+	@Override
+	public T load(Predicate... p) {
+		RelationalPath<T> entity = getPath();
+		return getFactory().selectFrom(entity).where(p).fetchFirst();
+	}
+	
+	@Override
+	public T load(Predicate p, OrderSpecifier<? extends Comparable<?>> order) {
+		RelationalPath<T> entity = getPath();
+		SQLQueryAlter<T> sql = getFactory().selectFrom(entity).where(p);
+		if (order != null) {
+			sql.orderBy(order);
+		}
+		return sql.fetchFirst();
+	}
+
+	@Override
+	public T getBy(Predicate p) {
+		RelationalPath<T> entity = getPath();
+		return getFactory().selectFrom(entity).where(p).fetchOne();
 	}
 
 	private boolean isUnsavedValue(java.util.function.Predicate<Object> cm, Object value, Ops operator) {
@@ -596,13 +842,13 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Predicate toPredicate(Object value, Path<?> path, Ops operator, String fieldName) {
+	private Predicate toPredicate(Object value, Path<?> path, com.github.xuse.querydsl.annotation.query.Ops operator, String fieldName) {
 		try {
-		if (operator == Ops.IN) {
+		if (operator == com.github.xuse.querydsl.annotation.query.Ops.IN) {
 			if (value == null || elements(value)<1) {
 				return null;
 			}
-		} else if (operator == Ops.BETWEEN) {
+		} else if (operator == com.github.xuse.querydsl.annotation.query.Ops.BETWEEN) {
 			int paramCount=elements(value);
 			if (value == null || paramCount==0) {
 				return null;
@@ -757,7 +1003,7 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	}
 	
 	/*
-	 *将泛型对象转换为主键条件。对于复合主键的场景，支持解析java.util.List、com.mysema.commons.lang.Pair(2列)、org.apache.commons.lang3.tuple.Triple（3列）三种方式包装的复合主键
+	 *将泛型对象转换为主键条件。对于复合主键的场景，支持解析java.util.List、com.mysema.commons.lang.Pair(2列)三种方式包装的复合主键
 	 * @param key
 	 * @return
 	 */
@@ -786,15 +1032,16 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 				c[0] = ps.get(0).eq(ConstantImpl.create(pair.getFirst()));
 				c[1] = ps.get(1).eq(ConstantImpl.create(pair.getSecond()));
 				return c;
-//			} else if (key instanceof Triple && ps.size() == 3) {
-//				Triple<?, ?, ?> triple = (Triple<?, ?, ?>) key;
-//				Predicate[] c = new Predicate[3];
-//				c[0] = ps.get(0).eq(ConstantImpl.create(triple.getLeft()));
-//				c[1] = ps.get(1).eq(ConstantImpl.create(triple.getMiddle()));
-//				c[2] = ps.get(2).eq(ConstantImpl.create(triple.getRight()));
-//				return c;
 			}
 		}
 		throw Exceptions.illegalArgument("input key must be a List, because the table {} has {} primary key columns", t, ps.size());
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <P> SimpleExpression<P> toSafePath(Path<P> p){
+		if(p instanceof LambdaColumnBase) {
+			return (SimpleExpression<P>)PathCache.getPath((LambdaColumnBase<?,P>)p);
+		}
+		return (SimpleExpression<P>)p;
 	}
 }

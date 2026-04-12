@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.lambda;
 
 import java.util.Collection;
 
+import com.github.xuse.querydsl.sql.expression.FunctionOps;
 import com.querydsl.core.types.CollectionExpression;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
@@ -12,6 +13,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseForEqBuilder;
 import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.ComparableExpressionBase;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.LiteralExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.SimpleExpression;
@@ -24,7 +26,7 @@ import com.querydsl.core.types.dsl.SimpleExpression;
 @SuppressWarnings("unchecked")
 public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
 	ComparableExpression<T> mixin();
-	
+    
     /**
      * Create an OrderSpecifier for ascending order of this expression
      *
@@ -73,7 +75,16 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
     default ComparableExpressionBase<T> coalesce(T... args) {
     	return mixin().coalesce(args);
     }
-
+	
+    default ComparableExpression<T> ifnull(Expression<T> other) {
+    	ComparableExpression<T> mixin=mixin();
+    	return Expressions.comparableOperation(mixin.getType(),FunctionOps.IF_NULL, mixin, other);
+    }
+    
+    default ComparableExpression<T> ifnull(T other) {
+        return ifnull(ConstantImpl.create(other));
+    }
+    
     /**
      * Create a {@code nullif(this, other)} expression
      *

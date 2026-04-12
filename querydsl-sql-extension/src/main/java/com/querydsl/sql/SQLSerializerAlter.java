@@ -7,12 +7,14 @@ import java.util.List;
 
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.JoinExpression;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.SubQueryExpression;
+import com.querydsl.core.types.TemplateFactory;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.dml.SQLInsertBatch;
 import com.querydsl.sql.types.Null;
@@ -58,7 +60,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 		// 新增支持的常量表达形式，如果是对象数组，就转成不带小括号的多值。
 		String leftBucket = "(";
 		String rightBucket = ")";
-		if (constant instanceof Object[]) {
+		if (configurationEx.isObjectArrayAsCollection() && constant instanceof Object[]) {
 			constant = Arrays.asList((Object[]) constant);
 			leftBucket = rightBucket = "";
 		}
@@ -109,7 +111,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 				serializeConstant(constants.size() + 1, null);
 			}
 			constants.add(constant);
-			// 容错功能有点问题
+			//很多场景会造成字段Path小于参数内容，例如MySQL重复批变量，LIMIT OFFSET等
 			if (constantPaths.size() < constants.size()) {
 				constantPaths.add(null);
 			}
@@ -200,6 +202,10 @@ public class SQLSerializerAlter extends SQLSerializer {
 			List<Expression<?>> values, SubQueryExpression<?> subQuery) {
 		super.serializeForInsert(metadata, entity, columns, values, subQuery);
 	}
+	
+    public void handle(String template, Object... args) {
+        handleTemplate(TemplateFactory.DEFAULT.create(template), Arrays.asList(args));
+    }
 
 
 	public void serializeAction(RelationalPath<?> entity, String... action) {
@@ -226,16 +232,14 @@ public class SQLSerializerAlter extends SQLSerializer {
 	}
 	
 	public final SQLSerializerAlter handleValueList(List<? extends Expression<?>> expressions, 
-			List<Path<?>> columns, List<Path<?>> expectedColumns) {
+			List<Path<?>> columns) {
 		String sep=COMMA;
-		if(columns.equals(expectedColumns)) {
-			
-		}
 		if (!expressions.isEmpty()) {
+			this.constantPaths.addAll(columns);
 			handle(expressions.get(0));
 			for (int i = 1; i < expressions.size(); i++) {
 				append(sep);
-				handle(expressions.get(i));
+				expressions.get(i).accept(this, null);
 			}
 		}
 		return this;
@@ -299,9 +303,12 @@ public class SQLSerializerAlter extends SQLSerializer {
 		serializeForInsert(metadata, entity, sqlColumns, batch.getValues(), null);
 		for (int i = 1; i < batches.size(); i++) {
 			batch = batches.get(i);
+			if(batch.getColumns().size()!=sqlColumns.size()) {
+				throw Exceptions.illegalState("Batch data must have same columns.{}\n{}",sqlColumns,batch.getColumns());
+			}
 			append(COMMA);
 			append("(");
-			handleValueList(batch.getValues(), batch.getColumns(),sqlColumns);
+			handleValueList(batch.getValues(), batch.getColumns());
 			append(")");
 		}
 	}

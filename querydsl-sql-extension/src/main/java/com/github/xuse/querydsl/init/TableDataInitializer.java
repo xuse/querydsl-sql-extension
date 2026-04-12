@@ -174,7 +174,7 @@ public class TableDataInitializer {
 					//如果主键列仅有一个，且是自增列，那么就跳过
 					ColumnMapping key=table.getColumnMetadata(pk.getLocalColumns().get(0));
 					Assert.notNull(key);
-					if(key.isAutoIncreament()) {
+					if(key.isAutoIncrement()) {
 						ignoreKeys = true;
 					}
 				}	
@@ -183,7 +183,7 @@ public class TableDataInitializer {
 			ignoreKeys = true;
 		}
 		if(ignoreKeys) {
-			type=type | Mappers.PRIMARKKEY_IGNORED;
+			type=type | Mappers.PRIMARYKEY_IGNORED;
 		}
 		return Mappers.get(0,type);
 	}
@@ -430,7 +430,7 @@ public class TableDataInitializer {
 					}
 					Path<?> field = pathMap.get(header);
 					if (field == null) {
-						throw new IllegalArgumentException(String.format("The field [%s] in CSV file doesn't exists in the entity [%s] metadata.", header, table.getTableName()));
+						throw new IllegalArgumentException(String.format("The field [%s] in CSV file doesn't exist in the entity [%s] metadata.", header, table.getTableName()));
 					}
 					int pathIndex = paths.indexOf(field);
 					props.add(new Entry<>(field, pathIndex));
@@ -464,7 +464,7 @@ public class TableDataInitializer {
 	 * 主键或约束冲突，改为逐条插入
 	 */
 	protected int insertOneByOne(SQLQueryFactory session, List<Object> data, Exception ex) {
-		log.warn("Encountering a data constraints conflicts, will try insert one by one.", ex);
+		log.warn("Encountering a data constraint conflict, will try insert one by one.", ex);
 		int count = 0;
 		for (Object e : data) {
 			session.insert(table).withRouting(routing).populate(e).execute();

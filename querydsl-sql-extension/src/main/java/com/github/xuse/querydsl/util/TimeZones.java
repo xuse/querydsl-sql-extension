@@ -5,10 +5,22 @@ import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * <h2>English:</h2>
+ * Constants for all time zones, for direct reference in code.
+ * <h2>Chinese:</h2>
  * 记录了所有个时区的常量，用于在编码时直接引用。
  */
 public class TimeZones {
 	/**
+	 * <h2>English:</h2>
+	 * Time zones around the world are a complex topic. Many regions define local
+	 * offsets with half-hour or 45-minute differences. We can understand it in
+	 * three phases:
+	 * <p>
+	 * Phase 1: The global 24 time zones built around Greenwich Mean Time (GMT).
+	 * Phase 2: Coordinated Universal Time (UTC) replaces GMT.
+	 * Phase 3: Countries set local time zones based on governance and public needs.
+	 * <h2>Chinese:</h2>
 	 * 各地时区是个很复杂的问题。很多地区定义的当地时差甚至有半小时和45分等特殊时差。
 	 * 我们这么来理解这件事情
 	 * <p>

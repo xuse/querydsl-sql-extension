@@ -76,9 +76,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			actualTable = routing.getOverride(actualTable, configuration);
 		}
 		List<ColumnDef> columns = metadata.getColumns(actualTable);
-		
-		
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table,routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table,routing,metadata.getDriverInfo());
 		if (columns.isEmpty()) {
 			// 无表，变为创建
 			builder.serializeTableCreate(false);
@@ -386,8 +384,8 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	private List<ColumnChange> compareDataType(ColumnMetadataExImpl c1, ColumnMetadataExImpl c2, ColumnDef java, ColumnDef db) {
 		List<ColumnChange> result = new ArrayList<ColumnChange>();
 		// 忽略字段顺序和列名称，仅对比其他8个属性
-		if (dataTypeChanged(c1, c2) || c1.isAutoIncreament() != c2.isAutoIncreament()) {
-			Expression<?> from = DDLExpressions.dataType(DDLOps.DATA_TYPE, db.getDataType(), c2.isNullable(), c2.isUnsigned(), null);
+		if (dataTypeChanged(c1, c2) || c1.isAutoIncrement() != c2.isAutoIncrement()) {
+			Expression<?> from = DDLExpressions.dataType(DDLOps.DEF_LIST, db.getDataType(), c2.isNullable(), c2.isUnsigned(), null);
 			Expression<?> to = DDLExpressions.dataType(AlterColumnOps.SET_DATATYPE,java.getDataType(), c1.isNullable(), c1.isUnsigned(), null);
 			
 			log.info("CHANGE: {},null:{},unsign:{} -> {},null:{},unsign:{}", db.getDataType(), c2.isNullable(),c2.isUnsigned(), java.getDataType(), c1.isNullable(), c1.isUnsigned());

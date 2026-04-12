@@ -18,6 +18,7 @@ import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
 
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 
 @AllArgsConstructor
 public class HashPartitionBy implements PartitionBy{
@@ -25,9 +26,10 @@ public class HashPartitionBy implements PartitionBy{
 	
 	private final String[] columns;
 	
+	private final String exprText;
+	
 	private final HashType type;
 	
-	private final String exprText;
 	
 	/**
 	 * finally the partition expression.
@@ -39,7 +41,7 @@ public class HashPartitionBy implements PartitionBy{
 	 */
 	private int count;
 	
-	public HashPartitionBy(RelationalPathEx<?> table,String[] columns, String exprText,HashType type,int count) {
+	public HashPartitionBy(@NonNull RelationalPathEx<?> table,String[] columns, String exprText,@NonNull HashType type,int count) {
 		this.table=table;
 		this.columns=columns;
 		this.exprText=exprText;
@@ -48,7 +50,7 @@ public class HashPartitionBy implements PartitionBy{
 		this.count=count;
 	}
 	
-	public HashPartitionBy(HashType type,Expression<?> expr,int count) {
+	public HashPartitionBy(@NonNull HashType type,Expression<?> expr,int count) {
 		this.table = null;
 		this.columns = StringUtils.EMPTY_STRING_ARRAY;
 		this.exprText = "";
@@ -69,7 +71,7 @@ public class HashPartitionBy implements PartitionBy{
 		boolean hasExpr = StringUtils.isNotBlank(exprText);
 		boolean isColumns = columns != null && columns.length > 0;
 		if (isColumns == hasExpr) {
-			throw Exceptions.illegalArgument("A partition config must hava a expression or a column list. table=[{}]",
+			throw Exceptions.illegalArgument("A partition config must have an expression or a column list. table=[{}]",
 					table);
 		}
 		if(isColumns) {
@@ -95,7 +97,7 @@ public class HashPartitionBy implements PartitionBy{
 	}
 
 	public Expression<?> define(ConfigurationEx configurationEx) {
-		return DDLExpressions.simple(type.getMethod(), getExpr(), DDLExpressions.text(String.valueOf(count)));
+		return DDLExpressions.simple(getMethod(), getExpr(), DDLExpressions.text(String.valueOf(count)));
 	}
 
 	public HashType type() {
@@ -104,7 +106,7 @@ public class HashPartitionBy implements PartitionBy{
 
 	@Override
 	public PartitionMethod getMethod() {
-		return type.getMethod();
+		return PartitionMethod.valueOf(this.type.name());
 	}
 
 	@Override

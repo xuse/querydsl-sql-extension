@@ -54,7 +54,7 @@ public class DateUtils {
 
 	public static final int SECONDS_IN_HOUR = 3600;
 
-	public static final int SECONDS_IN_MINITE = 60;
+	public static final int SECONDS_IN_MINUTE = 60;
 
 	private static final TimeZone TIME_ZONE_UTC = TimeZone.getTimeZone("UTC");
 
@@ -249,7 +249,7 @@ public class DateUtils {
 	 * @param d1   d1
 	 * @param d2   d2
 	 * @param zone zone 时区，不同地区对“当天”的范围是不一样的
-	 * @return true if is save date in the time zone.
+	 * @return true if is same day in the time zone.
 	 */
 	public static boolean isSameDay(Date d1, Date d2, TimeZone zone) {
 		if (d1 == null && d2 == null)
@@ -800,13 +800,26 @@ public class DateUtils {
 	 * @param date  date 原日期时间
 	 * @param mills mills 毫秒数（可为负数）
 	 * @return 调整后的日期时间（新的日期对象）
+	 * @deprecated use {@link #adjustMillis(Date, long)}
 	 */
-	public static Date adjust(Date date, long mills) {
+	public static Date adjust(Date date, long millis) {
+		return adjustMillis(date, millis);
+	}
+	
+	/**
+	 * 在原日期上调整指定的毫秒并返回新对象。这个方法不会修改传入的Date对象，而是一个新的Date对象。
+	 * 
+	 * @param date  date 原日期时间
+	 * @param mills mills 毫秒数（可为负数）
+	 * @return 调整后的日期时间（新的日期对象）
+	 */
+	public static Date adjustMillis(Date date, long millis) {
 		if(date == null) {
 			return null;
 		}
-		return new Date(date.getTime() + mills);
+		return new Date(date.getTime() + millis);
 	}
+	
 
 	/**
 	 * 获取一个日期对象(java.util.Date)
@@ -1011,7 +1024,7 @@ public class DateUtils {
 	public static String formatTimePeriod(long second, int maxUnit, Locale locale) {
 		if (locale == null)
 			locale = Locale.getDefault();
-		LanguageResoruce lang=TIME_LANGUAGES.get(locale);
+		LanguageResource lang=TIME_LANGUAGES.get(locale);
 		if(lang==null) {
 			lang=TIME_LANGUAGES.get(Locale.US);
 		}
@@ -1045,10 +1058,10 @@ public class DateUtils {
 			}
 		}
 		if (maxUnit <= Calendar.MINUTE) {
-			int min = (int) (second / SECONDS_IN_MINITE);
+			int min = (int) (second / SECONDS_IN_MINUTE);
 			if (min > 0) {
 				sb.append(lang.get(Calendar.MINUTE,min));
-				second = second - SECONDS_IN_MINITE * min;
+				second = second - SECONDS_IN_MINUTE * min;
 			}
 		}
 		if (second > 0) {
@@ -1057,13 +1070,13 @@ public class DateUtils {
 		return sb.toString();
 	}
 
-	public static final Map<Locale, LanguageResoruce> TIME_LANGUAGES = new HashMap<>();
+	public static final Map<Locale, LanguageResource> TIME_LANGUAGES = new HashMap<>();
 	static {
-		LanguageResoruce CN = new LanguageResoruce(
+		LanguageResource CN = new LanguageResource(
 				new String[] { "公元", "年", "月", "周", "周", "天", "天", "天", "天", "上下午", "小时", "小时", "分钟", "秒" }, null);
-		LanguageResoruce TW = new LanguageResoruce(
+		LanguageResource TW = new LanguageResource(
 				new String[] { "公元", "年", "月", "周", "周", "天", "天", "天", "天", "上下午", "小時", "小時", "分鐘", "秒" }, null);
-		LanguageResoruce EN = new LanguageResoruce(
+		LanguageResource EN = new LanguageResource(
 				new String[] { "AD/BC", " years ", " months ", " weeks", " weeks", " days ", " days ", " days ",
 						" days ", " AM/PM ", " hours ", " hours ", " minutes ", " seconds" },
 				new String[] { "AD/BC", " year ", " month ", " week", " week", " day ", " day ", " day ", " day ",
@@ -1075,11 +1088,11 @@ public class DateUtils {
 		TIME_LANGUAGES.put(Locale.US, EN);
 	}
 
-	static class LanguageResoruce {
+	static class LanguageResource {
 		private final String[] resource;
 		private final String[] singular;
 
-		LanguageResoruce(String[] a, String[] b) {
+		LanguageResource(String[] a, String[] b) {
 			this.resource = a;
 			this.singular = b == null ? a : b;
 		}
@@ -1184,6 +1197,13 @@ public class DateUtils {
         return truncateToDay(new Date(System.currentTimeMillis() + (long) MILLISECONDS_IN_DAY * i));
     }
 
+    /**
+     * @return 返回今天 java.sql.Date
+     */
+    public static java.sql.Date sqlToday() {
+    	return new java.sql.Date(truncateToDay(new Date()).getTime());
+    }
+    
 	/**
 	 * @return 返回现在
 	 */

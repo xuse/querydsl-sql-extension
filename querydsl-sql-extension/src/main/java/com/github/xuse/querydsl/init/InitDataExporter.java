@@ -99,7 +99,7 @@ public class InitDataExporter {
 					try {
 						doExport(cl, classLoader);
 					} catch (Exception e) {
-						log.error("registe for {} error.", resource, e);
+						log.error("register for {} error.", resource, e);
 					}
 				}
 			}

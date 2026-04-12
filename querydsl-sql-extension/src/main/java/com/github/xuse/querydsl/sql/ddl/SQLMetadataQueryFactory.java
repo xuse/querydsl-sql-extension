@@ -251,9 +251,10 @@ public interface SQLMetadataQueryFactory {
 	List<String> getNames(String catalog, String schema, ObjectType... types);
 
 	/**
+	 * <h2>English:</h2>
+	 * Fetch the information of primary key on table.
+	 * <h2>Chinese:</h2>
 	 * 得到表的主键信息.
-	 * <p>
-	 * fetch the information of primary key on table.
 	 * @param table the table
 	 * @return information of primary keys.
 	 */
@@ -324,18 +325,28 @@ public interface SQLMetadataQueryFactory {
 	List<TableInfo> getTables(String catalog, String schema);
 	
 	/**
-     * Fetch information of all tables in schema.
+     * Fetch information of tables in schema.
      * <p>
      * 得到表的信息
      * @param namespace catalog or schema. null as the current namespace. if you want to fetch tables from all catalogs/schemas, input '%'.  
-     * @param tableNamePattern table name. null as '%'
+     * @param namePattern table name. null as '%'
      * @return List of Table information.
      */
-	List<TableInfo> listTables(String namespace, String tableNamePattern);
+	List<TableInfo> listTables(String namespace, String namePattern);
+	
+	/**
+     * Fetch information of views in schema.
+     * <p>
+     * 得到表的信息
+     * @param namespace catalog or schema. null as the current namespace. if you want to fetch tables from all catalogs/schemas, input '%'.  
+     * @param namePattern table name. null as '%'
+     * @return List of Table information.
+     */	
+	List<TableInfo> listViews(String namespace, String namePattern);
 	
 	/**
 	 *  Fetch information of the table
-	 * @param schemaAndTable
+	 * @param schemaAndTable namespace and table
 	 * @return  Table information.
 	 */
 	TableInfo getTable(SchemaAndTable schemaAndTable);

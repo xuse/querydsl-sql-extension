@@ -176,7 +176,7 @@ public abstract class ColumnBuilderBase<T, Q extends ColumnBuilderBase<T, Q>> {
 	/**
 	 * 为当前列制定一个自动生成策略
 	 * @param type type
-	 * @param overwrite overwite
+	 * @param overwrite overwrite
 	 * @param writeback writeback
 	 * @param params params
 	 * @return the current object

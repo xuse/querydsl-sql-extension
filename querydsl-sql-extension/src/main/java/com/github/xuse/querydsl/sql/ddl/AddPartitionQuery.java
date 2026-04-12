@@ -3,7 +3,9 @@ package com.github.xuse.querydsl.sql.ddl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +35,7 @@ import com.querydsl.sql.SchemaAndTable;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 
 public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 
@@ -89,7 +92,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 			AutoTimePartitions[] auto = ((RangePartitionBy) partitionBy).getAutoPartition();
 			if (auto != null && auto.length > 0) {
 				partitions.clear();
-				partitions.addAll(RangePartitionBy.generateAutoPartitions(auto[0]));
+				partitions.addAll(RangePartitionBy.generateAutoPartitions(auto[0],null));
 			}
 		}
 		return this;
@@ -130,8 +133,25 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 			return Collections.emptyList();
 		}
 		List<String> sqls = new ArrayList<>();
+		//收集Reorganize信息，尝试将针对同一个旧分区的重组织合并到SQL语句中
+		Map<String,Reorganize> reorganizes = new HashMap<>();
 		for (Partition p : partitions) {
-			sqls.add(generateSQL(p));
+			String sql = generateSQL(p,reorganizes);
+			if(sql!=null) {
+				sqls.add(sql);
+			}
+		}
+		//处理重新组织分区请求
+		if(!reorganizes.isEmpty()) {
+			for(Reorganize r:reorganizes.values()) {
+				SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+				serializer.setRouting(routing);
+				serializer.serializeAction(null, null, Collections.singletonList(r.getClause(partitionBy, configuration,table)));
+				String sql = serializer.toString();
+				if(sql!=null){
+					sqls.add(sql);
+				}
+			}
 		}
 		return sqls;
 	}
@@ -144,7 +164,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	 * @param p p
 	 * @return String
 	 */
-	protected String generateSQL(Partition p) {
+	protected String generateSQL(Partition p,Map<String,Reorganize> reorganizesMap) {
 		List<PartitionInfo> info = getCurrentPartitions();
 		//Prepare Reorganization
 		Reorganize reorgnize = null;
@@ -162,18 +182,22 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 				return null;
 			}
 		}
-		
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
-		serializer.setRouting(routing);
-		if (reorgnize == null) {
+		if(reorgnize!=null) {
+			final Reorganize finalReorgnize = reorgnize;
+			String key=reorgnize.getSourceKey();
+			Reorganize reg = reorganizesMap.computeIfAbsent(key, k-> finalReorgnize);
+			if(reg!=reorgnize) {
+				reg.merge(reorgnize);
+			}
+			return null;
+		}else {
+			SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+			serializer.setRouting(routing);
 			// Do not support , ALGORITHM=INPLACE, LOCK=NONE
 			Expression<?> exp=DDLExpressions.simple(AlterTablePartitionOps.ADD_PARTITION, partitionBy.defineOnePartition(p, configuration),table);
 			serializer.serializeAction(null,null,Collections.singletonList(exp));
-		} else {
-			// Do not support ", ALGORITHM=INPLACE, LOCK=NONE"
-			serializer.serializeAction(null, null, Collections.singletonList(reorgnize.getClause(partitionBy, configuration,table)));
+			return serializer.toString();
 		}
-		return serializer.toString();
 	}
 
 	private Reorganize calcList(Partition p, List<PartitionInfo> infors) {
@@ -268,7 +292,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 		return v;
 	}
 
-	private static final Reorganize DUPLICATE = new Reorganize(null, null);
+	private static final Reorganize DUPLICATE = new Reorganize(Collections.emptyList(), Collections.emptyList());
 
 	/**
 	 *  分区重组策略
@@ -276,18 +300,39 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	@AllArgsConstructor
 	@Data
 	static final class Reorganize {
-
+		@NonNull
 		List<String> sourcePartition;
-
+		@NonNull
 		List<Partition> targetPartitions;
+		
+		public String getSourceKey() {
+			 return StringUtils.join(sourcePartition, ',');
+		}
+
+		/*
+		 * 将针对同一个分区的再组织请求，合并到一次操作中去. 
+		 * Merge的顺序必须严格按照分区从小到大的顺序。
+		 */
+		public void merge(Reorganize reorgnize) {
+			Set<String> names= this.targetPartitions.stream().map(Partition::name).collect(Collectors.toSet());
+			List<Partition> result=new ArrayList<>(targetPartitions);
+			for(Partition p:reorgnize.getTargetPartitions()) {
+				if(!names.contains(p.name())) {
+					result.add(p);
+				}
+			}
+			if(result.size()>this.targetPartitions.size()) {
+				result.sort((a,b)->AddPartitionQuery.compare(a.value(), b.value()));
+				this.targetPartitions = result;
+			}
+		}
 
 		public Expression<?> getClause(PartitionAssigned partitionBy, ConfigurationEx configuration,RelationalPath<?> table) {
 			List<Expression<?>> defines = new ArrayList<>(targetPartitions.size());
 			for (Partition p : targetPartitions) {
 				defines.add(partitionBy.defineOnePartition(p, configuration));
 			}
-			String source = StringUtils.join(sourcePartition, ',');
-			return DDLExpressions.simple(AlterTablePartitionOps.REORGANIZE_PARTITION, DDLExpressions.text(source), DDLExpressions.wrapList(defines),table);
+			return DDLExpressions.simple(AlterTablePartitionOps.REORGANIZE_PARTITION, DDLExpressions.text(getSourceKey()), DDLExpressions.wrapList(defines),table);
 		}
 	}
 

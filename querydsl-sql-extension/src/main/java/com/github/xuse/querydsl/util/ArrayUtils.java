@@ -75,6 +75,9 @@ public class ArrayUtils {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T[] toArray(Enumeration<T> e, Class<T> type) {
+		if(e==null){
+			return (T[])Array.newInstance(type, 0);
+		}
 		List<T> result = new ArrayList<T>();
 		for (; e.hasMoreElements(); ) {
 			result.add(e.nextElement());
@@ -482,14 +485,14 @@ public class ArrayUtils {
 			return array;
 		T[] newArray;
 		if (array == null) {
-			Assert.notNull(componentType, "The componentType shoule be assigned when the array is null.");
+			Assert.notNull(componentType, "The componentType should be assigned when the array is null.");
 			newArray = (T[]) Array.newInstance(componentType, 1);
 			newArray[0] = data;
 		} else {
 			Class<?> containerType = array.getClass().getComponentType();
 			if (!containerType.isAssignableFrom(data.getClass())) {
 				// error.
-				throw new ArrayStoreException("The new element which typed " + data.getClass().getName() + " can not be put into a array whoes type is " + containerType.getName());
+				throw new ArrayStoreException("The new element which typed " + data.getClass().getName() + " can not be put into a array whose type is " + containerType.getName());
 			}
 			newArray = (T[]) Array.newInstance(containerType, array.length + 1);
 			System.arraycopy(array, 0, newArray, 0, array.length);
@@ -863,7 +866,7 @@ public class ArrayUtils {
 		Class<?> clz1 = a1.getClass();
 		Class<?> clz2 = a2.getClass();
 		if (!clz1.isArray() || !clz2.isArray()) {
-			throw new IllegalArgumentException("must comapre between two Array.");
+			throw new IllegalArgumentException("must compare between two Array.");
 		}
 		clz1 = clz1.getComponentType();
 		clz2 = clz2.getComponentType();
@@ -1217,7 +1220,6 @@ public class ArrayUtils {
 	public static Stream<Double> stream(double[] array) {
 		return StreamSupport.stream(Spliterators.spliterator(array, Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
 	}
-	
 
 	public static int countNonNull(Object... objs) {
 		int result = 0;
@@ -1225,5 +1227,21 @@ public class ArrayUtils {
 			if(o!=null)result++;
 		}
 		return result;
+	}
+	
+	public String[] toStringArray(String s) {
+		if(StringUtils.isEmpty(s)) {
+			return EMPTY_STRING_ARRAY;
+		}else {
+			return new String[] {s};
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> T[] toArray(Collection<T> coll,Class<T> arrayClz) {
+		if(coll==null) {
+			return (T[])Array.newInstance(arrayClz, 0);
+		}
+		return coll.toArray((T[])Array.newInstance(arrayClz, coll.size()));
 	}
 }

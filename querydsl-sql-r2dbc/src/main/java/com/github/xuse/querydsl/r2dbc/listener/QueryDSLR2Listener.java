@@ -88,7 +88,7 @@ public final class QueryDSLR2Listener implements R2BaseListener {
 	private final Formatter errorFormatter;
 
 	private final Formatter infoFormatter;
-
+	
 	/**
 	 *  初级格式，仅输出SQL
 	 *  @author Joey
@@ -321,9 +321,10 @@ public final class QueryDSLR2Listener implements R2BaseListener {
 
 	@Override
 	public final void executed(R2ListenerContext context) {
-		boolean slow = Boolean.TRUE.equals(context.getData(ContextKeyConstants.SLOW_SQL));
-		int maxExceed = Primitives.unbox((Integer) context.getData(ContextKeyConstants.EXCEED), 0);
-		if (slow || log.isInfoEnabled()) {
+		boolean sqlLog= log.isInfoEnabled();
+		int important = Primitives.unbox((Integer) context.getData(ContextKeyConstants.IMPORTANT), 0)
+				& (sqlLog ? 1 : 3);
+		if (sqlLog || important > 0) {
 			String action = (String) context.getData(ContextKeyConstants.ACTION);
 			if (action == null || action.length() == 0) {
 				// 兼容官方版本
@@ -342,11 +343,13 @@ public final class QueryDSLR2Listener implements R2BaseListener {
 				time = -1L;
 			}
 			sb.append("Records ").append(action).append(':').append(count).append(", elapsed ").append(time).append("ms.");
+			int maxExceed = Primitives.unbox((Integer) context.getData(ContextKeyConstants.EXCEED), 0);
 			if (maxExceed > 0) {
 				sb.append("NOTE: result set was truncated since it exceeds the MaxRows = ").append(maxExceed);
 			}
-			if (slow) {
-				log.error("SlowSQL:[{}].\n{}", errorFormatter.format(context.getAllSQLBindings()), sb);
+			if (important>0) {
+				log.error("{}[{}].\n{}", ContextKeyConstants.IMPORTANT_HINT[important],
+						errorFormatter.format(context.getAllSQLBindings()), sb);
 			} else {
 				log.info(sb.toString());
 			}

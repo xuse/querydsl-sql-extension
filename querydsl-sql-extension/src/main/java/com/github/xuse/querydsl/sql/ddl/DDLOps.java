@@ -13,22 +13,9 @@ import com.querydsl.sql.SQLTemplates;
  */
 public enum DDLOps implements Operator {
 	/**
-	 * {0}=Column_NAME(Path) {1}=DataType {2}=ColumnLevel Constraint
-	 * 
-	 * {0} {1} {2}
-	 */
-	COLUMN_SPEC,
-
-	/**
 	 * 专指COLUMN定义中的NULL。 如果NOT NULL, 不会由 OPS.NOT + OPS.NULL构成
 	 */
 	COLUMN_ALLOW_NULL,
-
-	/**
-	 * The definition of a data type. {0}=data type [UNSIGNED] {1}=NULL / NOT NULL
-	 * {2}=DEFAULT exps
-	 */
-	DATA_TYPE,
 
 	/**
 	 * 数据类型中的无符号数值 {0} UNSIGNED
@@ -41,15 +28,20 @@ public enum DDLOps implements Operator {
 	DEFAULT,
 
 	/**
-	 * CHARSET={0} {1:charsetname}
+	 * {0} CHARSET={1:charsetname}
 	 * 
 	 */
 	CHARSET,
 
 	/**
-	 * COLLATE={0} {1:collation_name}
+	 * {0} COLLATE={1:collation_name}
 	 */
 	COLLATE,
+	
+	/**
+	 * {0} AUTO_INCREMENT={1} 
+	 */
+	AUTOINCREMENT_BEGIN,
 
 	/**
 	 * {0} COMMENT {1}
@@ -224,7 +216,7 @@ public enum DDLOps implements Operator {
 		 */
 		REORGANIZE_PARTITION,
 		
-		OPTMIZE_PARTITION,
+		OPTIMIZE_PARTITION,
 
 		//以下是维护分区（包括迁移）等操作
 		/**

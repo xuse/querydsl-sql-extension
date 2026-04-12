@@ -14,7 +14,7 @@ import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
@@ -61,7 +61,7 @@ public class H2TemplatesEx extends DefaultSQLTemplatesEx {
 
 		add(templates, DDLOps.COMMENT_ON_COLUMN, "COMMENT ON COLUMN {0} IS {1}");
 		add(templates, DDLOps.COMMENT_ON_TABLE, "COMMENT ON TABLE {0} IS {1}");
-		add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
+		add(templates, ConstraintTypeDef.UNIQUE, "CONSTRAINT {1} UNIQUE {2}");
 		add(templates, AlterTableOps.RENAME_COLUMN, "ALTER COLUMN {0} RENAME TO {1}");
 		
 		add(templates, SpecialFeature.INDEPENDENT_COMMENT_STATEMENT, "");
@@ -139,14 +139,14 @@ public class H2TemplatesEx extends DefaultSQLTemplatesEx {
 				boolean isUnique = !kc.isNonUnique();
 				switch (kc.getType()) {
 				case DatabaseMetaData.tableIndexStatistic:
-					index.setConstraintType(ConstraintType.CHECK);
+					index.setConstraintType(ConstraintTypeDef.CHECK);
 					break;
 				case DatabaseMetaData.tableIndexClustered:
 				case DatabaseMetaData.tableIndexOther:
-					index.setConstraintType(isUnique ? ConstraintType.UNIQUE : ConstraintType.KEY);
+					index.setConstraintType(isUnique ? ConstraintTypeDef.UNIQUE : ConstraintTypeDef.KEY);
 					break;
 				case DatabaseMetaData.tableIndexHashed:
-					index.setConstraintType(ConstraintType.HASH);
+					index.setConstraintType(ConstraintTypeDef.HASH);
 					break;
 				}
 				result.add(index);

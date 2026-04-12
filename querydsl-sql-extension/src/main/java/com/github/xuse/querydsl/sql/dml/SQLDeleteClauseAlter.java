@@ -167,7 +167,7 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
 		if (this.configEx.getSlowSqlWarnMillis() <= cost) {
-			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 		}
 		listeners.executed(context);
 	}

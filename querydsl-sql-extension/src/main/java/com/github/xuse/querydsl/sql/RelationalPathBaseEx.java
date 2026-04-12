@@ -20,6 +20,7 @@ import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.annotation.partition.HashPartition;
 import com.github.xuse.querydsl.annotation.partition.ListPartition;
 import com.github.xuse.querydsl.annotation.partition.RangePartition;
+import com.github.xuse.querydsl.lambda.LambdaColumnBase;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.column.ColumnBuilder;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
@@ -27,6 +28,7 @@ import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.expression.QBeanEx;
@@ -39,7 +41,9 @@ import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.Lambdas;
 import com.github.xuse.querydsl.util.lang.Primitives;
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpression;
 import com.querydsl.core.types.Operator;
@@ -99,6 +103,8 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	private Collate collate;
 
 	private PartitionBy partitionBy;
+	
+	private int autoIncrementStartAt;
 
 	private InitializeData initializeData;
 
@@ -161,7 +167,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	protected Constraint createCheck(String name, Expression<Boolean> checkExpression) {
 		Constraint constraint = new Constraint();
 		constraint.setName(name);
-		constraint.setConstraintType(ConstraintType.CHECK);
+		constraint.setConstraintType(ConstraintTypeDef.CHECK);
 		constraint.setCheckClause(checkExpression);
 		this.constraints.add(constraint);
 		return constraint;
@@ -197,12 +203,13 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 	 * @return Constraint
 	 */
 	protected Constraint createConstraint(String name, ConstraintType type, boolean ignore, Path<?>... columns) {
+		Assert.notNull(type);
 		if (type == ConstraintType.PRIMARY_KEY) {
 			throw Exceptions.unsupportedOperation("please use #createPrimaryKey() method for columns", Arrays.toString(columns));
 		}
 		Constraint constraint = new Constraint();
 		constraint.setName(name);
-		constraint.setConstraintType(type);
+		constraint.setConstraintType(ConstraintTypeDef.of(type));
 		constraint.setPaths(Arrays.asList(columns));
 		constraint.setAllowIgnore(ignore);
 		this.constraints.add(constraint);
@@ -483,6 +490,12 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 
 	@Override
 	public ColumnMetadata getMetadata(Path<?> column) {
+		if (column instanceof LambdaColumnBase) {
+			Pair<Class<?>, String> content = Lambdas.analysis(column);
+			if (content.getFirst() == this.getType()) {
+				column = getColumn(content.getSecond());
+			}
+		}
 		ColumnMapping metadata = columnMetadata.get(column);
 		return metadata != null ? metadata.getColumn():null;
 	}
@@ -565,6 +578,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 			spec = beanType.getAnnotation(TableSpec.class);
 		}
 		if (spec != null) {
+			this.autoIncrementStartAt = spec.autoIncrementStartAt();
 			if (StringUtils.isNotEmpty(spec.collate())) {
 				this.setCollate(Collate.findValueOf(spec.collate()));
 			}
@@ -673,11 +687,16 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		this.initializeData = initializeData;
 	}
 
+	public int getAutoIncrementStartAt() {
+		return autoIncrementStartAt;
+	}
+
 	@Override
 	public RelationalPathExImpl<T> clone() {
 		RelationalPathBaseEx<T> t = new RelationalPathExImpl<T>(this.getType(), this.getMetadata(), schema, table);
 		t.collate = this.collate;
 		t.comment = this.comment;
+		t.autoIncrementStartAt = this.autoIncrementStartAt;
 		t.partitionBy = this.partitionBy;
 		t.primaryKey = this.primaryKey;
 		t.columnMetadata.putAll(this.columnMetadata);
@@ -695,6 +714,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		RelationalPathBaseEx<T> t = new RelationalPathExImpl<T>(this.getType(),PathMetadataFactory.forVariable(variable) , schema, table);
 		t.collate = this.collate;
 		t.comment = this.comment;
+		t.autoIncrementStartAt = this.autoIncrementStartAt;
 		t.partitionBy = this.partitionBy;
 		
 		Map<Path<?>,Path<?>> pathMapping=new HashMap<>();

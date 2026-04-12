@@ -16,7 +16,7 @@ import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
@@ -137,15 +137,17 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		super(escape, quote);
 		super.setPrintSchema(false);
 		this.batchToBulk = batchToBulk;
+		setAutoIncrement("AUTO_INCREMENT");
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
 		initJsonFunctions();
 		initPartitionOps();
 		
-		add(ConstraintType.FULLTEXT, "FULLTEXT KEY {1} {2}");
+		add(ConstraintTypeDef.FULLTEXT, "FULLTEXT KEY {1} {2}");
 		
 		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
+		add(DDLOps.AUTOINCREMENT_BEGIN, "{0} AUTO_INCREMENT={1}");
 		add(DDLOps.COMMENT_ON_COLUMN, "{0} COMMENT {1}");
 		add(DDLOps.COMMENT_ON_TABLE, "{0} COMMENT {1}");
 		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1},ALGORITHM=INPLACE, LOCK=NONE");
@@ -164,7 +166,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		add(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY,"");
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
 		if(!supportsCheckConstraint) {
-			unsupports.add(ConstraintType.CHECK);
+			unsupports.add(ConstraintTypeDef.CHECK);
 		}
 		unsupports.add(CreateStatement.CREATE_BITMAP);
 		
@@ -187,7 +189,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		typeNames.put(Types.VARCHAR, 16383, "varchar($l)");
 		typeNames.put(Types.VARBINARY, 16383, "varbinary($l)");
 
-		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.CLOB).noSize();
+		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.LONGVARCHAR).noSize();
 		typeNames.put(Types.VARBINARY, 65535, "blob").type(Types.BLOB).noSize();
 
 		typeNames.put(Types.LONGVARCHAR, 65535, "text").type(Types.CLOB).noSize();

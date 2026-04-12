@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.init.csv;
 
 public final class WriteSettings {
 	/**
-	 * Quot the field value.
+	 * Quote the field value.
 	 */
 	public char textQualifier;
 	/**
@@ -14,7 +14,7 @@ public final class WriteSettings {
 	 */
 	public char comment;
 	/**
-	 * If the qualifier character contains in field value. how to escape.  
+	 * If the qualifier character is contained in the field value, how to escape.  
 	 */
 	public EscapeMode escapeMode;
 

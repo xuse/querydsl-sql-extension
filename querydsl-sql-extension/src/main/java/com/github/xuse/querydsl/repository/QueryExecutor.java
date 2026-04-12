@@ -23,6 +23,10 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.sql.RelationalPath;
 
 /**
+ * <h2>English:</h2>
+ * Used to populate WHERE conditions and provide several database operation actions.
+ * QueryWrapper is a query operation object without a database session; this is the session-aware operation object.
+ * <h2>Chinese:</h2>
  * 用于填入Where条件，并提供若干数据库操作动作。
  * QueryWrapper是不带数据库Session的查询操作对象，这个是带Session的操作对象。
  * @param <T> the entity type.
@@ -84,9 +88,9 @@ public class QueryExecutor<T,R> extends QueryWrapper<T,R, QueryExecutor<T,R>> {
 		return createQuery(true).fetchResults();
 	}
 	
-	public Pair<Integer, List<R>> findAndCount(){
+	public QueryResults<R> findAndCount(){
 		QueryResults<R> result=createQuery(true).fetchResults();
-		return new Pair<>((int)result.getTotal(),result.getResults());
+		return result;
 	}
 
 	public List<R> fetch() {

@@ -67,6 +67,10 @@ public final class DriverInfo implements DatabaseInfo{
 		this.url=url;
 		this.dbType=DbType.find(DbType.extractDbNameFromURL(url));
 	}
+	
+	public String dbTypeName() {
+		return dbType.name;
+	}
 
 	@Override
 	public String toString() {

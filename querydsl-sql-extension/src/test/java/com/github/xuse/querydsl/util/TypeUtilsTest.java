@@ -72,7 +72,7 @@ public class TypeUtilsTest {
 	@Test
 	public void testRecordAnaly() {
 		Assumptions.assumeTrue(JDKEnvironment.JVM_VERSION>=16,"Only JDK > 16");
-		URL clzUrl=this.getClass().getResource("/RecordFoo.class");
+		URL clzUrl=this.getClass().getResource("/RecordFoo.classdata");
 		assertNotNull(clzUrl);
 		
 		ClassLoaderAccessor cl=new ClassLoaderAccessor(this.getClass().getClassLoader());

@@ -162,9 +162,8 @@ public class ScanContext {
 	}
 
 	private void scanned(RelationalPathEx<?> table) {
-		if (scannedEntities.add(table.getType().getName())) {
-			parent.registerRelation(table);
-			Set<Class<?>> whiteList = parent.getScanOptions().getInitEntityWhiteList();
+		if (scannedEntities.add(table.getType().getName()) && parent.registerRelation(table)) {
+			Set<Class<?>> whiteList = parent.getScanOptions().getInitTaskWhiteList();
 			if (whiteList.isEmpty() || whiteList.contains(table.getType())) {
 				TableInitTask task = new TableInitTask(table);
 				parent.initTasks.offer(task);
@@ -173,7 +172,7 @@ public class ScanContext {
 				try {
 					listener.accept(table);
 				} catch (Exception e) {
-					log.error("Notify entity {} to listener {} raise a error.", table.getTableName(), listener, e);
+					log.error("Notify entity {} to listener {} raised an error.", table.getTableName(), listener, e);
 				}
 			}
 			count++;

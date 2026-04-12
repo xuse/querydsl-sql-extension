@@ -31,7 +31,7 @@ public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
 	
 	public final EnumPath<Gender> gender = createEnum("gender", Gender.class);
 	
-	public final SimplePath<Aaa> ext = createSimple("ext", Aaa.class);
+	public final SimplePath<TableDataTypes> ext = createSimple("ext", TableDataTypes.class);
 	
 	public final SimplePath<Map<String,String>> map = createSimple("map", Map.class);
 	

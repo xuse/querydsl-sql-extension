@@ -20,11 +20,18 @@ public interface ContextKeyConstants {
 	/**
 	 * 是慢SQL
 	 */
-	String SLOW_SQL="SLOW";
+	String IMPORTANT = "SLOW";
 	
 	/**
 	 * 达到请求的maxRows上限
 	 */
 	String EXCEED="EXCEED";
+	
+	
+	String[] IMPORTANT_HINT = { "", "SlowSQL:", "DDL:", "SlowDDL:" };
+	
+	int SLOW = 1;
+	
+	int DDL = 2;
 	
 }

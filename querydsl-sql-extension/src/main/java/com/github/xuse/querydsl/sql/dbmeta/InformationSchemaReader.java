@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.PartitionMethod;
 import com.github.xuse.querydsl.util.StringUtils;
@@ -15,7 +15,7 @@ import com.github.xuse.querydsl.util.collection.CollectionUtils;
 import com.querydsl.sql.SQLBindings;
 
 /**
- * MySQL和PG等逐步遵循infomation_schema，提供表结构数据查询。此类为该种实现
+ * MySQL和PG等逐步遵循information_schema，提供表结构数据查询。此类为该种实现
  *
  * 常用SQL语句包括 -- 寻找合适的系统视图 select * from information_schema."tables" where
  * table_schema ='information_schema' and table_name like '%column%'
@@ -84,7 +84,7 @@ public class InformationSchemaReader implements SchemaReader {
 			c.setName(rs.getString("CONSTRAINT_NAME"));
 			c.setTableName(rs.getString("TABLE_NAME"));
 			c.setTableSchema(rs.getString("TABLE_SCHEMA"));
-			ConstraintType type = ConstraintType.valueOf(rs.getString("CONSTRAINT_TYPE").replace(' ', '_'));
+			ConstraintTypeDef type = ConstraintTypeDef.valueOf(rs.getString("CONSTRAINT_TYPE").replace(' ', '_'));
 			c.setConstraintType(type);
 			if(hasCheck) {
 				String check=rs.getString("check_clause");

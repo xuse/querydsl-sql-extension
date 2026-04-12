@@ -79,8 +79,8 @@ public class QCalssGenerator {
 
     public CompilationUnitBuilder generateContent(ClassMetadata entityClz, String pkgName, String qClassName) {
         CompilationUnitBuilder cu=CompilationUnitBuilder.create();
-        cu.addImport(entityClz.getName());
         cu.setPackageDeclaration(pkgName);
+        cu.addImport(entityClz.getName());
         ClassOrInterfaceDeclaration clazz = cu.addClass(qClassName);
         clazz.setExtendedTypes(NodeList.nodeList(cu.createType(RelationalPathBaseEx.class, new ClassOrInterfaceType(null,entityClz.getSimpleName()))));
         

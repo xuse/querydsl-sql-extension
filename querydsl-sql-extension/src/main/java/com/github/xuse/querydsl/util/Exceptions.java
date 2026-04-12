@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
+import lombok.Getter;
+
 /**
  * 异常处理工具
  *
@@ -168,6 +170,26 @@ public class Exceptions {
 			return this;
 		}
 	}
+	
+	@Getter
+	public static final class ErrorMessageException extends Exception{
+		private int code;
+		
+		ErrorMessageException(String message) {
+			super(message);
+		}
+		
+		ErrorMessageException(int code, String message) {
+			super(message);
+			this.code = code;
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this;
+		}
+	}
+	
 
 	/**
 	 * Wrap the specified exception as an IllegalArgumentException.
@@ -270,6 +292,30 @@ public class Exceptions {
 		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
 		return new NoSuchElementException(f.getMessage());
 	}
+	
+	/**
+	 * 使用slf4j的机制来生成异常信息(受检异常)
+	 * @param message message
+	 * @param objects  objects
+	 * @return ErrorMessageException
+	 */
+	public static ErrorMessageException errorMessage(String message, Object... objects) {
+		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
+		return new ErrorMessageException(f.getMessage());
+	}
+	
+	/**
+	 * 使用slf4j的机制来生成异常信息(受检异常)
+	 * @param code 错误码
+	 * @param message 信息
+	 * @param objects 参数
+	 * @return ErrorMessageException
+	 */
+	public static ErrorMessageException errorMessage(int code, String message, Object... objects) {
+		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
+		return new ErrorMessageException(code, f.getMessage());
+	}
+	
 
 	/**
 	 * 使用slf4j的机制来生成异常信息

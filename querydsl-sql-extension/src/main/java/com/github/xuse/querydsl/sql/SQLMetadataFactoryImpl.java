@@ -52,8 +52,7 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 
 	SQLMetadataFactoryImpl(SQLQueryFactory factory) {
 		this.connection = factory;
-		this.configuration = factory.getConfiguration();
-		this.metadataQuery = new MetadataQuerySupport() {
+		this.metadataQuery = new MetadataQuerySupport(this.configuration = factory.getConfiguration()) {
 			@Override
 			protected ConfigurationEx getConfiguration() {
 				return configuration;
@@ -142,6 +141,14 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
 	
     @Override
     public List<TableInfo> listTables(String namespace, String tableName) {
+        if(StringUtils.isEmpty(namespace)) {
+            namespace = metadataQuery.getDriverInfo().getNamespace(); 
+        }
+        return metadataQuery.listTables(namespace, tableName);
+    }
+    
+    @Override
+    public List<TableInfo> listViews(String namespace, String tableName) {
         if(StringUtils.isEmpty(namespace)) {
             namespace = metadataQuery.getDriverInfo().getNamespace(); 
         }

@@ -41,6 +41,35 @@ import com.querydsl.sql.RelationalPath;
 
 
 /**
+ * <h2>English:</h2>
+ * A utility for customizing query result formats. Contains two categories of methods:
+ * <ol>
+ * <li>Specify query columns/expressions</li>
+ * <li>Specify return type format</li>
+ * </ol>
+ * <h3>Specify query columns/expressions</h3>
+ * <ul>
+ * <li>{@link #column(LambdaColumn)} Select a column, can be used to build function expressions</li>
+ * <li>{@link #column(NumberLambdaColumn)} Select a number column</li>
+ * <li>{@link #column(StringLambdaColumn)} Select a string column</li>
+ * <li>{@link #date(DateLambdaColumn)} Select a Date column</li>
+ * <li>{@link #datetime(DateTimeLambdaColumn)} Select a Datetime column</li>
+ * <li>{@link #time(TimeLambdaColumn)} Select a Time column</li>
+ * </ul>
+ * <h3>Specify return format</h3>
+ * <ul>
+ * <li>{@link #toArray()} Each row returned as Object[] array</li>
+ * <li>{@link #toArray(Class)} Each row returned as typed T[] array</li>
+ * <li>{@link #toBean(Class)} Each row mapped to a new Class by field name</li>
+ * <li>{@link #toList()} Each row returned as List</li>
+ * <li>{@link #toMap()} Each row returned as Map&lt;String,?&gt;</li>
+ * <li>{@link #toExprMap()} Each row returned as Map&lt;Expression,?&gt;</li>
+ * <li>{@link #toPair()} When selecting two columns, each row returned as Pair&lt;?,?&gt;</li>
+ * <li>{@link #toPair(Class, Class)} When selecting two columns, each row returned as Pair&lt;K,V&gt;</li>
+ * <li>{@link #toTuple()} Each row returned as Tuple</li>
+ * </ul>
+ *
+ * <h2>Chinese:</h2>
  * 为了自定义查询语句返回值的形式提供的工具。包含两类方法——
  * <ol>
  * <li>指定查询列/表达式</li>

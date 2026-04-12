@@ -6,9 +6,9 @@ import java.util.List;
 import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.ConditionBean;
 import com.github.xuse.querydsl.annotation.query.IntCase;
+import com.github.xuse.querydsl.annotation.query.Ops;
 import com.github.xuse.querydsl.annotation.query.Order;
 import com.github.xuse.querydsl.annotation.query.When;
-import com.querydsl.core.types.Ops;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

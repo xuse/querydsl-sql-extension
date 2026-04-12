@@ -646,7 +646,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
 		if (this.configEx.getSlowSqlWarnMillis() <= cost) {
-			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 		}
 		if (this.exceedSizeLog && "Fetch".equals(action)) {
 			Integer maxSize = this.statementOptions.getMaxRows();

@@ -113,7 +113,7 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 			return null;
 		}
 		
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing,connection.getDriverInfo());
 		if (current > toSize) {
 			// 收缩
 			Expression<?> text=ConstantImpl.create(current - toSize);

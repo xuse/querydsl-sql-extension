@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.util.Assert;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
@@ -19,7 +19,7 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	
 	protected final Set<Operator> unsupports=new HashSet<>();
 	
-	protected boolean bacthToBulk;
+	protected boolean batchToBulk;
 	
 	public DefaultSQLTemplatesEx(SQLTemplates template) {
 		Assert.notNull(template);
@@ -35,7 +35,7 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	}
 
 	@Override
-	public boolean supportCreateInTableDefinition(ConstraintType type) {
+	public boolean supportCreateInTableDefinition(ConstraintTypeDef type) {
 		return !type.isIndex();
 	}
 
@@ -59,6 +59,6 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 
 	@Override
 	public boolean isBatchToBulkInDefault() {
-		return bacthToBulk;
+		return batchToBulk;
 	}
 }

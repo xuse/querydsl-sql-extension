@@ -55,7 +55,7 @@ public class DataType {
 	private boolean fixedPrecScale;
 
 	/**
-	 * can it be used for anauto-increment value.
+	 * can it be used for an auto-increment value.
 	 */
 	@Column("AUTO_INCREMENT")
 	private boolean autoIncrement;

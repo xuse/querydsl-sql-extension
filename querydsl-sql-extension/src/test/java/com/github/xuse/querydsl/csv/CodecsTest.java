@@ -13,7 +13,7 @@ import java.util.Date;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.entity.Aaa;
+import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.init.TableDataInitializer;
@@ -150,7 +150,7 @@ public class CodecsTest {
 		Foo foo = new Foo();
 		foo.setCode("Code");
 		assertEquals(
-				"rO0ABXNyACNjb20uZ2l0aHViLnh1c2UucXVlcnlkc2wuZW50aXR5LkZvbxfRcjsmIosCAgALSQACaWRJAAd2ZXJzaW9uSQAGdm9sdW1lTAAEY29kZXQAEkxqYXZhL2xhbmcvU3RyaW5nO0wAB2NvbnRlbnRxAH4AAUwAB2NyZWF0ZWR0ABNMamF2YS90aW1lL0luc3RhbnQ7TAADZXh0dAAlTGNvbS9naXRodWIveHVzZS9xdWVyeWRzbC9lbnRpdHkvQWFhO0wABmdlbmRlcnQAJ0xjb20vZ2l0aHViL3h1c2UvcXVlcnlkc2wvZW51bXMvR2VuZGVyO0wAA21hcHQAD0xqYXZhL3V0aWwvTWFwO0wABG5hbWVxAH4AAUwAB3VwZGF0ZWR0ABBMamF2YS91dGlsL0RhdGU7eHAAAAAAAAAAAAAAAAB0AARDb2RlcHBwcHBwcA==",
+				"rO0ABXNyACNjb20uZ2l0aHViLnh1c2UucXVlcnlkc2wuZW50aXR5LkZvb1q8WToIe2J4AgANSQAIY29kZVR5cGVJAAJpZEkAB3ZlcnNpb25JAAZ2b2x1bWVMAARjb2RldAASTGphdmEvbGFuZy9TdHJpbmc7TAAHY29udGVudHEAfgABTAAHY3JlYXRlZHQAE0xqYXZhL3RpbWUvSW5zdGFudDtMAANleHR0ADBMY29tL2dpdGh1Yi94dXNlL3F1ZXJ5ZHNsL2VudGl0eS9UYWJsZURhdGFUeXBlcztMAAZnZW5kZXJ0ACdMY29tL2dpdGh1Yi94dXNlL3F1ZXJ5ZHNsL2VudW1zL0dlbmRlcjtMAAVpbkRheXQAD0xqYXZhL3NxbC9EYXRlO0wAA21hcHQAD0xqYXZhL3V0aWwvTWFwO0wABG5hbWVxAH4AAUwAB3VwZGF0ZWR0ABBMamF2YS91dGlsL0RhdGU7eHAAAAAAAAAAAAAAAAAAAAAAdAAEQ29kZXBwcHBwcHBw",
 				str = Codecs.toString(foo, Foo.class));
 		assertEquals("", Codecs.toString(null, Foo.class));
 		assertEquals(foo, Codecs.fromString(str, Foo.class));
@@ -160,9 +160,9 @@ public class CodecsTest {
 
 	@Test
 	public void testErrors() {
-		Aaa aaa = new Aaa();
+		TableDataTypes aaa = new TableDataTypes();
 		Assertions.assertThrows(UnsupportedOperationException.class, () -> {
-			Codecs.toString(aaa, Aaa.class);
+			Codecs.toString(aaa, TableDataTypes.class);
 		});
 	}
 }

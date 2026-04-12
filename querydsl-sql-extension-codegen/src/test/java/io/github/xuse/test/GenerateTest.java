@@ -1,6 +1,8 @@
 package io.github.xuse.test;
 
 import java.io.File;
+import java.sql.Types;
+import java.time.Instant;
 
 import javax.sql.DataSource;
 
@@ -41,7 +43,9 @@ public class GenerateTest {
     @Test
     public void testGenerateEntity() {
         DbSchemaGenerator.from(getDataSource()).output(OutputDir.DIR_TARGET).metafields(MetafieldGenerationType.QCLASS).useLombokAnnotation(true)
-                .tableRefNameIs(s -> "_table").generateAll("sim_card");
+                .tableRefNameIs(s -> "_table")
+                .overwriteFiles(true)
+                .generateTables( "sim_card", "sim_card_device%");
     }
 
     @Test
@@ -49,7 +53,9 @@ public class GenerateTest {
         DbSchemaGenerator.from(getDataSource())
         .output(OutputDir.DIR_TARGET)
         .metafields(MetafieldGenerationType.LAMBDA)
+        .overwriteFiles(true)
         .useLombokAnnotation(false)
+        .registerMapping(Types.TIMESTAMP, Instant.class)
         .tableRefNameIs(s -> "_table")
         .generateTables(null, "sim_card_dev%");
     }

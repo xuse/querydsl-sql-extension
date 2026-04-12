@@ -23,6 +23,9 @@ import com.querydsl.core.types.ProjectionRole;
 import com.querydsl.sql.RelationalPath;
 
 /**
+ * <h2>English:</h2>
+ * Query operation wrapper.
+ * <h2>Chinese:</h2>
  * 查询操作封装
  * @author Joey
  *
@@ -261,6 +264,9 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 	}
 	 
     /**
+     * <h2>English:</h2>
+     * Subclass returns a new instance of itself.
+     * <h2>Chinese:</h2>
      * 子类返回一个自己的新对象
      */
     protected abstract Chain subchain();

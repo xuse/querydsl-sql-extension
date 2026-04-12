@@ -121,7 +121,7 @@ public class SQLTypeUtils {
 
 
 	/*
-	 * crate the path object according to the java type.
+	 * Create the path object according to the java type.
 	 */
 	public static Path<?> createPathByType(Class<?> type, String name, Path<?> parent) {
 		PathMetadata metadata = PathMetadataFactory.forProperty(parent, name);
@@ -395,7 +395,7 @@ public class SQLTypeUtils {
 			o=createWith(clz,ptypes,parameters);
 		}
 		if(o==null) {
-			throw new IllegalArgumentException("Unable to Instant type " + clz.getName() + ".");	
+			throw new IllegalArgumentException("Unable to instantiate type " + clz.getName() + ".");	
 		}
 		return o;
 	}

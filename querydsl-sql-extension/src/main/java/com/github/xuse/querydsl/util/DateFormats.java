@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.TimeZone;
 
 /**
+ * <h2>English:</h2>
  * Used to provide various thread-safe date and time formats.
  * <h2>Chinese:</h2> 用于提供各种线程安全的时间日期格式
  * <ul>
@@ -41,97 +42,120 @@ import java.util.TimeZone;
 public abstract class DateFormats {
 
 	/**
-	 * 日期格式：美式日期 MM/DD/YYYY
+	 * <h2>English:</h2> Date format: US date MM/DD/YYYY
+	 * <h2>Chinese:</h2> 日期格式：美式日期 MM/DD/YYYY
 	 */
 	public static final TLDateFormat DATE_US = new TLDateFormat("MM/dd/yyyy");
 
 	/**
-	 * 日期格式：美式日期+时间 MM/DD/YYYY HH:MI:SS
+	 * <h2>English:</h2> Date format: US date with time MM/DD/YYYY HH:MI:SS
+	 * <h2>Chinese:</h2> 日期格式：美式日期+时间 MM/DD/YYYY HH:MI:SS
 	 */
 	public static final TLDateFormat DATE_TIME_US = new TLDateFormat("MM/dd/yyyy HH:mm:ss");
 
 	/**
-	 * 日期格式：中式日期 YYYY-MM-DD
+	 * <h2>English:</h2> Date format: Chinese date YYYY-MM-DD
+	 * <h2>Chinese:</h2> 日期格式：中式日期 YYYY-MM-DD
 	 */
 	public static final TLDateFormat DATE_CS = new TLDateFormat("yyyy-MM-dd");
 
 	/**
-	 * 日期格式：日期+时间 YYYY/MM/DD
+	 * <h2>English:</h2> Date format: date YYYY/MM/DD
+	 * <h2>Chinese:</h2> 日期格式：日期+时间 YYYY/MM/DD
 	 */
 	public static final TLDateFormat DATE_CS2 = new TLDateFormat("yyyy/MM/dd");
 
 	/**
-	 * 日期格式：日期+时间 YYYY-MM-DD HH:MI:SS
+	 * <h2>English:</h2> Date format: date with time YYYY-MM-DD HH:MI:SS
+	 * <h2>Chinese:</h2> 日期格式：日期+时间 YYYY-MM-DD HH:MI:SS
 	 */
 	public static final TLDateFormat DATE_TIME_CS = new TLDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	/**
-	 *  定义一个线程局部变量的日期格式常量，用于日期时间的格式化，包括时区信息
+	 * <h2>English:</h2> Date format: date with time and timezone YYYY-MM-DD HH:MI:SS Z
+	 * <h2>Chinese:</h2> 定义一个线程局部变量的日期格式常量，用于日期时间的格式化，包括时区信息
 	 */
 	public static final TLDateFormat DATE_TIME_CS_WITH_ZONE = new TLDateFormat("yyyy-MM-dd HH:mm:ss Z");
 
 	/**
-	 * 日期格式：日期+时间 YYYY/MM/DD HH:MI:SS
+	 * <h2>English:</h2> Date format: date with time YYYY/MM/DD HH:MI:SS
+	 * <h2>Chinese:</h2> 日期格式：日期+时间 YYYY/MM/DD HH:MI:SS
 	 */
 	public static final TLDateFormat DATE_TIME_CS2 = new TLDateFormat("yyyy/MM/dd HH:mm:ss");
 
 	/**
-	 * 日期格式：中式日期时间（到分） YYYY-MM-DD HH:MI
+	 * <h2>English:</h2> Date format: Chinese date with time (to minute) YYYY-MM-DD HH:MI
+	 * <h2>Chinese:</h2> 日期格式：中式日期时间（到分） YYYY-MM-DD HH:MI
 	 */
 	public static final TLDateFormat DATE_TIME_ROUGH = new TLDateFormat("yyyy-MM-dd HH:mm");
 
 	/**
-	 * 日期格式：中式日期+时间戳 YYYY-MM-DD HH:MI:SS.SSS
+	 * <h2>English:</h2> Date format: Chinese date with timestamp YYYY-MM-DD HH:MI:SS.SSS
+	 * <h2>Chinese:</h2> 日期格式：中式日期+时间戳 YYYY-MM-DD HH:MI:SS.SSS
 	 */
 	public static final TLDateFormat TIME_STAMP_CS = new TLDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
 	/**
-	 * 日期格式：仅时间 HH.MI.SS
+	 * <h2>English:</h2> Date format: time only HH:MI:SS
+	 * <h2>Chinese:</h2> 日期格式：仅时间 HH.MI.SS
 	 */
 	public static final TLDateFormat TIME_ONLY = new TLDateFormat("HH:mm:ss");
 
 	/**
-	 * 日期格式：日期紧凑 YYYYMMDD
+	 * <h2>English:</h2> Date format: compact date YYYYMMDD
+	 * <h2>Chinese:</h2> 日期格式：日期紧凑 YYYYMMDD
 	 */
 	public static final TLDateFormat DATE_SHORT = new TLDateFormat("yyyyMMdd");
 
 	/**
-	 * 日期格式：日期时间紧凑 YYYYMMDDHHMISS
+	 * <h2>English:</h2> Date format: compact date with time YYYYMMDDHHMISS
+	 * <h2>Chinese:</h2> 日期格式：日期时间紧凑 YYYYMMDDHHMISS
 	 */
 	public static final TLDateFormat DATE_TIME_SHORT_14 = new TLDateFormat("yyyyMMddHHmmss");
 
 	/**
-	 * 日期格式：日期时间紧凑 YYYYMMDDHHMI
+	 * <h2>English:</h2> Date format: compact date with time YYYYMMDDHHMI
+	 * <h2>Chinese:</h2> 日期格式：日期时间紧凑 YYYYMMDDHHMI
 	 */
 	public static final TLDateFormat DATE_TIME_SHORT_12 = new TLDateFormat("yyyyMMddHHmm");
 
 	/**
-	 * 日期格式：yyyyMM
+	 * <h2>English:</h2> Date format: yyyyMM
+	 * <h2>Chinese:</h2> 日期格式：yyyyMM
 	 */
 	public static final TLDateFormat YEAR_MONTH = new TLDateFormat("yyyyMM");
 
 	// /////////////// 以下是别名，最常用的日期格式加上别名////////////////////
 	/**
-	 * 日期格式：中式日期 YYYY-MM-DD
+	 * <h2>English:</h2> Date format: Chinese date YYYY-MM-DD (alias of DATE_CS)
+	 * <h2>Chinese:</h2> 日期格式：中式日期 YYYY-MM-DD
 	 */
 	public static final TLDateFormat YYYY_MM_DD = DATE_CS;
 
 	/**
-	 * 日期格式：日期+时间 YYYY-MM-DD HH:MI:SS
+	 * <h2>English:</h2> Date format: date with time YYYY-MM-DD HH:MI:SS (alias of DATE_TIME_CS)
+	 * <h2>Chinese:</h2> 日期格式：日期+时间 YYYY-MM-DD HH:MI:SS
 	 */
 	public static final TLDateFormat YYYY_MM_DD$HH_MI_SS = DATE_TIME_CS;
 
 	/**
-	 * 日期格式：日期紧凑 yyyyMMdd
+	 * <h2>English:</h2> Date format: compact date yyyyMMdd (alias of DATE_SHORT)
+	 * <h2>Chinese:</h2> 日期格式：日期紧凑 yyyyMMdd
 	 */
 	public static final TLDateFormat YYYYMMDD = DATE_SHORT;
 
 	/**
-	 * 日期格式：仅时间 HH.MI.SS
+	 * <h2>English:</h2> Date format: time only HH:MI:SS (alias of TIME_ONLY)
+	 * <h2>Chinese:</h2> 日期格式：仅时间 HH.MI.SS
 	 */
 	public static final TLDateFormat HH_MI_SS = TIME_ONLY;
 
 	/**
+	 * <h2>English:</h2>
+	 * Thread-safe date format. This class is relatively heavy; it is recommended
+	 * to use it as a global or static variable rather than constructing and
+	 * recycling it frequently.
+	 * <h2>Chinese:</h2>
 	 * 线程安全的日期格式转换。 注意本类比较重，建议设计为全局变量或静态变量，不要频繁的进行构造和回收。
 	 */
 	public static final class TLDateFormat extends java.lang.ThreadLocal<DateFormat> {
@@ -139,12 +163,13 @@ public abstract class DateFormats {
 		private final double hoursOffset;
 		private final int millisOffset;
 		/**
-		 * 暴露出只读的DateTimeFormatter对象，供{@link LocalTime#parse(CharSequence, DateTimeFormatter)}
-		 * {@link LocalDateTime#parse(CharSequence, DateTimeFormatter)}等使用
-		 * <p>
+		 * <h2>English:</h2>
 		 * Expose a read-only DateTimeFormatter object for use with
 		 * {@link LocalTime#parse(CharSequence, DateTimeFormatter)},
 		 * {@link LocalDateTime#parse(CharSequence, DateTimeFormatter)}, etc.
+		 * <h2>Chinese:</h2>
+		 * 暴露出只读的DateTimeFormatter对象，供{@link LocalTime#parse(CharSequence, DateTimeFormatter)}
+		 * {@link LocalDateTime#parse(CharSequence, DateTimeFormatter)}等使用
 		 */
 		public final DateTimeFormatter df;
 
@@ -162,7 +187,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 格式化时间
+		 * <h2>English:</h2> Format time.
+		 * <h2>Chinese:</h2> 格式化时间
 		 * 
 		 * @param time time
 		 * @return String
@@ -172,7 +198,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 格式化日期，如果传入null返回null(Null-safety.)
+		 * <h2>English:</h2> Format date. Returns null if input is null (Null-safety).
+		 * <h2>Chinese:</h2> 格式化日期，如果传入null返回null(Null-safety.)
 		 * 
 		 * @param date date
 		 * @return text
@@ -186,7 +213,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 格式化java time框架下的日期时间。
+		 * <h2>English:</h2> Format date/time from the java.time framework.
+		 * <h2>Chinese:</h2> 格式化java time框架下的日期时间。
 		 * 
 		 * @param date data
 		 * @return text
@@ -196,7 +224,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 格式化日期，返回Optional对象
+		 * <h2>English:</h2> Format date and return an Optional object.
+		 * <h2>Chinese:</h2> 格式化日期，返回Optional对象
 		 * 
 		 * @param date 可以为null
 		 * @return Optional String result
@@ -206,7 +235,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 解析时间，如果为空返回null
+		 * <h2>English:</h2> Parse time. Returns null if input is empty.
+		 * <h2>Chinese:</h2> 解析时间，如果为空返回null
 		 * 
 		 * @param text text
 		 * @return Date parsed.
@@ -224,7 +254,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 解析时间，如果为空或者转换出错，都返回默认值
+		 * <h2>English:</h2> Parse time. Returns default value if input is empty or parsing fails.
+		 * <h2>Chinese:</h2> 解析时间，如果为空或者转换出错，都返回默认值
 		 * 
 		 * @param text         text
 		 * @param defaultValue defaultValue
@@ -242,7 +273,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 格式化日期，按指定的时区进行输出
+		 * <h2>English:</h2> Format date in the specified timezone. Returns null if input is null (Null-safety).
+		 * <h2>Chinese:</h2> 格式化日期，按指定的时区进行输出
 		 * 
 		 * @param date 如果传入null返回null(Null-safety.)
 		 * @param zone zone 时区（如果该时区有夏令时会被忽略）
@@ -253,7 +285,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 格式化日期，按指定的时区进行输出
+		 * <h2>English:</h2> Format date in the specified UTC offset. Returns null if input is null (Null-safety).
+		 * <h2>Chinese:</h2> 格式化日期，按指定的时区进行输出
 		 *
 		 * @param date           如果传入null返回null(Null-safety.)
 		 * @param utcHoursOffset 相对国际原子时的时差，从-12到+14(中国为8)，可以传小数
@@ -264,7 +297,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 解析日期
+		 * <h2>English:</h2> Parse date in the specified timezone.
+		 * <h2>Chinese:</h2> 解析日期
 		 * 
 		 * @param text 时间文字
 		 * @param zone 时区（如果该时区有夏令时会被忽略）
@@ -283,7 +317,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 解析日期
+		 * <h2>English:</h2> Parse date in the specified UTC offset.
+		 * <h2>Chinese:</h2> 解析日期
 		 * 
 		 * @param text           text
 		 * @param utcHoursOffset 相对国际原子时的时差，单位小时，从-12到+14(中国为8)，涉及半时区可以传入0.5/0.75等
@@ -302,7 +337,8 @@ public abstract class DateFormats {
 		}
 
 		/**
-		 * 解析时间，如果为空或者转换出错，都返回默认值
+		 * <h2>English:</h2> Parse time. Returns default value if input is empty or parsing fails.
+		 * <h2>Chinese:</h2> 解析时间，如果为空或者转换出错，都返回默认值
 		 * 
 		 * @param text         text
 		 * @param defaultValue defaultValue
@@ -333,7 +369,8 @@ public abstract class DateFormats {
 	}
 
 	/**
-	 * 得到Thread-safe的DateFormat
+	 * <h2>English:</h2> Create a thread-safe DateFormat.
+	 * <h2>Chinese:</h2> 得到Thread-safe的DateFormat
 	 * 
 	 * @param pattern pattern
 	 * @return TLDateFormat

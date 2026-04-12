@@ -327,7 +327,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * 设置字段值，如果doSet为false，则不会设置该字段的值。
 	 * 
 	 * @param <T>   The type of target object.
-	 * @param doSet weather to set the value of the given path.
+	 * @param doSet whether to set the value of the given path.
 	 * @param path  The path of target object.
 	 * @param value The value of target object.
 	 * @return SQLUpdateClauseAlter
@@ -351,7 +351,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * 设置字段值，如果doSet为false，则不会设置该字段的值。
 	 * 
 	 * @param <T>        The type of target object.
-	 * @param doSet      weather to set the value of the given path.
+	 * @param doSet      whether to set the value of the given path.
 	 * @param path       The path of target object.
 	 * @param expression The expression of target object.
 	 * @return SQLUpdateClauseAlter
@@ -478,21 +478,28 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * <h2>中文</h2>
 	 * 指定需要更新的字段，数据从传入对象中读取
 	 * 
-	 * @param obj   the data object. 数据对象
+	 * @param bean   the data object. 数据对象
 	 * @param paths Specify the fields to be updated; unspecified fields will be
 	 *              ignored. 指定需要更新的字段，未指定的字段将被忽略。
 	 * @return this
 	 */
-	public SQLUpdateClauseAlter populateFields(Object obj, Path<?>... paths) {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public SQLUpdateClauseAlter populateFields(Object bean, Path<?>... paths) {
+		boolean tuple = (bean instanceof Tuple);
+		Mapper mapper= Mappers.getUpdate(tuple, updateNulls);
 		RelationalPathEx<?> entity = (RelationalPathEx<?>) this.entity;
+		Map<Path<?>, Object> values = mapper.createMap(entity, bean);
 		for (Path<?> p : paths) {
 			ColumnMapping metadata = entity.getColumnMetadata(p);
-			Object value = AdvancedMapper.asAutoValue(metadata.getGenerated(), metadata,
-					AbstractMapperSupport.SCENARIO_UPDATE);
+			if(metadata==null) {
+				throw new IllegalArgumentException(p+" is not valid path in entity "+entity.getType());
+			}
+			Object value = values.get(p);
 			if (value instanceof Expression<?>) {
 				updates.put(p, (Expression<?>) value);
+			} else if(updateNulls) {
+				updates.put(p, value==null? Null.CONSTANT:ConstantImpl.create(value));
 			} else if (!metadata.isUnsavedValue(value)) {
-				assert value != null;
 				updates.put(p, ConstantImpl.create(value));
 			}
 		}
@@ -532,7 +539,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		context.setData(ContextKeyConstants.COUNT, count);
 		context.setData(ContextKeyConstants.ACTION, action);
 		if (this.configEx.getSlowSqlWarnMillis() <= cost) {
-			context.setData(ContextKeyConstants.SLOW_SQL, Boolean.TRUE);
+			context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 		}
 		listeners.executed(context);
 	}

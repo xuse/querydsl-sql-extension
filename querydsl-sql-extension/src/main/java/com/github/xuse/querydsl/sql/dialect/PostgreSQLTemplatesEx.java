@@ -12,7 +12,7 @@ import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
 import com.github.xuse.querydsl.sql.dbmeta.TableInfo;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
-import com.github.xuse.querydsl.sql.ddl.ConstraintType;
+import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.sql.ddl.DDLOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableConstraintOps;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.AlterTableOps;
@@ -103,7 +103,7 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 		add(templates, DDLOps.COMMENT_ON_TABLE, "COMMENT ON TABLE {0} IS {1}");
 		add(templates, AlterTableOps.RENAME_COLUMN, "RENAME COLUMN {0} TO {1}");
 
-		add(templates, ConstraintType.UNIQUE, "CONSTRAINT {1} UNIQUE{2}");
+		add(templates, ConstraintTypeDef.UNIQUE, "CONSTRAINT {1} UNIQUE{2}");
 
 		add(templates, SpecialFeature.INDEPENDENT_COMMENT_STATEMENT, "");
 		add(templates, SpecialFeature.INDEPENDENT_PARTITION_CREATION, "");

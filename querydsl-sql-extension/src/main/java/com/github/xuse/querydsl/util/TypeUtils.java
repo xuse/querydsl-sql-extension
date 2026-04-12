@@ -40,6 +40,7 @@ public class TypeUtils {
 	}
 
 	/**
+	 * <h2>English:</h2>
 	 * If it can be converted to type of class, convert it; otherwise, return
 	 * `null`.
 	 * <h2>Chinese:</h2> 如果可以转换为class的类型，就转换，否则返回null。
@@ -110,8 +111,8 @@ public class TypeUtils {
 	}
 
 	/**
-	 * 
-	 * Instead of class.newInstance() method. since it was marked as 'deprecated'
+	 * <h2>English:</h2>
+	 * Instead of class.newInstance() method, since it was marked as 'deprecated'
 	 * above JDK 9.
 	 * <h2>Chinese:</h2> 在java9， Class.newInstance()被标记为@Deprecated， 用这个函数替代。
 	 * 

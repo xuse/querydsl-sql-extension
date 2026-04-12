@@ -60,11 +60,10 @@ public class CaAsset {
 	@ColumnSpec(type=Types.VARCHAR,size=256)
 	@CustomType(TestForJSONObjectType.class)
 	@Comment("extension info.")
-	private Aaa ext;
+	private TableDataTypes ext;
 	
 	@CustomType(TestForJSONObjectType.class)
 	@ColumnSpec(type=Types.VARCHAR,size=256)
 	@Comment("Some custom attributes.")
 	private Map<String,String> map;
-
 }

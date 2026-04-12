@@ -79,7 +79,7 @@ public final class UnsavedValuePredicateFactory {
 		} else if (String.class == containerType) {
 			condition = value;
 		} else {
-			throw Exceptions.illegalArgument("Unsupport type [{}] for annotation @UnsavedValue('{}')", containerType,value);
+			throw Exceptions.illegalArgument("Unsupported type [{}] for annotation @UnsavedValue('{}')", containerType,value);
 		}
 		return condition == null ? Null : new ConstantFilter(condition);
 	}

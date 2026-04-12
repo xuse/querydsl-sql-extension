@@ -61,8 +61,8 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	 */
 	public DropConstraintQuery dropAllConstraints() {
 		for (Constraint c : getCurrent()) {
-			ConstraintType type = c.getConstraintType();
-			if (type == ConstraintType.PRIMARY_KEY) {
+			ConstraintTypeDef type = c.getConstraintType();
+			if (type == ConstraintTypeDef.PRIMARY_KEY) {
 				continue;
 			}
 			if (!type.isIndex() && !type.isIgnored()) {
@@ -79,7 +79,7 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	 */
 	public DropConstraintQuery dropAllIndices() {
 		for (Constraint c : getCurrent()) {
-			ConstraintType type = c.getConstraintType();
+			ConstraintTypeDef type = c.getConstraintType();
 			if (type.isIndex()) {
 				toDrop.add(c);
 			}
@@ -93,8 +93,8 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	 */
 	public DropConstraintQuery dropPrimaryKey() {
 		for (Constraint c : getCurrent()) {
-			ConstraintType type = c.getConstraintType();
-			if (type == ConstraintType.PRIMARY_KEY) {
+			ConstraintTypeDef type = c.getConstraintType();
+			if (type == ConstraintTypeDef.PRIMARY_KEY) {
 				toDrop.add(c);
 			}
 		}
@@ -107,8 +107,8 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	 */
 	public DropConstraintQuery dropAll() {
 		for (Constraint c : getCurrent()) {
-			ConstraintType type = c.getConstraintType();
-			if (type == ConstraintType.PRIMARY_KEY) {
+			ConstraintTypeDef type = c.getConstraintType();
+			if (type == ConstraintTypeDef.PRIMARY_KEY) {
 				continue;
 			}
 			if (!type.isIgnored()) {
@@ -132,7 +132,7 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 	}
 
 	private String dropStatement(Constraint c) {
-		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table, routing);
+		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration,table, routing,connection.getDriverInfo());
 		builder.serialzeConstraintIndepentDrop(c);
 		return builder.getSql();
 	}
