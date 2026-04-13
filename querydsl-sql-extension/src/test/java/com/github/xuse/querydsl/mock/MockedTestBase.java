@@ -43,6 +43,9 @@ public class MockedTestBase {
 
 	@BeforeAll
 	public static void doInit() {
+		if (factory != null) {
+			return;
+		}
 		SQLTemplates templates = new MySQLWithJSONTemplates() {
 			@Override
 			public SchemaReader getSchemaAccessor() {

@@ -22,7 +22,7 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.DynamicRelationalPath;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
-import com.github.xuse.querydsl.sql.Integration.AbstractTestBase;
+import com.github.xuse.querydsl.sql.integration.db.AbstractTestBase;
 import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.util.SnowflakeIdWorker;
 import com.querydsl.core.types.Expression;

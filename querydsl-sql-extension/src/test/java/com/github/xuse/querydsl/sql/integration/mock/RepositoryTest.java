@@ -1,7 +1,10 @@
-package com.github.xuse.querydsl.repository;
+package com.github.xuse.querydsl.sql.integration.mock;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -18,6 +21,9 @@ import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.mock.MockedTestBase;
+import com.github.xuse.querydsl.repository.CRUDRepository;
+import com.github.xuse.querydsl.repository.LambdaQuery;
+import com.github.xuse.querydsl.repository.LambdaQueryWrapper;
 import com.mysema.commons.lang.Pair;
 import com.querydsl.core.QueryModifiers;
 import com.querydsl.core.types.OrderSpecifier;
@@ -115,7 +121,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryEq() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.eq(CODE_COL, "ABC");
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -123,7 +129,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryNe() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.ne(CODE_COL, "ABC");
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -131,7 +137,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryGtGeLtLe() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.gt(ID, 1).ge(ID, 2).lt(ID, 100).le(ID, 99);
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -139,7 +145,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryBetween() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.between(ID, 1, 100);
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -147,11 +153,11 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryIsNullIsNotNull() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.isNull(CODE_COL);
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 
 		LambdaQuery<Foo, Foo> q2 = new LambdaQuery<>(Foo.class);
 		q2.isNotNull(CODE_COL);
-		assertNotNull(q2.mixin.getWhere());
+		assertNotNull(q2.getMetadata().getWhere());
 	}
 
 	@Test
@@ -159,11 +165,11 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryLikeNotLike() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.like(NAME, "%test%");
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 
 		LambdaQuery<Foo, Foo> q2 = new LambdaQuery<>(Foo.class);
 		q2.notlike(NAME, "%test%");
-		assertNotNull(q2.mixin.getWhere());
+		assertNotNull(q2.getMetadata().getWhere());
 	}
 
 	@Test
@@ -171,7 +177,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryStartsWithEndsWith() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.startsWith(NAME, "A").endsWith(NAME, "Z");
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -179,7 +185,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryContains() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.contains(NAME, "test");
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -187,7 +193,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryNotStartsWithNotEndsWithNotContains() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.notStartsWith(NAME, "A").notEndsWith(NAME, "Z").notContains(NAME, "mid");
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -195,7 +201,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryOrderByAscDesc() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.orderByAsc(ID).orderByDesc(CODE_COL);
-		List<OrderSpecifier<?>> orders = q.mixin.getOrderBy();
+		List<OrderSpecifier<?>> orders = q.getMetadata().getOrderBy();
 		assertEquals(2, orders.size());
 		assertTrue(orders.get(0).isAscending());
 		assertFalse(orders.get(1).isAscending());
@@ -206,7 +212,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryOrderBySpecifier() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.orderBy(ID.asc(), CODE_COL.desc());
-		assertEquals(2, q.mixin.getOrderBy().size());
+		assertEquals(2, q.getMetadata().getOrderBy().size());
 	}
 
 	@Test
@@ -214,7 +220,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryLimitOffset() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.limit(10).offset(5);
-		QueryModifiers modifiers = q.mixin.getModifiers();
+		QueryModifiers modifiers = q.getMetadata().getModifiers();
 		assertNotNull(modifiers);
 		assertEquals(Long.valueOf(10), modifiers.getLimit());
 		assertEquals(Long.valueOf(5), modifiers.getOffset());
@@ -225,8 +231,8 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryGroupByAndHaving() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.groupBy(CODE_COL).having(ID.count().goe(1));
-		assertFalse(q.mixin.getGroupBy().isEmpty());
-		assertNotNull(q.mixin.getHaving());
+		assertFalse(q.getMetadata().getGroupBy().isEmpty());
+		assertNotNull(q.getMetadata().getHaving());
 	}
 
 	@Test
@@ -234,7 +240,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryAndCombinator() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.eq(CODE_COL, "A").and(sub -> sub.eq(ID, 1).eq(CODE_COL, "B"));
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -242,8 +248,8 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryOrCombinator() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.eq(CODE_COL, "A").or(sub -> sub.eq(CODE_COL, "B"));
-		assertNotNull(q.mixin.getWhere());
-		String whereStr = q.mixin.getWhere().toString();
+		assertNotNull(q.getMetadata().getWhere());
+		String whereStr = q.getMetadata().getWhere().toString();
 		assertTrue(whereStr.contains("||"), "Expected OR in predicate: " + whereStr);
 	}
 
@@ -252,7 +258,7 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryNotConsumer() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.eq(CODE_COL, "A").not(sub -> sub.eq(CODE_COL, "B"));
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -260,8 +266,8 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryNotToggle() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.eq(CODE_COL, "A").not();
-		assertNotNull(q.mixin.getWhere());
-		String whereStr = q.mixin.getWhere().toString();
+		assertNotNull(q.getMetadata().getWhere());
+		String whereStr = q.getMetadata().getWhere().toString();
 		assertTrue(whereStr.startsWith("!"), "Expected NOT in predicate: " + whereStr);
 	}
 
@@ -271,7 +277,7 @@ class RepositoryTest extends MockedTestBase {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		// not() on empty where should be a no-op
 		q.not();
-		assertNull(q.mixin.getWhere());
+		assertNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -280,7 +286,7 @@ class RepositoryTest extends MockedTestBase {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		// not(consumer) with empty sub-chain should be a no-op
 		q.not(sub -> {});
-		assertNull(q.mixin.getWhere());
+		assertNull(q.getMetadata().getWhere());
 	}
 
 	// ==================== LambdaQueryWrapper (no DB) ====================
@@ -305,7 +311,7 @@ class RepositoryTest extends MockedTestBase {
 		LambdaQueryWrapper<Foo> w = new LambdaQueryWrapper<>(Foo.class);
 		LambdaQuery<Foo, String> result = w.selectSingleColumn(CODE_COL);
 		assertNotNull(result);
-		assertNotNull(result.mixin.getProjection());
+		assertNotNull(result.getMetadata().getProjection());
 	}
 
 	@Test
@@ -314,7 +320,7 @@ class RepositoryTest extends MockedTestBase {
 		LambdaQueryWrapper<Foo> w = new LambdaQueryWrapper<>(Foo.class);
 		LambdaQuery<Foo, Pair<Integer, String>> result = w.selectPair(ID, CODE_COL);
 		assertNotNull(result);
-		assertNotNull(result.mixin.getProjection());
+		assertNotNull(result.getMetadata().getProjection());
 	}
 
 	@Test
@@ -322,9 +328,9 @@ class RepositoryTest extends MockedTestBase {
 	void testLambdaQueryWrapperChainMethods() {
 		LambdaQueryWrapper<Foo> w = new LambdaQueryWrapper<>(Foo.class);
 		w.eq(CODE_COL, "A").orderByAsc(ID).limit(5);
-		assertNotNull(w.mixin.getWhere());
-		assertEquals(1, w.mixin.getOrderBy().size());
-		assertEquals(Long.valueOf(5), w.mixin.getModifiers().getLimit());
+		assertNotNull(w.getMetadata().getWhere());
+		assertEquals(1, w.getMetadata().getOrderBy().size());
+		assertEquals(Long.valueOf(5), w.getMetadata().getModifiers().getLimit());
 	}
 
 	// ==================== QueryWrapper.where() and allEq() ====================
@@ -334,7 +340,7 @@ class RepositoryTest extends MockedTestBase {
 	void testQueryWrapperWherePredicate() {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		q.where(CODE_COL.eq("X"), ID.goe(1));
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
@@ -343,7 +349,7 @@ class RepositoryTest extends MockedTestBase {
 		LambdaQuery<Foo, Foo> q = new LambdaQuery<>(Foo.class);
 		// null predicates should be skipped
 		q.where(CODE_COL.eq("X"), null);
-		assertNotNull(q.mixin.getWhere());
+		assertNotNull(q.getMetadata().getWhere());
 	}
 
 	@Test
