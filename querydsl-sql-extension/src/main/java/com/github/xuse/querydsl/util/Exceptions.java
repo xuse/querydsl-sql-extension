@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import lombok.Getter;
+import com.github.xuse.querydsl.common.ErrorMessageException;
+import com.github.xuse.querydsl.common.RuntimeMessageException;
 
 /**
  * 异常处理工具
@@ -170,26 +171,6 @@ public class Exceptions {
 			return this;
 		}
 	}
-	
-	@Getter
-	public static final class ErrorMessageException extends Exception{
-		private int code;
-		
-		ErrorMessageException(String message) {
-			super(message);
-		}
-		
-		ErrorMessageException(int code, String message) {
-			super(message);
-			this.code = code;
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return this;
-		}
-	}
-	
 
 	/**
 	 * Wrap the specified exception as an IllegalArgumentException.
@@ -316,6 +297,28 @@ public class Exceptions {
 		return new ErrorMessageException(code, f.getMessage());
 	}
 	
+	/**
+	 * 使用slf4j的机制来生成异常信息(Runtime异常)
+	 * @param message message
+	 * @param objects  objects
+	 * @return RuntimeMessageException
+	 */
+	public static RuntimeMessageException runtimeMessage(String message, Object... objects) {
+		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
+		return new RuntimeMessageException(f.getMessage());
+	}
+	
+	/**
+	 * 使用slf4j的机制来生成异常信息(Runtime异常)
+	 * @param code 错误码
+	 * @param message 信息
+	 * @param objects 参数
+	 * @return RuntimeMessageException
+	 */
+	public static RuntimeMessageException runtimeMessage(int code, String message, Object... objects) {
+		FormattingTuple f = MessageFormatter.arrayFormat(message, objects);
+		return new RuntimeMessageException(code, f.getMessage());
+	}
 
 	/**
 	 * 使用slf4j的机制来生成异常信息
