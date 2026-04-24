@@ -32,16 +32,16 @@ This framework is an extension of [Querydsl-sql](https://github.com/querydsl/que
 ## Introduction
 
 **What is Querydsl? Why choose it?**
-See [Why QueryDSL (Chinese)](static/why_querydsl.md)
+See [Why QueryDSL (Chinese)](docs/why_querydsl_cn.md)
 
 Note: This framework is not based on `querydsl-jpa`, but is an extension of `querydsl-sql`. For a comparison with JPA mode, 
-please refer to [Why QueryDSL](static/why_querydsl.md). If you want to integrate this module into a project with querydsl-jpa, please refer to the following section (Using with Querydsl-JPA).
+please refer to [Why QueryDSL](docs/why_querydsl_cn.md). If you want to integrate this module into a project with querydsl-jpa, please refer to the following section (Using with Querydsl-JPA).
 
 **ChangeLog**
-[ChangeLog](ChangeLog.md)
+[ChangeLog](docs/ChangeLog.md)
 
 **Manuals**
-See [User Guide](static/user_guide.md)
+See [User Guide](docs/user_guide.md)
 
 **Import from repository**
 ```xml
@@ -73,7 +73,7 @@ To use them together, two issues need to be addressed:
 
 ### Performance Optimization
 Significant performance optimization has been carried out on QueryDSL-SQL. The optimized performance is essentially comparable to well-written JDBC operations.
-The following is a partial list. For more related data, please refer to the [Performance guide](static/performance_tunning.md).
+The following is a partial list. For more related data, please refer to the [Performance guide](docs/performance_tuning_cn.md).
 
 **Performance Comparison Test (v5.0.0-r172)**
 
@@ -258,7 +258,7 @@ QueryDSL's approach is schema-first. This framework extends support for metadata
 
 In the official version of QueryDSL, operating the database requires using a code generation tool to generate the query class. This framework enhances the original by allowing users to forego creating QueryClass classes and use pure POJOs with several annotations as a substitute query class model. Lambda expressions can be used to represent table or column models.
 
-This feature is mainly intended to lower the usage threshold. Refer to the [User Guide](static/user_guide.md).
+This feature is mainly intended to lower the usage threshold. Refer to the [User Guide](docs/user_guide.md).
 
 ### R2dbc Support
 R2DBC (Reactive Relational Database Connectivity) is an asynchronous, non-blocking programming specification designed for relational databases. It can replace the traditional blocking programming model of JDBC and supports Reactive Streams processing.
@@ -280,7 +280,7 @@ Thus, some commonly used operations are encapsulated in the `GenericRepository` 
 
 #### Record Object Mapping to Database Relation
 
-Since Java 16, the Record feature (**@jls** 8.10 Record Types) has been supported. This framework allows using Record-type objects as table mappings, replacing traditional POJO entity Beans. For more details, see the document `static/user_guide.md`.
+Since Java 16, the Record feature (**@jls** 8.10 Record Types) has been supported. This framework allows using Record-type objects as table mappings, replacing traditional POJO entity Beans. For more details, see the document `docs/user_guide.md`.
 
 > To use the Record feature, you must use JDK 16 or above.
 > This framework has special handling for accessing Record objects, making it independent of JDK 16 or above. It can still run on Java 8 after being compiled.
@@ -413,3 +413,9 @@ ALTER TABLE table1
   Q: If my project already uses querydsl-sql, do I need to modify all the original query classes to inherit from the `com.github.xuse.querydsl.sql.RelationalPathBaseEx` class when integrating this framework?
 
   A: No, you don't have to. This framework makes some minor adjustments and improvements on querydsl, without affecting the native usage of querydsl.
+
+## AI-Assisted Development
+
+If you use [Kiro IDE](https://kiro.dev), you can install the [ez-m-querydsl-sql-ext](docs/querydsl-sql-ext-skill/) Skill to get intelligent coding assistance with this framework's API. The Skill provides code templates and best practices for initialization, entity definition, CRUD, DDL, and more.
+
+See the [Skill README](docs/querydsl-sql-ext-skill/README.md) for installation instructions.

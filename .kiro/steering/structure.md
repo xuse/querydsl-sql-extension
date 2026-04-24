@@ -12,7 +12,7 @@ querydsl-sql-extension-parent (root POM)
 ├── querydsl-sql-r2dbc                  # Reactive (R2DBC) database access
 ├── querydsl-sql-r2dbc-spring           # R2DBC + Spring transaction support
 ├── benchmarks                          # JMH-style performance benchmarks (not published)
-└── static/                             # Documentation assets (user guide, performance guide, etc.)
+└── docs/                               # Documentation assets (user guide, performance guide, etc.)
 ```
 
 ## Dependency Flow

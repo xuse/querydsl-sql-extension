@@ -34,16 +34,16 @@
 ## 简介
 
 **Querydsl是什么? 为什么选择？**
-介绍:  [为什么选择](static/why_querydsl.md)
+介绍:  [为什么选择](docs/why_querydsl_cn.md)
 
-注意：本框架不基于`querydsl-jpa`，是基于`querydsl-sql`的扩展。与JPA模式的比较参见[Why QueryDSL](static/why_querydsl.md)。
+注意：本框架不基于`querydsl-jpa`，是基于`querydsl-sql`的扩展。与JPA模式的比较参见[Why QueryDSL](docs/why_querydsl_cn.md)。
 如果要在querydsl-jpa的项目中集成本模块的，可以参见下文 (与 Querydsl-JPA 一起使用)
 
 **变更日志**
-[ChangeLogs](static/changelog_cn.md)
+[ChangeLogs](docs/changelog_cn.md)
 
 **手册 / Manuals**
-参见  [使用说明](static/user_guide_cn.md)
+参见  [使用说明](docs/user_guide_cn.md)
 
 **引用 / Repository**
 
@@ -80,7 +80,7 @@
 
 对QueryDSL-SQL的性能进行了较大幅度的优化。优化后的性能基本与编写良好的JDBC操作持平。
 
-下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](static/performance_tunning.md)
+下面列出一部分，更多性能相关数据，参见 [性能参考 Performance guide](docs/performance_tuning_cn.md)
 
 **性能对比测试（v5.0.0-r172）**
 
@@ -285,7 +285,7 @@ QueryDSL的设计思路是Schema优先，本框架扩展支持了Metadata优先�
 
 QueryDSL官方版本中操作数据库需要使用代码生成工具生成query class。本框架在该基础上作了一些增强，允许用户不创建QueryClass类，通过纯POJO加上若干注解来替代query class模型。并使用lambda表达式来表示表或列的模型。
 
-该功能主要为降低使用门槛，参见文档 [使用说明](static/user_guide_cn.md)。
+该功能主要为降低使用门槛，参见文档 [使用说明](docs/user_guide_cn.md)。
 
 ### R2dbc数据源使用(响应式数据)
 
@@ -423,7 +423,7 @@ metadata.dropPartition(t1)
 * PostgreSQL v10.3 and above
 * H2 v2.3.232
 
-相关说明参见文档 static/user_guide_cn.md
+相关说明参见文档 docs/user_guide_cn.md
 
 > 其他数据库可以自行编写SQLTemplatesEx (本框架定义的方言扩展类) 进行扩展 ，如有需求也可以邮件与我讨论。
 
@@ -470,3 +470,9 @@ ALTER TABLE table1
 * 文档 / Documentation：中文
 * Javadoc:  中英文双语 / Chinese English bilingual
 * 日志和异常信息  / Log and exception messages: 英文/English only
+
+## AI 辅助开发
+
+如果你使用 [Kiro IDE](https://kiro.dev)，可以安装 [ez-m-querydsl-sql-ext](docs/querydsl-sql-ext-skill/) Skill，获得本框架 API 的智能编码辅助。该 Skill 提供初始化、实体定义、CRUD、DDL 等场景的代码模板和最佳实践。
+
+安装方式参见 [Skill 说明](docs/querydsl-sql-ext-skill/README.md)。

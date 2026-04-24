@@ -106,6 +106,18 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		this.configEx = configuration;
 	}
 
+	/*
+	 * Query嵌套说明 (Query Nesting Notes):
+	 *
+	 * fetchResults() 会创建一个 parentContext 作为外层上下文。内部再调用 fetch/fetchCount 时，
+	 * 新创建的上下文会检查 parentContext 是否有值，若有则加入其中，从而阻止 Close Listener 关闭连接。
+	 *
+	 * 当 isCountViaAnalytics 为 true 且无 groupBy 时，使用开窗函数 "count(*) over()" 尝试
+	 * 一次查询同时获取结果集和总数（可重复读效果）。否则退化为两次查询（fetchCount + fetch）。
+	 *
+	 * 注意：当前 parentContext 机制不会逐层更新，因此无法支持超过两层的请求嵌套。
+	 * 开窗函数方案仅在 Oracle、Teradata、PostgreSQL 上启用，且要求无 groupBy。
+	 */
 	@Override
 	public QueryResults<T> fetchResults() {
 		SQLListenerContext parentContext = startContext(connection(), queryMixin.getMetadata());
