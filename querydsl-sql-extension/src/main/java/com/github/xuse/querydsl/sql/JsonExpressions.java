@@ -135,9 +135,8 @@ public class JsonExpressions {
 	 * @param paths paths
 	 * @return StringOperation
 	 */
-	public static StringOperation jsonExtract(Expression<String> jsonDoc, boolean trueAsAll, String... paths) {
-		Expression<String> oneAll = Expressions.asString(trueAsAll ? "all" : "one");
-		return Expressions.stringOperation(JsonOps.JSON_EXTRACT, jsonDoc, oneAll, ConstantImpl.create(paths));
+	public static StringOperation jsonExtract(Expression<String> jsonDoc, String... paths) {
+		return Expressions.stringOperation(JsonOps.JSON_EXTRACT, jsonDoc, ConstantImpl.create(paths));
 	}
 
 	/**

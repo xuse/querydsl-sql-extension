@@ -11,6 +11,7 @@ import java.net.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.Util;
 
 public abstract class VfsUtils {
 

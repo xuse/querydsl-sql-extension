@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.querydsl.core.types.Operator;

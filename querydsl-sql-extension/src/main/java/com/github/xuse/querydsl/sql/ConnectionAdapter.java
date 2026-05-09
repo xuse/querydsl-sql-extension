@@ -151,7 +151,7 @@ public abstract class ConnectionAdapter implements Connection{
 	}
 
 	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
-		return conn.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
+		return conn.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
 	}
 
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {

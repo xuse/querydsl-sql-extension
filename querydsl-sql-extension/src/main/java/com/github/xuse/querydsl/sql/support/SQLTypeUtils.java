@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import com.github.xuse.querydsl.annotation.UnsavedValue;
-import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.types.CodeEnum;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.lang.Annotations;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.FilteredClause;

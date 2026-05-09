@@ -76,6 +76,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private Supplier<Connection> connProvider;
 
 	private Connection conn;
+	
+	private StatementOptions statementOptions = StatementOptions.DEFAULT;
 
 	// /////////// 覆盖检查字段结束/////////////
 	private boolean exceedSizeLog;
@@ -391,7 +393,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 				} catch (SQLException ex) {
 					throw ex;
 				} catch (Exception ex) {
-					throw new SQLException("get field:" + argPath[i] + "error", ex);
+					throw new SQLException("get field:" + argPath[i] + " error", ex);
 				}
 			}
 			return expr.newInstance(args);
@@ -449,8 +451,6 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			return (RT) rs.getObject(1);
 		}
 	}
-
-	private StatementOptions statementOptions = StatementOptions.DEFAULT;
 
 	/**
 	 * Set the maximum number of rows to load for this query.
@@ -570,6 +570,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			throw configuration.translate(queryString, constants, e);
 		} catch (RuntimeException e) {
 			log.error("Caught " + e.getClass().getName() + " for " + queryString);
+			onException(context, e);
+			endContext(context);
 			throw e;
 		}
 	}

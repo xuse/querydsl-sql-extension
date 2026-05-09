@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.mysema.commons.lang.Pair;
 

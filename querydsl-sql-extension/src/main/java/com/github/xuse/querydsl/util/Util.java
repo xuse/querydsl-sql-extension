@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.spring.core.resource;
+package com.github.xuse.querydsl.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -12,8 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.github.xuse.querydsl.util.Assert;
-import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.spring.core.resource.ConcurrentReferenceHashMap;
 
 public final class Util {
 	private static final Map<Class<?>, Field[]> declaredFieldsCache = new ConcurrentReferenceHashMap<Class<?>, Field[]>(256);

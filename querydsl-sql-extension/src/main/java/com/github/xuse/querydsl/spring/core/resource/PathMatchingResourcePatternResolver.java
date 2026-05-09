@@ -17,6 +17,7 @@ import java.util.jar.JarFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.github.xuse.querydsl.util.Assert;
+import com.github.xuse.querydsl.util.Util;
 
 import lombok.SneakyThrows;
 
