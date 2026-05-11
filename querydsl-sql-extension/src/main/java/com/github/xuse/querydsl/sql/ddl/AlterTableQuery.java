@@ -14,7 +14,6 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
-import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
 import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -330,14 +329,14 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			if(isPk) {
 				columnMetadata = columnMetadata.notNull();
 			}
-			ColumnMetadataExImpl javaSide = new ColumnMetadataExImpl(columnMetadata);
+			DDLColumnMetadata javaSide = new DDLColumnMetadata(columnMetadata);
 			javaSide.setComment(definedColumn.getComment());
 			javaSide.setDefaultExpression(definedColumn.getDefaultExpression());
 			javaSide.setFeatures(definedColumn.getFeatures());
 			javaSide.setUnsigned(definedColumn.isUnsigned());
 			
 			// 创建Database侧的列定义
-			ColumnMetadataExImpl dbSide = toColumnMetadata(c);
+			DDLColumnMetadata dbSide = toColumnMetadata(c);
 			// 比较差异
 			List<ColumnChange> modifications = compareDataType(javaSide, dbSide, javaColumn, c);
 			if (originalName!=null || !modifications.isEmpty()) {
@@ -354,12 +353,12 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		sqls.setChangeColumns(changed);
 	}
 
-	private ColumnMetadataExImpl toColumnMetadata(ColumnDef c) {
+	private DDLColumnMetadata toColumnMetadata(ColumnDef c) {
 		ColumnMetadata querydslColumn = ColumnMetadata.named(c.getColumnName()).withSize(c.getColumnSize()).withIndex(c.getOrdinal()).withDigits(c.getDecimalDigit()).ofType(c.getJdbcType());
 		if (!c.isNullable()) {
 			querydslColumn = querydslColumn.notNull();
 		}
-		ColumnMetadataExImpl column = new ColumnMetadataExImpl(querydslColumn);
+		DDLColumnMetadata column = new DDLColumnMetadata(querydslColumn);
 		if (StringUtils.isNotEmpty(c.getColumnDef())) {
 			Template tt = TemplateFactory.DEFAULT.create(c.getColumnDef());
 			column.setDefaultExpression(Expressions.simpleTemplate(Object.class, tt, Collections.emptyList()));
@@ -381,7 +380,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	 * 
 	 * @param c2 from database.
 	 */
-	private List<ColumnChange> compareDataType(ColumnMetadataExImpl c1, ColumnMetadataExImpl c2, ColumnDef java, ColumnDef db) {
+	private List<ColumnChange> compareDataType(DDLColumnMetadata c1, DDLColumnMetadata c2, ColumnDef java, ColumnDef db) {
 		List<ColumnChange> result = new ArrayList<ColumnChange>();
 		// 忽略字段顺序和列名称，仅对比其他8个属性
 		if (dataTypeChanged(c1, c2) || c1.isAutoIncrement() != c2.isAutoIncrement()) {
@@ -474,7 +473,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		return false;
 	}
 
-	private boolean dataTypeChanged(ColumnMetadataExImpl c1, ColumnMetadataExImpl c2) {
+	private boolean dataTypeChanged(DDLColumnMetadata c1, DDLColumnMetadata c2) {
 		if (c1.getJdbcType() != c2.getJdbcType()) {
 			return true;
 		}

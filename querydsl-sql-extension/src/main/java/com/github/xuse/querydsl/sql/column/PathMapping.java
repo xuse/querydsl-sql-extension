@@ -18,6 +18,7 @@ import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.SpecialSpec;
 import com.github.xuse.querydsl.config.ConfigurationEx;
+import com.github.xuse.querydsl.sql.dml.DefaultValueHelper;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.types.CodeEnum;
 import com.github.xuse.querydsl.types.DoubleArrayAsVarcharType;
@@ -29,6 +30,7 @@ import com.github.xuse.querydsl.types.StringArrayAsVarcharType;
 import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -91,6 +93,17 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 	 *  自定义类型
 	 */
 	private Type<?> customType;
+
+	/**
+	 * Cached null substitution value for batch insert operations.
+	 * For NOT NULL columns with simple default values, this holds the parsed Java literal
+	 * that should be used when the bean field is null or unsaved.
+	 * Computed when defaultExpression is set.
+	 * <p>
+	 * 批量插入时的空值替代缓存。对于有简单默认值的 NOT NULL 列，
+	 * 当 Bean 字段为 null 或 unsaved 时使用此值。在设置 defaultExpression 时计算。
+	 */
+	private transient Object nullSubstitution;
 	
 	private PathMapping(Path<?> path, AccessibleElement field, ColumnMetadata column,Type<?> customType) {
 		super(column);
@@ -305,5 +318,47 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 		p.notUpdate = this.notUpdate;
 		p.generated = this.generated;
 		return p;
+	}
+
+	/**
+	 * Get the null substitution value for batch insert operations.
+	 * Returns null if no substitution is needed (nullable column or no parseable default).
+	 * <p>
+	 * 获取批量插入时的空值替代值。如果不需要替代（可空列或无可解析默认值）则返回 null。
+	 *
+	 * @return the substitution value, or null if no substitution needed
+	 */
+	public Object getNullSubstitution() {
+		return nullSubstitution;
+	}
+
+	/**
+	 * Override setDefaultExpression to compute nullSubstitution when default expression is set.
+	 * This avoids the need for lazy initialization and double-checked locking.
+	 */
+	@Override
+	public void setDefaultExpression(Expression<?> defaultExpression) {
+		super.setDefaultExpression(defaultExpression);
+		// Compute nullSubstitution immediately when defaultExpression is set
+		this.nullSubstitution = computeNullSubstitution();
+	}
+
+	private Object computeNullSubstitution() {
+		// Only compute for NOT NULL columns
+		if (isNullable()) {
+			return null;
+		}
+		// Skip columns with custom type mappings
+		if (customType != null) {
+			return null;
+		}
+		Expression<?> defaultExpr = getDefaultExpression();
+		if (defaultExpr == null) {
+			return null;
+		}
+		// Use DefaultValueHelper to parse the default expression
+		Object value = DefaultValueHelper.parseDefaultToJavaValue(
+				defaultExpr, getJdbcType(), getType(), fieldName());
+		return value;  // May be null if parsing failed
 	}
 }

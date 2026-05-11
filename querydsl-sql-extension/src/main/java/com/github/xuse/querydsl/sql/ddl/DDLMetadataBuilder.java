@@ -12,7 +12,6 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataEx;
-import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
@@ -102,7 +101,7 @@ public class DDLMetadataBuilder {
 		PrimaryKey<?> keys = table.getPrimaryKey();
 		for (Path<?> p : table.getColumns()) {
 			ColumnMetadata c = table.getMetadata(p);
-			ColumnMetadataEx cx = tableEx == null ? new ColumnMetadataExImpl(c) : tableEx.getColumnMetadata(p);
+			ColumnMetadataEx cx = tableEx == null ? new DDLColumnMetadata(c) : tableEx.getColumnMetadata(p);
 			boolean isPk = keys == null ? false : keys.getLocalColumns().contains(p);
 			tableDefExpressions.add(generateColumnDefinition(p, cx, isPk));
 		}

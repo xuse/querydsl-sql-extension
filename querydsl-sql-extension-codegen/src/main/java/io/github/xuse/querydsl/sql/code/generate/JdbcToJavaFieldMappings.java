@@ -100,7 +100,7 @@ public class JdbcToJavaFieldMappings {
             super.setAttribs(anno, c);
             CompilationUnitBuilder cu = anno.getParent();
             anno.add("size", cu.literal(c.getColumnSize()));
-            if (SQLTypeUtils.hasDigits(c.getJdbcType())) {
+            if (SQLTypeUtils.isDecimalType(c.getJdbcType())) {
                 anno.add("digits", cu.literal(c.getDecimalDigit()));
             }
             if (c.getDataType().toUpperCase().contains("UNSIGNED")) {

@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.config;
 
+import java.awt.MultipleGradientPaint.ColorSpaceType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
+import com.github.xuse.querydsl.config.BatchNullStrategy.ColumnStrategy;
 import com.github.xuse.querydsl.init.ScanOptions;
 import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.lambda.PathCache;
@@ -124,6 +126,25 @@ public class ConfigurationEx {
 	private int maxRecordsLogInBatch = 5;
 
 	/**
+	 * Strategy for handling null values during batch insert operations.
+	 * <p>
+	 * - If null: use SAFE mode (traditional addBatch path, null columns omitted from SQL)
+	 * - If non-null: use populateBatch path with the specified strategy
+	 * <p>
+	 * Default is AUTO_DEFAULT (use defaultExpression for NOT NULL columns).
+	 * <p>
+	 * 批量插入时遇到 null 值的处理策略。
+	 * <p>
+	 * - 如果为 null：使用安全模式（传统 addBatch 路径，null 列从 SQL 中省略）
+	 * - 如果非 null：使用 populateBatch 路径和指定的策略
+	 * <p>
+	 * 默认为 AUTO_DEFAULT（对 NOT NULL 列使用 defaultExpression）。
+	 * 
+	 * @see BatchNullStrategy
+	 */
+	private BatchNullStrategy batchNullStrategy = BatchNullStrategy.AUTO_DEFAULT.withNullableStrategy(ColumnStrategy.USE_DEFAULT);
+
+	/**
 	 * Configuration for data initialization: which database initialization actions
 	 * to perform after package scanning.
 	 * <p>
@@ -181,6 +202,51 @@ public class ConfigurationEx {
 
 	public void setMaxRecordsLogInBatch(int maxRecordsLogInBatch) {
 		this.maxRecordsLogInBatch = maxRecordsLogInBatch;
+	}
+
+	/**
+	 * Get the strategy for handling null values on NOT NULL columns during batch insert.
+	 * <p>
+	 * 获取批量插入时NOT NULL列遇到null值的处理策略。
+	 * 
+	 * @return BatchNullStrategy, or null for SAFE mode (use addBatch path)
+	 */
+	public BatchNullStrategy getBatchNullStrategy() {
+		return batchNullStrategy;
+	}
+
+	/**
+	 * Set the strategy for handling null values during batch insert.
+	 * <p>
+	 * 设置批量插入时遇到 null 值的处理策略。
+	 * 
+	 * @param strategy the strategy to use, or null for SAFE mode (use addBatch path)
+	 * @return this ConfigurationEx for chaining
+	 * @see BatchNullStrategy
+	 */
+	public ConfigurationEx setBatchNullStrategy(BatchNullStrategy strategy) {
+		this.batchNullStrategy = strategy;
+		return this;
+	}
+
+	/**
+	 * Use SAFE mode for batch insert: use the traditional addBatch() path instead of populateBatch().
+	 * In SAFE mode, null columns are omitted from SQL, allowing database DEFAULT to work naturally.
+	 * <p>
+	 * This mode has slightly lower performance for very large batches but supports all types of 
+	 * DEFAULT expressions including CURRENT_TIMESTAMP, UUID(), etc.
+	 * <p>
+	 * <h2>中文</h2>
+	 * 使用安全模式进行批量插入：使用传统的 addBatch() 路径而非 populateBatch()。
+	 * 在安全模式下，null 列会从 SQL 中省略，允许数据库 DEFAULT 自然生效。
+	 * <p>
+	 * 此模式对于超大批量插入性能略低，但支持所有类型的 DEFAULT 表达式，包括 CURRENT_TIMESTAMP、UUID() 等。
+	 * 
+	 * @return this ConfigurationEx for chaining
+	 */
+	public ConfigurationEx useSafeBatchMode() {
+		this.batchNullStrategy = null;
+		return this;
 	}
 
 	public Configuration get() {

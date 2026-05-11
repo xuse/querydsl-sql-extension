@@ -1,5 +1,6 @@
-package com.github.xuse.querydsl.sql.column;
+package com.github.xuse.querydsl.sql.ddl;
 
+import com.github.xuse.querydsl.sql.column.AbstractColumnMetadataEx;
 import com.querydsl.sql.ColumnMetadata;
 
 /**
@@ -10,9 +11,9 @@ import com.querydsl.sql.ColumnMetadata;
  * name, index, 1~4: jdbcType / size / decimalDigits / unsigned,
  * 5: nullable, 6: defaultExpression, 7: features, 8: comment
  */
-public class ColumnMetadataExImpl extends AbstractColumnMetadataEx {
+final class DDLColumnMetadata extends AbstractColumnMetadataEx {
 
-	public ColumnMetadataExImpl(ColumnMetadata metadata) {
+	public DDLColumnMetadata(ColumnMetadata metadata) {
 		super(metadata);
 	}
 

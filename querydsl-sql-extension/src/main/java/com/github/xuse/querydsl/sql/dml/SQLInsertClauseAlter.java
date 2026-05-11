@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import com.github.xuse.querydsl.config.BatchNullStrategy;
+import com.github.xuse.querydsl.config.BatchNullStrategy.ColumnStrategy;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.sql.Mappers;
@@ -77,6 +79,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClauseAlter> {
+	private static final BatchNullStrategy NOT_SET =BatchNullStrategy.of(ColumnStrategy.SKIP, ColumnStrategy.SKIP);
 
 	private final ConfigurationEx configuration;
 
@@ -84,6 +87,14 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 
 	private Boolean writeNulls;
 	
+	/**
+	 * Per-clause override for batch null strategy. If set, takes precedence over global config.
+	 * - null: not set (use global config)
+	 * - SAFE_ADDBACH: explicitly set to SAFE mode
+	 * - other: use the specified strategy
+	 */
+	private com.github.xuse.querydsl.config.BatchNullStrategy overrideBatchNullStrategy = NOT_SET;
+
 	/**
 	 * In a Batch scenario, parameter normalization (with unspecified columns filled
 	 * with NULL) is performed starting from the second row to ensure consistency
@@ -168,7 +179,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	public ResultSet executeWithKeys() {
 		context = startContext(connection(), metadata, entity);
 		try {
-			lazyFillBatches();
+			mergeDifferentBatchMode();
 			PreparedStatement stmt;
 			if (!populatedBatch.isEmpty()) {
 				// 新模式PopulatedBatch
@@ -221,7 +232,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	public long execute() {
 		context = startContext(connection(), metadata, entity);
 		try {
-			lazyFillBatches();
+			mergeDifferentBatchMode();
 			if (!populatedBatch.isEmpty()) {
 				// 新模式PopulatedBatch
 				if (batchToBulk) {
@@ -405,11 +416,42 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 * @return this SQLInsertClauseAlter
 	 */
 	public SQLInsertClauseAlter populateBatch(Collection<?> beans) {
+		if (getEffectiveBatchNullStrategy() == null) {
+			return populateBatchViaAddBatch(beans);
+		}
 		int type = Mappers.TYPE_BEAN;
 		if(writeNulls==null || writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
 		populateBatch0(beans,Mappers.get(SCENARIO_INSERT,type));
+		return this;
+	}
+
+	/**
+	 * Fallback path: use the traditional addBatch() approach for each bean.
+	 * Each bean is processed through the full Mapper pipeline individually,
+	 * so null values on NOT NULL columns are simply omitted from the SQL,
+	 * letting the database DEFAULT take effect naturally.
+	 * <p>
+	 * 安全路径：使用传统的addBatch()方式逐条处理。每条记录独立通过Mapper处理，
+	 * null值的NOT NULL字段不会出现在SQL中，数据库DEFAULT自然生效。
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private SQLInsertClauseAlter populateBatchViaAddBatch(Collection<?> beans) {
+		if (beans.isEmpty()) {
+			return this;
+		}
+		// Disable normalization so each bean keeps its own column set.
+		// Different beans may produce different SQL statements (grouped and executed separately).
+		this.normalizeBatchValues = false;
+		Mapper mapper = Mappers.get(SCENARIO_INSERT, Mappers.TYPE_BEAN);
+		for (Object bean : beans) {
+			Map<Path<?>, Object> values = mapper.createMap(entity, bean);
+			for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+				set((Path) entry.getKey(), entry.getValue());
+			}
+			addBatch();
+		}
 		return this;
 	}
 
@@ -707,7 +749,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 
 	// 将缓存的批量对象，按旧模式写入到batches中。
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void lazyFillBatches() {
+	private void mergeDifferentBatchMode() {
 		if (batches.isEmpty() || populatedBatch.isEmpty()) {
 			return;
 		}
@@ -763,18 +805,25 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			}
 			this.stmt = prepareStatement(sb.toString(), withKeys);
 			SQLBindingsAlter first = this.principle;
-			setParameterBulk(stmt, first.getNullFriendlyBindings().toArray(), first.getPaths(), 0, configuration.get());
+			Object[] firstValues = first.getNullFriendlyBindings().toArray();
+			DefaultValueHelper.applySubstitutions(entity, constantPath, firstValues, getEffectiveBatchNullStrategy());
+			setParameterBulk(stmt, firstValues, first.getPaths(), 0, configuration.get());
 		}
 
 		public void prepareBatch(boolean withKeys) throws SQLException {
 			SQLBindingsAlter first = this.principle;
+			List<Object> bindings = first.getNullFriendlyBindings();
+			Object[] arr = bindings.toArray();
+			DefaultValueHelper.applySubstitutions(entity, constantPath, arr, getEffectiveBatchNullStrategy());
+			bindings = java.util.Arrays.asList(arr);
 			this.stmt = prepareStatement(first.getSQL(), withKeys);
-			setParameters(stmt, first.getNullFriendlyBindings(), first.getPaths(), null);
+			setParameters(stmt, bindings, first.getPaths(), null);
 			stmt.addBatch();
 		}
 
 		public void setBulkParameter(Object bean,Configuration config) {
 			Object[] values = this.beanCodec.values(bean);
+			DefaultValueHelper.applySubstitutions(entity, constantPath, values, getEffectiveBatchNullStrategy());
 			if (count++ < maxLoginBatch) {
 				context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), constantPath));
 			}
@@ -786,6 +835,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			PreparedStatement stmt = this.stmt;
 			if (beanCodec.getType().isInstance(bean)) {
 				Object[] values = beanCodec.values(bean);
+				DefaultValueHelper.applySubstitutions(entity, paths, values, getEffectiveBatchNullStrategy());
 				if (count++ < maxLoginBatch) {
 					context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), paths));
 				}
@@ -871,5 +921,44 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	public SQLInsertClauseAlter normalizeBatch(boolean flag) {
 		this.normalizeBatchValues = flag;
 		return this;
+	}
+
+	/**
+	 * Override the batch null strategy for this specific insert clause.
+	 * This takes precedence over the global {@link ConfigurationEx#getBatchNullStrategy()}.
+	 * <p>
+	 * <b>Special values:</b>
+	 * <ul>
+	 * <li>{@code null} - Use SAFE mode (traditional addBatch path, null columns omitted from SQL)</li>
+	 * <li>{@link BatchNullStrategy#AUTO_DEFAULT} - Use defaultExpression for NOT NULL columns</li>
+	 * <li>{@link BatchNullStrategy#AGGRESSIVE_DEFAULT} - Provide fallback values even without defaultExpression</li>
+	 * <li>Custom strategy - Use {@link BatchNullStrategy#of} or {@code withXxxStrategy()} methods</li>
+	 * </ul>
+	 * <p>
+	 * <h2>中文</h2>
+	 * 为当前插入语句覆盖批量null值处理策略，优先于全局配置。
+	 * <p>
+	 * <b>特殊值：</b>
+	 * <ul>
+	 * <li>{@code null} - 使用安全模式（传统 addBatch 路径，null 列从 SQL 中省略）</li>
+	 * <li>{@link BatchNullStrategy#AUTO_DEFAULT} - 对 NOT NULL 列使用 defaultExpression</li>
+	 * <li>{@link BatchNullStrategy#AGGRESSIVE_DEFAULT} - 即使没有 defaultExpression 也提供兜底值</li>
+	 * <li>自定义策略 - 使用 {@link BatchNullStrategy#of} 或 {@code withXxxStrategy()} 方法</li>
+	 * </ul>
+	 *
+	 * @param strategy the strategy to use for this batch insert, or null for SAFE mode
+	 * @return this SQLInsertClauseAlter
+	 * @see com.github.xuse.querydsl.config.BatchNullStrategy
+	 */
+	public SQLInsertClauseAlter batchNullStrategy(com.github.xuse.querydsl.config.BatchNullStrategy strategy) {
+		this.overrideBatchNullStrategy = strategy;
+		return this;
+	}
+
+	private com.github.xuse.querydsl.config.BatchNullStrategy getEffectiveBatchNullStrategy() {
+		if (overrideBatchNullStrategy == NOT_SET) {
+			return configuration.getBatchNullStrategy();
+		}
+		return overrideBatchNullStrategy;
 	}
 }
