@@ -4,6 +4,10 @@
 
 - **Java 8** source/target (must compile and run on JDK 8+, tested through JDK 22 and GraalVM Native)
 - Do NOT use Java features above 8 in production code (lambdas and streams are fine; `var`, records, sealed classes are not)
+- **IMPORTANT**: Use **Java 17** (or higher) to compile and run tests. The compiled artifacts target Java 8 for runtime compatibility.
+  - Test dependencies (Mockito 5.13.0, H2 2.3.232, JUnit Jupiter 5.11.3) require Java 11+
+  - Maven compiler plugin configured with `source=1.8` and `target=1.8` ensures Java 8 compatibility for production code
+  - Test code can use modern Java features (e.g., `assertInstanceOf` from JUnit 5.8+)
 
 ## Build System
 
@@ -14,7 +18,7 @@
 ### Common Commands
 
 ```bash
-# Full build (compile + test + package)
+# Full build (compile + test + package) - requires Java 17+
 mvn clean install
 
 # Build without tests
@@ -26,6 +30,12 @@ mvn test -pl querydsl-sql-extension
 # Generate JaCoCo coverage report (output: target/test-report/)
 mvn test
 ```
+
+### Build Requirements
+
+- **Compile & Test**: Java 17+ (recommended: Java 17 or Java 21)
+- **Runtime**: Java 8+ (compiled artifacts are Java 8 compatible)
+- **Maven**: 3.6.0+
 
 ## Key Dependencies
 

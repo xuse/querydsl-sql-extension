@@ -663,8 +663,8 @@ public class StringUtilsTest {
 		assertFalse(StringUtils.isNumericString("+")); // Sign only
 		assertFalse(StringUtils.isNumericString("-")); // Sign only
 		assertFalse(StringUtils.isNumericString(".")); // Dot only
-		assertFalse(StringUtils.isNumericString("12.")); // Trailing dot (technically valid but not handled)
-		assertFalse(StringUtils.isNumericString(".12")); // Leading dot (technically valid but not handled)
+		assertFalse(StringUtils.isNumericString("12.")); // Trailing dot
+		assertFalse(StringUtils.isNumericString(".12")); // Leading dot
 		assertFalse(StringUtils.isNumericString("1e10")); // Scientific notation not supported
 		assertFalse(StringUtils.isNumericString("0x1F")); // Hex not supported
 		

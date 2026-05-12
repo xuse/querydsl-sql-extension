@@ -2481,15 +2481,20 @@ public class StringUtils {
 			return false;
 		}
 		boolean hasDot = false;
+		boolean hasDigit = false;
 		for (int i = start; i < s.length(); i++) {
 			char c = s.charAt(i);
 			if (c == '.') {
 				if (hasDot) return false;
+				// dot cannot be first or last character in the numeric part
+				if (i == start || i == s.length() - 1) return false;
 				hasDot = true;
-			} else if (c < '0' || c > '9') {
+			} else if (c >= '0' && c <= '9') {
+				hasDigit = true;
+			} else {
 				return false;
 			}
 		}
-		return true;
+		return hasDigit;
 	}
 }

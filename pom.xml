@@ -200,9 +200,9 @@
 				<configuration>
 					<includes>
 						<include>com/github/xuse/querydsl/**</include>
-						<include>com/querydsl/core/types/SQLTemplatesEx.class</include>
-						<include>com/querydsl/sql/SQLSerializerAlter.class</include>
-						<include>com/querydsl/sql/TemplatesAccessor.class</include>
+						<include>com/querydsl/core/types/SQLTemplatesEx*</include>
+						<include>com/querydsl/sql/SQLSerializerAlter*</include>
+						<include>com/querydsl/sql/TemplatesAccessor*</include>
 					</includes>
 					<excludes>
 						<exclude>
