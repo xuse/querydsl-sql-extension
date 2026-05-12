@@ -12,7 +12,7 @@ import com.github.xuse.querydsl.config.BatchNullStrategy;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.repository.CRUDRepository;
-import com.github.xuse.querydsl.sql.integration.db.AbstractTestBase;
+import com.github.xuse.querydsl.sql.integration.AbstractTestBase;
 
 /**
  * Test for AGGRESSIVE_DEFAULT strategy: provides fallback values for NOT NULL columns

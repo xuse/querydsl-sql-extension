@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.repository.CRUDRepository;
-import com.github.xuse.querydsl.sql.integration.db.AbstractTestBase;
+import com.github.xuse.querydsl.sql.integration.AbstractTestBase;
 
 /**
  * Integration test verifying that AUTO_DEFAULT strategy correctly handles null values
