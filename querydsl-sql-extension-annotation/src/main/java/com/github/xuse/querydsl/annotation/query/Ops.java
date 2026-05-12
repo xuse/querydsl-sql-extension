@@ -1,5 +1,29 @@
 package com.github.xuse.querydsl.annotation.query;
 
+/**
+ * <h2>English:</h2>
+ * Enumerates the comparison operators available for {@link Condition}, {@link StringCase},
+ * {@link BoolCase}, and {@link IntCase} annotations. Each constant corresponds to a SQL
+ * predicate pattern applied to the target column.
+ *
+ * <h3>Usage:</h3>
+ * <pre>{@code
+ * @Condition(Ops.STRING_CONTAINS)
+ * private String name;  // → WHERE name LIKE '%value%'
+ *
+ * @Condition(Ops.BETWEEN)
+ * private String dateRange;  // → WHERE col BETWEEN val1 AND val2 (comma-separated)
+ * }</pre>
+ *
+ * <h2>Chinese:</h2>
+ * 枚举 {@link Condition}、{@link StringCase}、{@link BoolCase} 和 {@link IntCase}
+ * 注解可用的比较运算符。每个常量对应一种作用于目标列的 SQL 谓词模式。
+ *
+ * @see Condition#value()
+ * @see StringCase#ops()
+ * @see BoolCase#ops()
+ * @see IntCase#ops()
+ */
 public enum Ops {
 	/**
 	 * A equals expr.
