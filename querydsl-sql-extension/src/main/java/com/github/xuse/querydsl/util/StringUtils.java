@@ -2458,4 +2458,38 @@ public class StringUtils {
 		}
 		return check;
 	}
+
+	/**
+	 * Check if a string represents a numeric value (integer or decimal).
+	 * Supports optional leading sign (+/-) and decimal point.
+	 * <p>
+	 * 检查字符串是否表示数字值（整数或小数）。
+	 * 支持可选的前导符号（+/-）和小数点。
+	 * 
+	 * @param s the string to check
+	 * @return true if the string is numeric, false otherwise
+	 */
+	public static boolean isNumericString(String s) {
+		if (s == null || s.isEmpty()) {
+			return false;
+		}
+		int start = 0;
+		if (s.charAt(0) == '-' || s.charAt(0) == '+') {
+			start = 1;
+		}
+		if (start >= s.length()) {
+			return false;
+		}
+		boolean hasDot = false;
+		for (int i = start; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c == '.') {
+				if (hasDot) return false;
+				hasDot = true;
+			} else if (c < '0' || c > '9') {
+				return false;
+			}
+		}
+		return true;
+	}
 }

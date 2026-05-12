@@ -285,6 +285,8 @@ public class SQLTypeUtils {
 		case java.sql.Types.NCHAR:
 		case java.sql.Types.NVARCHAR:
 		case java.sql.Types.LONGNVARCHAR:
+		case java.sql.Types.CLOB:
+		case java.sql.Types.NCLOB:
 			return true;
 		default:
 			return false;

@@ -631,4 +631,50 @@ public class StringUtilsTest {
 		 };
 		  
 	}
+
+	@Test
+	public void testIsNumericString() {
+		// Test valid integers
+		assertTrue(StringUtils.isNumericString("0"));
+		assertTrue(StringUtils.isNumericString("123"));
+		assertTrue(StringUtils.isNumericString("999999"));
+		
+		// Test valid decimals
+		assertTrue(StringUtils.isNumericString("3.14"));
+		assertTrue(StringUtils.isNumericString("0.5"));
+		assertTrue(StringUtils.isNumericString("123.456"));
+		
+		// Test with positive sign
+		assertTrue(StringUtils.isNumericString("+123"));
+		assertTrue(StringUtils.isNumericString("+3.14"));
+		
+		// Test with negative sign
+		assertTrue(StringUtils.isNumericString("-123"));
+		assertTrue(StringUtils.isNumericString("-3.14"));
+		assertTrue(StringUtils.isNumericString("-0.5"));
+		
+		// Test invalid inputs
+		assertFalse(StringUtils.isNumericString(null));
+		assertFalse(StringUtils.isNumericString(""));
+		assertFalse(StringUtils.isNumericString(" "));
+		assertFalse(StringUtils.isNumericString("abc"));
+		assertFalse(StringUtils.isNumericString("12a34"));
+		assertFalse(StringUtils.isNumericString("12.34.56")); // Multiple dots
+		assertFalse(StringUtils.isNumericString("+")); // Sign only
+		assertFalse(StringUtils.isNumericString("-")); // Sign only
+		assertFalse(StringUtils.isNumericString(".")); // Dot only
+		assertFalse(StringUtils.isNumericString("12.")); // Trailing dot (technically valid but not handled)
+		assertFalse(StringUtils.isNumericString(".12")); // Leading dot (technically valid but not handled)
+		assertFalse(StringUtils.isNumericString("1e10")); // Scientific notation not supported
+		assertFalse(StringUtils.isNumericString("0x1F")); // Hex not supported
+		
+		// Edge cases
+		assertTrue(StringUtils.isNumericString("0.0"));
+		assertTrue(StringUtils.isNumericString("+0"));
+		assertTrue(StringUtils.isNumericString("-0"));
+		assertFalse(StringUtils.isNumericString("--1")); // Double negative
+		assertFalse(StringUtils.isNumericString("++1")); // Double positive
+		assertFalse(StringUtils.isNumericString("+-1")); // Mixed signs
+	}
 }
+

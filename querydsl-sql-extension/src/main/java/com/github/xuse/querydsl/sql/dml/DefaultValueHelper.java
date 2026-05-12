@@ -84,6 +84,164 @@ public class DefaultValueHelper {
 
 	private static final Map<Class<?>, TypeParser> PARSERS = new HashMap<>();
 
+	/**
+	 * TypeParser for Enum types parsed by name (for string columns).
+	 * <p>
+	 * 按枚举名称解析的 TypeParser（用于字符串列）。
+	 */
+	private static final class EnumByNameParser implements TypeParser {
+		private final Class<? extends Enum<?>> enumClass;
+
+		@SuppressWarnings("unchecked")
+		EnumByNameParser(Class<?> enumType) {
+			this.enumClass = (Class<? extends Enum<?>>) enumType;
+		}
+
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@Override
+		public Object parse(String value) {
+			if (value == null || value.isEmpty()) {
+				return null;
+			}
+			try {
+				return Enum.valueOf((Class) enumClass, value);
+			} catch (IllegalArgumentException e) {
+				log.debug("Cannot parse enum {} from name '{}'", enumClass.getSimpleName(), value);
+				return null;
+			}
+		}
+
+		@Override
+		public Object fromNumber(Number num) {
+			// String column should not receive numeric values
+			log.debug("EnumByNameParser received numeric value {} for enum {}", num, enumClass.getSimpleName());
+			return null;
+		}
+
+		@Override
+		public Object getZeroValue() {
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			return (constants != null && constants.length > 0) ? constants[0] : null;
+		}
+
+		@Override
+		public Object getAlternativeValue() {
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			return (constants != null && constants.length > 1) ? constants[1] : null;
+		}
+	}
+
+	/**
+	 * TypeParser for Enum types parsed by ordinal (for numeric columns).
+	 * <p>
+	 * 按枚举序号解析的 TypeParser（用于数字列）。
+	 */
+	private static final class EnumByOrdinalParser implements TypeParser {
+		private final Class<? extends Enum<?>> enumClass;
+
+		@SuppressWarnings("unchecked")
+		EnumByOrdinalParser(Class<?> enumType) {
+			this.enumClass = (Class<? extends Enum<?>>) enumType;
+		}
+
+		@Override
+		public Object parse(String value) {
+			if (value == null || value.isEmpty()) {
+				return null;
+			}
+			try {
+				int ordinal = Integer.parseInt(value);
+				return fromNumber(ordinal);
+			} catch (NumberFormatException e) {
+				log.debug("Cannot parse enum {} from numeric value '{}'", enumClass.getSimpleName(), value);
+				return null;
+			}
+		}
+
+		@Override
+		public Object fromNumber(Number num) {
+			if (num == null) {
+				return null;
+			}
+			int ordinal = num.intValue();
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			if (ordinal >= 0 && ordinal < constants.length) {
+				return constants[ordinal];
+			}
+			log.debug("Ordinal {} out of range for enum {} (size: {})", 
+					ordinal, enumClass.getSimpleName(), constants.length);
+			return null;
+		}
+
+		@Override
+		public Object getZeroValue() {
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			return (constants != null && constants.length > 0) ? constants[0] : null;
+		}
+
+		@Override
+		public Object getAlternativeValue() {
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			return (constants != null && constants.length > 1) ? constants[1] : null;
+		}
+	}
+
+	/**
+	 * TypeParser for CodeEnum types parsed by code (for numeric columns).
+	 * <p>
+	 * 按 CodeEnum.getCode() 解析的 TypeParser（用于数字列）。
+	 */
+	private static final class EnumByCodeParser implements TypeParser {
+		private final Class<? extends Enum<?>> enumClass;
+
+		@SuppressWarnings("unchecked")
+		EnumByCodeParser(Class<?> enumType) {
+			this.enumClass = (Class<? extends Enum<?>>) enumType;
+		}
+
+		@Override
+		public Object parse(String value) {
+			if (value == null || value.isEmpty()) {
+				return null;
+			}
+			try {
+				int code = Integer.parseInt(value);
+				return fromNumber(code);
+			} catch (NumberFormatException e) {
+				log.debug("Cannot parse enum {} from numeric value '{}'", enumClass.getSimpleName(), value);
+				return null;
+			}
+		}
+
+		@Override
+		public Object fromNumber(Number num) {
+			if (num == null) {
+				return null;
+			}
+			int code = num.intValue();
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			for (Enum<?> constant : constants) {
+				if (((com.github.xuse.querydsl.types.CodeEnum<?>) constant).getCode() == code) {
+					return constant;
+				}
+			}
+			log.debug("Cannot find enum {} with code {}", enumClass.getSimpleName(), code);
+			return null;
+		}
+
+		@Override
+		public Object getZeroValue() {
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			return (constants != null && constants.length > 0) ? constants[0] : null;
+		}
+
+		@Override
+		public Object getAlternativeValue() {
+			Enum<?>[] constants = enumClass.getEnumConstants();
+			return (constants != null && constants.length > 1) ? constants[1] : null;
+		}
+	}
+
 	static {
 		TypeParser stringParser = new TypeParser() {
 			@Override
@@ -545,7 +703,8 @@ public class DefaultValueHelper {
 	 */
 	private static Object getAggressiveFallbackValue(ColumnMapping mapping) {
 		Class<?> javaType = mapping.getType();
-		TypeParser parser = PARSERS.get(javaType);
+		int jdbcType = mapping.getJdbcType();
+		TypeParser parser = getTypeParser(javaType, jdbcType);
 		if (parser != null) {
 			// Try zero value first
 			Object zeroValue = parser.getZeroValue();
@@ -561,6 +720,74 @@ public class DefaultValueHelper {
 		}
 		// Unknown type
 		return null;
+	}
+
+	/**
+	 * Get the TypeParser for the given Java type.
+	 * Supports standard types from PARSERS map and Enum types.
+	 * <p>
+	 * For Enum types:
+	 * <ul>
+	 *   <li>If jdbcType is string-based (VARCHAR, CHAR, etc.), parse by enum name</li>
+	 *   <li>If jdbcType is numeric and enum implements {@link com.github.xuse.querydsl.types.CodeEnum}, parse by code</li>
+	 *   <li>Otherwise, parse by ordinal</li>
+	 * </ul>
+	 * <p>
+	 * 获取给定 Java 类型的 TypeParser。
+	 * 支持 PARSERS 映射中的标准类型和枚举类型。
+	 * <p>
+	 * 对于枚举类型：
+	 * <ul>
+	 *   <li>如果 jdbcType 是字符串类型（VARCHAR、CHAR 等），按枚举名称解析</li>
+	 *   <li>如果 jdbcType 是数字类型且枚举实现了 {@link com.github.xuse.querydsl.types.CodeEnum}，按 code 解析</li>
+	 *   <li>否则，按 ordinal 解析</li>
+	 * </ul>
+	 *
+	 * @param javaType the target Java type (required)
+	 * @param jdbcType the JDBC type code (from java.sql.Types), required for Enum parsing strategy
+	 * @return the TypeParser, or null if the type is not supported
+	 */
+	private static TypeParser getTypeParser(Class<?> javaType, int jdbcType) {
+		// First check standard parsers
+		TypeParser parser = PARSERS.get(javaType);
+		if (parser != null) {
+			return parser;
+		}
+
+		// Handle Enum types
+		if (javaType != null && javaType.isEnum()) {
+			return createEnumParser(javaType, jdbcType);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Create a TypeParser for Enum types based on the JDBC type.
+	 * Returns one of three predefined parser strategies.
+	 * <p>
+	 * 为枚举类型创建 TypeParser，根据 JDBC 类型决定解析策略。
+	 * 返回三种预定义解析策略之一。
+	 *
+	 * @param enumType the enum class
+	 * @param jdbcType the JDBC type code
+	 * @return a TypeParser for the enum type
+	 */
+	private static TypeParser createEnumParser(Class<?> enumType, int jdbcType) {
+		boolean isStringType = com.github.xuse.querydsl.sql.support.SQLTypeUtils.isChars(jdbcType);
+		
+		if (isStringType) {
+			// String column: parse by enum name
+			return new EnumByNameParser(enumType);
+		} else {
+			// Numeric column: parse by code or ordinal
+			boolean isCodeEnum = com.github.xuse.querydsl.types.CodeEnum.class.isAssignableFrom(enumType);
+			if (isCodeEnum) {
+				return new EnumByCodeParser(enumType);
+			} else {
+				return new EnumByOrdinalParser(enumType);
+			}
+		}
 	}
 
 	/**
@@ -597,7 +824,7 @@ public class DefaultValueHelper {
 		// Secondary path: Constant (from defaultValue(0), defaultValue("text"), defaultValueInString(...))
 		if (defaultExpr instanceof com.querydsl.core.types.Constant) {
 			Object constant = ((com.querydsl.core.types.Constant<?>) defaultExpr).getConstant();
-			return convertConstant(constant, javaType);
+			return convertConstant(constant, javaType, jdbcType);
 		}
 		// Unknown expression type — cannot parse
 		return null;
@@ -606,8 +833,13 @@ public class DefaultValueHelper {
 	/**
 	 * Convert a Constant value to match the target Java type.
 	 * For example, defaultValue(1) produces Integer(1), but if the field is Long, we need Long(1).
+	 * 
+	 * @param constant the constant value to convert
+	 * @param javaType the target Java type
+	 * @param jdbcType the JDBC type code (from java.sql.Types)
+	 * @return the converted value, or null if conversion is not possible
 	 */
-	private static Object convertConstant(Object constant, Class<?> javaType) {
+	private static Object convertConstant(Object constant, Class<?> javaType, int jdbcType) {
 		if (constant == null) {
 			return null;
 		}
@@ -615,19 +847,19 @@ public class DefaultValueHelper {
 			return constant;
 		}
 		if (constant instanceof Number) {
-			TypeParser parser = PARSERS.get(javaType);
+			TypeParser parser = getTypeParser(javaType, jdbcType);
 			return parser != null ? parser.fromNumber((Number) constant) : constant;
 		}
 		if (constant instanceof Boolean) {
 			if (javaType == Boolean.class || javaType == boolean.class) {
 				return constant;
 			}
-			TypeParser parser = PARSERS.get(javaType);
+			TypeParser parser = getTypeParser(javaType, jdbcType);
 			return parser != null ? parser.fromNumber(((Boolean) constant) ? 1 : 0) : null;
 		}
 		if (constant instanceof String) {
 			String str = ((String) constant).trim();
-			TypeParser parser = PARSERS.get(javaType);
+			TypeParser parser = getTypeParser(javaType, jdbcType);
 			if (parser != null) {
 				try {
 					return parser.parse(str);
@@ -651,7 +883,7 @@ public class DefaultValueHelper {
 			String inner = template.substring(1, template.length() - 1);
 			// Unescape SQL single-quote escaping: '' → '
 			inner = inner.replace("''", "'");
-			TypeParser parser = PARSERS.get(javaType);
+			TypeParser parser = getTypeParser(javaType, jdbcType);
 			if (parser != null) {
 				return parser.parse(inner.trim());
 			}
@@ -659,12 +891,12 @@ public class DefaultValueHelper {
 			return javaType == String.class ? inner : null;
 		}
 		// Unquoted value — lookup parser by Java type
-		TypeParser parser = PARSERS.get(javaType);
+		TypeParser parser = getTypeParser(javaType, jdbcType);
 		if (parser != null) {
 			return parser.parse(template.trim());
 		}
 		// Unknown target type — try numeric fallback
-		if (isNumericString(template)) {
+		if (com.github.xuse.querydsl.util.StringUtils.isNumericString(template)) {
 			if (template.contains(".")) {
 				return Double.parseDouble(template.trim());
 			}
@@ -672,29 +904,5 @@ public class DefaultValueHelper {
 			return (val >= Integer.MIN_VALUE && val <= Integer.MAX_VALUE) ? (int) val : val;
 		}
 		return null;
-	}
-
-	private static boolean isNumericString(String s) {
-		if (s == null || s.isEmpty()) {
-			return false;
-		}
-		int start = 0;
-		if (s.charAt(0) == '-' || s.charAt(0) == '+') {
-			start = 1;
-		}
-		if (start >= s.length()) {
-			return false;
-		}
-		boolean hasDot = false;
-		for (int i = start; i < s.length(); i++) {
-			char c = s.charAt(i);
-			if (c == '.') {
-				if (hasDot) return false;
-				hasDot = true;
-			} else if (c < '0' || c > '9') {
-				return false;
-			}
-		}
-		return true;
 	}
 }
