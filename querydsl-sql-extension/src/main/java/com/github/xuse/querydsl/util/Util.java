@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.github.xuse.querydsl.spring.core.resource.ConcurrentReferenceHashMap;
 
@@ -179,4 +180,34 @@ public final class Util {
 		}
 		return interfaces;
 	}
+	
+	/**
+	 * Get a static Function field from the DTO class by name.
+	 */
+	@SuppressWarnings("rawtypes")
+	public static Function getStaticFunctionField(Class<?> dtoType, String fieldName, String targetField) {
+		try {
+			java.lang.reflect.Field f = dtoType.getDeclaredField(fieldName);
+			if (!Modifier.isStatic(f.getModifiers())) {
+				throw Exceptions.illegalArgument(
+						"'{}' on field [{}] in class [{}] must be a static field",
+						fieldName, targetField, dtoType.getName());
+			}
+			f.setAccessible(true);
+			Object value = f.get(null);
+			if (!(value instanceof Function)) {
+				throw Exceptions.illegalArgument(
+						"'{}' on field [{}] in class [{}] must be of type Function, but was: {}",
+						fieldName, targetField, dtoType.getName(), value == null ? "null" : value.getClass().getName());
+			}
+			return (Function) value;
+		} catch (NoSuchFieldException e) {
+			throw Exceptions.illegalArgument(
+					"'{}' on field [{}] not found in class [{}]",
+					fieldName, targetField, dtoType.getName());
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException("Cannot access converterRef field: " + fieldName, e);
+		}
+	}
+
 }

@@ -20,9 +20,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.github.xuse.querydsl.annotation.query.BindFrom;
+import com.github.xuse.querydsl.annotation.query.PathBind;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.types.Expression;
 
@@ -36,12 +37,12 @@ import lombok.extern.slf4j.Slf4j;
  * This class uses a two-phase BeanCodec approach:
  * <ol>
  *   <li>First phase: obtain the full BeanCodec (cached) via {@link BeanCodecManager#getCodec(Class)}
- *       to collect all DTO field metadata including {@link BindFrom} annotations</li>
+ *       to collect all DTO field metadata including {@link PathBind} annotations</li>
  *   <li>Second phase: generate a targeted BeanCodec that only covers mapped fields,
  *       preserving DTO default values for unmapped fields</li>
  * </ol>
  * Additionally supports simple type conversions via {@link Function} implementations
- * declared in the {@link BindFrom#converter()} attribute.
+ * declared in the {@link PathBind#readConverter()} attribute.
  * </p>
  *
  * <h2>Chinese:</h2>
@@ -50,10 +51,10 @@ import lombok.extern.slf4j.Slf4j;
  * 使用两阶段 BeanCodec 方式：
  * <ol>
  *   <li>第一阶段：通过 {@link BeanCodecManager#getCodec(Class)} 获取全量 BeanCodec（已缓存），
- *       从中读取 DTO 字段元数据及 {@link BindFrom} 注解</li>
+ *       从中读取 DTO 字段元数据及 {@link PathBind} 注解</li>
  *   <li>第二阶段：生成仅覆盖有映射字段的 BeanCodec，未映射字段保留 DTO 默认值</li>
  * </ol>
- * 同时支持通过 {@link BindFrom#converter()} 声明的 {@link Function} 实现进行简单类型转换。
+ * 同时支持通过 {@link PathBind#readConverter()} 声明的 {@link Function} 实现进行简单类型转换。
  * </p>
  *
  * @param <T> the type of target DTO
@@ -126,9 +127,9 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 
 		for (Property field : allFields) {
 			String fieldName = field.getName();
-			// Determine source name: check @BindFrom annotation
-			BindFrom bindFrom = field.getAnnotation(BindFrom.class);
-			String sourceName = (bindFrom != null) ? bindFrom.value() : fieldName;
+			// Determine source name: check @PathBind annotation
+			PathBind pathBind = field.getAnnotation(PathBind.class);
+			String sourceName = (pathBind != null) ? pathBind.value() : fieldName;
 
 			Expression<?> sourceExpr = sourceBindings.get(sourceName);
 			if (sourceExpr == null) {
@@ -139,7 +140,7 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 			targetBindings.put(fieldName, sourceExpr);
 
 			// Determine converter
-			Function converter = resolveConverter(dtoType, field, bindFrom, sourceExpr.getType());
+			Function converter = resolveConverter(dtoType, field, pathBind, sourceExpr.getType());
 			converterList.add(converter);
 		}
 
@@ -159,17 +160,17 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 	 * Resolve the converter for a field mapping.
 	 */
 	@SuppressWarnings("rawtypes")
-	private static Function resolveConverter(Class<?> dtoType, Property field, BindFrom bindFrom, Class<?> sourceType) {
-		// If explicit converter class is specified via @BindFrom
-		if (bindFrom != null) {
-			Class<? extends Function> converterClass = bindFrom.converter();
+	private static Function resolveConverter(Class<?> dtoType, Property field, PathBind pathBind, Class<?> sourceType) {
+		// If explicit read converter class is specified via @PathBind
+		if (pathBind != null) {
+			Class<? extends Function> converterClass = pathBind.readConverter();
 			if (converterClass != Function.class) {
 				return (Function) TypeUtils.newInstance(converterClass);
 			}
-			// If converterRef is specified, look up static field in DTO class
-			String ref = bindFrom.converterRef();
+			// If readConverterRef is specified, look up static field in DTO class
+			String ref = pathBind.readConverterRef();
 			if (!ref.isEmpty()) {
-				return getStaticFunctionField(dtoType, ref, field.getName());
+				return Util.getStaticFunctionField(dtoType, ref, field.getName());
 			}
 		}
 		// Check if type conversion is needed
@@ -185,35 +186,6 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 		log.warn("No converter found for {} -> {} on field [{}]. Direct assignment will be attempted.",
 				sourceType.getName(), targetType.getName(), field.getName());
 		return Function.identity();
-	}
-
-	/**
-	 * Get a static Function field from the DTO class by name.
-	 */
-	@SuppressWarnings("rawtypes")
-	private static Function getStaticFunctionField(Class<?> dtoType, String fieldName, String targetField) {
-		try {
-			java.lang.reflect.Field f = dtoType.getDeclaredField(fieldName);
-			if (!java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
-				throw Exceptions.illegalArgument(
-						"converterRef '{}' on field [{}] in class [{}] must be a static field",
-						fieldName, targetField, dtoType.getName());
-			}
-			f.setAccessible(true);
-			Object value = f.get(null);
-			if (!(value instanceof Function)) {
-				throw Exceptions.illegalArgument(
-						"converterRef '{}' on field [{}] in class [{}] must be of type Function, but was: {}",
-						fieldName, targetField, dtoType.getName(), value == null ? "null" : value.getClass().getName());
-			}
-			return (Function) value;
-		} catch (NoSuchFieldException e) {
-			throw Exceptions.illegalArgument(
-					"converterRef '{}' on field [{}] not found in class [{}]",
-					fieldName, targetField, dtoType.getName());
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException("Cannot access converterRef field: " + fieldName, e);
-		}
 	}
 
 	private static boolean isAssignableWithBoxing(Class<?> source, Class<?> target) {
