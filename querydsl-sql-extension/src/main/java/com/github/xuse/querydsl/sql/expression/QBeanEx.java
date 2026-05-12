@@ -48,7 +48,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 		return beanCodec;
 	}
 
-	private static Map<String, Expression<?>> createBindings(Expression<?>... args) {
+	static Map<String, Expression<?>> createBindings(Expression<?>... args) {
 		Map<String, Expression<?>> rv = new FastHashtable<>(args.length);
 		for (Expression<?> expr : args) {
 			if (expr instanceof Path<?>) {

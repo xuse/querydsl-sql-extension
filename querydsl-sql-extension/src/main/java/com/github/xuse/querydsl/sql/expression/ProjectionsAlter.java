@@ -20,7 +20,8 @@ public class ProjectionsAlter {
 	
 	@SuppressWarnings("unchecked")
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPath<?> beanPath) {
-		if (type == beanPath.getType()) {
+		boolean isNativeType = type == beanPath.getType(); 
+		if (isNativeType) {
 			 Expression<?> expr=beanPath.getProjection();
 			if(expr instanceof QBeanEx) {
 				return (QBeanEx<T>)expr;
@@ -31,7 +32,8 @@ public class ProjectionsAlter {
 		for (Path<?> p : paths) {
 			bindings.put(p.getMetadata().getName(), p);
 		}
-		return new QBeanEx<T>(type, bindings);
+		
+		return isNativeType? new QBeanEx<T>(type, bindings): new QBeanExWithConverter<T>(type, bindings);
 	}
 
 	/**
