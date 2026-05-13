@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.github.xuse.querydsl.annotation.query.PathBind;
+import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.github.xuse.querydsl.util.Util;
@@ -37,24 +37,24 @@ import lombok.extern.slf4j.Slf4j;
  * This class uses a two-phase BeanCodec approach:
  * <ol>
  *   <li>First phase: obtain the full BeanCodec (cached) via {@link BeanCodecManager#getCodec(Class)}
- *       to collect all DTO field metadata including {@link PathBind} annotations</li>
+ *       to collect all DTO field metadata including {@link PathBinder} annotations</li>
  *   <li>Second phase: generate a targeted BeanCodec that only covers mapped fields,
  *       preserving DTO default values for unmapped fields</li>
  * </ol>
  * Additionally supports simple type conversions via {@link Function} implementations
- * declared in the {@link PathBind#readConverter()} attribute.
+ * declared in the {@link PathBinder#readConverter()} attribute.
  * </p>
  *
  * <h2>Chinese:</h2>
- * 增强的投影表达式，支持将查询结果映射到字段名或类型与源表不同的 DTO 类。
+ * 增强的投影表达式，支持将查询结果映射到字段名或类型与源表不同�?DTO 类�?
  * <p>
  * 使用两阶段 BeanCodec 方式：
  * <ol>
  *   <li>第一阶段：通过 {@link BeanCodecManager#getCodec(Class)} 获取全量 BeanCodec（已缓存），
- *       从中读取 DTO 字段元数据及 {@link PathBind} 注解</li>
+ *       从中读取 DTO 字段元数据及 {@link PathBinder} 注解</li>
  *   <li>第二阶段：生成仅覆盖有映射字段的 BeanCodec，未映射字段保留 DTO 默认值</li>
  * </ol>
- * 同时支持通过 {@link PathBind#readConverter()} 声明的 {@link Function} 实现进行简单类型转换。
+ * 同时支持通过 {@link PathBinder#readConverter()} 声明的 {@link Function} 实现进行简单类型转换。
  * </p>
  *
  * @param <T> the type of target DTO
@@ -127,9 +127,9 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 
 		for (Property field : allFields) {
 			String fieldName = field.getName();
-			// Determine source name: check @PathBind annotation
-			PathBind pathBind = field.getAnnotation(PathBind.class);
-			String sourceName = (pathBind != null) ? pathBind.value() : fieldName;
+			// Determine source name: check @PathBinder annotation
+			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
+			String sourceName = (pathBinder != null) ? pathBinder.value() : fieldName;
 
 			Expression<?> sourceExpr = sourceBindings.get(sourceName);
 			if (sourceExpr == null) {
@@ -140,7 +140,7 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 			targetBindings.put(fieldName, sourceExpr);
 
 			// Determine converter
-			Function converter = resolveConverter(dtoType, field, pathBind, sourceExpr.getType());
+			Function converter = resolveConverter(dtoType, field, pathBinder, sourceExpr.getType());
 			converterList.add(converter);
 		}
 
@@ -160,15 +160,15 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 	 * Resolve the converter for a field mapping.
 	 */
 	@SuppressWarnings("rawtypes")
-	private static Function resolveConverter(Class<?> dtoType, Property field, PathBind pathBind, Class<?> sourceType) {
-		// If explicit read converter class is specified via @PathBind
-		if (pathBind != null) {
-			Class<? extends Function> converterClass = pathBind.readConverter();
+	private static Function resolveConverter(Class<?> dtoType, Property field, PathBinder pathBinder, Class<?> sourceType) {
+		// If explicit read converter class is specified via @PathBinder
+		if (pathBinder != null) {
+			Class<? extends Function> converterClass = pathBinder.readConverter();
 			if (converterClass != Function.class) {
 				return (Function) TypeUtils.newInstance(converterClass);
 			}
 			// If readConverterRef is specified, look up static field in DTO class
-			String ref = pathBind.readConverterRef();
+			String ref = pathBinder.readConverterRef();
 			if (!ref.isEmpty()) {
 				return Util.getStaticFunctionField(dtoType, ref, field.getName());
 			}

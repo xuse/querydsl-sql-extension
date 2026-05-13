@@ -2,7 +2,7 @@ package com.github.xuse.querydsl.entity;
 
 import java.util.Map;
 
-import com.github.xuse.querydsl.annotation.query.PathBind;
+import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.enums.Gender;
 
 import lombok.Data;
@@ -27,7 +27,7 @@ public class FooDTO {
 	
 	private int version;
 	
-	@PathBind("codeType")
+	@PathBinder("codeType")
 	private String codeTypeX;
 	
 	private java.sql.Date inDay;

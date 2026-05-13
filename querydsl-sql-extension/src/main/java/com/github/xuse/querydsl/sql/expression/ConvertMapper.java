@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.github.xuse.querydsl.annotation.query.PathBind;
+import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.util.Entry;
@@ -21,24 +21,24 @@ import com.querydsl.sql.dml.Mapper;
  * A decorator Mapper that supports populating Insert/Update statements from a DTO
  * whose field names or types differ from the target table entity.
  * <p>
- * Uses {@link PathBind} annotations on the DTO class to:
+ * Uses {@link PathBinder} annotations on the DTO class to:
  * <ul>
- *   <li>Map DTO field names to entity field names (via {@link PathBind#value()})</li>
- *   <li>Skip read-only fields (via {@link PathBind#writable()})</li>
- *   <li>Apply write type conversion (via {@link PathBind#writeConverter()} or
- *       {@link PathBind#writeConverterRef()})</li>
+ *   <li>Map DTO field names to entity field names (via {@link PathBinder#value()})</li>
+ *   <li>Skip read-only fields (via {@link PathBinder#writable()})</li>
+ *   <li>Apply write type conversion (via {@link PathBinder#writeConverter()} or
+ *       {@link PathBinder#writeConverterRef()})</li>
  * </ul>
  * </p>
  *
  * <h2>Chinese:</h2>
- * 装饰器 Mapper，支持从字段名或类型与目标表实体不同的 DTO 填充 Insert/Update 语句。
+ * 装饰�?Mapper，支持从字段名或类型与目标表实体不同�?DTO 填充 Insert/Update 语句�?
  * <p>
- * 通过 DTO 类上的 {@link PathBind} 注解：
+ * 通过 DTO 类上�?{@link PathBinder} 注解�?
  * <ul>
- *   <li>将 DTO 字段名映射到实体字段名（通过 {@link PathBind#value()}）</li>
- *   <li>跳过只读字段（通过 {@link PathBind#writable()}）</li>
- *   <li>应用写入类型转换（通过 {@link PathBind#writeConverter()} 或
- *       {@link PathBind#writeConverterRef()}）</li>
+ *   <li>�?DTO 字段名映射到实体字段名（通过 {@link PathBinder#value()}�?/li>
+ *   <li>跳过只读字段（通过 {@link PathBinder#writable()}�?/li>
+ *   <li>应用写入类型转换（通过 {@link PathBinder#writeConverter()} �?
+ *       {@link PathBinder#writeConverterRef()}�?/li>
  * </ul>
  * </p>
  *
@@ -56,7 +56,7 @@ public class ConvertMapper implements Mapper<Object> {
 	private final Class<?> dtoType;
 
 	/**
-	 * Cached mapping info: DTO field index → table column name + write converter.
+	 * Cached mapping info: DTO field index �?table column name + write converter.
 	 * null element means the field is skipped (not writable or no mapping).
 	 */
 	private volatile FieldMapping[] mappings;
@@ -69,7 +69,7 @@ public class ConvertMapper implements Mapper<Object> {
 	/**
 	 * Create a ConvertMapper for the given DTO class.
 	 *
-	 * @param dtoType the DTO class with optional {@link PathBind} annotations
+	 * @param dtoType the DTO class with optional {@link PathBinder} annotations
 	 */
 	public ConvertMapper(Class<?> dtoType) {
 		this.dtoType = dtoType;
@@ -94,7 +94,7 @@ public class ConvertMapper implements Mapper<Object> {
 		// Extract all values from DTO using its BeanCodec
 		Object[] values = dtoCodec.values(bean);
 
-		// Build the result map: table Path → converted value
+		// Build the result map: table Path �?converted value
 		List<Entry<Path<?>, Object>> data = new ArrayList<>();
 		for (int i = 0; i < mappings.length; i++) {
 			FieldMapping mapping = mappings[i];
@@ -136,19 +136,19 @@ public class ConvertMapper implements Mapper<Object> {
 		for (int i = 0; i < fields.length; i++) {
 			Property field = fields[i];
 			String fieldName = field.getName();
-			PathBind pathBind = field.getAnnotation(PathBind.class);
+			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
 
 			// Check writable flag
-			if (pathBind != null && !pathBind.writable()) {
+			if (pathBinder != null && !pathBinder.writable()) {
 				result[i] = null; // Read-only, skip on write
 				continue;
 			}
 
 			// Determine target column name
-			String targetColumnName = (pathBind != null) ? pathBind.value() : fieldName;
+			String targetColumnName = (pathBinder != null) ? pathBinder.value() : fieldName;
 
 			// Determine write converter
-			Function writeConverter = resolveWriteConverter(pathBind, field);
+			Function writeConverter = resolveWriteConverter(pathBinder, field);
 
 			result[i] = new FieldMapping(targetColumnName, writeConverter);
 		}
@@ -158,17 +158,17 @@ public class ConvertMapper implements Mapper<Object> {
 	}
 
 	@SuppressWarnings("rawtypes")
-	private Function resolveWriteConverter(PathBind pathBind, Property field) {
-		if (pathBind == null) {
+	private Function resolveWriteConverter(PathBinder pathBinder, Property field) {
+		if (pathBinder == null) {
 			return null;
 		}
 		// Check writeConverter class
-		Class<? extends Function> writeClass = pathBind.writeConverter();
+		Class<? extends Function> writeClass = pathBinder.writeConverter();
 		if (writeClass != Function.class) {
 			return (Function) TypeUtils.newInstance(writeClass);
 		}
 		// Check writeConverterRef
-		String ref = pathBind.writeConverterRef();
+		String ref = pathBinder.writeConverterRef();
 		if (!ref.isEmpty()) {
 			return Util.getStaticFunctionField(dtoType, ref, field.getName());
 		}

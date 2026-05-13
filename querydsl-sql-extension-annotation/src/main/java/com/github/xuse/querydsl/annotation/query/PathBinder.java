@@ -13,7 +13,7 @@ import java.util.function.Function;
  * Used when the DTO field name differs from the entity field name, or when type
  * conversion is needed between the DTO and the database.
  * <p>
- * Supports both read (Select: DB → DTO) and write (Insert/Update: DTO → DB) directions
+ * Supports both read (Select: DB &rarr; DTO) and write (Insert/Update: DTO &rarr; DB) directions
  * with independent type converters.
  * </p>
  *
@@ -21,7 +21,7 @@ import java.util.function.Function;
  * 声明 DTO 字段与实体 Path（字段）之间的绑定关系。
  * 用于 DTO 字段名与实体字段名不同，或需要在 DTO 与数据库之间进行类型转换的场景。
  * <p>
- * 支持读（Select: DB → DTO）和写（Insert/Update: DTO → DB）两个方向，
+ * 支持读（Select: DB &rarr; DTO）和写（Insert/Update: DTO &rarr; DB）两个方向，
  * 可分别指定独立的类型转换器。
  * </p>
  *
@@ -29,22 +29,22 @@ import java.util.function.Function;
  * <pre>
  * public class FooDTO {
  *     // Simple name remapping
- *     &#64;PathBind("codeType")
+ *     &#64;PathBinder("codeType")
  *     private int codeTypeX;
  *
  *     // Read-only field (not written back to DB on Insert/Update)
- *     &#64;PathBind(value = "created", writable = false)
+ *     &#64;PathBinder(value = "created", writable = false)
  *     private Date createdTime;
  *
  *     // With bidirectional type conversion
- *     &#64;PathBind(value = "codeType", readConverter = IntToString.class, writeConverter = StringToInt.class)
+ *     &#64;PathBinder(value = "codeType", readConverter = IntToString.class, writeConverter = StringToInt.class)
  *     private String codeTypeStr;
  *
  *     // Using static field references for converters
  *     public static final Function&lt;Object, String&gt; READ = v -&gt; String.valueOf(v);
  *     public static final Function&lt;String, Object&gt; WRITE = s -&gt; Integer.parseInt(s);
  *
- *     &#64;PathBind(value = "codeType", readConverterRef = "READ", writeConverterRef = "WRITE")
+ *     &#64;PathBinder(value = "codeType", readConverterRef = "READ", writeConverterRef = "WRITE")
  *     private String codeTypeRef;
  * }
  * </pre>
@@ -55,7 +55,7 @@ import java.util.function.Function;
  */
 @Target({ FIELD })
 @Retention(RUNTIME)
-public @interface PathBind {
+public @interface PathBinder {
 
 	/**
 	 * The entity field name (Java field name, i.e. Path metadata name) to bind to.
@@ -75,9 +75,9 @@ public @interface PathBind {
 	boolean writable() default true;
 
 	/**
-	 * Optional read converter class for Select scenarios (DB → DTO).
+	 * Optional read converter class for Select scenarios (DB &rarr; DTO).
 	 * Must be a concrete implementation of {@code java.util.function.Function<DbType, DtoFieldType>}.
-	 * <p>可选的读取转换器类，用于 Select 场景（DB → DTO）。</p>
+	 * <p>可选的读取转换器类，用于 Select 场景（DB &rarr; DTO）。</p>
 	 * <p>与 {@link #readConverterRef()} 互斥，两者同时指定时本属性优先。</p>
 	 *
 	 * @return read converter class, or {@code Function.class} for no explicit converter
@@ -87,7 +87,7 @@ public @interface PathBind {
 
 	/**
 	 * Optional reference to a static {@link Function} field in the DTO class,
-	 * used as the read converter (DB → DTO) for Select scenarios.
+	 * used as the read converter (DB &rarr; DTO) for Select scenarios.
 	 * <p>可选，指向 DTO 类中的一个静态 {@link Function} 字段名，作为读取转换器。</p>
 	 * <p>与 {@link #readConverter()} 互斥，两者同时指定时 readConverter 优先。</p>
 	 *
@@ -96,9 +96,9 @@ public @interface PathBind {
 	String readConverterRef() default "";
 
 	/**
-	 * Optional write converter class for Insert/Update scenarios (DTO → DB).
+	 * Optional write converter class for Insert/Update scenarios (DTO &rarr; DB).
 	 * Must be a concrete implementation of {@code java.util.function.Function<DtoFieldType, DbType>}.
-	 * <p>可选的写入转换器类，用于 Insert/Update 场景（DTO → DB）。</p>
+	 * <p>可选的写入转换器类，用于 Insert/Update 场景（DTO &rarr; DB）。</p>
 	 * <p>与 {@link #writeConverterRef()} 互斥，两者同时指定时本属性优先。</p>
 	 *
 	 * @return write converter class, or {@code Function.class} for no explicit converter
@@ -108,7 +108,7 @@ public @interface PathBind {
 
 	/**
 	 * Optional reference to a static {@link Function} field in the DTO class,
-	 * used as the write converter (DTO → DB) for Insert/Update scenarios.
+	 * used as the write converter (DTO &rarr; DB) for Insert/Update scenarios.
 	 * <p>可选，指向 DTO 类中的一个静态 {@link Function} 字段名，作为写入转换器。</p>
 	 * <p>与 {@link #writeConverter()} 互斥，两者同时指定时 writeConverter 优先。</p>
 	 *

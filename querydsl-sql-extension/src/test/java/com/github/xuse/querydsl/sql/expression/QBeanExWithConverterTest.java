@@ -23,8 +23,8 @@ import com.querydsl.core.types.Path;
  * Verifies:
  * <ul>
  *   <li>Basic field mapping by same name</li>
- *   <li>{@code @PathBind} annotation for field name remapping</li>
- *   <li>Built-in type conversion (int → String via BuiltinConverters)</li>
+ *   <li>{@code @PathBinder} annotation for field name remapping</li>
+ *   <li>Built-in type conversion (int to String via BuiltinConverters)</li>
  *   <li>Unmapped fields preserve DTO default values</li>
  *   <li>Null handling on primitive vs reference type fields</li>
  *   <li>ConvertMapper for Insert/Update with field name remapping</li>
@@ -38,7 +38,7 @@ class QBeanExWithConverterTest {
 
 	/**
 	 * Verify getArgs() contains only columns matching DTO fields,
-	 * and includes codeType (mapped via @PathBind on codeTypeX).
+	 * and includes codeType (mapped via @PathBinder on codeTypeX).
 	 */
 	@Test
 	void testGetArgsContainsMappedColumns() {
@@ -48,8 +48,8 @@ class QBeanExWithConverterTest {
 		assertNotNull(args);
 		assertFalse(args.isEmpty());
 
-		// codeType column should be present (mapped to codeTypeX via @PathBind)
-		assertTrue(hasColumn(args, "codeType"), "codeType should be in getArgs() via @PathBind");
+		// codeType column should be present (mapped to codeTypeX via @PathBinder)
+		assertTrue(hasColumn(args, "codeType"), "codeType should be in getArgs() via @PathBinder");
 		// id, code, name etc. should be present
 		assertTrue(hasColumn(args, "id"));
 		assertTrue(hasColumn(args, "code"));
@@ -71,11 +71,11 @@ class QBeanExWithConverterTest {
 
 	/**
 	 * Test newInstance with normal values.
-	 * Verifies @PathBind mapping and int→String built-in conversion.
+	 * Verifies @PathBinder mapping and int to String built-in conversion.
 	 * Foo.codeType is int, FooDTO.codeTypeX is String.
 	 */
 	@Test
-	void testNewInstanceWithPathBindAndTypeConversion() {
+	void testNewInstanceWithPathBinderAndTypeConversion() {
 		QBeanExWithConverter<FooDTO> projection = createProjection();
 		Object[] values = buildValues(projection);
 
@@ -89,7 +89,7 @@ class QBeanExWithConverterTest {
 		assertEquals(Gender.MALE, dto.getGender());
 		assertEquals(100, dto.getVolume());
 		assertEquals(1, dto.getVersion());
-		// codeType(int 7) → codeTypeX(String "7") via built-in converter
+		// codeType(int 7) to codeTypeX(String "7") via built-in converter
 		assertEquals("7", dto.getCodeTypeX());
 	}
 
@@ -119,7 +119,7 @@ class QBeanExWithConverterTest {
 		assertNull(dto.getExt());
 		assertNull(dto.getMap());
 		assertNull(dto.getInDay());
-		// codeType is int, value is 0, converter int→String gives "0"
+		// codeType is int, value is 0, converter int to String gives "0"
 		assertEquals("0", dto.getCodeTypeX());
 	}
 
@@ -139,7 +139,7 @@ class QBeanExWithConverterTest {
 
 	/**
 	 * Test ConvertMapper creates correct path-value map from DTO.
-	 * Verifies @PathBind name remapping: codeTypeX → codeType column.
+	 * Verifies @PathBinder name remapping: codeTypeX to codeType column.
 	 */
 	@Test
 	void testConvertMapperBasicMapping() {
