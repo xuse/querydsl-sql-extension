@@ -66,8 +66,13 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 
 	public Map<Path<?>, Object> createMap(RelationalPath<?> entity, Object bean) {
 		RelationalPathEx<?> path = RelationalPathExImpl.toRelationPathEx(entity);
+		if (bean instanceof ConverterWrappedBean) {
+			ConverterWrappedBean wrapped = (ConverterWrappedBean) bean;
+			Object[] values = wrapped.extractValues(path);
+			return createMapOptimized(path, wrapped.getDto(), values);
+		}
 		BeanCodec bc = getBeanCodec(path, bean);
-		return createMapOptimized(path, bean, bc);
+		return createMapOptimized(path, bean, bc.values(bean));
 	}
 
 	public static BeanCodec getBeanCodec(RelationalPathEx<?> entity, Object bean) {
@@ -87,13 +92,13 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 	 * Create the property map using ASM generated class.
 	 *
 	 * @param entity entity
-	 * @param bean   bean
-	 * @return 映射路径对象
+	 * @param bean   bean (for writeback support)
+	 * @param values pre-extracted values aligned with entity columns
+	 * @return mapped path-value pairs
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Map<Path<?>, Object> createMapOptimized(RelationalPathEx entity, Object bean, BeanCodec bc) {
+	private Map<Path<?>, Object> createMapOptimized(RelationalPathEx entity, Object bean, Object[] values) {
 		List<Path<?>> path = entity.getColumns();
-		Object[] values = bc.values(bean);
 		int len = path.size();
 		List<Entry<Path<?>, Object>> data = new ArrayList<>(len);
 		for (int i = 0; i < len; i++) {
