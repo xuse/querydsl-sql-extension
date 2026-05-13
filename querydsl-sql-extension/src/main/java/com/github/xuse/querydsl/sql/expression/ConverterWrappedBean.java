@@ -8,9 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import com.github.xuse.querydsl.annotation.query.PathBinder;
+import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.util.TypeUtils;
 import com.github.xuse.querydsl.util.Util;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.types.Path;
 
 /**
@@ -53,10 +55,10 @@ public class ConverterWrappedBean {
 	private static final Set<Class<?>> NO_PATH_BINDER = ConcurrentHashMap.newKeySet();
 
 	/**
-	 * Cache: (dtoType, entityType) -> FieldSlot[].
-	 * The FieldSlot array is aligned with entity columns order, enabling O(n) extraction.
+	 * Cache: (dtoType, entityType) -> DtoMappingInfo.
+	 * Contains both the BeanCodec and the FieldSlot[] aligned with entity columns.
 	 */
-	private static final Map<ClassPairKey, FieldSlot[]> MAPPING_CACHE = new ConcurrentHashMap<>();
+	private static final Map<ClassPairKey, DtoMappingInfo> MAPPING_CACHE = MapCreator.createConcurrentMap(ConfigurationEx.WRAPPERED_BEAN_CACHE_SIZE);
 
 	private final Object dto;
 	private final Class<?> dtoType;
@@ -132,20 +134,19 @@ public class ConverterWrappedBean {
 	}
 
 	/**
-	 * Core extraction logic. Uses cached FieldSlot[] aligned with entity column order
-	 * for O(n) value extraction without any HashMap lookup at runtime.
+	 * Core extraction logic. Uses cached DtoMappingInfo (BeanCodec + FieldSlot[]) aligned
+	 * with entity column order for O(n) value extraction without any lookup at runtime.
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static Object[] extractValues(Object bean, Class<?> dtoType, RelationalPathEx<?> entity) {
-		FieldSlot[] mappings = getColumnMappings(dtoType, entity);
-		BeanCodec dtoCodec = BeanCodecManager.getInstance().getCodec(dtoType);
-		Object[] dtoValues = dtoCodec.values(bean);
+		DtoMappingInfo info = getMapping(dtoType, entity);
+		Object[] dtoValues = info.codec.values(bean);
+		FieldSlot[] slots = info.slots;
 
-		Object[] result = new Object[mappings.length];
-		for (int i = 0; i < mappings.length; i++) {
-			FieldSlot slot = mappings[i];
+		Object[] result = new Object[slots.length];
+		for (int i = 0; i < slots.length; i++) {
+			FieldSlot slot = slots[i];
 			if (slot == null) {
-				// No DTO field maps to this entity column
 				continue;
 			}
 			Object value = dtoValues[slot.dtoFieldIndex];
@@ -159,13 +160,12 @@ public class ConverterWrappedBean {
 	}
 
 	/**
-	 * Get or build the cached FieldSlot[] for a (dtoType, entityType) pair.
-	 * The result array is indexed by entity column position.
+	 * Get or build the cached DtoMappingInfo for a (dtoType, entityType) pair.
 	 */
 	@SuppressWarnings("rawtypes")
-	private static FieldSlot[] getColumnMappings(Class<?> dtoType, RelationalPathEx<?> entity) {
+	private static DtoMappingInfo getMapping(Class<?> dtoType, RelationalPathEx<?> entity) {
 		ClassPairKey key = new ClassPairKey(dtoType, entity.getType());
-		FieldSlot[] cached = MAPPING_CACHE.get(key);
+		DtoMappingInfo cached = MAPPING_CACHE.get(key);
 		if (cached != null) {
 			return cached;
 		}
@@ -189,13 +189,14 @@ public class ConverterWrappedBean {
 
 		// Build result aligned with entity column order
 		List<Path<?>> columns = entity.getColumns();
-		FieldSlot[] result = new FieldSlot[columns.size()];
+		FieldSlot[] slots = new FieldSlot[columns.size()];
 		for (int c = 0; c < columns.size(); c++) {
 			String colName = columns.get(c).getMetadata().getName();
-			result[c] = fieldMap.get(colName); // null if DTO has no field for this column
+			slots[c] = fieldMap.get(colName);
 		}
-		MAPPING_CACHE.put(key, result);
-		return result;
+		DtoMappingInfo info = new DtoMappingInfo(codec, slots);
+		MAPPING_CACHE.put(key, info);
+		return info;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -212,6 +213,20 @@ public class ConverterWrappedBean {
 			return Util.getStaticFunctionField(dtoType, ref, field.getName());
 		}
 		return null;
+	}
+
+	/**
+	 * Cached mapping info for a (dtoType, entityType) pair.
+	 * Holds both the BeanCodec (for value extraction) and the FieldSlot[] (for column alignment).
+	 */
+	private static final class DtoMappingInfo {
+		final BeanCodec codec;
+		final FieldSlot[] slots;
+
+		DtoMappingInfo(BeanCodec codec, FieldSlot[] slots) {
+			this.codec = codec;
+			this.slots = slots;
+		}
 	}
 
 	/**
