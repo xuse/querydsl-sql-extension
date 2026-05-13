@@ -112,6 +112,34 @@ public class ConverterWrappedBean {
 	}
 
 	/**
+	 * Create a {@link ValueExtractor} for batch processing.
+	 * The extractor produces values aligned with the given column path list
+	 * (typically the constantPath from BatchProcessor).
+	 *
+	 * @param entity the target table (for resolving field mappings)
+	 * @param paths  the column paths to extract values for (subset of entity columns)
+	 * @return a ValueExtractor that handles DTO beans of this type
+	 */
+	public ValueExtractor toValueExtractor(RelationalPathEx<?> entity, List<Path<?>> paths) {
+		DtoMappingInfo info = getMapping(dtoType, entity);
+		// Build index mapping: for each path in 'paths', find the corresponding FieldSlot
+		List<Path<?>> allColumns = entity.getColumns();
+		int[] columnIndices = new int[paths.size()];
+		for (int i = 0; i < paths.size(); i++) {
+			String name = paths.get(i).getMetadata().getName();
+			int found = -1;
+			for (int c = 0; c < allColumns.size(); c++) {
+				if (allColumns.get(c).getMetadata().getName().equals(name)) {
+					found = c;
+					break;
+				}
+			}
+			columnIndices[i] = found;
+		}
+		return new DtoValueExtractor(dtoType, info, columnIndices);
+	}
+
+	/**
 	 * Extract values from the wrapped DTO, aligned with the given table's column order.
 	 *
 	 * @param entity the target table
@@ -221,6 +249,53 @@ public class ConverterWrappedBean {
 		DtoMappingInfo(BeanCodec codec, FieldSlot[] slots) {
 			this.codec = codec;
 			this.slots = slots;
+		}
+	}
+
+	/**
+	 * A ValueExtractor that extracts DTO values aligned with a specific column path subset.
+	 * Used by BatchProcessor for batch insert with DTO beans.
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static final class DtoValueExtractor extends ValueExtractor {
+		private final Class<?> dtoType;
+		private final DtoMappingInfo info;
+		/** Maps each output position to an index in the full entity column slots array. -1 means no mapping. */
+		private final int[] columnIndices;
+
+		DtoValueExtractor(Class<?> dtoType, DtoMappingInfo info, int[] columnIndices) {
+			this.dtoType = dtoType;
+			this.info = info;
+			this.columnIndices = columnIndices;
+		}
+
+		@Override
+		public Class<?> getType() {
+			return dtoType;
+		}
+
+		@Override
+		public Object[] values(Object bean) {
+			Object actual = (bean instanceof ConverterWrappedBean) ? ((ConverterWrappedBean) bean).getDto() : bean;
+			Object[] dtoValues = info.codec.values(actual);
+			FieldSlot[] slots = info.slots;
+			Object[] result = new Object[columnIndices.length];
+			for (int i = 0; i < columnIndices.length; i++) {
+				int colIdx = columnIndices[i];
+				if (colIdx >= 0) {
+					FieldSlot slot = slots[colIdx];
+					if (slot != null) {
+						result[i] = slot.writeConverter.apply(dtoValues[slot.dtoFieldIndex]);
+					}
+				}
+			}
+			return result;
+		}
+
+		@Override
+		public boolean isInstance(Object bean) {
+			Object actual = (bean instanceof ConverterWrappedBean) ? ((ConverterWrappedBean) bean).getDto() : bean;
+			return dtoType.isInstance(actual);
 		}
 	}
 
