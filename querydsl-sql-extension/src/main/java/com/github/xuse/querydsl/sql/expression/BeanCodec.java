@@ -9,7 +9,7 @@ import java.util.Map;
  * 使用ASM动态字节码技术生成的类序列化反序列化器
  * @author Joey
  */
-public abstract class BeanCodec {
+public abstract class BeanCodec extends ValueExtractor {
 	/**
 	 * <h2>English:</h2> Assemble an object from field values (ordered by metadata).
 	 * <h2>Chinese:</h2> 根据字段值（按元数据顺序排列）拼装成对象

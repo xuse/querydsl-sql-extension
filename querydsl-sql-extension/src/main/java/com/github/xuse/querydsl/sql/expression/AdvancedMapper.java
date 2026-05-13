@@ -70,6 +70,7 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 			ConverterWrappedBean wrapped = (ConverterWrappedBean) bean;
 			Object actualBean = wrapped.getDto();
 			Object[] values = wrapped.extractValues(path);
+			//这里actualBean是用于write back的。
 			return createMapOptimized(path, actualBean, values);
 		}
 		BeanCodec bc = getBeanCodec(path, bean);

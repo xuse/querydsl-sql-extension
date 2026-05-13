@@ -195,6 +195,135 @@ class QBeanExWithConverterTest {
 		}
 	}
 
+	// ========== toValueExtractor (Batch Insert) tests ==========
+
+	/**
+	 * Test toValueExtractor produces values in effective column order (a subset of entity columns).
+	 * Simulates the BatchProcessor scenario where only certain columns participate in the SQL.
+	 */
+	@Test
+	void testToValueExtractorEffectiveColumnOrder() {
+		FooDTO dto = new FooDTO();
+		dto.setId(1);
+		dto.setCode("BATCH-01");
+		dto.setName("Batch Test");
+		dto.setVolume(77);
+		dto.setVersion(3);
+		dto.setCodeTypeX("55");
+
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+
+		// Simulate effective column order: a subset of entity columns (as BatchProcessor would produce)
+		List<Path<?>> allColumns = fooPath.getColumns();
+		// Pick a few columns in original order: code, name, volume, codeType
+		java.util.List<Path<?>> effectivePaths = new java.util.ArrayList<>();
+		for (Path<?> col : allColumns) {
+			String name = col.getMetadata().getName();
+			if ("code".equals(name) || "name".equals(name) || "volume".equals(name) || "codeType".equals(name)) {
+				effectivePaths.add(col);
+			}
+		}
+
+		ValueExtractor extractor = wrapped.toValueExtractor(fooPath, effectivePaths);
+
+		// Extract values for the wrapped bean
+		Object[] values = extractor.values(wrapped);
+		assertEquals(effectivePaths.size(), values.length);
+
+		// Verify values are in effective column order
+		for (int i = 0; i < effectivePaths.size(); i++) {
+			String colName = effectivePaths.get(i).getMetadata().getName();
+			switch (colName) {
+				case "code": assertEquals("BATCH-01", values[i]); break;
+				case "name": assertEquals("Batch Test", values[i]); break;
+				case "volume": assertEquals(77, values[i]); break;
+				case "codeType": assertEquals("55", values[i]); break; // @PathBinder remapped from codeTypeX
+			}
+		}
+	}
+
+	/**
+	 * Test toValueExtractor handles unmapped columns (DTO has no field for that entity column).
+	 * Such positions should be null in the output.
+	 */
+	@Test
+	void testToValueExtractorUnmappedColumnsAreNull() {
+		FooDTO dto = new FooDTO();
+		dto.setCode("X");
+
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+
+		// Include a column that DTO doesn't map to (e.g. "created" — FooDTO has no created field)
+		List<Path<?>> allColumns = fooPath.getColumns();
+		java.util.List<Path<?>> effectivePaths = new java.util.ArrayList<>();
+		for (Path<?> col : allColumns) {
+			String name = col.getMetadata().getName();
+			if ("code".equals(name) || "created".equals(name)) {
+				effectivePaths.add(col);
+			}
+		}
+
+		ValueExtractor extractor = wrapped.toValueExtractor(fooPath, effectivePaths);
+		Object[] values = extractor.values(wrapped);
+
+		for (int i = 0; i < effectivePaths.size(); i++) {
+			String colName = effectivePaths.get(i).getMetadata().getName();
+			if ("code".equals(colName)) {
+				assertEquals("X", values[i]);
+			} else if ("created".equals(colName)) {
+				assertNull(values[i], "Unmapped column should produce null");
+			}
+		}
+	}
+
+	/**
+	 * Test that toValueExtractor caches the column index mapping (same effectivePaths instance).
+	 */
+	@Test
+	void testToValueExtractorCaching() {
+		FooDTO dto1 = new FooDTO();
+		dto1.setCode("A");
+		dto1.setVolume(1);
+
+		FooDTO dto2 = new FooDTO();
+		dto2.setCode("B");
+		dto2.setVolume(2);
+
+		ConverterWrappedBean wrapped1 = ConverterWrappedBean.of(dto1);
+
+		List<Path<?>> allColumns = fooPath.getColumns();
+		java.util.List<Path<?>> effectivePaths = new java.util.ArrayList<>();
+		for (Path<?> col : allColumns) {
+			String name = col.getMetadata().getName();
+			if ("code".equals(name) || "volume".equals(name)) {
+				effectivePaths.add(col);
+			}
+		}
+
+		// Create extractor once, use for multiple beans
+		ValueExtractor extractor = wrapped1.toValueExtractor(fooPath, effectivePaths);
+
+		Object[] values1 = extractor.values(ConverterWrappedBean.of(dto1));
+		Object[] values2 = extractor.values(ConverterWrappedBean.of(dto2));
+
+		// Verify different beans produce different values
+		assertEquals("A", values1[0]);
+		assertEquals(1, values1[1]);
+		assertEquals("B", values2[0]);
+		assertEquals(2, values2[1]);
+	}
+
+	/**
+	 * Test hasPathBinder detection.
+	 */
+	@Test
+	void testHasPathBinder() {
+		// FooDTO has @PathBinder on codeTypeX
+		assertTrue(ConverterWrappedBean.hasPathBinder(FooDTO.class));
+		// Foo entity does not have @PathBinder
+		assertFalse(ConverterWrappedBean.hasPathBinder(Foo.class));
+	}
+
 	// ========== Helper methods ==========
 
 	private QBeanExWithConverter<FooDTO> createProjection() {

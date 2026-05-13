@@ -44,6 +44,7 @@ import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.github.xuse.querydsl.sql.expression.BindingProvider.ListPathBindings;
 import com.github.xuse.querydsl.sql.expression.ConverterWrappedBean;
+import com.github.xuse.querydsl.sql.expression.ValueExtractor;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
@@ -806,7 +807,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	class BatchProcessor {
 		private final SQLBindingsAlter principle;
 		
-		private final BeanCodec beanCodec;
+		private final ValueExtractor valueExtractor;
 
 		private final List<Path<?>> constantPath;
 
@@ -816,15 +817,22 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		
 		private int count = 0;
 
-		BatchProcessor(SQLInsertBatch batch, Class<?> beanClass) {
+		BatchProcessor(SQLInsertBatch batch, Object firstBean) {
 			useLiterals=false;
 			SQLSerializerAlter serializer = createSerializer(); 
 			listeners.preRender(context);
+			//此处使用已经处理过位于Batch中的值序。
 			serializer.serializeForInsert(metadata, entity, batch.getColumns(), batch.getValues(), null);
 			principle = new SQLBindingsAlter(serializer.toString(), serializer.getConstants(),
 					serializer.getConstantPaths());
 			this.constantPath = serializer.getConstantPaths();
-			beanCodec = BeanCodecManager.getInstance().getCodec(beanClass, new ListPathBindings(constantPath));
+			if (firstBean instanceof ConverterWrappedBean) {
+				this.valueExtractor = ((ConverterWrappedBean) firstBean)
+						.toValueExtractor((RelationalPathEx<?>) entity, constantPath);
+			} else {
+				this.valueExtractor = BeanCodecManager.getInstance()
+						.getCodec(firstBean.getClass(), new ListPathBindings(constantPath));
+			}
 			context.addSQL(principle);
 			listeners.rendered(context);
 		}
@@ -855,7 +863,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 
 		public void setBulkParameter(Object bean,Configuration config) {
-			Object[] values = this.beanCodec.values(bean);
+			Object[] values = this.valueExtractor.values(bean);
 			DefaultValueHelper.applySubstitutions(entity, constantPath, values, getEffectiveBatchNullStrategy());
 			if (count++ < maxLoginBatch) {
 				context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), constantPath));
@@ -866,8 +874,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		public void setBatchStatement( Object bean,Configuration config) throws SQLException {
 			List<Path<?>> paths = this.constantPath;
 			PreparedStatement stmt = this.stmt;
-			if (beanCodec.getType().isInstance(bean)) {
-				Object[] values = beanCodec.values(bean);
+			if (valueExtractor.isInstance(bean)) {
+				Object[] values = valueExtractor.values(bean);
 				DefaultValueHelper.applySubstitutions(entity, paths, values, getEffectiveBatchNullStrategy());
 				if (count++ < maxLoginBatch) {
 					context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), paths));
@@ -886,7 +894,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				stmt.addBatch();
 			} else {
 				throw Exceptions.illegalArgument("Object in batch must be in consistent type {}. encounter a {}",
-						beanCodec.getType(), bean.getClass());
+						valueExtractor.getType(), bean.getClass());
 			}
 		}
 		private void setParameterBulk(PreparedStatement stmt, Object[] objects, List<Path<?>> paths, int offset,
@@ -948,7 +956,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				values.add(Null.CONSTANT);
 			}
 		}
-		return new BatchProcessor(new SQLInsertBatch(columns, values, null), obj.getClass());
+		return new BatchProcessor(new SQLInsertBatch(columns, values, null), obj);
 	}
 	
 	public SQLInsertClauseAlter normalizeBatch(boolean flag) {
