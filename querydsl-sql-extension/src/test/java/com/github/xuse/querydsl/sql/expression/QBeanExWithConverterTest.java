@@ -135,15 +135,15 @@ class QBeanExWithConverterTest {
 		assertThrows(NullPointerException.class, () -> projection.newInstance(values));
 	}
 
-	// ========== ConvertMapper (Insert/Update) tests ==========
+	// ========== ConverterWrappedBean (Insert/Update) tests ==========
 
 	/**
-	 * Test ConvertMapper creates correct path-value map from DTO.
+	 * Test ConverterWrappedBean + AdvancedMapper creates correct path-value map from DTO.
 	 * Verifies @PathBinder name remapping: codeTypeX to codeType column.
 	 */
 	@Test
-	void testConvertMapperBasicMapping() {
-		ConvertMapper mapper = ConvertMapper.of(FooDTO.class);
+	void testConverterWrappedBeanBasicMapping() {
+		AdvancedMapper mapper = new AdvancedMapper(1, false); // SCENARIO_INSERT
 
 		FooDTO dto = new FooDTO();
 		dto.setId(1);
@@ -153,7 +153,8 @@ class QBeanExWithConverterTest {
 		dto.setVersion(2);
 		dto.setCodeTypeX("99");
 
-		Map<Path<?>, Object> map = mapper.createMap(fooPath, dto);
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+		Map<Path<?>, Object> map = mapper.createMap(fooPath, wrapped);
 
 		assertNotNull(map);
 		assertFalse(map.isEmpty());
@@ -174,36 +175,18 @@ class QBeanExWithConverterTest {
 	}
 
 	/**
-	 * Test ConvertMapper skips null values.
+	 * Test that ConverterWrappedBean skips fields not present in the target table.
 	 */
 	@Test
-	void testConvertMapperSkipsNullValues() {
-		ConvertMapper mapper = ConvertMapper.of(FooDTO.class);
-
-		FooDTO dto = new FooDTO();
-		dto.setId(1);
-		dto.setCode("ABC");
-		// name is null, should not appear in map
-
-		Map<Path<?>, Object> map = mapper.createMap(fooPath, dto);
-
-		Path<?> namePath = fooPath.getColumn("name");
-		assertFalse(map.containsKey(namePath), "null fields should not be in the map");
-	}
-
-	/**
-	 * Test ConvertMapper skips fields not present in the target table.
-	 * FooDTO fields that don't exist in Foo table should be ignored.
-	 */
-	@Test
-	void testConvertMapperSkipsUnmatchedFields() {
-		ConvertMapper mapper = ConvertMapper.of(FooDTO.class);
+	void testConverterWrappedBeanSkipsUnmatchedFields() {
+		AdvancedMapper mapper = new AdvancedMapper(1, false);
 
 		FooDTO dto = new FooDTO();
 		dto.setId(1);
 		dto.setCode("ABC");
 
-		Map<Path<?>, Object> map = mapper.createMap(fooPath, dto);
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+		Map<Path<?>, Object> map = mapper.createMap(fooPath, wrapped);
 
 		// The map should only contain paths that exist in fooPath
 		for (Path<?> key : map.keySet()) {

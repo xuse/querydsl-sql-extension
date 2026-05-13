@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.expression.ClassLoaderAccessor;
+import com.github.xuse.querydsl.util.lang.JDKEnvironment;
 
 public class TypeUtilsTest {
 

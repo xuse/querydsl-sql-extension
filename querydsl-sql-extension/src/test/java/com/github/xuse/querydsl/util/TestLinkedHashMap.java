@@ -11,7 +11,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.util.collection.NoReadLockHashMap;
+import com.github.xuse.querydsl.util.collection.FastHashtable;
+import com.github.xuse.querydsl.util.collection.CacheMap;
 
 @SuppressWarnings("unused")
 public class TestLinkedHashMap {
@@ -35,7 +36,7 @@ public class TestLinkedHashMap {
 		//测试目标
 		FastHashtable< String> map1 = new FastHashtable<>(SIZE);
 		//对照组
-		Map<String, String> map3 = new NoReadLockHashMap<>();
+		Map<String, String> map3 = new CacheMap<>(SIZE);
 
 		String s;
 		

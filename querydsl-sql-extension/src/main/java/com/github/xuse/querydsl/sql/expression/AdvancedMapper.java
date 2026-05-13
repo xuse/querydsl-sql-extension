@@ -66,13 +66,18 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 
 	public Map<Path<?>, Object> createMap(RelationalPath<?> entity, Object bean) {
 		RelationalPathEx<?> path = RelationalPathExImpl.toRelationPathEx(entity);
+		Object actualBean = bean;
 		if (bean instanceof ConverterWrappedBean) {
-			ConverterWrappedBean wrapped = (ConverterWrappedBean) bean;
-			Object[] values = wrapped.extractValues(path);
-			return createMapOptimized(path, wrapped.getDto(), values);
+			actualBean = ((ConverterWrappedBean) bean).getDto();
 		}
-		BeanCodec bc = getBeanCodec(path, bean);
-		return createMapOptimized(path, bean, bc.values(bean));
+		BeanCodec bc = getBeanCodec(path, actualBean);
+		Object[] values;
+		if (bean instanceof ConverterWrappedBean) {
+			values = ((ConverterWrappedBean) bean).extractValues(path);
+		} else {
+			values = bc.values(bean);
+		}
+		return createMapOptimized(path, actualBean, values);
 	}
 
 	public static BeanCodec getBeanCodec(RelationalPathEx<?> entity, Object bean) {

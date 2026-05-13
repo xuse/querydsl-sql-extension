@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
+import com.github.xuse.querydsl.util.lang.JDKEnvironment;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Templates;
 import com.querydsl.sql.SQLTemplates;

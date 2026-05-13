@@ -1,6 +1,5 @@
 package com.github.xuse.querydsl.config;
 
-import java.awt.MultipleGradientPaint.ColorSpaceType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -60,6 +59,8 @@ public class ConfigurationEx {
 	 * Set true to raise an exception while using primitive field without @UnsavedValue annotation.
 	 */
 	public static PrimitiveCheck primitiveCheck = PrimitiveCheck.NORMAL;
+	
+	public static int MAXIMUM_EXPECTED_COLUMNS = 64;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);

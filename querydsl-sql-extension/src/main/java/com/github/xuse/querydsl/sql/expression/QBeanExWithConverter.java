@@ -153,7 +153,12 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 		// Phase 3: Generate the targeted BeanCodec
 		this.queryExpressions = Collections.unmodifiableList(queryExprs);
 		this.converters = converterList.toArray(new Function[0]);
-		this.targetCodec = BeanCodecManager.getInstance().getCodec(dtoType, new DefaultBindingProvider(targetBindings));
+		this.targetCodec = BeanCodecManager.getInstance().getCodec(dtoType, new DefaultBindingProvider(targetBindings) {
+			//防止打印字段类型和Path不一致的WARN
+			public Class<?> getType(String prop, FieldProperty property) {
+				return property.getType();
+			}
+		});
 	}
 
 	/**

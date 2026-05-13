@@ -31,6 +31,7 @@ import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.expression.AbstractMapperSupport;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
+import com.github.xuse.querydsl.sql.expression.ConverterWrappedBean;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -87,8 +88,9 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * @return SQLUpdateClauseAlter
 	 */
 	public SQLUpdateClauseAlter populate(Object bean) {
-		boolean tuple = (bean instanceof Tuple);
-		populate0(bean, Mappers.getUpdate(tuple, updateNulls), false);
+		Object target = wrapIfNeeded(bean);
+		boolean tuple = (target instanceof Tuple);
+		populate0(target, Mappers.getUpdate(tuple, updateNulls), false);
 		return this;
 	}
 
@@ -105,8 +107,9 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 * @implSpec 如果设置主键作为更新条件，复合主键的所有值都必须设置。
 	 */
 	public SQLUpdateClauseAlter populate(Object bean, boolean pkAsWhere) {
-		boolean tuple = (bean instanceof Tuple);
-		populate0(bean, Mappers.getUpdate(tuple, updateNulls), pkAsWhere);
+		Object target = wrapIfNeeded(bean);
+		boolean tuple = (target instanceof Tuple);
+		populate0(target, Mappers.getUpdate(tuple, updateNulls), pkAsWhere);
 		return this;
 	}
 
@@ -126,7 +129,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 */
 	public SQLUpdateClauseAlter populateWithCompare(Object bean, Object old) {
 		Mapper<?> mapper = Mappers.getNormal(false, updateNulls);
-		return populateWithCompare(bean, old, mapper, false);
+		return populateWithCompare(wrapIfNeeded(bean), old == null ? null : wrapIfNeeded(old), mapper, false);
 	}
 
 	/**
@@ -147,7 +150,7 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	 */
 	public SQLUpdateClauseAlter populateWithCompare(Object bean, Object old, boolean pkAsWhere) {
 		Mapper<?> mapper = Mappers.getNormal(false, updateNulls);
-		return populateWithCompare(bean, old, mapper, pkAsWhere);
+		return populateWithCompare(wrapIfNeeded(bean), old == null ? null : wrapIfNeeded(old), mapper, pkAsWhere);
 	}
 
 	/**
@@ -244,6 +247,17 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	public <T> SQLUpdateClauseAlter populate(T bean, Mapper<T> mapper, boolean pkAsWhere) {
 		populate0(bean, mapper, pkAsWhere);
 		return this;
+	}
+
+	/**
+	 * If the bean type differs from the entity type and has @PathBinder annotations,
+	 * wrap it with ConverterWrappedBean for transparent field name remapping and type conversion.
+	 */
+	private Object wrapIfNeeded(Object bean) {
+		if (!entity.getType().isInstance(bean) && ConverterWrappedBean.hasPathBinder(bean.getClass())) {
+			return ConverterWrappedBean.of(bean);
+		}
+		return bean;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

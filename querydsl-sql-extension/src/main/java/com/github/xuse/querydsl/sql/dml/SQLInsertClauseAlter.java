@@ -43,6 +43,7 @@ import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.github.xuse.querydsl.sql.expression.BindingProvider.ListPathBindings;
+import com.github.xuse.querydsl.sql.expression.ConverterWrappedBean;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
@@ -423,7 +424,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		if(writeNulls==null || writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
-		populateBatch0(beans,Mappers.get(SCENARIO_INSERT,type));
+		populateBatch0(wrapCollectionIfNeeded(beans), Mappers.get(SCENARIO_INSERT, type));
 		return this;
 	}
 
@@ -446,7 +447,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		this.normalizeBatchValues = false;
 		Mapper mapper = Mappers.get(SCENARIO_INSERT, Mappers.TYPE_BEAN);
 		for (Object bean : beans) {
-			Map<Path<?>, Object> values = mapper.createMap(entity, bean);
+			Object target = wrapIfNeeded(bean);
+			Map<Path<?>, Object> values = mapper.createMap(entity, target);
 			for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
 				set((Path) entry.getKey(), entry.getValue());
 			}
@@ -508,7 +510,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		if (writeNulls!=null && writeNulls) {
 			type = type | Mappers.NULLS_BIND;
 		}
-		return populate(bean, Mappers.get(SCENARIO_INSERT, type));
+		Object target = wrapIfNeeded(bean);
+		return populate(target, Mappers.get(SCENARIO_INSERT, type));
 	}
 
 	/**
@@ -527,6 +530,36 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			type = type | Mappers.NULLS_BIND;
 		}
 		return populate(bean, Mappers.get(SCENARIO_INSERT,type));
+	}
+
+	/**
+	 * If the bean type differs from the entity type and has @PathBinder annotations,
+	 * wrap it with ConverterWrappedBean for transparent field name remapping and type conversion.
+	 */
+	private Object wrapIfNeeded(Object bean) {
+		if (!entity.getType().isInstance(bean) && ConverterWrappedBean.hasPathBinder(bean.getClass())) {
+			return ConverterWrappedBean.of(bean);
+		}
+		return bean;
+	}
+
+	/**
+	 * Wrap a collection of beans if needed. Checks the first element to determine
+	 * if wrapping is required (all elements are the same type).
+	 */
+	private Collection<?> wrapCollectionIfNeeded(Collection<?> beans) {
+		if (beans.isEmpty()) {
+			return beans;
+		}
+		Object first = beans.iterator().next();
+		if (entity.getType().isInstance(first) || !ConverterWrappedBean.hasPathBinder(first.getClass())) {
+			return beans;
+		}
+		List<ConverterWrappedBean> wrapped = new ArrayList<>(beans.size());
+		for (Object bean : beans) {
+			wrapped.add(ConverterWrappedBean.of(bean));
+		}
+		return wrapped;
 	}
 	
 	

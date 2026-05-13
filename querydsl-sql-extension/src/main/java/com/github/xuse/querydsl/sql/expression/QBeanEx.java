@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.util.FastHashtable;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.group.GroupExpression;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
@@ -49,7 +49,7 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	}
 
 	static Map<String, Expression<?>> createBindings(Expression<?>... args) {
-		Map<String, Expression<?>> rv = new FastHashtable<>(args.length);
+		Map<String, Expression<?>> rv = MapCreator.createFastMap(args.length);
 		for (Expression<?> expr : args) {
 			if (expr instanceof Path<?>) {
 				Path<?> path = (Path<?>) expr;

@@ -13,9 +13,9 @@ import java.util.Map;
 
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager.CacheKey;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.JDKEnvironment;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.lang.JDKEnvironment;
 import com.querydsl.core.util.ReflectionUtils;
 import com.querydsl.sql.Column;
 

@@ -24,8 +24,8 @@ import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.partitions.PartitionDef;
 import com.github.xuse.querydsl.sql.partitions.RangePartitionBy;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.FastHashtable;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
@@ -201,7 +201,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 	}
 
 	private Reorganize calcList(Partition p, List<PartitionInfo> infors) {
-		FastHashtable<Partition> effected = new FastHashtable<>(infors.size());
+		Map<String, Partition> effected = MapCreator.createFastMap(infors.size());
 		List<String> newList = Arrays.asList(StringUtils.split(p.value(), ','));
 		PartitionInfo lastEffected = null;
 		// First find all effected partitions in exist.
@@ -219,7 +219,7 @@ public class AddPartitionQuery extends AbstractDDLClause<AddPartitionQuery> {
 		if (lastEffected==null) {
 			return null;
 		}
-		String firstName = effected.firstKey();
+		String firstName = effected.entrySet().iterator().next().getKey();
 		String lastName = lastEffected.getName();
 		List<String> sourcePartitions = new ArrayList<>();
 		List<Partition> targetPartitionDefine = new ArrayList<>();

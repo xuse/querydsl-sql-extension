@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.util;
+package com.github.xuse.querydsl.util.collection;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -13,17 +13,62 @@ import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.github.xuse.querydsl.util.lang.UnsafeAccess;
+
 /**
- * LinkedHashMap的自定义实现，目标是得到一个更高性能的Map。
- * @implSpec
- * 不支持删除元素 2 以写入顺序形成链表 3
- * 时间复杂度为O(1)的查找
- * 冲突后会形成一个小型的二级hash table.
- * 再冲突后使用链表存储.
- * @implNote 
- * 比LinkedHashMap快15~20%。
- * 不支持扩容。大幅超过预定容量后会逐渐退化为链表，性能急剧下降。
+ * 高性能的 {@code Map<String, V>} 实现，针对"写入一次、高频随机读取"场景优化。
+ *
+ * <h2>数据结构</h2>
+ * <p>采用两级哈希 + 插入顺序链表：</p>
+ * <ul>
+ *   <li><b>一级哈希表</b>：{@code Object[]} 数组，容量为 2 的幂次（最大 16384），
+ *       槽位定位使用 {@code (hash >>> 3) & mask}</li>
+ *   <li><b>二级哈希（Grid）</b>：一级槽位冲突时升级为长度 8 的 {@code Node[]} 数组，
+ *       使用 {@code hash & 0x7}（低 3 位）做二次散列，将冲突概率再降低 8 倍</li>
+ *   <li><b>冲突链表</b>：二级 grid 内仍有冲突时退化为链表（{@code conflictNext} 指针）</li>
+ *   <li><b>插入顺序链表</b>：每个 Node 通过 {@code next} 指针按写入顺序形成单向链表，
+ *       支持按插入顺序遍历</li>
+ * </ul>
+ *
+ * <h2>设计约束</h2>
+ * <ul>
+ *   <li>不支持删除（{@code remove()} 抛出 {@link UnsupportedOperationException}）</li>
+ *   <li>不支持扩容，容量在构造时固定；大幅超过预定容量后逐渐退化为链表，性能急剧下降</li>
+ *   <li>Key 类型固定为 {@code String}，hash 直接使用 {@code String.hashCode()}</li>
+ *   <li>通过 {@code UnsafeAccess} 绕过数组边界检查，提升热路径性能</li>
+ *   <li>非线程安全，适用于单线程写入完成后多线程只读的场景</li>
+ * </ul>
+ *
+ * <h2>性能优势来源</h2>
+ * <ul>
+ *   <li>去掉删除/扩容 → put/get 路径极简，无 rehash、无双向链表维护</li>
+ *   <li>两级哈希 → 绝大多数 get 在 1~2 次内存访问内完成，无需遍历链表或红黑树</li>
+ *   <li>Unsafe 数组访问 → 省掉边界检查的条件分支</li>
+ *   <li>Node 仅 5 个字段（比 LinkedHashMap.Entry 的 6 个少一个 before 指针），cache 更友好</li>
+ *   <li>无 modCount 检测 → 读写路径各省一次操作</li>
+ * </ul>
+ *
+ * <h2>Benchmark 数据（256 个元素，JDK 17，JMH avgt ns/op）</h2>
+ * <pre>
+ * Benchmark                                  Mode  Cnt     Score   Units
+ * ReadMapBenchmark.locateFastHashtable       avgt    2  1615.805   ns/op
+ * ReadMapBenchmark.locateLinkedHashMap       avgt    2  2061.691   ns/op
+ * ReadMapBenchmark.locateNoReadLockHashMap   avgt    2  2261.030   ns/op
+ * ReadMapBenchmark.iterateFastHash           avgt    2   579.696   ns/op
+ * ReadMapBenchmark.iterateLinkedHash         avgt    2   434.810   ns/op
+ * ReadMapBenchmark.iterateNoReadLockHashMap  avgt    2  1039.908   ns/op
+ * </pre>
+ * <p><b>结论</b>：随机查找比 LinkedHashMap 快约 22%；遍历场景 LinkedHashMap 更优（快约 25%）。</p>
+ *
+ * <h2>框架内使用场景</h2>
+ * <p>主要用于 SQL 结果集映射的热路径（{@code ProjectionsAlter}、{@code QBeanEx}、
+ * {@code QBeansContinuous} 等），构建列名 → Expression 映射表后，
+ * 每条记录的每个列都通过 {@code get(columnName)} 查找，属于典型的"写一次、读 N 次"模式，
+ * 遍历几乎不发生。</p>
+ *
  * @param <V> value type
+ * @see com.github.xuse.querydsl.sql.expression.ProjectionsAlter
+ * @see com.github.xuse.querydsl.sql.expression.QBeanEx
  */
 @SuppressWarnings({"rawtypes"})
 public final class FastHashtable<V> implements Map<String, V> {
@@ -65,26 +110,27 @@ public final class FastHashtable<V> implements Map<String, V> {
 			throw new ExceptionInInitializerError("array index scale not a power of two");
 		ASHIFT = 31 - Integer.numberOfLeadingZeros(scale);
 	}
-	static final Object tabAt(Object tab, int i) {
-		return U.getObject(tab, ((long) i << ASHIFT) + ABASE);
-	}
-	static final void tabSet(Object tab, int i, Object obj) {
-		U.putObject(tab, ((long) i << ASHIFT) + ABASE, obj);
-	}
-	static final void gridSet(Node[] tab, int i, Node node) {
-		U.putObject(tab, ((long) i << ASHIFT) + ABASE, node);
-	}
-	*/
+		*/
+//	static final Object tabAt(Object tab, int i) {
+//		return U.getObject(tab, ((long) i << ASHIFT) + ABASE);
+//	}
+//	static final void tabSet(Object tab, int i, Object obj) {
+//		U.putObject(tab, ((long) i << ASHIFT) + ABASE, obj);
+//	}
+//	static final void gridSet(Node[] tab, int i, Node node) {
+//		U.putObject(tab, ((long) i << ASHIFT) + ABASE, node);
+//	}
+
 	//////////////
-	static final Object tabAt(Object[] tab, int i) {
-		return tab[i];
-	}
-	static final void tabSet(Object[] tab, int i, Object node) {
-		tab[i]=node;
-	}
-	static final void gridSet(Node[] tab, int i, Node node) {
-		tab[i]=node;
-	}
+//	static final Object tabAt(Object[] tab, int i) {
+//		return tab[i];
+//	}
+//	static final void tabSet(Object[] tab, int i, Object node) {
+//		tab[i]=node;
+//	}
+//	static final void gridSet(Node[] tab, int i, Node node) {
+//		tab[i]=node;
+//	}
 	/////////////////////////////////////////////
 	
 	public FastHashtable(int initSize) {
@@ -106,22 +152,22 @@ public final class FastHashtable<V> implements Map<String, V> {
 	public V computeIfAbsent(String key, Function<String, V> func) {
 		int hash = hash(key);
 		int slotPos = (hash >>> 3) & hashTableMask;
-		Object obj = tabAt(table, slotPos);
+		Object obj = UnsafeAccess.getArrayObject(table, slotPos);
 		Node<V> acc;
 		if (obj == null) {
-			tabSet(table, slotPos, tail(new Node<V>(hash, key, func.apply(key))));
+			UnsafeAccess.putArrayObject(table, slotPos, tail(new Node<V>(hash, key, func.apply(key))));
 			return null;
 		}
 		Node[] grids = null;
 		if (obj instanceof Node[]) {
 			grids = (Node[]) obj;
-			acc = (Node)tabAt(grids, hash & GRID_MASK);
+			acc = (Node)UnsafeAccess.getArrayObject(grids, hash & GRID_MASK);
 		} else {
 			// acc is not null.
 			acc = (Node<V>) obj;
 		}
 		if (acc == null) {
-			gridSet(grids, hash & GRID_MASK, tail(new Node<V>(hash, key, func.apply(key))));
+			UnsafeAccess.putArrayObject(grids, hash & GRID_MASK, tail(new Node<V>(hash, key, func.apply(key))));
 			return null;
 		}
 		// 已有
@@ -130,13 +176,13 @@ public final class FastHashtable<V> implements Map<String, V> {
 		}
 		// 转换节点类型
 		if (obj == acc) {
-			tabSet(table, slotPos, grids = new Node[8]);
-			gridSet(grids, acc.hash & GRID_MASK, acc);
+			UnsafeAccess.putArrayObject(table, slotPos, grids = new Node[8]);
+			UnsafeAccess.putArrayObject(grids, acc.hash & GRID_MASK, acc);
 
 			int index = hash & GRID_MASK;
-			acc = (Node)tabAt(grids, index);
+			acc = (Node)UnsafeAccess.getArrayObject(grids, index);
 			if (acc == null) {
-				gridSet(grids, index, tail(new Node<V>(hash, key, func.apply(key))));
+				UnsafeAccess.putArrayObject(grids, index, tail(new Node<V>(hash, key, func.apply(key))));
 				return null;
 			}
 		}
@@ -157,9 +203,9 @@ public final class FastHashtable<V> implements Map<String, V> {
 	public V put(String key, V value) {
 		int hash = hash(key);
 		int slotPos = (hash >>> 3) & hashTableMask;
-		Object obj = tabAt(table, slotPos);
+		Object obj = UnsafeAccess.getArrayObject(table, slotPos);
 		if (obj == null) {
-			tabSet(table, slotPos, tail(new Node<V>(hash, key, value)));
+			UnsafeAccess.putArrayObject(table, slotPos, tail(new Node<V>(hash, key, value)));
 			return null;
 		}
 
@@ -167,12 +213,12 @@ public final class FastHashtable<V> implements Map<String, V> {
 		Node[] grids = null;
 		if (obj instanceof Node[]) {
 			grids = (Node[]) obj;
-			acc = (Node)tabAt(grids, hash & GRID_MASK);
+			acc = (Node)UnsafeAccess.getArrayObject(grids, hash & GRID_MASK);
 		} else {
 			acc = (Node<V>) obj;
 		}
 		if (acc == null) {
-			gridSet(grids,hash & GRID_MASK,tail(new Node<V>(hash, key, value)));
+			UnsafeAccess.putArrayObject(grids,hash & GRID_MASK,tail(new Node<V>(hash, key, value)));
 			return null;
 		}
 		// 已有，覆盖
@@ -183,13 +229,13 @@ public final class FastHashtable<V> implements Map<String, V> {
 		}
 		// 转换节点类型
 		if (obj == acc) {
-			tabSet(table, slotPos, grids = new Node[8]);
-			gridSet(grids,acc.hash & GRID_MASK, acc);
+			UnsafeAccess.putArrayObject(table, slotPos, grids = new Node[8]);
+			UnsafeAccess.putArrayObject(grids,acc.hash & GRID_MASK, acc);
 
 			int index = hash & GRID_MASK;
-			acc = (Node)tabAt(grids,index);
+			acc = (Node)UnsafeAccess.getArrayObject(grids,index);
 			if (acc == null) {
-				gridSet(grids, index,tail(new Node<V>(hash, key, value)));
+				UnsafeAccess.putArrayObject(grids, index,tail(new Node<V>(hash, key, value)));
 				return null;
 			}
 		}
@@ -221,7 +267,7 @@ public final class FastHashtable<V> implements Map<String, V> {
 	@SuppressWarnings("unchecked")
 	private V innerGet(int hash, String key) {
 		int slotPos = (hash >>> 3) & hashTableMask;
-		Object obj = tabAt(table, slotPos);
+		Object obj = UnsafeAccess.getArrayObject(table, slotPos);
 		if (obj != null) {
 			Node<V> acc;
 			if (obj instanceof Node[]) {
@@ -249,12 +295,12 @@ public final class FastHashtable<V> implements Map<String, V> {
 		if (key instanceof String) {
 			int hash = hash((String) key);
 			int slotPos = (hash >>> 3) & hashTableMask;
-			Object obj = tabAt(table, slotPos);
+			Object obj = UnsafeAccess.getArrayObject(table, slotPos);
 			if (obj != null) {
 				Node<V> acc;
 				if (obj instanceof Node[]) {
 					Node<V>[] grids = (Node<V>[]) obj;
-					acc = (Node)tabAt(grids,hash & GRID_MASK);
+					acc = (Node)UnsafeAccess.getArrayObject(grids,hash & GRID_MASK);
 				} else {
 					acc = (Node<V>) obj;
 				}
@@ -333,7 +379,7 @@ public final class FastHashtable<V> implements Map<String, V> {
 	 */
 	public void clear() {
 		for (int i = 0; i <= this.hashTableMask; i++) {
-			tabSet(table, i, null);
+			UnsafeAccess.putArrayObject(table, i, null);
 		}
 		size = 0;
 		head = tail = null;
@@ -557,12 +603,12 @@ public final class FastHashtable<V> implements Map<String, V> {
 	public int getMaxDepth() {
 		int maxLevel = 0;
 		for (int i = 0; i <= this.hashTableMask; i++) {
-			Object obj = tabAt(table, i);
+			Object obj = UnsafeAccess.getArrayObject(table, i);
 			if (obj != null) {
 				if (obj instanceof Node[]) {
 					Node[] grids = (Node[]) obj;
 					for (int j = 0; j < grids.length; j++) {
-						Node<?> node = (Node)tabAt(grids,j);
+						Node<?> node = (Node)UnsafeAccess.getArrayObject(grids,j);
 						if (node != null) {
 							int level = 1;
 							node = node.conflictNext;

@@ -18,6 +18,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
+import com.github.xuse.querydsl.util.collection.CacheMap;
+import com.github.xuse.querydsl.util.collection.FastHashtable;
+
 import io.github.xuse.querydsl.sql.extension.BenchmarkRunner;
 
 @BenchmarkMode(Mode.AverageTime)
@@ -45,7 +48,7 @@ public class ReadMapBenchmark  {
 	// 测试目标
 	FastHashtable<String> map1 = new FastHashtable<>(SIZE);
 	// 对照组
-	Map<String, String> map3 = new NoReadLockHashMap<>();
+	Map<String, String> map3 = new CacheMap<>(SIZE);
 
 	public ReadMapBenchmark() {
 		prepareMap(map0);
@@ -53,33 +56,61 @@ public class ReadMapBenchmark  {
 		prepareMap(map3);
 	}
 
+	/**
+	 * 定位元素：基础对照组
+	 *   1949.816 ns/op
+	 * @param bh
+	 */
 	@Benchmark
 	public void locateLinkedHashMap(Blackhole bh) {
 		doFind(map0, bh);
 	}
 
+	/**
+	 * 定位元素：1639.637 ns/op
+	 * @param bh
+	 */
 	@Benchmark
 	public void locateFastHashtable(Blackhole bh) {
 		doFind(map1, bh);
 	}
-
+	
+	/**
+	 * HashMap的只读版本 定位元素 
+	 *   2105.087 ns/op
+	 */
 	@Benchmark
-	public void locateNoReadLockHashMap(Blackhole bh) {
+	public void locateCacheMap(Blackhole bh) {
 		doFind(map3, bh);
 	}
 
+	/**
+	 * 遍历元素：基础对照组
+	 *   420.951 ns/op
+	 * @param bh
+	 */
 	@Benchmark
 	public void iterateLinkedHash(Blackhole bh) {
 		doIter(map0, bh);
 	}
 
+	/**
+	 * 遍历元素：FastHashMap
+	 * @param bh
+	 *   428.837 ns/op
+	 */
 	@Benchmark
 	public void iterateFastHash(Blackhole bh) {
 		doIter(map1, bh);
 	}
 
+	/**
+	 *遍历元素：CacheMap
+	 * @param bh
+	 *   1010.635 ns/op
+	 */
 	@Benchmark
-	public void iterateNoReadLockHashMap(Blackhole bh) {
+	public void iterateCacheMap(Blackhole bh) {
 		doIter(map3, bh);
 	}
 

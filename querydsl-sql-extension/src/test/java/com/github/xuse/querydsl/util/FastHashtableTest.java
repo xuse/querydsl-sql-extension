@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.util.collection.FastHashtable;
+
 /**
  * FastHashtable 单元测试类
  * Unit test class for FastHashtable

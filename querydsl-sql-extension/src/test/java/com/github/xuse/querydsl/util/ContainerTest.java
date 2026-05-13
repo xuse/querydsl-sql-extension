@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +20,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.xuse.querydsl.util.collection.NoReadLockHashMap;
+import com.github.xuse.querydsl.util.collection.CacheMap;
 
 @SuppressWarnings("unused")
 public class ContainerTest {
@@ -38,33 +39,30 @@ public class ContainerTest {
 	}
 	
 	@Test
-	public void testNoLockHashMap() {
-		NoReadLockHashMap<String,String> map=new NoReadLockHashMap<>();
-		map=new NoReadLockHashMap<>(5);
-		System.out.println("Actually size:"+map.getThreshold());
+	public void testCacheMap() {
+		CacheMap<String,String> map=new CacheMap<>(8);
 		map.put("a", "a");
 		map.put("b", "c");
 		map.put("b", "b");
 		assertEquals(2, map.size());
 		
-		NoReadLockHashMap<String,String> map2=new NoReadLockHashMap<>(5);
+		CacheMap<String,String> map2=new CacheMap<>(8);
 		map2.putIfAbsent("a", "a");
-		assertEquals(map.getThreshold(),map2.getThreshold());
+		assertEquals("a", map2.get("a"));
 		
 		map.put("1", "b");
 		map.put("2", "b");
 		map.put("3", "b");
 		map.put("4", "b");
+		map.put("5", "b");
+		map.put("6", "b");
 		try {
-			map.put("5", "b");
-		}catch(RuntimeException e) {
+			// CacheMap has capacity limit (75% of 8 = 6), 7th element should throw
+			map.put("7", "b");
+			fail("Should have thrown");
+		}catch(IllegalStateException e) {
 		}
-		try {
-			map.putIfAbsent("5", "b");
-		}catch(RuntimeException e) {
-		}
-		assertFalse(map.containsKey("5"));
-		
+		assertFalse(map.containsKey("7"));
 	}
 	
 	@Test

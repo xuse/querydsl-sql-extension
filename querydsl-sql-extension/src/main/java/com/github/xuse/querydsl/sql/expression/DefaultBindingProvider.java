@@ -15,7 +15,7 @@ import com.querydsl.core.types.Expression;
  *
  * @see BindingProvider
  */
-final class DefaultBindingProvider implements BindingProvider {
+class DefaultBindingProvider implements BindingProvider {
 	private final Map<String, ? extends Expression<?>> bindings;
 	private final List<String> fieldNames;
 

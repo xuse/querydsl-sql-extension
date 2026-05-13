@@ -9,8 +9,8 @@ import java.util.Map;
 
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager.CacheKey;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.JDKEnvironment;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.lang.JDKEnvironment;
 
 /*
  * Support record classes after JDK 16

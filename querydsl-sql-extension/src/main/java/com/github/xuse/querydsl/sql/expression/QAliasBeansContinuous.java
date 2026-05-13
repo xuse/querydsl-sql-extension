@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.util.FastHashtable;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpressionBase;
 import com.querydsl.core.types.Path;
@@ -54,7 +54,7 @@ public class QAliasBeansContinuous extends FactoryExpressionBase<AliasMapBeans> 
             final Map<RelationalPath<?>, QBeanEx<?>> mapBuilder = new HashMap<>();
             for (RelationalPath<?> path : beanPaths) {
             	List<Path<?>> paths=path.getColumns();
-                Map<String, Expression<?>> bindings = new FastHashtable<Expression<?>>(paths.size());
+                Map<String, Expression<?>> bindings = MapCreator.createFastMap(paths.size());
                 for (Path<?> column : paths) {
                     bindings.put(column.getMetadata().getName(), column);
                     listBuilder.add(column);

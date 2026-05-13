@@ -3,7 +3,7 @@ package com.github.xuse.querydsl.sql.expression;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.util.FastHashtable;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.ArrayConstructorExpression;
 import com.querydsl.core.types.ConstructorExpression;
@@ -17,7 +17,13 @@ import com.querydsl.sql.Beans;
 import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
-	
+
+	/**
+	 * Cache for QBeanExWithConverter instances.
+	 * Key: (dtoType, tableType) pair.
+	 */
+	private static final Map<ConverterCacheKey, QBeanExWithConverter<?>> CONVERTER_CACHE = MapCreator.createConcurrentMap(128);
+
 	@SuppressWarnings("unchecked")
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPath<?> beanPath) {
 		boolean isNativeType = type == beanPath.getType(); 
@@ -27,13 +33,25 @@ public class ProjectionsAlter {
 				return (QBeanEx<T>)expr;
 			}
 		}
-		List<Path<?>> paths=beanPath.getColumns();
-		Map<String, Expression<?>> bindings = new FastHashtable<>(paths.size());
+		if (!isNativeType) {
+			return (QBeanEx<T>) CONVERTER_CACHE.computeIfAbsent(
+					new ConverterCacheKey(type, beanPath.getType()),
+					k -> {
+						Map<String, Expression<?>> bindings = buildBindings(beanPath);
+						return new QBeanExWithConverter<>(type, bindings);
+					});
+		}
+		Map<String, Expression<?>> bindings = buildBindings(beanPath);
+		return new QBeanEx<T>(type, bindings);
+	}
+
+	private static Map<String, Expression<?>> buildBindings(RelationalPath<?> beanPath) {
+		List<Path<?>> paths = beanPath.getColumns();
+		Map<String, Expression<?>> bindings = MapCreator.createFastMap(paths.size());
 		for (Path<?> p : paths) {
 			bindings.put(p.getMetadata().getName(), p);
 		}
-		
-		return isNativeType? new QBeanEx<T>(type, bindings): new QBeanExWithConverter<T>(type, bindings);
+		return bindings;
 	}
 
 	/**
@@ -107,7 +125,7 @@ public class ProjectionsAlter {
 
 	public static <T> QBeanEx<T> createBeanProjection(RelationalPath<T> path) {
 		List<Path<?>> paths=path.getColumns();
-		Map<String, Expression<?>> bindings = new FastHashtable<Expression<?>>(paths.size());
+		Map<String, Expression<?>> bindings = MapCreator.createFastMap(paths.size());
 		for (Path<?> column : paths) {
 			bindings.put(column.getMetadata().getName(), column);
 		}
@@ -209,5 +227,31 @@ public class ProjectionsAlter {
     
     public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){
     	return new QPair<>(expr1,expr2);
+    }
+
+    private static final class ConverterCacheKey {
+    	private final Class<?> dtoType;
+    	private final Class<?> tableType;
+    	private final int hash;
+
+    	ConverterCacheKey(Class<?> dtoType, Class<?> tableType) {
+    		this.dtoType = dtoType;
+    		this.tableType = tableType;
+    		this.hash = dtoType.hashCode() * 31 + tableType.hashCode();
+    	}
+
+    	@Override
+    	public int hashCode() {
+    		return hash;
+    	}
+
+    	@Override
+    	public boolean equals(Object obj) {
+    		if (obj instanceof ConverterCacheKey) {
+    			ConverterCacheKey other = (ConverterCacheKey) obj;
+    			return this.dtoType == other.dtoType && this.tableType == other.tableType;
+    		}
+    		return false;
+    	}
     }
 }
