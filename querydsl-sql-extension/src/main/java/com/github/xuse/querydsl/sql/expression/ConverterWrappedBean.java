@@ -149,12 +149,7 @@ public class ConverterWrappedBean {
 			if (slot == null) {
 				continue;
 			}
-			Object value = dtoValues[slot.dtoFieldIndex];
-			Function converter = slot.writeConverter;
-			if (converter != null && value != null) {
-				value = converter.apply(value);
-			}
-			result[i] = value;
+			result[i] = slot.writeConverter.apply(dtoValues[slot.dtoFieldIndex]);
 		}
 		return result;
 	}
@@ -202,7 +197,7 @@ public class ConverterWrappedBean {
 	@SuppressWarnings("rawtypes")
 	private static Function resolveWriteConverter(Class<?> dtoType, PathBinder pathBinder, Property field) {
 		if (pathBinder == null) {
-			return null;
+			return Function.identity();
 		}
 		Class<? extends Function> writeClass = pathBinder.writeConverter();
 		if (writeClass != Function.class) {
@@ -212,7 +207,7 @@ public class ConverterWrappedBean {
 		if (!ref.isEmpty()) {
 			return Util.getStaticFunctionField(dtoType, ref, field.getName());
 		}
-		return null;
+		return Function.identity();
 	}
 
 	/**
