@@ -52,6 +52,12 @@ public class ConverterWrappedBean {
 	private static final Set<Class<?>> HAS_PATH_BINDER = ConcurrentHashMap.newKeySet();
 	private static final Set<Class<?>> NO_PATH_BINDER = ConcurrentHashMap.newKeySet();
 
+	/**
+	 * Cache: (dtoType, entityType) -> FieldSlot[].
+	 * The FieldSlot array is aligned with entity columns order, enabling O(n) extraction.
+	 */
+	private static final Map<ClassPairKey, FieldSlot[]> MAPPING_CACHE = new ConcurrentHashMap<>();
+
 	private final Object dto;
 	private final Class<?> dtoType;
 
@@ -125,58 +131,78 @@ public class ConverterWrappedBean {
 		return extractValues(bean, bean.getClass(), entity);
 	}
 
+	/**
+	 * Core extraction logic. Uses cached FieldSlot[] aligned with entity column order
+	 * for O(n) value extraction without any HashMap lookup at runtime.
+	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static Object[] extractValues(Object bean, Class<?> dtoType, RelationalPathEx<?> entity) {
-		// Get DTO's full BeanCodec (cached)
+		FieldSlot[] mappings = getColumnMappings(dtoType, entity);
 		BeanCodec dtoCodec = BeanCodecManager.getInstance().getCodec(dtoType);
-		Property[] dtoFields = dtoCodec.getFields();
 		Object[] dtoValues = dtoCodec.values(bean);
 
-		// Build a lookup: targetName (entity field name) -> value
-		Map<String, Object> valueMap = new HashMap<>(dtoFields.length);
-		Map<String, Function> converterMap = new HashMap<>();
+		Object[] result = new Object[mappings.length];
+		for (int i = 0; i < mappings.length; i++) {
+			FieldSlot slot = mappings[i];
+			if (slot == null) {
+				// No DTO field maps to this entity column
+				continue;
+			}
+			Object value = dtoValues[slot.dtoFieldIndex];
+			Function converter = slot.writeConverter;
+			if (converter != null && value != null) {
+				value = converter.apply(value);
+			}
+			result[i] = value;
+		}
+		return result;
+	}
 
-		for (int i = 0; i < dtoFields.length; i++) {
-			Property field = dtoFields[i];
+	/**
+	 * Get or build the cached FieldSlot[] for a (dtoType, entityType) pair.
+	 * The result array is indexed by entity column position.
+	 */
+	@SuppressWarnings("rawtypes")
+	private static FieldSlot[] getColumnMappings(Class<?> dtoType, RelationalPathEx<?> entity) {
+		ClassPairKey key = new ClassPairKey(dtoType, entity.getType());
+		FieldSlot[] cached = MAPPING_CACHE.get(key);
+		if (cached != null) {
+			return cached;
+		}
+		// Build DTO field info: targetName -> (dtoFieldIndex, writeConverter)
+		BeanCodec codec = BeanCodecManager.getInstance().getCodec(dtoType);
+		Property[] fields = codec.getFields();
+		Map<String, FieldSlot> fieldMap = new HashMap<>(fields.length);
+
+		for (int i = 0; i < fields.length; i++) {
+			Property field = fields[i];
 			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
 
 			// Skip non-writable fields
 			if (pathBinder != null && !pathBinder.writable()) {
 				continue;
 			}
-
 			String targetName = (pathBinder != null) ? pathBinder.value() : field.getName();
-			valueMap.put(targetName, dtoValues[i]);
-
-			// Resolve write converter
-			if (pathBinder != null) {
-				Function converter = resolveWriteConverter(dtoType, pathBinder, field);
-				if (converter != null) {
-					converterMap.put(targetName, converter);
-				}
-			}
+			Function writeConverter = resolveWriteConverter(dtoType, pathBinder, field);
+			fieldMap.put(targetName, new FieldSlot(i, writeConverter));
 		}
 
-		// Build result array aligned with entity columns
+		// Build result aligned with entity column order
 		List<Path<?>> columns = entity.getColumns();
-		Object[] result = new Object[columns.size()];
-		for (int i = 0; i < columns.size(); i++) {
-			String colName = columns.get(i).getMetadata().getName();
-			if (valueMap.containsKey(colName)) {
-				Object value = valueMap.get(colName);
-				Function converter = converterMap.get(colName);
-				if (converter != null && value != null) {
-					value = converter.apply(value);
-				}
-				result[i] = value;
-			}
-			// else: leave as null (DTO doesn't have this field)
+		FieldSlot[] result = new FieldSlot[columns.size()];
+		for (int c = 0; c < columns.size(); c++) {
+			String colName = columns.get(c).getMetadata().getName();
+			result[c] = fieldMap.get(colName); // null if DTO has no field for this column
 		}
+		MAPPING_CACHE.put(key, result);
 		return result;
 	}
 
 	@SuppressWarnings("rawtypes")
 	private static Function resolveWriteConverter(Class<?> dtoType, PathBinder pathBinder, Property field) {
+		if (pathBinder == null) {
+			return null;
+		}
 		Class<? extends Function> writeClass = pathBinder.writeConverter();
 		if (writeClass != Function.class) {
 			return (Function) TypeUtils.newInstance(writeClass);
@@ -187,4 +213,21 @@ public class ConverterWrappedBean {
 		}
 		return null;
 	}
+
+	/**
+	 * Cached mapping for a single entity column, pointing back to the DTO field index.
+	 */
+	private static final class FieldSlot {
+		/** Index into the DTO's BeanCodec values array. */
+		final int dtoFieldIndex;
+		@SuppressWarnings("rawtypes")
+		final Function writeConverter;
+
+		@SuppressWarnings("rawtypes")
+		FieldSlot(int dtoFieldIndex, Function writeConverter) {
+			this.dtoFieldIndex = dtoFieldIndex;
+			this.writeConverter = writeConverter;
+		}
+	}
+
 }

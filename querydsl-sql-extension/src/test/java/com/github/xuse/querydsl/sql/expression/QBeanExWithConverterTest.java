@@ -18,7 +18,7 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 
 /**
- * Tests for {@link QBeanExWithConverter} and {@link ConvertMapper}.
+ * Tests for {@link QBeanExWithConverter} and {@link ConverterWrappedBean}.
  * <p>
  * Verifies:
  * <ul>
@@ -27,7 +27,7 @@ import com.querydsl.core.types.Path;
  *   <li>Built-in type conversion (int to String via BuiltinConverters)</li>
  *   <li>Unmapped fields preserve DTO default values</li>
  *   <li>Null handling on primitive vs reference type fields</li>
- *   <li>ConvertMapper for Insert/Update with field name remapping</li>
+ *   <li>ConverterWrappedBean for Insert/Update with field name remapping</li>
  * </ul>
  */
 class QBeanExWithConverterTest {

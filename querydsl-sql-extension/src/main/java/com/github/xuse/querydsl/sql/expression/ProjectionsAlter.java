@@ -22,27 +22,25 @@ public class ProjectionsAlter {
 	 * Cache for QBeanExWithConverter instances.
 	 * Key: (dtoType, tableType) pair.
 	 */
-	private static final Map<ConverterCacheKey, QBeanExWithConverter<?>> CONVERTER_CACHE = MapCreator.createConcurrentMap(128);
+	private static final Map<ClassPairKey, QBeanExWithConverter<?>> CONVERTER_CACHE = MapCreator.createConcurrentMap(128);
 
 	@SuppressWarnings("unchecked")
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPath<?> beanPath) {
 		boolean isNativeType = type == beanPath.getType(); 
 		if (isNativeType) {
-			 Expression<?> expr=beanPath.getProjection();
-			if(expr instanceof QBeanEx) {
-				return (QBeanEx<T>)expr;
+			Expression<?> expr = beanPath.getProjection();
+			if (expr instanceof QBeanEx) {
+				return (QBeanEx<T>) expr;
 			}
+			Map<String, Expression<?>> bindings = buildBindings(beanPath);
+			return new QBeanEx<T>(type, bindings);
 		}
-		if (!isNativeType) {
-			return (QBeanEx<T>) CONVERTER_CACHE.computeIfAbsent(
-					new ConverterCacheKey(type, beanPath.getType()),
-					k -> {
-						Map<String, Expression<?>> bindings = buildBindings(beanPath);
-						return new QBeanExWithConverter<>(type, bindings);
-					});
-		}
-		Map<String, Expression<?>> bindings = buildBindings(beanPath);
-		return new QBeanEx<T>(type, bindings);
+		return (QBeanEx<T>) CONVERTER_CACHE.computeIfAbsent(
+				new ClassPairKey(type, beanPath.getType()),
+				k -> {
+					Map<String, Expression<?>> bindings = buildBindings(beanPath);
+					return new QBeanExWithConverter<>(type, bindings);
+				});
 	}
 
 	private static Map<String, Expression<?>> buildBindings(RelationalPath<?> beanPath) {
@@ -227,31 +225,5 @@ public class ProjectionsAlter {
     
     public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){
     	return new QPair<>(expr1,expr2);
-    }
-
-    private static final class ConverterCacheKey {
-    	private final Class<?> dtoType;
-    	private final Class<?> tableType;
-    	private final int hash;
-
-    	ConverterCacheKey(Class<?> dtoType, Class<?> tableType) {
-    		this.dtoType = dtoType;
-    		this.tableType = tableType;
-    		this.hash = dtoType.hashCode() * 31 + tableType.hashCode();
-    	}
-
-    	@Override
-    	public int hashCode() {
-    		return hash;
-    	}
-
-    	@Override
-    	public boolean equals(Object obj) {
-    		if (obj instanceof ConverterCacheKey) {
-    			ConverterCacheKey other = (ConverterCacheKey) obj;
-    			return this.dtoType == other.dtoType && this.tableType == other.tableType;
-    		}
-    		return false;
-    	}
     }
 }

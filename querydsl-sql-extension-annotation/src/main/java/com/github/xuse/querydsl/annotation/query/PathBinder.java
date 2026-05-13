@@ -51,7 +51,7 @@ import java.util.function.Function;
  *
  * @author Joey
  * @see com.github.xuse.querydsl.sql.expression.QBeanExWithConverter
- * @see com.github.xuse.querydsl.sql.expression.ConvertMapper
+ * @see com.github.xuse.querydsl.sql.expression.ConverterWrappedBean
  */
 @Target({ FIELD })
 @Retention(RUNTIME)

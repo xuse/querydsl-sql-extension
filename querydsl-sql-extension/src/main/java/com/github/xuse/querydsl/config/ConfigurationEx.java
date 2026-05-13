@@ -59,8 +59,14 @@ public class ConfigurationEx {
 	 * Set true to raise an exception while using primitive field without @UnsavedValue annotation.
 	 */
 	public static PrimitiveCheck primitiveCheck = PrimitiveCheck.NORMAL;
-	
+
+	/**
+	 * Maximum expected number of columns per table. Used as initial capacity hint for
+	 * internal Map/Array allocations. Increase if your tables have more columns.
+	 */
 	public static int MAXIMUM_EXPECTED_COLUMNS = 64;
+	
+	public static int WRAPPERED_BEAN_CACHE_SIZE = 128;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);
