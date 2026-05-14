@@ -244,7 +244,8 @@ class QBeanExWithConverterTest {
 
 	/**
 	 * Test toValueExtractor handles unmapped columns (DTO has no field for that entity column).
-	 * Such positions should be null in the output.
+	 * In the effective column order output, unmapped columns produce null (the slot is null).
+	 * Note: this differs from extractValues() which produces NOT_AVAILABLE for unmapped columns.
 	 */
 	@Test
 	void testToValueExtractorUnmappedColumnsAreNull() {
@@ -271,7 +272,7 @@ class QBeanExWithConverterTest {
 			if ("code".equals(colName)) {
 				assertEquals("X", values[i]);
 			} else if ("created".equals(colName)) {
-				assertNull(values[i], "Unmapped column should produce null");
+				assertNull(values[i], "Unmapped column in effective order should produce null");
 			}
 		}
 	}
@@ -322,6 +323,104 @@ class QBeanExWithConverterTest {
 		assertTrue(ConverterWrappedBean.hasPathBinder(FooDTO.class));
 		// Foo entity does not have @PathBinder
 		assertFalse(ConverterWrappedBean.hasPathBinder(Foo.class));
+	}
+
+	// ========== NOT_AVAILABLE sentinel tests ==========
+
+	/**
+	 * Test that extractValues produces NOT_AVAILABLE for columns the DTO does not map.
+	 * This allows AdvancedMapper to skip those columns, letting database DEFAULT take effect.
+	 */
+	@Test
+	void testExtractValuesProducesNotAvailableForUnmappedColumns() {
+		FooDTO dto = new FooDTO();
+		dto.setCode("ABC");
+		dto.setName("Test");
+
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+		Object[] values = wrapped.extractValues(fooPath);
+
+		// FooDTO does not have "created" or "updated" fields — those positions should be NOT_AVAILABLE
+		List<Path<?>> columns = fooPath.getColumns();
+		for (int i = 0; i < columns.size(); i++) {
+			String colName = columns.get(i).getMetadata().getName();
+			if ("created".equals(colName) || "updated".equals(colName)) {
+				assertSame(ConverterWrappedBean.NOT_AVAILABLE, values[i],
+						"Column '" + colName + "' not mapped by DTO should be NOT_AVAILABLE");
+			}
+		}
+
+		// FooDTO does have "code" and "name" — those should NOT be NOT_AVAILABLE
+		for (int i = 0; i < columns.size(); i++) {
+			String colName = columns.get(i).getMetadata().getName();
+			if ("code".equals(colName)) {
+				assertEquals("ABC", values[i]);
+			} else if ("name".equals(colName)) {
+				assertEquals("Test", values[i]);
+			}
+		}
+	}
+
+	/**
+	 * Test that AdvancedMapper skips NOT_AVAILABLE columns when processing ConverterWrappedBean.
+	 * The resulting map should not contain paths for unmapped DTO columns.
+	 */
+	@Test
+	void testAdvancedMapperSkipsNotAvailableColumns() {
+		AdvancedMapper mapper = new AdvancedMapper(1, false); // SCENARIO_INSERT
+
+		FooDTO dto = new FooDTO();
+		dto.setCode("SKIP-TEST");
+		dto.setName("Only mapped");
+		dto.setVolume(10);
+		dto.setVersion(1);
+
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+		Map<Path<?>, Object> map = mapper.createMap(fooPath, wrapped);
+
+		// "created" and "updated" are not in FooDTO — they should NOT appear in the map
+		Path<?> createdPath = fooPath.getColumn("created");
+		Path<?> updatedPath = fooPath.getColumn("updated");
+		assertFalse(map.containsKey(createdPath),
+				"Unmapped column 'created' should not be in the map (database DEFAULT should apply)");
+		assertFalse(map.containsKey(updatedPath),
+				"Unmapped column 'updated' should not be in the map (database DEFAULT should apply)");
+
+		// Mapped columns should be present
+		Path<?> codePath = fooPath.getColumn("code");
+		Path<?> namePath = fooPath.getColumn("name");
+		assertEquals("SKIP-TEST", map.get(codePath));
+		assertEquals("Only mapped", map.get(namePath));
+	}
+
+	/**
+	 * Test that null values from mapped DTO fields are distinguishable from NOT_AVAILABLE.
+	 * In extractValues(): mapped null → null, unmapped → NOT_AVAILABLE.
+	 * In createMap(): NOT_AVAILABLE columns are excluded; null mapped fields go through
+	 * normal null strategy (may or may not appear depending on mapper configuration).
+	 */
+	@Test
+	void testNullMappedFieldVsNotAvailable() {
+		FooDTO dto = new FooDTO();
+		dto.setCode("NULL-TEST");
+		dto.setGender(null); // mapped field, explicitly null
+		dto.setVersion(1);
+
+		ConverterWrappedBean wrapped = ConverterWrappedBean.of(dto);
+		Object[] values = wrapped.extractValues(fooPath);
+
+		List<Path<?>> columns = fooPath.getColumns();
+		for (int i = 0; i < columns.size(); i++) {
+			String colName = columns.get(i).getMetadata().getName();
+			if ("gender".equals(colName)) {
+				// Mapped field with null value → should be null (not NOT_AVAILABLE)
+				assertNull(values[i], "Mapped field with null value should be null, not NOT_AVAILABLE");
+			} else if ("created".equals(colName)) {
+				// Unmapped field → should be NOT_AVAILABLE
+				assertSame(ConverterWrappedBean.NOT_AVAILABLE, values[i],
+						"Unmapped column should be NOT_AVAILABLE");
+			}
+		}
 	}
 
 	// ========== Helper methods ==========

@@ -105,6 +105,11 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 		List<Entry<Path<?>, Object>> data = new ArrayList<>(len);
 		for (int i = 0; i < len; i++) {
 			Object value = values[i];
+			// NOT_AVAILABLE: DTO has no mapping for this column — skip entirely,
+			// allowing database DEFAULT to take effect.
+			if (value == ConverterWrappedBean.NOT_AVAILABLE) {
+				continue;
+			}
 			Path<?> p = path.get(i);
 			ColumnMapping metadata = entity.getColumnMetadata(p);
 			if ((scenario == SCENARIO_UPDATE && metadata.isNotUpdate())

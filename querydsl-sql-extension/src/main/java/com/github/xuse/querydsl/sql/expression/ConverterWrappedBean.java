@@ -68,6 +68,25 @@ import com.querydsl.core.types.Path;
  */
 public class ConverterWrappedBean {
 
+	/**
+	 * Sentinel value indicating that the DTO has no mapping for this entity column.
+	 * <p>
+	 * When {@link #extractValues} encounters a column with no corresponding DTO field
+	 * (FieldSlot is null), it places this constant in the result array instead of null.
+	 * This allows {@link AdvancedMapper} to distinguish between:
+	 * <ul>
+	 *   <li>{@code NOT_AVAILABLE} — DTO does not map this column → skip it entirely
+	 *       (database DEFAULT takes effect)</li>
+	 *   <li>{@code null} — DTO maps this column but the value is null → apply null strategy</li>
+	 * </ul>
+	 */
+	public static final Object NOT_AVAILABLE = new Object() {
+		@Override
+		public String toString() {
+			return "NOT_AVAILABLE";
+		}
+	};
+
 	/** Cache: classes that have been checked for @PathBinder presence. */
 	private static final Set<Class<?>> HAS_PATH_BINDER = ConcurrentHashMap.newKeySet();
 	private static final Set<Class<?>> NO_PATH_BINDER = ConcurrentHashMap.newKeySet();
@@ -178,6 +197,10 @@ public class ConverterWrappedBean {
 	/**
 	 * Core extraction in original column order.
 	 * Uses cached DtoMappingInfo whose slots[] is indexed by original column position.
+	 * <p>
+	 * For columns where the DTO has no mapping (slot is null), the result contains
+	 * {@link #NOT_AVAILABLE} instead of null, signaling to AdvancedMapper that this
+	 * column should be skipped entirely (allowing database DEFAULT to take effect).
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static Object[] extractValues(Object bean, Class<?> dtoType, RelationalPathEx<?> entity) {
@@ -189,9 +212,11 @@ public class ConverterWrappedBean {
 		for (int i = 0; i < slots.length; i++) {
 			FieldSlot slot = slots[i];
 			if (slot == null) {
-				continue;
+				// DTO has no field for this entity column
+				result[i] = NOT_AVAILABLE;
+			}else {
+				result[i] = slot.writeConverter.apply(dtoValues[slot.dtoFieldIndex]);
 			}
-			result[i] = slot.writeConverter.apply(dtoValues[slot.dtoFieldIndex]);
 		}
 		return result;
 	}
