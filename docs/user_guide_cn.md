@@ -554,6 +554,64 @@ public class FooQueryParams {
   	Pair<Integer, List<Foo>> countAndData = factory.findByCondition(p);
   ````
 
+### @PathBinder
+
+`@PathBinder` 用于 DTO 字段上，建立 DTO 类与数据库实体之间的映射关系。支持以下场景：
+
+- **查询投射**：使用 DTO 作为 SELECT 查询的结果类型，自动进行字段名映射和类型转换。
+- **DTO 插入/更新**：将 DTO 直接传入 `populate()` 进行插入或更新操作。只有 DTO 映射的列参与 SQL 语句；未映射的列被排除，数据库 DEFAULT 值自然生效。
+- **批量安全**：在 `populateBatch()` 中，基于 DTO 的操作天然避免了"null 覆盖 DEFAULT"的问题，因为未映射的列不会出现在 SQL 中。
+
+```java
+@Data
+public class FooDTO {
+    private int id;
+    private String code;
+    private String name;
+
+    // 将此字段映射到实体中的 "codeType" 列
+    @PathBinder("codeType")
+    private String codeTypeX;
+
+    // 只读字段：参与 SELECT 但不参与 INSERT/UPDATE
+    @PathBinder(value = "created", writable = false)
+    private Instant createdTime;
+}
+```
+
+**使用示例：**
+
+```java
+// SELECT：将查询结果投射到 DTO
+List<FooDTO> dtos = factory.select(ProjectionsAlter.bean(FooDTO.class, qFoo))
+        .from(qFoo).fetch();
+
+// INSERT：只写入 DTO 映射的列；未映射列使用数据库 DEFAULT
+factory.insert(qFoo).populate(fooDTO).execute();
+
+// UPDATE：以主键作为 WHERE 条件
+factory.update(qFoo).populate(fooDTO, true).execute();
+
+// 批量 INSERT：同样的优势——未映射列不参与 SQL
+factory.insert(qFoo).populateBatch(dtoList).executeWithKeys(Integer.class);
+```
+
+### 批量空值策略 (Batch Null Strategy)
+
+使用 `populateBatch()` 配合实体 Bean（非 DTO）时，所有列都会包含在 SQL 语句中。如果字段为 null，数据库 DEFAULT 会被绕过。`ConfigurationEx.batchNullStrategy` 控制此情况的处理方式：
+
+```java
+// 对 NOT NULL 列使用列默认表达式
+configuration.setBatchNullStrategy(BatchNullStrategy.AUTO_DEFAULT);
+
+// 激进模式：即使没有 defaultExpression 也提供兜底值
+configuration.setBatchNullStrategy(BatchNullStrategy.AGGRESSIVE_DEFAULT);
+
+// 使用传统安全路径：null 列从 SQL 中省略（每条记录可能产生不同的 SQL）
+configuration.setBatchNullStrategy(null);
+```
+
+> **提示**：使用带 `@PathBinder` 的 DTO 进行批量操作时，批量空值策略的重要性降低，因为未映射的列已经被自然排除在 SQL 之外。
 
 
 ## 6. 包扫描功能

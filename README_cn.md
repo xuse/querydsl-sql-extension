@@ -163,6 +163,9 @@
       private CaAsset asserts;
   ```
 
+* **`@PathBinder` 注解** — 支持使用与实体不同的 DTO 类作为查询结果、插入和更新的载体。通过字段名映射，可选类型转换。批量操作时，只有 DTO 映射的列参与 SQL，未映射列的数据库 DEFAULT 值自然生效。
+* **`ConfigurationEx.batchNullStrategy`** — 控制批量插入模式下空值的处理方式。支持对 NOT NULL 列自动使用默认值替代，或回退到传统安全的 addBatch 路径。
+
 
 
 * 提供更多Batch Insert、Batch Update、Batch Delete操作。支持通过一条SQL Statement携带多组参数值，提升批量操作效率。

@@ -7,6 +7,16 @@ The first number corresponds to the version of the querydsl library, and the sec
 ```
 v{querydsl version} - r(extension version)
 ```
+
+**v5.0.0-r173**  (2026-05)
+
+* **New: `@PathBinder` annotation** — Enables using a DTO class (different from the entity) for query results, insert, and update operations. Fields are remapped by name, with optional type conversion via `writeConverter`/`readConverter`. This makes projecting query results into custom DTOs seamless, and allows insert/update from DTOs without manual field mapping.
+* **New: Batch insert/update with DTO** — When a DTO with `@PathBinder` is used in `populateBatch()`, only the columns mapped by the DTO participate in the SQL statement. Unmapped columns are excluded, allowing database DEFAULT values to take effect naturally. This eliminates the previous limitation where batch operations had to include all columns.
+* **New: `ConfigurationEx.batchNullStrategy`** — Controls how null values are handled during batch insert with `populateBatch()`. Strategies include `AUTO_DEFAULT` (use column default for NOT NULL columns), `AGGRESSIVE_DEFAULT` (provide fallback values), or `null` (use traditional safe addBatch path). Set via `ConfigurationEx.setBatchNullStrategy()`.
+* **Refactoring: Map implementations** — Replaced `FastHashtable` and `NoReadLockHashMap` with `MapCreator` factory pattern, supporting automatic fallback to JDK built-in Maps when `sun.misc.Unsafe` is unavailable (e.g., GraalVM Native, future JDK versions).
+* **Refactoring: `JDKEnvironment`** — Migrated to `util.lang` package with enhanced Unsafe access and trusted MethodHandle lookup support.
+* **Performance: `ProjectionsAlter.bean()`** — Added caching for `QBeanExWithConverter` instances to avoid repeated construction.
+
 **v5.0.0-r141**  (2025-09-25)
 * Fix error in date truncation on date before 1970-01-01.    
 

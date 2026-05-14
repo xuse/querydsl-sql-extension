@@ -547,6 +547,65 @@ When using the bean defined above:
   	Pair<Integer, List<Foo>> countAndData = factory.findByCondition(p);
   ````
 
+### @PathBinder
+
+`@PathBinder` is used on DTO fields to establish a mapping between a DTO class and a database entity. This enables:
+
+- **Query projection**: Use a DTO as the result type for SELECT queries, with automatic field name remapping and type conversion.
+- **Insert/Update from DTO**: Pass a DTO directly to `populate()` for insert or update operations. Only the columns mapped by the DTO participate in the SQL statement; unmapped columns are excluded, allowing database DEFAULT values to take effect.
+- **Batch safety**: In `populateBatch()`, DTO-based operations naturally avoid the "null overwrites DEFAULT" problem, since unmapped columns never appear in the SQL.
+
+```java
+@Data
+public class FooDTO {
+    private int id;
+    private String code;
+    private String name;
+
+    // Maps this field to the "codeType" column in the entity
+    @PathBinder("codeType")
+    private String codeTypeX;
+
+    // Read-only field: participates in SELECT but not in INSERT/UPDATE
+    @PathBinder(value = "created", writable = false)
+    private Instant createdTime;
+}
+```
+
+**Usage examples:**
+
+```java
+// SELECT: project query results into DTO
+List<FooDTO> dtos = factory.select(ProjectionsAlter.bean(FooDTO.class, qFoo))
+        .from(qFoo).fetch();
+
+// INSERT: only DTO-mapped columns are written; unmapped columns get database DEFAULT
+factory.insert(qFoo).populate(fooDTO).execute();
+
+// UPDATE with primary key as WHERE condition
+factory.update(qFoo).populate(fooDTO, true).execute();
+
+// BATCH INSERT: same benefits — unmapped columns excluded from SQL
+factory.insert(qFoo).populateBatch(dtoList).executeWithKeys(Integer.class);
+```
+
+### Batch Null Strategy
+
+When using `populateBatch()` with entity beans (not DTOs), all columns are included in the SQL statement. If a field is null, the database DEFAULT is bypassed. `ConfigurationEx.batchNullStrategy` controls how to handle this:
+
+```java
+// Use column default expression for NOT NULL columns when value is null
+configuration.setBatchNullStrategy(BatchNullStrategy.AUTO_DEFAULT);
+
+// Aggressively provide fallback values even without defaultExpression
+configuration.setBatchNullStrategy(BatchNullStrategy.AGGRESSIVE_DEFAULT);
+
+// Use traditional safe path: null columns omitted from SQL (each bean may produce different SQL)
+configuration.setBatchNullStrategy(null);
+```
+
+> **Tip**: When using DTO with `@PathBinder` for batch operations, the batch null strategy is less relevant because unmapped columns are already excluded from the SQL naturally.
+
 
 ## 6. Package Scanning
 
