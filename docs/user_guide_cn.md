@@ -715,7 +715,22 @@ configuration.setExternalDistributedLockProvider(new MyLockProvider());
 
 ## 7. 执行DDL语句
 
-> 实验性功能，个人精力有限目前仅完成了部分数据的方言适配（清单参见 README.md ）。但现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+> 实验性功能。现有框架基于AST的扩展机制十分强大，适配其他主流数据库问题不大，有兴趣者可自行编写方言进行扩展。
+
+**DDL 方言支持矩阵**
+
+| 数据库 | 版本 | 支持程度 |
+|--------|------|---------|
+| MySQL | v5.6+ | 完整（含 Online DDL、JSON 函数、分区） |
+| PostgreSQL | v10.3+ | 完整（含分区） |
+| Apache Derby | v10.14+ | 完整 |
+| H2 | v2.3+ | 完整 |
+| Oracle | 10g+ | 类型映射、DDL模板、COMMENT、BITMAP索引 |
+| SQL Server | 2005/2008/2012+ | 类型映射、DDL模板、DATETIME2（2008+） |
+| HSQLDB | 2.x | 类型映射、DDL模板、COMMENT |
+| SQLite | 3.x | 类型映射（ALTER TABLE 支持有限） |
+| DB2 | 10.1+ | 类型映射、DDL模板、COMMENT |
+| CUBRID | 9.x+ | 类型映射、DDL模板、COMMENT |
 
 ### 表修改示例
 

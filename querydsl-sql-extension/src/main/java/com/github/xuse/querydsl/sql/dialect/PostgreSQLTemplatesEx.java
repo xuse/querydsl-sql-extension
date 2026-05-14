@@ -47,6 +47,7 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 		// 没有tinyint类型
 		typeNames.put(Types.TINYINT, "smallint").type(Types.SMALLINT).noSize();
 		typeNames.put(Types.DOUBLE, "double precision").noSize();
+		
 		// float视为double类型
 		typeNames.put(Types.FLOAT, "float").type(Types.DOUBLE).noSize();
 
@@ -145,7 +146,11 @@ public class PostgreSQLTemplatesEx extends DefaultSQLTemplatesEx {
 	public SchemaReader getSchemaAccessor() {
 		return schemaReader;
 	}
-	
+
+	@Override
+	public PrivilegeDetector getPrivilegeDetector() {
+		return new PostgreSQLPrivilegeDetector();
+	}
 
 	static class PgSchemaReader extends InformationSchemaReader {
 		public PgSchemaReader() {

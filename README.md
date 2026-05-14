@@ -376,14 +376,22 @@ metadata.dropPartition(t1)
 
 ### DDL Support
 
-> DDL support is an experimental feature. Writing DDL requires implementing dialects for each different database. Due to limited personal resources, only some database dialects have been adapted so far. However, the existing framework's AST-based extension mechanism is very powerful, and adapting to other mainstream databases should not be difficult. Interested users can write their own dialect extensions.
+> DDL support is an experimental feature. Writing DDL requires implementing dialects for each different database. The existing framework's AST-based extension mechanism is very powerful, and adapting to other mainstream databases should not be difficult. Interested users can write their own dialect extensions.
 
 **Supported Databases (For DDL)**
 
-* MySQL v5.6 and above
-* Apache Derby v10.14 and above
-* PostgreSQL v10.3 and above
-* H2 v2.3.232
+| Database | Version | DDL Support Level |
+|----------|---------|-------------------|
+| MySQL | v5.6+ | Full (including Online DDL, JSON functions, Partitions) |
+| PostgreSQL | v10.3+ | Full (including Partitions) |
+| Apache Derby | v10.14+ | Full |
+| H2 | v2.3+ | Full |
+| Oracle | 10g+ | Type mappings, DDL templates, COMMENT, BITMAP index |
+| SQL Server | 2005/2008/2012+ | Type mappings, DDL templates, DATETIME2 (2008+) |
+| HSQLDB | 2.x | Type mappings, DDL templates, COMMENT |
+| SQLite | 3.x | Type mappings (limited ALTER TABLE support) |
+| DB2 | 10.1+ | Type mappings, DDL templates, COMMENT |
+| CUBRID | 9.x+ | Type mappings, DDL templates, COMMENT |
 
 For related instructions, refer to the quick_start.md document.
 

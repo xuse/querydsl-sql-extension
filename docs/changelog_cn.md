@@ -8,12 +8,12 @@ v{querydsl 版本号} - r(extension version)
 
 **v5.0.0-r173**  (2026-05)
 
-* **新增：`@PathBinder` 注解** — 支持使用与实体不同的 DTO 类作为查询结果、插入和更新操作的载体。通过字段名映射，可选配置 `writeConverter`/`readConverter` 进行类型转换。查询结果投射到自定义 DTO 更加便捷，从 DTO 执行 insert/update 无需手动字段映射。
-* **新增：DTO 批量插入/更新** — 当带有 `@PathBinder` 的 DTO 用于 `populateBatch()` 时，只有 DTO 映射的列参与 SQL 语句。未映射的列被排除，数据库 DEFAULT 值自然生效。消除了以往批量操作必须包含所有列的限制。
-* **新增：`ConfigurationEx.batchNullStrategy`** — 控制 `populateBatch()` 批量插入时对空值的处理方式。策略包括 `AUTO_DEFAULT`（对 NOT NULL 列使用列默认值）、`AGGRESSIVE_DEFAULT`（提供兜底值）、或 `null`（使用传统安全的 addBatch 路径）。通过 `ConfigurationEx.setBatchNullStrategy()` 设置。
-* **重构：Map 实现** — 用 `MapCreator` 工厂模式替代 `FastHashtable` 和 `NoReadLockHashMap`，当 `sun.misc.Unsafe` 不可用时（如 GraalVM Native、未来 JDK 版本）自动降级为 JDK 内置 Map。
-* **重构：`JDKEnvironment`** — 迁移至 `util.lang` 包，增强 Unsafe 访问和可信 MethodHandle 查找支持。
-* **性能：`ProjectionsAlter.bean()`** — 增加 `QBeanExWithConverter` 实例缓存，避免重复构建。
+* **新增：`@PathBinder` 注解** — 支持使用与实体不同的 DTO 类作为查询结果、插入和更新操作的载体，无需手动字段映射。
+* **新增：DTO 批量插入/更新** — `@PathBinder` DTO 用于 `populateBatch()` 时，仅映射列参与 SQL，未映射列自动使用数据库 DEFAULT 值。
+* **新增：`ConfigurationEx.batchNullStrategy`** — 控制批量插入时空值处理策略（`AUTO_DEFAULT` / `AGGRESSIVE_DEFAULT` / null）。
+* **新增：DDL 方言扩展至 10 种数据库** — 新增 Oracle、SQL Server（2005/2008/2012）、HSQLDB、SQLite、DB2、CUBRID 方言实现。原有 MySQL、PostgreSQL、Derby、H2 不受影响。
+* **变更：权限检测机制** — 各数据库改用原生命令检测权限（如 MySQL `SHOW GRANTS`、PostgreSQL `pg_has_role`）。`SimpleDetector` 标记为 `@Deprecated`，现有代码如直接引用需迁移。
+* **重构：内部实现优化** — Map 实现、JDKEnvironment 迁移、ProjectionsAlter 缓存等，对外 API 无影响。GraalVM Native Image 兼容性改善。
 
 **v5.0.0-r141**  (2025-09-25)
 * 修复日期工具截取日期时对1970-01-01之前的日期处理错误。

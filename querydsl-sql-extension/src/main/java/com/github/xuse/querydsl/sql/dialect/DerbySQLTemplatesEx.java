@@ -1,10 +1,11 @@
 package com.github.xuse.querydsl.sql.dialect;
 
-import java.lang.reflect.Field;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -20,6 +21,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.OtherStatement;
 import com.github.xuse.querydsl.util.ArrayUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.lang.FieldAccessor;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.SQLBindings;
 import com.querydsl.sql.SQLTemplates;
@@ -75,10 +77,27 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 	public SchemaReader getSchemaAccessor() {
 		return schemaReader;
 	}
-	
+
+	@Override
+	public PrivilegeDetector getPrivilegeDetector() {
+		return new DerbyPrivilegeDetector();
+	}
+
 	private SchemaReader schemaReader=new DerbySchemaReader();
 	
 	static class DerbySchemaReader implements SchemaReader{
+		/**
+		 * Cache of FieldAccessor per descriptor class to avoid repeated lookups.
+		 * Derby's descriptor object class is loaded by the Derby classloader and may vary.
+		 */
+		private static final Map<Class<?>, FieldAccessor> ACCESSOR_CACHE = new ConcurrentHashMap<>();
+
+		private static int[] getBaseColumnPositions(Object descriptor) {
+			FieldAccessor accessor = ACCESSOR_CACHE.computeIfAbsent(descriptor.getClass(),
+					clz -> FieldAccessor.of(clz, "baseColumnPositions"));
+			return accessor.getObject(descriptor);
+		}
+
 		@Override
 		public List<Constraint> getConstraints(String catalog,String schema, String table, ConnectionWrapper conn, boolean detail) {
 			List<ColumnDef> columns = Collections.emptyList();
@@ -117,10 +136,8 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 				Object obj = rs.getObject("DESCRIPTOR");
 				if (obj != null) {
 					c.setComment(obj.toString());
-					try {
-						Field field = obj.getClass().getDeclaredField("baseColumnPositions");
-						field.setAccessible(true);
-						int[] columnPosition = (int[]) field.get(obj);
+					int[] columnPosition = getBaseColumnPositions(obj);
+					if (columnPosition != null) {
 						if (finalColumns.isEmpty()) {
 							c.setColumnNames(
 									ArrayUtils.stream(columnPosition).map(String::valueOf).collect(Collectors.toList()));
@@ -134,8 +151,6 @@ public class DerbySQLTemplatesEx extends DefaultSQLTemplatesEx{
 								throw Exceptions.illegalArgument("Table {} columnIndex= {} not exist", table, e);
 							}).collect(Collectors.toList()));
 						}
-					} catch (Exception e) {
-						throw Exceptions.toRuntime(e);
 					}
 				}
 				return c;
