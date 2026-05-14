@@ -27,6 +27,11 @@ import com.querydsl.sql.SchemaAndTable;
  */
 public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 
+	/**
+	 * The reserved partition name for the maximum value boundary.
+	 */
+	private static final String PARTITION_MAX_NAME = "pmax";
+
 	private List<PartitionInfo> exists;
 
 	private final List<String> partitions = new ArrayList<>();
@@ -90,7 +95,7 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 			if (auto != null && auto.length > 0) {
 				//当前周期分区名
 				List<Partition> autoPartitionsFuture = RangePartitionBy.generateAutoPartitions(auto[0], 0);
-				String futureName = "pmax";
+				String futureName = PARTITION_MAX_NAME;
 				if(autoPartitionsFuture.get(0)!=null) {
 					futureName = autoPartitionsFuture.get(0).name();
 				}
@@ -101,7 +106,7 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 				List<PartitionInfo> result = new ArrayList<>(getCurrentPartitions());
 				//防止删除未来分区
 				for(PartitionInfo exist:result) {
-					if("pmax".equals(exist.getName())) {
+					if(PARTITION_MAX_NAME.equals(exist.getName())) {
 						continue;
 					}
 					if(unExpiredPartitionNames.contains(exist.getName())) {
@@ -162,7 +167,7 @@ public class DropPartitionQuery extends AbstractDDLClause<DropPartitionQuery> {
 	protected String generateSQL(String partition) {
 		DDLMetadataBuilder builder=new DDLMetadataBuilder(configuration, table, routing,connection.getDriverInfo());
 		Expression<?> pName=DDLExpressions.text(partition);
-		builder.serilizeSimple(AlterTablePartitionOps.DROP_PARTITION, pName, table);
+		builder.serializeSimple(AlterTablePartitionOps.DROP_PARTITION, pName, table);
 		// ,", ALGORITHM=INPLACE, LOCK=NONE" not support on mysql
 		return builder.getSql();
 	}

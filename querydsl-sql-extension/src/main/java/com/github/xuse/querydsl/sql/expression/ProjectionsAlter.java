@@ -218,10 +218,9 @@ public class ProjectionsAlter {
     	return QBeansDiscontinuous.builder();
     }
     
-    public static QAliasBeansDiscontinuous.Builder aliasBeansBuilder(RelationalPath<?>... tables){
+    public static QAliasBeansDiscontinuous.Builder aliasBeansBuilder(){
     	return QAliasBeansDiscontinuous.builder();
     }
-    
     
     public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){
     	return new QPair<>(expr1,expr2);

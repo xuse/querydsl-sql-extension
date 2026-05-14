@@ -77,7 +77,8 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 		return expr instanceof FactoryExpression || expr instanceof GroupExpression;
 	}
 
-	private final Map<String, Expression<?>> bindings;
+//	private final Map<String, Expression<?>> bindings;
+	private final List<Expression<?>> args;
 
 	/**
 	 *  Create a new QBean instance
@@ -97,7 +98,8 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 	 */
 	protected QBeanEx(Class<? extends T> type, Map<String, ? extends Expression<?>> bindings) {
 		super(type);
-		this.bindings = Collections.unmodifiableMap(bindings);
+		this.args = Collections.unmodifiableList(new ArrayList<>(bindings.values()));
+		//this.bindings = Collections.unmodifiableMap(bindings);
 		this.beanCodec = BeanCodecManager.getInstance().getCodec(type, new DefaultBindingProvider(bindings));
 	}
 
@@ -146,6 +148,6 @@ public class QBeanEx<T> extends FactoryExpressionBase<T> {
 
 	@Override
 	public List<Expression<?>> getArgs() {
-		return new ArrayList<>(bindings.values());
+		return args;
 	}
 }

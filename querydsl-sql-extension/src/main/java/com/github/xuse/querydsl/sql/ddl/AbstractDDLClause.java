@@ -28,6 +28,36 @@ import com.querydsl.sql.SQLListeners;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Abstract base class for all DDL (Data Definition Language) operations.
+ * <p>
+ * Implements the Template Method pattern: subclasses override {@link #generateSQL()} or
+ * {@link #generateSQLs()} to produce SQL statements, while this class handles connection
+ * management, listener lifecycle, distributed locking, and statement execution.
+ *
+ * <h3>Thread Safety</h3>
+ * <p>This class is <b>NOT thread-safe</b>. Each instance maintains mutable state
+ * ({@code context}, {@code routing}, {@code useDDLLock}) that is modified during
+ * {@link #execute()}. Instances are designed to be created per-operation and must not
+ * be shared across threads. Typical usage follows the builder pattern:
+ * <pre>{@code
+ * factory.createTable(path).ifExists().execute();
+ * }</pre>
+ *
+ * <h3>Distributed Locking</h3>
+ * <p>For scenarios where multiple application instances may perform DDL concurrently,
+ * call {@link #useDDLLock()} before {@link #execute()} to enable distributed lock
+ * acquisition. When the lock cannot be acquired, the operation is skipped with a
+ * warning log and returns 0.
+ *
+ * <h3>Connection Lifecycle</h3>
+ * <p>This class obtains a {@link java.sql.Connection} from the provided
+ * {@link MetadataQuerySupport} but does <b>not</b> close it. The caller or connection
+ * pool is responsible for connection lifecycle management.
+ *
+ * @param <C> the concrete DDL clause type (for fluent API support)
+ * @author Joey
+ */
 @Slf4j
 public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLClause<C> {
 	

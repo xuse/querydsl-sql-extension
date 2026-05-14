@@ -20,7 +20,7 @@ public class TupleMapper extends AbstractMapperSupport implements Mapper<Tuple> 
 	
 	private final boolean ignoreKeys;
 	
-	public String name = "";
+	private String name = "";
 	
 	public TupleMapper(int scenario, boolean ignoreKeys) {
 		this.scenario = scenario;

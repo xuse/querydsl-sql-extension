@@ -117,11 +117,11 @@ public class PartitionSizeAdjustQuery extends AbstractDDLClause<PartitionSizeAdj
 		if (current > toSize) {
 			// 收缩
 			Expression<?> text=ConstantImpl.create(current - toSize);
-			builder.serilizeSimple(AlterTablePartitionOps.COALESCE_PARTITION, table, text);
+			builder.serializeSimple(AlterTablePartitionOps.COALESCE_PARTITION, table, text);
 		} else {
 			// 扩张
 			Expression<?> text=ConstantImpl.create(toSize - current);
-			builder.serilizeSimple(AlterTablePartitionOps.ADD_PARTITION_COUNT, table, text);
+			builder.serializeSimple(AlterTablePartitionOps.ADD_PARTITION_COUNT, table, text);
 		}
 		return builder.getSql();
 	}

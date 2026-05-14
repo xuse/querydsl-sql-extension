@@ -52,7 +52,7 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 	
 	private final boolean ignoreKeys;
 
-	public String name = "";
+	private String name = "";
 
 	public AdvancedMapper(int scenario, boolean ignoreKeys) {
 		this.scenario = scenario;

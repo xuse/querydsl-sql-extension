@@ -447,9 +447,13 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		return word;
 	}
 
-	/*
-	 * MYSQL：column time(3) default '12:00:00'。got 12:00:00.000' from the database metadata. 两个数值对比(select '12:00:00' =
-	 * when comparing in database, 12:00:00 is not equal to 12:00:00.000.
+	/**
+	 * @implNote
+	 * 要比较两个SQL表达式在特定数据库上是否相等，这是一件困难的事情。即便集成SQL词法分析器等工具也很难做到。因此一个办法是使用select语句，将表达式传入，通过一次数据库执行来判断两个表达式是否相等。
+	 *<p>
+	 * 一个特殊情况，MySQL不同精度的时间无法进行相等比较。
+	 * 
+	 * MYSQL：column time(3) default '12:00:00'。got 12:00:00.000' from the database metadata. 两个数值对比select '12:00:00' ='12:00:00.000' 永远是不等的（因为精度不一样）。
 	 * 为此，定义了Basic.TIME_EQ来做时间戳比较。
 	 */
 	private boolean compareExpressionViaDb(Expression<?> c1Default, Expression<?> c2Default, int type) {
