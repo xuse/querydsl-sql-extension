@@ -1,9 +1,9 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
 /**
- * 外键的匹配类型
+ * Foreign key match types.
+ * <p>外键的匹配类型
  * @author qihongfei
- *
  */
 public enum ForeignKeyMatchType {
 

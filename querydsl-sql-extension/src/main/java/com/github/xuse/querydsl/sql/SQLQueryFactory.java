@@ -14,6 +14,7 @@
 package com.github.xuse.querydsl.sql;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -62,12 +63,10 @@ import lombok.SneakyThrows;
  * @author Joey
  */
 public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> implements SQLFactoryExtension{
-
-	private final ConfigurationEx configEx;
 	
 	private final Map<Class<?>, ExtensionQueryFactory> extensions = new ConcurrentHashMap<>();
 
-	Logger log = LoggerFactory.getLogger(SQLQueryFactory.class);
+	private final static Logger log = LoggerFactory.getLogger(SQLQueryFactory.class);
 
 	public SQLQueryFactory(SQLTemplates templates, Supplier<Connection> connection) {
 		this(new ConfigurationEx(templates), connection);
@@ -75,7 +74,6 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 
 	public SQLQueryFactory(ConfigurationEx configuration, Supplier<Connection> connProvider) {
 		super(configuration, connProvider);
-		this.configEx = configuration;
 		log.info("Init QueryDSL Factory(extension) with {}.", configuration.getTemplates().getClass().getName());
 		tryInitTask(configuration);
 	}
@@ -86,7 +84,6 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 
 	public SQLQueryFactory(ConfigurationEx configuration, DataSource dataSource, boolean release) {
 		super(configuration, new DataSourceProvider(dataSource));
-		this.configEx = configuration;
 		if (release) {
 			configuration.addListener(SQLCloseListener.DEFAULT);
 		}
@@ -114,7 +111,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
     public static SQLTemplates calcSQLTemplate(DataSource ds) {
         try (Connection conn = ds.getConnection()) {
             DatabaseMetaData metadata = conn.getMetaData();
-            String productName = StringUtils.lowerCase(metadata.getDatabaseProductName().toLowerCase());
+            String productName = StringUtils.lowerCase(metadata.getDatabaseProductName());
             DbType db = DbType.find(productName);
             Assert.notNull(db);
             return db.templates();
@@ -132,8 +129,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
         configuration.setSlowSqlWarnMillis(5000);
         configuration.addListener(new QueryDSLSQLListener(QueryDSLSQLListener.FORMAT_COMPACT));
         configuration.getScanOptions().disableDDL();
-        SQLQueryFactory factory = new SQLQueryFactory(configuration, ds);
-        return factory;
+        return new SQLQueryFactory(configuration, ds);
     }
 
 	static class DataSourceProvider implements Supplier<Connection> {
@@ -176,7 +172,7 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 
 	@Override
 	public SQLQueryAlter<?> query() {
-		return new SQLQueryAlter<Void>(connection, configEx);
+		return new SQLQueryAlter<Void>(connection, configuration);
 	}
 
 	@Override
@@ -216,39 +212,39 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 
 	@Override
 	public final SQLDeleteClauseAlter delete(RelationalPath<?> path) {
-		return new SQLDeleteClauseAlter(connection, configEx, path);
+		return new SQLDeleteClauseAlter(connection, configuration, path);
 	}
 	
 	@Override
 	public final SQLInsertClauseAlter insert(RelationalPath<?> path) {
-		return new SQLInsertClauseAlter(connection, configEx, path);
+		return new SQLInsertClauseAlter(connection, configuration, path);
 	}
 
 	@Override
 	public final SQLMergeClauseAlter merge(RelationalPath<?> path) {
-		return new SQLMergeClauseAlter(connection, configEx, path);
+		return new SQLMergeClauseAlter(connection, configuration, path);
 	}
 
 	@Override
 	public final SQLUpdateClauseAlter update(RelationalPath<?> path) {
-		return new SQLUpdateClauseAlter(connection, configEx, path);
+		return new SQLUpdateClauseAlter(connection, configuration, path);
 	}
 	
 	//Support for Lambda tables.
 	public final <T> SQLDeleteClauseAlter delete(LambdaTable<T> path) {
-		return new SQLDeleteClauseAlter(connection, configEx, path);
+		return new SQLDeleteClauseAlter(connection, configuration, path);
 	}
 	
 	public final <T> SQLInsertClauseAlter insert(LambdaTable<T> path) {
-		return new SQLInsertClauseAlter(connection, configEx, path);
+		return new SQLInsertClauseAlter(connection, configuration, path);
 	}
 
 	public final <T> SQLUpdateClauseAlter update(LambdaTable<T> path) {
-		return new SQLUpdateClauseAlter(connection, configEx, path);
+		return new SQLUpdateClauseAlter(connection, configuration, path);
 	}
 
 	public final <T> SQLMergeClauseAlter merge(LambdaTable<T> path) {
-		return new SQLMergeClauseAlter(connection, configEx, path);
+		return new SQLMergeClauseAlter(connection, configuration, path);
 	}
 	
 	public <T> SQLQueryAlter<T> selectFrom(LambdaTable<T> expr) {
@@ -281,13 +277,9 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 		try {
 			Connection conn = connection.get();
 			if (level > 0) {
-//				if (isInSpringTransaction()) {
-//					log.warn("Unable to set transaction isolation because current session is Spring managed transaction.");
-//				} else {
-					conn.setTransactionIsolation(level);
-//				}
+				conn.setTransactionIsolation(level);
 			}
-			return new CloseableSQLQueryFactory(configEx, conn);
+			return new CloseableSQLQueryFactory(configuration, conn);
 		} catch (SQLException e) {
 			throw configuration.get().translate(e);
 		}
@@ -323,6 +315,13 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 		return asRepository(PathCache.get(clz.get(), null));
 	}
 	
+	/**
+	 * @param <T> type of entity
+	 * @param <ID> this type of primary key
+	 * @param path metadata class of the enrity
+	 * @param primaryKeyType 为了类型推断提供的参数。
+	 * @return CRUDRepository
+	 */
 	public <T, ID> CRUDRepository<T, ID> asRepository(RelationalPath<T> path,Class<ID> primaryKeyType){
 		return asRepository(path);
 	}
@@ -332,12 +331,17 @@ public class SQLQueryFactory extends AbstractSQLQueryFactory<SQLQueryAlter<?>> i
 	public <T extends ExtensionQueryFactory> T asExtension(Class<T> clz) {
 		return (T) extensions.computeIfAbsent(clz, this::generateExtensionInstance);
 	}
-	
+
+	/**
+	 * 此处如构造方法为私有，在JDK9以后版本运行需要加上 --add-opens 参数
+	 */
 	ExtensionQueryFactory generateExtensionInstance(Class<?> clz) {
 		try {
 			Constructor<?> constructor=clz.getDeclaredConstructor(ConfigurationEx.class,Supplier.class);
-			constructor.setAccessible(true);
-			return (ExtensionQueryFactory) constructor.newInstance(configEx, connection);
+			if(!Modifier.isPublic(constructor.getModifiers())) {
+				constructor.setAccessible(true);
+			}
+			return (ExtensionQueryFactory) constructor.newInstance(configuration, connection);
 		} catch (Exception e) {
 			throw Exceptions.toRuntime(e);
 		}

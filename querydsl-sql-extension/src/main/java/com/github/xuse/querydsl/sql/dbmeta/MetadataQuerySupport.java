@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.config.ConfigurationPackageExporter;
 import com.github.xuse.querydsl.config.ConfigurationEx;
-import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.ddl.ConnectionWrapper;
 import com.github.xuse.querydsl.sql.ddl.DDLExpressions;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.Basic;
@@ -44,6 +43,7 @@ import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.github.xuse.querydsl.util.TypeUtils;
+import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.function.QueryFunction;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryMetadata;

@@ -64,7 +64,7 @@ public final class Mappers {
 			//Insert DEFAULT
 			new Mapper[] {
 					null,
-					AdvancedMapper.ofNullsAsDefaultBinding(SCENARIO_INSERT, false).name("Normal, Nulls (Insert DEFAULT"),
+					AdvancedMapper.ofNullsAsDefaultBinding(SCENARIO_INSERT, false).name("Normal, Nulls (Insert DEFAULT)"),
 					null,
 					TupleMapper.ofNullsAsDefaultBinding(SCENARIO_INSERT, false).name("Tuple,Nulls (Insert DEFAULT)")
 			}

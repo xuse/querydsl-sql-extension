@@ -3,7 +3,8 @@ package com.github.xuse.querydsl.sql.dbmeta;
 import lombok.Generated;
 
 /**
- * 外键的动作类型
+ * Foreign key action types.
+ * <p>外键的动作类型
  */
 @Generated
 public enum ForeignKeyAction {

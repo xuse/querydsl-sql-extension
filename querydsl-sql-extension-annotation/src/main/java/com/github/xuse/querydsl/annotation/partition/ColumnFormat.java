@@ -6,6 +6,12 @@ import java.util.GregorianCalendar;
 
 
 /**
+ * <h2>English:</h2>
+ * The format of the database column used for time-based partitioning.
+ * The column content must conform to one of the following formats.
+ * Once correctly configured, the framework can automatically generate
+ * time-organized database partitions.
+ * <h2>Chinese:</h2>
  * 用于进行时间分区的数据库列的格式。
  * <p>
  * 该列的内容必须符合以下任意一种格式。
@@ -13,7 +19,9 @@ import java.util.GregorianCalendar;
  */
 public enum ColumnFormat {
 	/**
-	 * 列为时间戳格式。(DATE, DATETIME, TIMESTAMP均可)
+	 * Column is in timestamp format (DATE, DATETIME, TIMESTAMP are all acceptable).
+	 * Supports partitioning by year, month, day, or week.
+	 * <p>列为时间戳格式。(DATE, DATETIME, TIMESTAMP均可)
 	 * 支持按年、按月、按日、按周进行数据分区。
 	 */
 	TIMESTAMP {
@@ -27,7 +35,8 @@ public enum ColumnFormat {
 	 * 
 	 * 20230101 这样的数字整型
 	 * <p>
-	 * 支持按年、按月、按日、按周进行数据分区。
+	 * Supports partitioning by year, month, day, or week.
+	 * <p>支持按年、按月、按日、按周进行数据分区。
 	 */
 	NUMBER_YMD {
 		@Override
@@ -39,7 +48,8 @@ public enum ColumnFormat {
 	/**
 	 * '20230101' 这样的字符串
 	 * <p>
-	 * 支持按年、按月、按日、按周进行数据分区。
+	 * Supports partitioning by year, month, day, or week.
+	 * <p>支持按年、按月、按日、按周进行数据分区。
 	 */
 	STRING_YMD {
 		@Override
@@ -51,7 +61,8 @@ public enum ColumnFormat {
 	/**
 	 * 202301 这样的数字整型
 	 * <p>
-	 * 支持按年、按月进行数据分区
+	 * Supports partitioning by year or month.
+	 * <p>支持按年、按月进行数据分区
 	 */
 	NUMBER_YM{
 		@Override
@@ -63,7 +74,8 @@ public enum ColumnFormat {
 	/**
 	 * '202301' 这样的字符串。
 	 * <p>
-	 * 支持按年、按月进行数据分区
+	 * Supports partitioning by year or month.
+	 * <p>支持按年、按月进行数据分区
 	 */
 	STRING_YM {
 		@Override
@@ -75,7 +87,8 @@ public enum ColumnFormat {
 	/**
 	 * 2023 这样的数字。
 	 * <p>
-	 * 支持按年进行分区
+	 * Supports partitioning by year.
+	 * <p>支持按年进行分区
 	 */
 	NUMBER_YEAR{
 		@Override

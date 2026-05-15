@@ -18,10 +18,12 @@ import java.util.List;
 import com.querydsl.core.types.Path;
 
 /**
+ * <h2>English:</h2>
+ * Extends the parent class to include additional information such as parameter names.
+ * <h2>Chinese:</h2>
  * 修改父类，增加参数的名称等信息
  * 
  * @author Joey
- *
  */
 public class SQLBindingsAlter extends com.querydsl.sql.SQLBindings {
 	private final List<Path<?>> paths;

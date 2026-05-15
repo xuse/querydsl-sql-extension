@@ -3,6 +3,8 @@ package com.github.xuse.querydsl.sql.dialect;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,11 +20,20 @@ import com.querydsl.sql.SQLBindings;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * MySQL-specific privilege detector using {@code SHOW GRANTS} command.
+ * <p>
+ * Parses all grant rows returned by MySQL to determine if the current user
+ * has the required DDL privileges (CREATE, ALTER, DROP, INDEX, etc.).
+ * 
+ * @author Joey
+ */
 @Slf4j
-public class MySQLPrivilegeDetector implements PrivilegeDetector{
+public class MySQLPrivilegeDetector implements PrivilegeDetector {
+
 	@Override
 	public boolean check(SQLQueryFactory connection, Privilege... privileges) {
-		ConfigurationEx config=connection.getConfiguration();
+		ConfigurationEx config = connection.getConfiguration();
 		MetadataQuerySupport metadataQuery = new MetadataQuerySupport(config) {
 			@Override
 			protected ConfigurationEx getConfiguration() {
@@ -38,27 +49,51 @@ public class MySQLPrivilegeDetector implements PrivilegeDetector{
 			public DistributedLock getLock(String lockName) {
 				DistributedLockProvider provider = connection.getConfiguration()
 						.computeLockProvider(() -> DbDistributedLockProvider.create(connection));
-				if(provider==null) {
+				if (provider == null) {
 					throw new IllegalStateException("There is no distributed-lock provider available.");
 				}
 				return provider.getLock(lockName, 3);
 			}
 		};
-		String[] privilegeOwn = metadataQuery.doSQLQuery(this::getOwn, "getPrivileges");
-		Set<String> set=Arrays.stream(privilegeOwn).map(String::trim).collect(Collectors.toSet());
-		log.info("Own privilege:{}",set);
-		return set.contains("ALL PRIVILEGES")|| set.contains("ALL") ||set.containsAll(Arrays.stream(privileges).map(this::name).collect(Collectors.toList()));
-	}
-	
-	private String name(Privilege p) {
-		return p.name().replace('_', ' ');
-	}
-	
-	private String[] getOwn(ConnectionWrapper q) {
-		SQLBindings sql=new SQLBindings("SHOW GRANTS", Collections.emptyList());
-		String s=q.querySingle(sql, e->e.getString(1));
-		s= StringUtils.substringBetween(s, "GRANT ", " ON ");
-		return StringUtils.split(s,",");
+		Set<String> ownedPrivileges = metadataQuery.doSQLQuery(this::getAllPrivileges, "getPrivileges");
+		log.info("Own privileges: {}", ownedPrivileges);
+		if (ownedPrivileges.contains("ALL PRIVILEGES") || ownedPrivileges.contains("ALL")) {
+			return true;
+		}
+		Set<String> required = Arrays.stream(privileges).map(this::toMySQLName).collect(Collectors.toSet());
+		return ownedPrivileges.containsAll(required);
 	}
 
+	private String toMySQLName(Privilege p) {
+		return p.name().replace('_', ' ');
+	}
+
+	/**
+	 * Parse all rows from SHOW GRANTS and collect all privilege names.
+	 * Each row has format: GRANT priv1, priv2, ... ON scope TO user
+	 */
+	private Set<String> getAllPrivileges(ConnectionWrapper q) {
+		SQLBindings sql = new SQLBindings("SHOW GRANTS", Collections.emptyList());
+		List<String> grantRows = q.query(sql, rs -> rs.getString(1));
+		Set<String> privileges = new HashSet<>();
+		for (String row : grantRows) {
+			if (row == null) {
+				continue;
+			}
+			String privPart = StringUtils.substringBetween(row, "GRANT ", " ON ");
+			if (StringUtils.isEmpty(privPart)) {
+				continue;
+			}
+			String[] parts = StringUtils.split(privPart, ",");
+			if (parts != null) {
+				for (String part : parts) {
+					String trimmed = part.trim();
+					if (StringUtils.isNotEmpty(trimmed)) {
+						privileges.add(trimmed);
+					}
+				}
+			}
+		}
+		return privileges;
+	}
 }

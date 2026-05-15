@@ -1,9 +1,11 @@
 package com.github.xuse.querydsl.sql.dbmeta;
 
 /**
+ * <h2>English:</h2>
+ * Represents sequence information in the database.
+ * <h2>Chinese:</h2>
  * 数据库中的序列信息
  * @author Joey
- *
  */
 public class SequenceInfo {
 	private String catalog;

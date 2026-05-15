@@ -51,6 +51,11 @@ public class H2TemplatesEx extends DefaultSQLTemplatesEx {
 	}
 
 	@Override
+	public PrivilegeDetector getPrivilegeDetector() {
+		return new H2PrivilegeDetector();
+	}
+
+	@Override
 	public void init(SQLTemplates templates) {
 		SQLTemplatesEx.initDefaultDDLTemplate(templates);
 		add(templates, DDLOps.COLUMN_ALLOW_NULL, "");

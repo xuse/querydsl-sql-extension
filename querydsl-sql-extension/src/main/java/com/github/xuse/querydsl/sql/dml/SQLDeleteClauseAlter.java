@@ -64,7 +64,8 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 	private Integer queryTimeout;
 
 	/**
-	 * 设置查询超时（秒）
+	 * Set query timeout in seconds.
+	 * <p>设置查询超时（秒）
 	 *
 	 * @param queryTimeout queryTimeout
 	 * @return SQLDeleteClauseAlter

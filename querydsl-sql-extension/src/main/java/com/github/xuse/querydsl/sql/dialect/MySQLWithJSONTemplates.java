@@ -41,6 +41,13 @@ import com.querydsl.sql.namemapping.ChangeLetterCaseNameMapping.LetterCase;
  *
  */
 public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplatesEx {
+	/*
+	 * NOTE: This class directly extends MySQLTemplates (inheritance) rather than using
+	 * composition like other dialect extensions (DefaultSQLTemplatesEx pattern).
+	 * This is intentional because MySQL's DML behavior (INSERT ... ON DUPLICATE KEY,
+	 * LIMIT syntax, etc.) comes from MySQLTemplates and must be inherited directly.
+	 * The trade-off is some field duplication with DefaultSQLTemplatesEx.
+	 */
 	private final TypeNames typeNames = TypeNames.generateDefault();
 	
 	private final boolean batchToBulk;
@@ -256,7 +263,7 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 
 		// JSON_SEARCH(json_doc, one_or_all, search_str[, escape_char[, path] ...])
 		add(JsonOps.JSON_SEARCH, "JSON_SEARCH({0},{1},{2},{3})");
-		add(JsonOps.JSON_SEARCH_WITH_PATH, "JSON_SEARCH({0},{1},{2},{3},{4}})");
+		add(JsonOps.JSON_SEARCH_WITH_PATH, "JSON_SEARCH({0},{1},{2},{3},{4})");
 		add(JsonOps.JSON_VALUE, "JSON_VALUE({0},{1})");
 
 		add(JsonOps.JSON_ARRAY_APPEND, "JSON_ARRAY_APPEND({0},{1})");

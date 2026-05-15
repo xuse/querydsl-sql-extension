@@ -6,10 +6,10 @@ import com.querydsl.sql.Column;
 import lombok.Generated;
 
 /**
- * 描述外键信息
+ * Describes foreign key information.
+ * <p>描述外键信息
  * 
  * @author Administrator
- * 
  */
 @Generated
 public class ForeignKeyItem {

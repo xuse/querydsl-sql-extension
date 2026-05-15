@@ -92,6 +92,7 @@ public abstract class AbstractMapperSupport {
 						throw Exceptions.illegalArgument("A 'Version' field must be defined as a NumberPath. field={}", metadata.getColumn());
 					}
 				}
+				break;
 			case SNOWFLAKE:
 				if (scenario == SCENARIO_INSERT) {
 					SnowflakeIdWorker worker;

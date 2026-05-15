@@ -17,6 +17,9 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import com.github.xuse.querydsl.util.collection.CacheMap;
+import com.github.xuse.querydsl.util.collection.FastHashtable;
+
 import io.github.xuse.querydsl.sql.extension.BenchmarkRunner;
 
 @BenchmarkMode(Mode.AverageTime)
@@ -44,7 +47,7 @@ public class WriteMapBenchmark{
 	// 测试目标
 	FastHashtable<String> map1 = new FastHashtable<>(SIZE);
 	// 对照组
-	Map<String, String> map3 = new NoReadLockHashMap<>();
+	Map<String, String> map3 = new CacheMap<>(SIZE);
 
 	@Benchmark
 	public void writeLinkedHashMap() {
@@ -57,7 +60,7 @@ public class WriteMapBenchmark{
 	}
 
 	@Benchmark
-	public void writeNoReadLockHashMap() {
+	public void writeCacheMap() {
 		doWriteTest(map3);
 	}
 	

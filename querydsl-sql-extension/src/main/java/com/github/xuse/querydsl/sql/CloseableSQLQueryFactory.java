@@ -13,7 +13,7 @@ import com.querydsl.sql.SQLListeners;
  *
  */
 public class CloseableSQLQueryFactory extends SQLQueryFactory implements AutoCloseable {
-	private static final QueryMetadata metadata = new DefaultQueryMetadata();
+	private final QueryMetadata metadata = new DefaultQueryMetadata();
 
 	private final SQLListeners listeners;
 	

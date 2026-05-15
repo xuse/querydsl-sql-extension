@@ -1,6 +1,6 @@
 # Querydsl-sql-extension
 
-An enhancement for Querydsl based on module 'querydsl-sql', delivering performance superior to the original and all comparable frameworks.
+An enhancement for Querydsl based on module 'querydsl-sql', delivering higher performance and richer features on top of the original.
 
 [English](README.md)| [中文](README_cn.md)
 
@@ -32,23 +32,23 @@ This framework is an extension of [Querydsl-sql](https://github.com/querydsl/que
 ## Introduction
 
 **What is Querydsl? Why choose it?**
-See [Why QueryDSL (Chinese)](static/why_querydsl.md)
+See [Why QueryDSL (Chinese)](docs/why_querydsl_cn.md)
 
 Note: This framework is not based on `querydsl-jpa`, but is an extension of `querydsl-sql`. For a comparison with JPA mode, 
-please refer to [Why QueryDSL](static/why_querydsl.md). If you want to integrate this module into a project with querydsl-jpa, please refer to the following section (Using with Querydsl-JPA).
+please refer to [Why QueryDSL](docs/why_querydsl_cn.md). If you want to integrate this module into a project with querydsl-jpa, please refer to the following section (Using with Querydsl-JPA).
 
 **ChangeLog**
-[ChangeLog](ChangeLog.md)
+[ChangeLog](docs/ChangeLog.md)
 
 **Manuals**
-See [User Guide](static/user_guide.md)
+See [User Guide](docs/user_guide.md)
 
 **Import from repository**
 ```xml
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension</artifactId>
-	<version>5.0.0-r140</version>
+	<version>5.0.0-r172</version>
 </dependency>
 ```
 
@@ -57,7 +57,7 @@ If you need to integrate with Spring Framework, you also need to:
 <dependency>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension-spring</artifactId>
-	<version>5.0.0-r140</version>
+	<version>5.0.0-r172</version>
 </dependency>
 ```
 
@@ -73,16 +73,16 @@ To use them together, two issues need to be addressed:
 
 ### Performance Optimization
 Significant performance optimization has been carried out on QueryDSL-SQL. The optimized performance is essentially comparable to well-written JDBC operations.
-The following is a partial list. For more related data, please refer to the [Performance guide](static/performance_tunning.md).
+The following is a partial list. For more related data, please refer to the [Performance guide](docs/performance_tuning_cn.md).
 
-**Performance Comparison Test (v5.0.0-r110)**
+**Performance Comparison Test (v5.0.0-r172)**
 
 * MySQL 5.7.26
 * MySQL JDBC Driver 5.1.49
 * URL: mysql://LAN_HOST:3306/test?useSSL=false
 * jvm version=17
 
-| Case                                                     | Mybatis 3.5.9 (ms)                     | querydsl-sql-extension<br /> 5.0.0-r110 (ms)     | A/B     |
+| Case                                                     | Mybatis 3.5.9 (ms)                     | querydsl-sql-extension<br /> 5.0.0-r172 (ms)     | A/B     |
 | -------------------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------- |
 | Insert 15 batches of 10,000 rows into a table with 7 columns.<br />Total of 150,000 records. | 7203, 7438, 7925<br />Avg. 7522       | 2476, 2711, 2834<br />Avg. 2673.67                | 281.34% |
 | Insert 15 batches of 10,000 rows into a table with 22 columns.<br />Total of 150,000 records.  | 16939, 16870, 16782<br />Avg. 16863.67 | 5541, 5609, 5538<br />Avg. 5562.67                | 303.16% |
@@ -103,11 +103,11 @@ Note:
 
 **The Secret of High Performance**
 * **No-reflection Access:** The JavaBean-JDBC interaction part in QueryDSL has been rewritten to enhance performance. ASM is used to generate an accessor for each combination of query fields corresponding to a Bean, as an accelerated substitute for reflection.
-The dynamic class generation scheme generates one accessor for each combination of SELECT fields in an SQL query. The accessor is generated and loaded the first time the query is executed. From the second execution onward, the performance is essentially equivalent to hardcoding. Reflection and IF branches are eliminated during the process, and all accesses to ResultSet are performed in index order (taking advantage of CPU branch prediction), significantly reducing the number of memory operations.
+The dynamic class generation scheme generates one accessor for each combination of SELECT fields in an SQL query. The accessor is generated and loaded the first time the query is executed. From the second execution of the same SQL onward, the performance is essentially equivalent to hardcoding. Reflection and IF branches are eliminated during the process, and all accesses to ResultSet are performed in index order (taking advantage of CPU branch prediction), significantly reducing the number of memory operations.
 
 * **Table model and BeanCodec cache:** Caches for table and field models, as well as the codec for each object.
 
-* **Bytecode/JIT friendly:** Programming techniques based on principles such as minimizing memory copying, reducing bytecode operations, JIT friendliness, and branch prediction. Techniques include stack manipulation, maximizing use of the final keyword, manual inlining, object reuse, one-time memory allocation, using tableswitch instead of complex branches, and more.
+* **Bytecode/JIT friendly:** Techniques include stack manipulation, maximizing use of the final keyword, manual inlining, object reuse, one-time memory allocation, using tableswitch instead of complex branches, and more. The overall principles are minimizing memory copying, streamlining bytecode operations, JIT friendliness, and branch prediction optimization.
 
 * **Tuning API for developers:** Provides fetchSize, maxRows, queryTimeout, and other methods that developers can use to tune performance and safety according to business needs when working with large amounts of data.
 
@@ -122,7 +122,7 @@ The dynamic class generation scheme generates one accessor for each combination 
 
 **Compatibility**
 
-* Utilizes dynamic class generation with ASM7, supporting JDK versions 8 through 22, and GraalVM (version 22).
+* Utilizes dynamic class generation with ASM9, supporting JDK versions 8 through 22, and GraalVM (version 22).
 * When using GraalVM native (AOT) mode, ASM class generation is ineffective, and Java code falls back to reflection-based type accessors, still ensuring normal functionality.
   (During GraalVM compilation, this part of the logic is essentially compiled into native static code, making ASM acceleration unnecessary.)
 
@@ -145,7 +145,10 @@ The dynamic class generation scheme generates one accessor for each combination 
       private CaAsset asserts;
   ```
 
-* Providing Batch Insert, Batch Update, and Batch Delete operations. Supporting multiple sets of operation values through a single SQL statement to improve operation efficiency.
+* **`@PathBinder` annotation** — Use a DTO class (different from the entity) for query results, insert, and update. Fields are remapped by name with optional type conversion. In batch operations, only DTO-mapped columns participate in SQL, allowing database DEFAULT values to take effect for unmapped columns.
+* **`ConfigurationEx.batchNullStrategy`** — Controls null value handling in batch insert mode. Supports automatic default substitution for NOT NULL columns, or fallback to traditional safe addBatch path.
+
+* Providing Batch Insert, Batch Update, and Batch Delete operations. Supporting multiple sets of parameter values through a single SQL statement to improve batch operation efficiency.
 * Providing the @AutoGenerated annotation, which is used for the automatic maintenance of certain fields, such as recording creation time, update time, GUID, SnowFlake, etc. during data insertion. (This annotation is unrelated to any database-specific features such as default values, triggers, etc.; its implementation is purely on the Java side.)
 
   **Example:**
@@ -172,14 +175,14 @@ In production environments, it is recommended to use `FORMAT_COMPACT` for output
   * Slow SQL statements are outputted at the Error level (the threshold for slow SQL can be configured).
   * For Batch mode, parameters after every N groups are omitted from the output.
 
-* Package scanning: Several annotation-based function enhancements have been introduced earlier in the text. Package scanning can analyze all database metamodels' definitions and verify the correctness of these annotations in advance when the application starts, registering some of the configurations to the global context. The @CustomType annotation needs to be scanned in advance to take effect.
+* Package scanning: Several annotation-based function enhancements have been introduced earlier in the text. Package scanning can analyze all database metamodels' definitions and verify the correctness of these annotations in advance when the application starts, registering the configurations to the global context. Note: The @CustomType annotation requires package scanning to take effect.
 
 * Additional annotations to define Metamodel (Query class): QueryDSL's native metamodel is mainly defined using APIs called in each Q class, and these codes are always generated by a code generation process. The extension provides a set of annotations that cover the original metamodel and extension functions.
 
   **Example**
 
   ```java
-  @TableSpec(name="ca_asset",primaryKeyPath={"id"},collate = "utf8mb4_general_ci",
+  @TableSpec(name="ca_asset",primaryKeys={"id"},collate = "utf8mb4_general_ci",
   keys = {
   		@Key(path= {"code"},type=ConstraintType.UNIQUE),
   		@Key(path= {"content"},type=ConstraintType.FULLTEXT),
@@ -247,10 +250,10 @@ Complete database structure modeling: Extends QueryDSL's native `ColumnMetadata`
 
   Q: What is the use of this feature?
 
-  A: There are generally two ways database application developers work with data structures. One is to design the data structure in the database first and then generate the Java class structure using a Bean generation tool. This is known as database schema-first.
-  The other approach, often used by software developers developing applications across multiple RDBMSes, is to establish the Java Entity model first and then automatically create the database structure through the program. This is known as metadata-first. Typically, Hibernate supports automatically creating the database structure at startup; this framework also supports this usage.
+  A: There are generally two approaches for database application developers. One is to design the data structure in the database first and then generate the Java class structure using a code generation tool (known as schema-first).
+  The other approach is to establish the Java Entity model first and then automatically create the database structure through the program (known as metadata-first). Typically, Hibernate supports automatically creating the database structure at startup; this framework also supports this usage.
 
-QueryDSL's approach is database schema-first. This framework extends support for metadata-first scenarios, allowing Java metamodels to update the database structure in reverse. Additionally, the updates support incremental updates based on database structure comparison—allowing updates to indexes, constraints, views, and other table structures.
+QueryDSL's approach is schema-first. This framework extends support for metadata-first scenarios, allowing Java metamodels to update the database structure in reverse. Additionally, the updates support incremental updates based on database structure comparison, including updates to indexes, constraints, and other table structures.
 
 > Not supported: Foreign keys, materialized views, index-organized tables, custom functions, triggers, and stored procedures are not supported, as these features are rarely used in cross-RDBMS applications; hence, there is no need to support them at this time.
 
@@ -258,13 +261,13 @@ QueryDSL's approach is database schema-first. This framework extends support for
 
 In the official version of QueryDSL, operating the database requires using a code generation tool to generate the query class. This framework enhances the original by allowing users to forego creating QueryClass classes and use pure POJOs with several annotations as a substitute query class model. Lambda expressions can be used to represent table or column models.
 
-This feature is mainly intended to lower the usage threshold. Refer to the document `static/USER_GUIDE.md`.
+This feature is mainly intended to lower the usage threshold. Refer to the [User Guide](docs/user_guide.md).
 
 ### R2dbc Support
 R2DBC (Reactive Relational Database Connectivity) is an asynchronous, non-blocking programming specification designed for relational databases. It can replace the traditional blocking programming model of JDBC and supports Reactive Streams processing.
 Currently, a popular R2dbc framework is spring-data-r2dbc. This framework can be used as a replacement for Spring-data-r2dbc (or used alongside it). Combined with Spring WebFlux, it enables fully non-blocking streaming data processing.
 
-See module [querydsl-sql-r2dbc](querydsl-sql-r2dbc/) and [querydsl-sql-r2dbc With Spring Transactions](querydsl-sql-r2dbc-spring).
+See module [querydsl-sql-r2dbc](querydsl-sql-r2dbc/) and [querydsl-sql-r2dbc-spring](querydsl-sql-r2dbc-spring/).
 
 ### Other Functionality Enhancements
 
@@ -280,7 +283,7 @@ Thus, some commonly used operations are encapsulated in the `GenericRepository` 
 
 #### Record Object Mapping to Database Relation
 
-Since Java 16, the Record feature (**@jls** 8.10 Record Types) has been supported. This framework allows using Record-type objects as table mappings, replacing traditional POJO entity Beans. For more details, see the document `static/user_guide.md`.
+Since Java 16, the Record feature (**@jls** 8.10 Record Types) has been supported. This framework allows using Record-type objects as table mappings, replacing traditional POJO entity Beans. For more details, see the document `docs/user_guide.md`.
 
 > To use the Record feature, you must use JDK 16 or above.
 > This framework has special handling for accessing Record objects, making it independent of JDK 16 or above. It can still run on Java 8 after being compiled.
@@ -373,14 +376,22 @@ metadata.dropPartition(t1)
 
 ### DDL Support
 
-> DDL support is an experimental feature. Writing DDL requires implementing dialects for each different database. Due to limited personal resources, only some database dialects have been adapted so far. However, the existing framework's AST-based extension mechanism is very powerful, and adapting to other mainstream databases should not be difficult. Interested users can write their own dialect extensions.
+> DDL support is an experimental feature. Writing DDL requires implementing dialects for each different database. The existing framework's AST-based extension mechanism is very powerful, and adapting to other mainstream databases should not be difficult. Interested users can write their own dialect extensions.
 
 **Supported Databases (For DDL)**
 
-* MySQL v5.6 and above
-* Apache Derby v10.14 and above
-* PostgreSQL v10.3 and above
-* H2 v2.3.232
+| Database | Version | DDL Support Level |
+|----------|---------|-------------------|
+| MySQL | v5.6+ | Full (including Online DDL, JSON functions, Partitions) |
+| PostgreSQL | v10.3+ | Full (including Partitions) |
+| Apache Derby | v10.14+ | Full |
+| H2 | v2.3+ | Full |
+| Oracle | 10g+ | Type mappings, DDL templates, COMMENT, BITMAP index |
+| SQL Server | 2005/2008/2012+ | Type mappings, DDL templates, DATETIME2 (2008+) |
+| HSQLDB | 2.x | Type mappings, DDL templates, COMMENT |
+| SQLite | 3.x | Type mappings (limited ALTER TABLE support) |
+| DB2 | 10.1+ | Type mappings, DDL templates, COMMENT |
+| CUBRID | 9.x+ | Type mappings, DDL templates, COMMENT |
 
 For related instructions, refer to the quick_start.md document.
 
@@ -388,7 +399,7 @@ For related instructions, refer to the quick_start.md document.
 
 ### MySQL Online DDL
 
-Online DDL can prevent blocking caused by locks during DDL execution, which can affect user DML operations. Online DDL allows users to perform DML operations during the DDL process.
+Online DDL can prevent lock-induced blocking during DDL execution from affecting user DML operations. Online DDL allows users to continue performing DML operations during the DDL process.
 
 When executing DDL on MySQL databases, it automatically uses the Online method to minimize interference with production environment business access.
 The example is as follows: when modifying a data table, the algorithm and lock are specified to ensure that DDL execution does not affect business operations.
@@ -402,7 +413,7 @@ ALTER TABLE table1
   ADD KEY idx_aaa_taskstatus (task_status), ALGORITHM = INPLACE, LOCK = SHARED
 ```
 
-* The application of this feature does not mean that DDL execution has no impact on the data table. High-availability systems operating 24/7 should still execute DDL during business off-peak periods.
+* The application of this feature does not mean that DDL execution has no impact on the data table. High-availability systems operating 24/7 should still execute DDL during off-peak periods.
 * Online DDL was introduced in MySQL 5.x, and more Online DDL strategies are supported in version 8.x. However, the dialects for versions 5.x and 8.x have not yet been distinguished, and a relatively conservative strategy based on 5.x has been adopted.
 
 ## FAQ
@@ -413,3 +424,9 @@ ALTER TABLE table1
   Q: If my project already uses querydsl-sql, do I need to modify all the original query classes to inherit from the `com.github.xuse.querydsl.sql.RelationalPathBaseEx` class when integrating this framework?
 
   A: No, you don't have to. This framework makes some minor adjustments and improvements on querydsl, without affecting the native usage of querydsl.
+
+## AI-Assisted Development
+
+If you use [Kiro IDE](https://kiro.dev), you can install the [ez-m-querydsl-sql-ext](docs/querydsl-sql-ext-skill/) Skill to get intelligent coding assistance with this framework's API. The Skill provides code templates and best practices for initialization, entity definition, CRUD, DDL, and more.
+
+See the [Skill README](docs/querydsl-sql-ext-skill/README.md) for installation instructions.

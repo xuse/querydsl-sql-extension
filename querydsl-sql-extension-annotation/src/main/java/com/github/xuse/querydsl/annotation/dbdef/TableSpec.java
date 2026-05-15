@@ -7,7 +7,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * 用于表的注解
+ * <h2>English:</h2> Annotation for table definition.
+ * <h2>Chinese:</h2> 用于表的注解
  *
  * @author Joey
  */
@@ -22,37 +23,37 @@ public @interface TableSpec {
 	String schema() default "";
 
 	/**
-	 * @return 表名
+	 * @return table name / 表名
 	 */
 	String name() default "";
 
 	/**
-	 * @return 主键字段，此处填写Java字段名（Path）
+	 * @return primary key fields, fill in Java field names (Path) / 主键字段，此处填写Java字段名（Path）
 	 */
 	String[] primaryKeys() default {};
 
 	/**
-	 * @return 索引和UNIQUE
+	 * @return indexes and UNIQUE constraints / 索引和UNIQUE
 	 */
 	Key[] keys() default {};
 
 	/**
-	 * @return 检查约束
+	 * @return check constraints / 检查约束
 	 */
 	Check[] checks() default {};
 
 	/**
-	 *  @return 字符集
+	 *  @return character set and collation / 字符集
 	 */
 	String collate() default "";
 	
 	/**
-	 * @return 短别名
+	 * @return short alias / 短别名
 	 */
 	String alias() default "";
 	
 	/**
-	 * @return 自增值开始于，0表示不指定，采用默认。
+	 * @return auto-increment start value, 0 means unspecified (use default) / 自增值开始于，0表示不指定，采用默认。
 	 */
 	int autoIncrementStartAt() default 0;
 }

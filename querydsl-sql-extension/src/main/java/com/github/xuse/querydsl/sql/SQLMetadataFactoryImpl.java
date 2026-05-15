@@ -144,15 +144,21 @@ public class SQLMetadataFactoryImpl implements SQLMetadataQueryFactory {
         if(StringUtils.isEmpty(namespace)) {
             namespace = metadataQuery.getDriverInfo().getNamespace(); 
         }
+        if(StringUtils.isEmpty(tableName)) {
+			tableName = "%";
+        }
         return metadataQuery.listTables(namespace, tableName);
     }
     
     @Override
-    public List<TableInfo> listViews(String namespace, String tableName) {
+    public List<TableInfo> listViews(String namespace, String viewName) {
         if(StringUtils.isEmpty(namespace)) {
             namespace = metadataQuery.getDriverInfo().getNamespace(); 
         }
-        return metadataQuery.listTables(namespace, tableName);
+        if(StringUtils.isEmpty(viewName)) {
+			viewName = "%";
+        }
+        return metadataQuery.listViews(namespace, viewName);
     }
 
     @Override

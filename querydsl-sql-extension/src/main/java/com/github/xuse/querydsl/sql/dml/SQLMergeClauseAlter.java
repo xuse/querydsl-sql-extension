@@ -261,6 +261,17 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 		}
 	}
 
+	/*
+	 * Query嵌套说明 (Query Nesting Notes):
+	 *
+	 * hasRow() 内部创建了一个嵌套 Query 来检查记录是否存在。为阻止内层查询关闭外层连接，
+	 * 添加了 SQLNoCloseListener。该监听器在 startContext 时将当前 context 的 Parent 设为自身，
+	 * 在 endContext 时移除，从而使 Close Listener 跳过连接关闭。
+	 *
+	 * 注意事项：
+	 * - 该机制要求监听器顺序敏感：SQLNoCloseListener 必须在尾部，关闭连接的监听器在其之前。
+	 * - context 的 Parent 被设为自身（而非真正的父 context），不太直观但能正常工作。
+	 */
 	protected boolean hasRow() {
 		SQLQueryAlter<?> query = new SQLQueryAlter<Void>(connection(), configEx).from(entity);
 		for (SQLListener listener : listeners.getListeners()) {

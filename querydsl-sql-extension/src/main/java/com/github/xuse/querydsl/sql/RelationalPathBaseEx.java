@@ -21,7 +21,6 @@ import com.github.xuse.querydsl.annotation.partition.HashPartition;
 import com.github.xuse.querydsl.annotation.partition.ListPartition;
 import com.github.xuse.querydsl.annotation.partition.RangePartition;
 import com.github.xuse.querydsl.lambda.LambdaColumnBase;
-import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.sql.column.ColumnBuilder;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.PathMapping;
@@ -41,6 +40,7 @@ import com.github.xuse.querydsl.util.Assert;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.StringUtils;
+import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.lang.Lambdas;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.mysema.commons.lang.Pair;
@@ -63,6 +63,10 @@ import com.querydsl.sql.RelationalPath;
 import com.querydsl.sql.SchemaAndTable;
 
 /**
+ * <h2>English:</h2>
+ * Overrides some default behaviors of QueryDSL-generated table metadata. It is recommended
+ * that generated classes extend this class.
+ * <h2>Chinese:</h2>
  * 覆盖QueryDSL生成的表元数据的一些默认行为，建议让生成类继承本类.
  * @param <T> type of entity
  */
@@ -516,7 +520,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 					continue;
 				}
 				Path<?> path = (Path<?>) field.get(this);
-				this.addMetadata(path, builderMetadata(beanType, path, field, count++));
+				this.addMetadata(path, buildColumnMetadata(beanType, path, field, count++));
 			}
 			initByClassAnnotation(beanType, QClz);
 		} catch (IllegalAccessException e) {
@@ -529,12 +533,12 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		int count = 1;
 		List<Path<?>> list=pathProvider.get();
 		for (Path<?> path : list) {
-			this.addMetadata(path, builderMetadata(beanType, path, null, count++));
+			this.addMetadata(path, buildColumnMetadata(beanType, path, null, count++));
 		}
 		initByClassAnnotation(beanType, null);
 	}
 
-	private PathMapping builderMetadata(Class<? extends T> beanType, Path<?> path, Field metadataField, int index) {
+	private PathMapping buildColumnMetadata(Class<? extends T> beanType, Path<?> path, Field metadataField, int index) {
 		Field field = ReflectionUtils.getFieldOrNull(beanType, path.getMetadata().getName());
 		if (field == null) {
 			throw new IllegalArgumentException("Not found field [" + path.getMetadata().getName() + "] in bean " + beanType.getName());
@@ -563,7 +567,7 @@ public abstract class RelationalPathBaseEx<T> extends BeanPath<T> implements Rel
 		ColumnMetadata column = ColumnMetadata.named(columnName).withIndex(index);
 		if (columnSpec != null) {
 			int type = SQLTypeUtils.calcJdbcType(columnSpec.type(), field);
-			int size=SQLTypeUtils.getDefaultSize(type, columnSpec.size());
+			int size = SQLTypeUtils.getDefaultSize(type, columnSpec.size());
 			column = column.ofType(type).withSize(size).withDigits(columnSpec.digits());
 			if (!columnSpec.nullable()) {
 				column = column.notNull();

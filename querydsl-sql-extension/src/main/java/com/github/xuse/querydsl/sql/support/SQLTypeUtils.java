@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import com.github.xuse.querydsl.annotation.UnsavedValue;
-import com.github.xuse.querydsl.spring.core.resource.Util;
 import com.github.xuse.querydsl.types.CodeEnum;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.lang.Annotations;
 import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.FilteredClause;
@@ -234,7 +234,20 @@ public class SQLTypeUtils {
 		}
 	}
 
-    public static boolean hasDigits(int type) {
+	public static boolean isIntegerType(int jdbcType) {
+		switch (jdbcType) {
+		case Types.TINYINT:
+		case Types.SMALLINT:
+		case Types.INTEGER:
+		case Types.BIGINT:
+		case Types.BIT:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+    public static boolean isDecimalType(int type) {
         switch (type) {
         case java.sql.Types.NUMERIC:
         case java.sql.Types.DECIMAL:
@@ -272,6 +285,21 @@ public class SQLTypeUtils {
 		case java.sql.Types.NCHAR:
 		case java.sql.Types.NVARCHAR:
 		case java.sql.Types.LONGNVARCHAR:
+		case java.sql.Types.CLOB:
+		case java.sql.Types.NCLOB:
+			return true;
+		default:
+			return false;
+		}
+	}
+	
+	public static boolean isDateTimeType(int jdbcType) {
+		switch (jdbcType) {
+		case Types.DATE:
+		case Types.TIME:
+		case Types.TIMESTAMP:
+		case Types.TIME_WITH_TIMEZONE:
+		case Types.TIMESTAMP_WITH_TIMEZONE:
 			return true;
 		default:
 			return false;

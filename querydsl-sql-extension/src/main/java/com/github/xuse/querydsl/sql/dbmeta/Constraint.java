@@ -34,18 +34,26 @@ import lombok.Setter;
 
 
 /**
- * 描述一个数据库中的Constraint
- * 
- *         MS SQLServer系统表 据说和MYSQL差不多：SELECT * FROM
- *         information_schema.TABLE_CONSTRAINTS
- * 
- * 
- *         MySQL系统表: SELECT * FROM information_schema.TABLE_CONSTRAINTS
+ * <h2>English:</h2>
+ * Describes a database constraint.
  *
- *        
- *         Oracle系统表： SELECT * FROM all_CONSTRAINTS Oracle约束的种类 C Check on a
- *         table Column O Read Only on a view P Primary Key R Referential AKA
- *         Foreign Key U Unique Key V Check Option on a view
+ * MS SQL Server system table (similar to MySQL): SELECT * FROM information_schema.TABLE_CONSTRAINTS
+ *
+ * MySQL system table: SELECT * FROM information_schema.TABLE_CONSTRAINTS
+ *
+ * Oracle system table: SELECT * FROM all_CONSTRAINTS
+ * Oracle constraint types: C - Check on a table Column, O - Read Only on a view,
+ * P - Primary Key, R - Referential (Foreign Key), U - Unique Key, V - Check Option on a view
+ * <h2>Chinese:</h2>
+ * 描述一个数据库中的Constraint
+ *
+ * MS SQLServer系统表 据说和MYSQL差不多：SELECT * FROM information_schema.TABLE_CONSTRAINTS
+ *
+ * MySQL系统表: SELECT * FROM information_schema.TABLE_CONSTRAINTS
+ *
+ * Oracle系统表： SELECT * FROM all_CONSTRAINTS Oracle约束的种类 C Check on a
+ * table Column O Read Only on a view P Primary Key R Referential AKA
+ * Foreign Key U Unique Key V Check Option on a view
  */
 @Generated
 @Getter

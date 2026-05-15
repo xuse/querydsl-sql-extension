@@ -105,7 +105,9 @@ public class SelectBuilder<B> {
 
 	
 	public SelectBuilder<B> all(LambdaTable<B> table) {
-		exprs.add(table);
+		for (Path<?> col : table.getColumns()) {
+			exprs.add(col);
+		}
 		return this;
 	}
 	

@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.util.FastHashtable;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.FactoryExpressionBase;
 import com.querydsl.core.types.Path;
@@ -56,7 +56,7 @@ public class QBeansContinuous extends FactoryExpressionBase<Beans> {
             final Map<RelationalPath<?>, QBeanEx<?>> mapBuilder = new LinkedHashMap<>();
             for (RelationalPath<?> path : beanPaths) {
 				List<Path<?>> columns = path.getColumns();
-                Map<String, Expression<?>> bindings = new FastHashtable<Expression<?>>(columns.size());
+                Map<String, Expression<?>> bindings = MapCreator.createFastMap(columns.size());
                 for (Path<?> column : columns) {
                     bindings.put(column.getMetadata().getName(), column);
                     listBuilder.add(column);

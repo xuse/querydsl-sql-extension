@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BeanCodecManager {
 	private static final BeanCodecManager INSTANCE = new BeanCodecManager();
 	
-	private final Set<Class<?>> normalClazzes =new HashSet<>();
+	private final Set<Class<?>> normalClazzes = ConcurrentHashMap.newKeySet();
 
 	private final Map<CacheKey, BeanCodec> beanCodecs = new ConcurrentHashMap<CacheKey, BeanCodec>();
 
@@ -103,8 +103,7 @@ public class BeanCodecManager {
 		if (normalClazzes.contains(key.targetClass)) {
 			provider = BeanCodecDefaultProvider.INSTANCE;
 		} else {
-			boolean isRecord = TypeUtils.isRecord(key.targetClass);
-			if (isRecord) {
+			if (TypeUtils.isRecord(key.targetClass)) {
 				provider = BeanCodecRecordProvider.INSTANCE;
 			} else {
 				normalClazzes.add(key.targetClass);

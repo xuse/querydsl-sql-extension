@@ -127,8 +127,9 @@ public class ScanOptions {
 	private boolean useDataInitTable = true;
 
 	/**
-	 *  数据表数据始化行为
-	 *  Data Table Initialization Behavior
+	 *  Data Table Initialization Behavior.
+	 *  <p>
+	 *  数据表的数据初始化行为
 	 *  @see DataInitBehavior
 	 */
 	private DataInitBehavior dataInitBehavior = DataInitBehavior.FOR_CREATED_TABLE_ONLY;
@@ -140,7 +141,9 @@ public class ScanOptions {
 	private String dataInitFileSuffix = ".csv";
 
 	/**
-	 *  通过一个简单无风险的DDL语句嗅探是否可以执行DDL
+	 *  Detect DDL permission by executing a simple, risk-free DDL statement.
+	 *  <p>
+	 *  通过执行一个简单无风险的DDL语句来嗅探当前连接是否具有DDL执行权限
 	 */
 	private boolean ddlPermissionDetect = false;
 
@@ -152,9 +155,12 @@ public class ScanOptions {
 	private boolean ignoreIfNoPermission = true;
 	
 	/**
-	 * 使用分布式锁。默认值为null，
-	 * 表示如果设置了{@link ConfigurationEx#setExternalDistributedLockProvider(com.github.xuse.querydsl.sql.support.DistributedLockProvider)}或者启用了useDataInitTable后，则使用分布式锁。
-	 * 否则不使用。
+	 * Whether to use distributed lock. Default is null, meaning: if
+	 * {@link ConfigurationEx#setExternalDistributedLockProvider(com.github.xuse.querydsl.sql.support.DistributedLockProvider)}
+	 * is configured or useDataInitTable is enabled, distributed lock will be used; otherwise not.
+	 * <p>
+	 * 是否使用分布式锁。默认值为null，
+	 * 表示如果设置了外部分布式锁提供器或者启用了useDataInitTable，则自动使用分布式锁，否则不使用。
 	 */
 	private Boolean useDistributedLock = null;
 
@@ -300,7 +306,9 @@ public class ScanOptions {
 	}
 	
 	/**
-	 *  设置开关，允许修改表以及删除表中的字段等。
+	 * Enable all drop operations: allow altering tables and dropping columns, indexes, and constraints.
+	 * <p>
+	 * 启用所有删除操作：允许修改表结构，并允许删除列、索引和约束。
 	 *
 	 *  @return this
 	 */
@@ -313,7 +321,9 @@ public class ScanOptions {
 	}
 
 	/**
-	 *  设置开关，禁止DDL（建表与修改表）执行。
+	 * Disable DDL execution (table creation and modification).
+	 * <p>
+	 * 禁止DDL执行（包括建表与修改表）。
 	 *
 	 *  @return this
 	 */
@@ -324,7 +334,9 @@ public class ScanOptions {
 	}
 
 	/**
-	 *  设置开关，禁止数据初始化
+	 * Disable data initialization.
+	 * <p>
+	 * 禁止数据初始化。
 	 *
 	 *  @return ScanOptions
 	 */
@@ -334,7 +346,9 @@ public class ScanOptions {
 	}
 
 	/**
-	 *  禁止扫描时的一切数据库操作。
+	 * Disable all database operations during scanning.
+	 * <p>
+	 * 禁止扫描时的一切数据库操作。
 	 *
 	 *  @return ScanOptions
 	 */
@@ -389,8 +403,10 @@ public class ScanOptions {
 	}
 	
 	/**
-	 * 仅对这些表执行初始化任务。如不配置，则所有扫描的到实体会进行初始化任务。
-	 * @param clazz 实体类
+	 * Only execute initialization tasks on these tables. If not configured, all scanned entities will be initialized.
+	 * <p>
+	 * 仅对这些表执行初始化任务。如不配置，则所有扫描到的实体都会进行初始化任务。
+	 * @param clazz 实体类 / entity classes
 	 * @return this
 	 */
 	public ScanOptions initTaskJustOn(Class<?>... clazz) {

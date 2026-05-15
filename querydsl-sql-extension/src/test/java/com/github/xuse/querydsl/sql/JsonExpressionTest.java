@@ -62,9 +62,9 @@ public class JsonExpressionTest {
 	@Test
 	public void testJsonExtract() {
 		Expression<String> jsonDoc = ConstantImpl.create("{\"key\": \"value\"}");
-		StringOperation operation = JsonExpressions.jsonExtract(jsonDoc, true, "$.key");
+		StringOperation operation = JsonExpressions.jsonExtract(jsonDoc, "$.key");
 		assertNotNull(operation);
-		operation = JsonExpressions.jsonExtract(jsonDoc, false, "$.key");
+		operation = JsonExpressions.jsonExtract(jsonDoc, "$.key");
 		assertNotNull(operation);
 	}
 

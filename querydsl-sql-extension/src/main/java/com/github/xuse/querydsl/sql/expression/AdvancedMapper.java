@@ -52,7 +52,7 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 	
 	private final boolean ignoreKeys;
 
-	public String name = "";
+	private String name = "";
 
 	public AdvancedMapper(int scenario, boolean ignoreKeys) {
 		this.scenario = scenario;
@@ -66,8 +66,15 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 
 	public Map<Path<?>, Object> createMap(RelationalPath<?> entity, Object bean) {
 		RelationalPathEx<?> path = RelationalPathExImpl.toRelationPathEx(entity);
+		if (bean instanceof ConverterWrappedBean) {
+			ConverterWrappedBean wrapped = (ConverterWrappedBean) bean;
+			Object actualBean = wrapped.getDto();
+			Object[] values = wrapped.extractValues(path);
+			//这里actualBean是用于write back的。
+			return createMapOptimized(path, actualBean, values);
+		}
 		BeanCodec bc = getBeanCodec(path, bean);
-		return createMapOptimized(path, bean, bc);
+		return createMapOptimized(path, bean, bc.values(bean));
 	}
 
 	public static BeanCodec getBeanCodec(RelationalPathEx<?> entity, Object bean) {
@@ -87,17 +94,22 @@ public class AdvancedMapper extends AbstractMapperSupport implements Mapper<Obje
 	 * Create the property map using ASM generated class.
 	 *
 	 * @param entity entity
-	 * @param bean   bean
-	 * @return 映射路径对象
+	 * @param bean   bean (for writeback support)
+	 * @param values pre-extracted values aligned with entity columns
+	 * @return mapped path-value pairs
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Map<Path<?>, Object> createMapOptimized(RelationalPathEx entity, Object bean, BeanCodec bc) {
+	private Map<Path<?>, Object> createMapOptimized(RelationalPathEx entity, Object bean, Object[] values) {
 		List<Path<?>> path = entity.getColumns();
-		Object[] values = bc.values(bean);
 		int len = path.size();
 		List<Entry<Path<?>, Object>> data = new ArrayList<>(len);
 		for (int i = 0; i < len; i++) {
 			Object value = values[i];
+			// NOT_AVAILABLE: DTO has no mapping for this column — skip entirely,
+			// allowing database DEFAULT to take effect.
+			if (value == ConverterWrappedBean.NOT_AVAILABLE) {
+				continue;
+			}
 			Path<?> p = path.get(i);
 			ColumnMapping metadata = entity.getColumnMetadata(p);
 			if ((scenario == SCENARIO_UPDATE && metadata.isNotUpdate())

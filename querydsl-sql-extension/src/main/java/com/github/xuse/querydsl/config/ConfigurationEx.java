@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
+import com.github.xuse.querydsl.config.BatchNullStrategy.ColumnStrategy;
 import com.github.xuse.querydsl.init.ScanOptions;
 import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.lambda.PathCache;
@@ -58,6 +59,14 @@ public class ConfigurationEx {
 	 * Set true to raise an exception while using primitive field without @UnsavedValue annotation.
 	 */
 	public static PrimitiveCheck primitiveCheck = PrimitiveCheck.NORMAL;
+
+	/**
+	 * Maximum expected number of columns per table. Used as initial capacity hint for
+	 * internal Map/Array allocations. Increase if your tables have more columns.
+	 */
+	public static int MAXIMUM_EXPECTED_COLUMNS = 64;
+	
+	public static int WRAPPERED_BEAN_CACHE_SIZE = 128;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);
@@ -90,11 +99,15 @@ public class ConfigurationEx {
 	private int defaultQueryTimeout;
 
 	/**
-	 * 需要显式指定schema的表。 原框架在方言中指定了是否要携带schema进行where查询，但是没有表维度的schema指定。
+	 * Tables that require explicit schema in SQL statements. The original framework
+	 * only controls schema at the dialect level, not per-table.
+	 * <p>
+	 * 需要在SQL中显式携带schema的表。原框架仅在方言级别控制是否携带schema，缺少表维度的控制。
 	 */
 	private final Set<RelationalPath<?>> withSchemas = new HashSet<>();
 
 	/**
+	 * Log as error when max rows is reached.
 	 * <p>
 	 * 达到最大maxRows后按错误日志记录
 	 */
@@ -120,6 +133,28 @@ public class ConfigurationEx {
 	private int maxRecordsLogInBatch = 5;
 
 	/**
+	 * Strategy for handling null values during batch insert operations.
+	 * <p>
+	 * - If null: use SAFE mode (traditional addBatch path, null columns omitted from SQL)
+	 * - If non-null: use populateBatch path with the specified strategy
+	 * <p>
+	 * Default is AUTO_DEFAULT (use defaultExpression for NOT NULL columns).
+	 * <p>
+	 * 批量插入时遇到 null 值的处理策略。
+	 * <p>
+	 * - 如果为 null：使用安全模式（传统 addBatch 路径，null 列从 SQL 中省略）
+	 * - 如果非 null：使用 populateBatch 路径和指定的策略
+	 * <p>
+	 * 默认为 AUTO_DEFAULT（对 NOT NULL 列使用 defaultExpression）。
+	 * 
+	 * @see BatchNullStrategy
+	 */
+	private BatchNullStrategy batchNullStrategy = BatchNullStrategy.AUTO_DEFAULT.withNullableStrategy(ColumnStrategy.USE_DEFAULT);
+
+	/**
+	 * Configuration for data initialization: which database initialization actions
+	 * to perform after package scanning.
+	 * <p>
 	 * 数据初始化相关配置：在包扫描后执行哪些数据库初始化动作。
 	 */
 	private final ScanOptions scanOptions = new ScanOptions();
@@ -131,7 +166,7 @@ public class ConfigurationEx {
 	 * locks are required, the framework will use a default database table as the
 	 * distributed lock.
 	 * <h2>中文</h2> 分布式锁提供器。 在系统启动或执行DDL时，可以使用分布式锁防止多个实例并发操作数据库。
-	 * 如果不设置此项，而使用时由要求使用分布式锁，框架会使用默认的数据库表作为分布式锁。
+	 * 如果不设置此项，而运行时需要使用分布式锁，框架会使用默认的数据库表作为分布式锁。
 	 */
 	private DistributedLockProvider distributedLockProvider;
 
@@ -147,6 +182,9 @@ public class ConfigurationEx {
 	private static Method getType;
 
 	/*
+	 * Initialization tasks identified during package scanning. Since SQLQueryFactory
+	 * is not yet instantiated at that time, the tasks are cached for later execution.
+	 * <p>
 	 * 在包扫描时识别到的数据库初始化任务，由于当时没有SQLQueryFactory实例化无法执行，故将初始化任务缓存起来，以便后续执行
 	 */
 	final BlockingQueue<TableInitTask> initTasks = new LinkedBlockingQueue<>();
@@ -171,6 +209,51 @@ public class ConfigurationEx {
 
 	public void setMaxRecordsLogInBatch(int maxRecordsLogInBatch) {
 		this.maxRecordsLogInBatch = maxRecordsLogInBatch;
+	}
+
+	/**
+	 * Get the strategy for handling null values on NOT NULL columns during batch insert.
+	 * <p>
+	 * 获取批量插入时NOT NULL列遇到null值的处理策略。
+	 * 
+	 * @return BatchNullStrategy, or null for SAFE mode (use addBatch path)
+	 */
+	public BatchNullStrategy getBatchNullStrategy() {
+		return batchNullStrategy;
+	}
+
+	/**
+	 * Set the strategy for handling null values during batch insert.
+	 * <p>
+	 * 设置批量插入时遇到 null 值的处理策略。
+	 * 
+	 * @param strategy the strategy to use, or null for SAFE mode (use addBatch path)
+	 * @return this ConfigurationEx for chaining
+	 * @see BatchNullStrategy
+	 */
+	public ConfigurationEx setBatchNullStrategy(BatchNullStrategy strategy) {
+		this.batchNullStrategy = strategy;
+		return this;
+	}
+
+	/**
+	 * Use SAFE mode for batch insert: use the traditional addBatch() path instead of populateBatch().
+	 * In SAFE mode, null columns are omitted from SQL, allowing database DEFAULT to work naturally.
+	 * <p>
+	 * This mode has slightly lower performance for very large batches but supports all types of 
+	 * DEFAULT expressions including CURRENT_TIMESTAMP, UUID(), etc.
+	 * <p>
+	 * <h2>中文</h2>
+	 * 使用安全模式进行批量插入：使用传统的 addBatch() 路径而非 populateBatch()。
+	 * 在安全模式下，null 列会从 SQL 中省略，允许数据库 DEFAULT 自然生效。
+	 * <p>
+	 * 此模式对于超大批量插入性能略低，但支持所有类型的 DEFAULT 表达式，包括 CURRENT_TIMESTAMP、UUID() 等。
+	 * 
+	 * @return this ConfigurationEx for chaining
+	 */
+	public ConfigurationEx useSafeBatchMode() {
+		this.batchNullStrategy = null;
+		return this;
 	}
 
 	public Configuration get() {

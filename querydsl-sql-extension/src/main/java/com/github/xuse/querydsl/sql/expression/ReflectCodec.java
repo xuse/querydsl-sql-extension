@@ -1,5 +1,6 @@
 package com.github.xuse.querydsl.sql.expression;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import com.github.xuse.querydsl.util.TypeUtils;
@@ -7,10 +8,10 @@ import com.github.xuse.querydsl.util.TypeUtils;
 import lombok.SneakyThrows;
 
 /**
- * 基于反射的对象访问器，万一ASM失效后启用
+ * Reflection-based object accessor, used as a fallback when ASM is unavailable.
+ * <p>基于反射的对象访问器，万一ASM失效后启用
  * 
  * @author Joey
- *
  */
 public class ReflectCodec extends BeanCodec {
 	private final Class<?> targetClass;
@@ -27,7 +28,10 @@ public class ReflectCodec extends BeanCodec {
 			Object o = TypeUtils.newInstance(targetClass);
 			int len = methods.size();
 			for (int i = 0; i < len; i++) {
-				methods.get(i).getSetter().invoke(o, fields[i]);
+				Method setter = methods.get(i).getSetter();
+				if(setter!=null){
+					setter.invoke(o, fields[i]);
+				}
 			}
 			return o;
 		} catch (Exception e) {
@@ -40,7 +44,10 @@ public class ReflectCodec extends BeanCodec {
 		int len = methods.size();
 		try {
 			for (int i = 0; i < len; i++) {
-				methods.get(i).getSetter().invoke(o, fields[i]);
+				Method setter = methods.get(i).getSetter();
+				if(setter!=null) {
+					setter.invoke(o, fields[i]);	
+				}
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);

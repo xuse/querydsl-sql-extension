@@ -47,14 +47,14 @@ public final class FieldProperty implements Property{
 
 	public void setBindingType(Class<?> bindingType) {
 		if(field!=null) {
-			if(isNotAssignableFrom(bindingType)) {
+			if(isNotAssignableFrom(field, bindingType)) {
 				log.warn("Data type incompatible between field [{}] and expression type {}",field,bindingType);
 			}
 		}
 		this.bindingType = bindingType;
 	}
 
-	private boolean isNotAssignableFrom(Class<?> bindingType) {
+	private boolean isNotAssignableFrom(Field field, Class<?> bindingType) {
 		if(field.getType()==bindingType) {
 			return false;
 		}

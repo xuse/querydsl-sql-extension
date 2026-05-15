@@ -9,8 +9,8 @@ import com.querydsl.sql.SchemaAndTable;
 import lombok.Generated;
 
 /**
- * 一张数据库表或视图。<p>
- * Indicates a table/view in database.
+ * Represents a database table or view.
+ * <p>一张数据库表或视图。
  *
  * @author xuse
  */

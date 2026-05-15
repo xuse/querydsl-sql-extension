@@ -74,7 +74,7 @@ final class TypeNames {
 			sizeDefined = policy.getSize();
 		}
 		if (policy.getDigits() != DataTypePolicy.UNCHANGED) {
-			scaleDefined = policy.getSize();
+			scaleDefined = policy.getDigits();
 		}
 		String sizeStr = String.valueOf(sizeDefined);
 		String scaleStr = String.valueOf(scaleDefined);

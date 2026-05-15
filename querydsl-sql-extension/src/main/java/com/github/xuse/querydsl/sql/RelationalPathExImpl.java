@@ -18,6 +18,7 @@ import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.Collate;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
+import com.github.xuse.querydsl.sql.ddl.AlterTableQuery;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 import com.github.xuse.querydsl.sql.partitions.PartitionBy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
@@ -157,6 +158,10 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		return super.createString(property);
 	}
 
+	/**
+	 * 返回一个可变的约束表，这个类是用于数据表修改的
+	 * @see AlterTableQuery
+	 */
 	@Override
 	public Collection<Constraint> getConstraints() {
 		return constraints;

@@ -16,10 +16,16 @@ import com.querydsl.sql.ColumnMetadata;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 检查是否具有完整的Create table, alter table等权限
- *
- *
+ * Checks whether the current database user has full DDL privileges such as CREATE TABLE, ALTER TABLE, etc.
+ * <p>检查是否具有完整的Create table, alter table等权限
+ * 
+ * @deprecated Use database-specific privilege detectors instead:
+ * {@link MySQLPrivilegeDetector}, {@link PostgreSQLPrivilegeDetector},
+ * {@link H2PrivilegeDetector}, {@link DerbyPrivilegeDetector}.
+ * This detector creates a real table in the database to test permissions, which is intrusive.
+ * Database-specific detectors use native privilege query commands (e.g., SHOW GRANTS, pg_has_role) instead.
  */
+@Deprecated
 @Slf4j
 public final class SimpleDetector implements PrivilegeDetector {
 	private static final String PERMISSION_ENTRY_NAME = "#ddl_detector";

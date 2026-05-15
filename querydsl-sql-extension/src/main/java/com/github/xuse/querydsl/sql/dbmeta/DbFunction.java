@@ -5,7 +5,8 @@ import com.querydsl.sql.Column;
 import lombok.Generated;
 
 /**
- * 描述数据库中的Function（函数) / procedure(存储过程)对象
+ * Describes a database Function or Procedure (stored procedure) object.
+ * <p>描述数据库中的Function（函数) / procedure(存储过程)对象
  *
  * @author Joey
  */

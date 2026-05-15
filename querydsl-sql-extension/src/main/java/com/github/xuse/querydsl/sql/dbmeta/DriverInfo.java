@@ -10,7 +10,7 @@ import java.util.TimeZone;
 import com.github.xuse.querydsl.sql.dialect.DbType;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
 import com.github.xuse.querydsl.util.DateFormats;
-import com.github.xuse.querydsl.util.JDKEnvironment;
+import com.github.xuse.querydsl.util.lang.JDKEnvironment;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

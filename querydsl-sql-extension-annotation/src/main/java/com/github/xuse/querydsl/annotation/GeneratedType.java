@@ -44,8 +44,11 @@ public enum GeneratedType {
 	 */
 	SNOWFLAKE,
 	/**
+	 * <h3>English</h3>
+	 * Defaults to 1 on insert. On each update, the value is incremented by 1 in the database.
+	 * Note: during update, the value is auto-incremented in the database and will NOT be written back to the Java object.
+	 * <h3>Chinese</h3>
 	 * 数据新插入时默认为1，数据每次更新时，使用原值+1。
-	 * 
 	 * 注意，Update的场合下，数值在数据库进行自增，不会回写到Java类中。
 	 */
 	VERSION

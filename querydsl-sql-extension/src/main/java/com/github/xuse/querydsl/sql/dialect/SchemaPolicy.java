@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.sql.dialect;
 
+import com.github.xuse.querydsl.util.Assert;
+
 /**
  * This is a JDBC driver feature, not a RDBMS feature.
  * 
@@ -47,6 +49,7 @@ public enum SchemaPolicy {
 			return null;
 		}
 		int index=namespace.indexOf('.');
+		Assert.isTrue(index>=0,"There should be a '.' character between database catalog and schema.");
 		return namespace.substring(0,index);
 	}
 	
@@ -55,6 +58,7 @@ public enum SchemaPolicy {
 			return null;
 		}
 		int index=namespace.indexOf('.');
+		Assert.isTrue(index>=0,"There should be a '.' character between database catalog and schema.");
 		return namespace.substring(index+1);
 	} 
 	

@@ -12,7 +12,6 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.column.ColumnMetadataEx;
-import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
@@ -53,6 +52,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DDLMetadataBuilder {
+
+	private static final String INDEX_NAME_PREFIX = "idx_";
+	private static final String TABLE_NAME_PLACEHOLDER = "${table}";
+
 	final private ConfigurationEx configuration;
 	final private RelationalPath<?> table;
 	final private RoutingStrategy routing;
@@ -66,7 +69,7 @@ public class DDLMetadataBuilder {
 		this.routing = routing == null ? RoutingStrategy.DEFAULT : routing;
 	}
 
-	public void serialzeConstraintIndepentDrop(Constraint c) {
+	public void serializeConstraintIndependentDrop(Constraint c) {
 		DDLMetadata meta = new DDLMetadata(false, true);
 		Assert.isNotEmpty(c.getName());
 		SchemaAndTable name = generateConstraintName(c.getName(), table, false);
@@ -76,7 +79,7 @@ public class DDLMetadataBuilder {
 		result.add(meta);
 	}
 
-	public void serilizeSimple(Operator ops, Expression<?>... exprs) {
+	public void serializeSimple(Operator ops, Expression<?>... exprs) {
 		DDLMetadata meta = new DDLMetadata(true, true);
 		meta.addExpression(DDLExpressions.simple(ops, exprs));
 		result.add(meta);
@@ -90,7 +93,7 @@ public class DDLMetadataBuilder {
 		boolean ignoreKeysOnPartitionedTable = processPartition && configuration.has(SpecialFeature.NO_KEYS_ON_PARTITION_TABLE);
 		//For postgresql. remove index / constraints from the partitioned table. 
 		if(ignoreKeysOnPartitionedTable) {
-			log.warn("Curentdatabase do not support primary key on partition table, All keys and constraints will not set to table in database. {}",table.getSchemaAndTable());
+			log.warn("Current database do not support primary key on partition table, All keys and constraints will not set to table in database. {}",table.getSchemaAndTable());
 		}
 		
 		// The main Statement
@@ -102,7 +105,7 @@ public class DDLMetadataBuilder {
 		PrimaryKey<?> keys = table.getPrimaryKey();
 		for (Path<?> p : table.getColumns()) {
 			ColumnMetadata c = table.getMetadata(p);
-			ColumnMetadataEx cx = tableEx == null ? new ColumnMetadataExImpl(c) : tableEx.getColumnMetadata(p);
+			ColumnMetadataEx cx = tableEx == null ? new DDLColumnMetadata(c) : tableEx.getColumnMetadata(p);
 			boolean isPk = keys == null ? false : keys.getLocalColumns().contains(p);
 			tableDefExpressions.add(generateColumnDefinition(p, cx, isPk));
 		}
@@ -235,13 +238,6 @@ public class DDLMetadataBuilder {
 
 	private void addConstraintForPartition(Partition p, RelationalPathEx<?> table) {
 		TableRouting routing=TableRouting.suffix("_"+ p.name());
-//		PrimaryKey<?> keys=table.getPrimaryKey(); 
-//		{
-//			if (keys != null && !keys.getLocalColumns().isEmpty()) {
-//				Expression<?> columns = DDLExpressions.wrap(ExpressionUtils.list(Tuple.class, keys.getLocalColumns()));
-//				tableDefExpressions.add(DDLExpressions.constraintDefinition(ConstraintType.PRIMARY_KEY, table,new SchemaAndTable(null, ""), columns));	
-//			}
-//		}
 		// Add Constraint or index
 		if (CollectionUtils.isNotEmpty(table.getConstraints())) {
 			for (Constraint constraint : table.getConstraints()) {
@@ -285,12 +281,12 @@ public class DDLMetadataBuilder {
 		SchemaAndTable table = getSchemaAndTable(tableEntity);
 		if (StringUtils.isEmpty(name)) {
 			if (generate) {
-				name = "idx_" + table.getTable() + "_" + com.github.xuse.querydsl.util.StringUtils.randomString();
+				name = INDEX_NAME_PREFIX + table.getTable() + "_" + com.github.xuse.querydsl.util.StringUtils.randomString();
 			} else {
 				name = "";
 			}
 		} else {
-			name = name.replace("${table}", table.getTable());
+			name = name.replace(TABLE_NAME_PLACEHOLDER, table.getTable());
 		}
 		SchemaAndTable constraintName = new SchemaAndTable(table.getSchema(), name);
 		constraintName = configuration.getOverride(constraintName);
@@ -457,7 +453,7 @@ public class DDLMetadataBuilder {
 			ConstraintTypeDef type = constraint.getConstraintType();
 			AlterTableConstraintOps ops = type.getDropOpsInAlterTable();
 			if (ops == null || configuration.getTemplates().notSupports(ops)) {
-				serialzeConstraintIndepentDrop(constraint);
+				serializeConstraintIndependentDrop(constraint);
 			} else {
 				SchemaAndTable constraintName = generateConstraintName(constraint.getName(), table, false);
 				Expression<?> dropClause = DDLExpressions.simple(ops,

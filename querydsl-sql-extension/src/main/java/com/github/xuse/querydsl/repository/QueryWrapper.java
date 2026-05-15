@@ -38,6 +38,14 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 
 	final QueryMetadata mixin;
 	
+	/**
+	 * Returns the underlying query metadata for inspection.
+	 * @return QueryMetadata
+	 */
+	public QueryMetadata getMetadata() {
+		return mixin;
+	}
+
 	private transient final Chain typedThis;
 
 	@SuppressWarnings("unchecked")

@@ -14,7 +14,6 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.RelationalPathExImpl;
 import com.github.xuse.querydsl.sql.column.ColumnFeature;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
-import com.github.xuse.querydsl.sql.column.ColumnMetadataExImpl;
 import com.github.xuse.querydsl.sql.column.ColumnPathHandler;
 import com.github.xuse.querydsl.sql.column.PathMapping;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
@@ -330,14 +329,14 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 			if(isPk) {
 				columnMetadata = columnMetadata.notNull();
 			}
-			ColumnMetadataExImpl javaSide = new ColumnMetadataExImpl(columnMetadata);
+			DDLColumnMetadata javaSide = new DDLColumnMetadata(columnMetadata);
 			javaSide.setComment(definedColumn.getComment());
 			javaSide.setDefaultExpression(definedColumn.getDefaultExpression());
 			javaSide.setFeatures(definedColumn.getFeatures());
 			javaSide.setUnsigned(definedColumn.isUnsigned());
 			
 			// 创建Database侧的列定义
-			ColumnMetadataExImpl dbSide = toColumnMetadata(c);
+			DDLColumnMetadata dbSide = toColumnMetadata(c);
 			// 比较差异
 			List<ColumnChange> modifications = compareDataType(javaSide, dbSide, javaColumn, c);
 			if (originalName!=null || !modifications.isEmpty()) {
@@ -354,12 +353,12 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		sqls.setChangeColumns(changed);
 	}
 
-	private ColumnMetadataExImpl toColumnMetadata(ColumnDef c) {
+	private DDLColumnMetadata toColumnMetadata(ColumnDef c) {
 		ColumnMetadata querydslColumn = ColumnMetadata.named(c.getColumnName()).withSize(c.getColumnSize()).withIndex(c.getOrdinal()).withDigits(c.getDecimalDigit()).ofType(c.getJdbcType());
 		if (!c.isNullable()) {
 			querydslColumn = querydslColumn.notNull();
 		}
-		ColumnMetadataExImpl column = new ColumnMetadataExImpl(querydslColumn);
+		DDLColumnMetadata column = new DDLColumnMetadata(querydslColumn);
 		if (StringUtils.isNotEmpty(c.getColumnDef())) {
 			Template tt = TemplateFactory.DEFAULT.create(c.getColumnDef());
 			column.setDefaultExpression(Expressions.simpleTemplate(Object.class, tt, Collections.emptyList()));
@@ -381,7 +380,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 	 * 
 	 * @param c2 from database.
 	 */
-	private List<ColumnChange> compareDataType(ColumnMetadataExImpl c1, ColumnMetadataExImpl c2, ColumnDef java, ColumnDef db) {
+	private List<ColumnChange> compareDataType(DDLColumnMetadata c1, DDLColumnMetadata c2, ColumnDef java, ColumnDef db) {
 		List<ColumnChange> result = new ArrayList<ColumnChange>();
 		// 忽略字段顺序和列名称，仅对比其他8个属性
 		if (dataTypeChanged(c1, c2) || c1.isAutoIncrement() != c2.isAutoIncrement()) {
@@ -448,9 +447,13 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		return word;
 	}
 
-	/*
-	 * MYSQL：column time(3) default '12:00:00'。got 12:00:00.000' from the database metadata. 两个数值对比(select '12:00:00' =
-	 * when comparing in database, 12:00:00 is not equal to 12:00:00.000.
+	/**
+	 * @implNote
+	 * 要比较两个SQL表达式在特定数据库上是否相等，这是一件困难的事情。即便集成SQL词法分析器等工具也很难做到。因此一个办法是使用select语句，将表达式传入，通过一次数据库执行来判断两个表达式是否相等。
+	 *<p>
+	 * 一个特殊情况，MySQL不同精度的时间无法进行相等比较。
+	 * 
+	 * MYSQL：column time(3) default '12:00:00'。got 12:00:00.000' from the database metadata. 两个数值对比select '12:00:00' ='12:00:00.000' 永远是不等的（因为精度不一样）。
 	 * 为此，定义了Basic.TIME_EQ来做时间戳比较。
 	 */
 	private boolean compareExpressionViaDb(Expression<?> c1Default, Expression<?> c2Default, int type) {
@@ -474,7 +477,7 @@ public class AlterTableQuery extends AbstractDDLClause<AlterTableQuery> {
 		return false;
 	}
 
-	private boolean dataTypeChanged(ColumnMetadataExImpl c1, ColumnMetadataExImpl c2) {
+	private boolean dataTypeChanged(DDLColumnMetadata c1, DDLColumnMetadata c2) {
 		if (c1.getJdbcType() != c2.getJdbcType()) {
 			return true;
 		}

@@ -320,6 +320,7 @@ public interface SQLMetadataQueryFactory {
 	 * @param catalog catalog 
 	 * @param schema schema. Note that MySQL and postgresql do not have schemas, and Oracle has.  
 	 * @return List of Table information.
+	 * @deprecated use {@link #listTables(String, String)}
 	 */
 	@Deprecated
 	List<TableInfo> getTables(String catalog, String schema);

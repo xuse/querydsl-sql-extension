@@ -93,7 +93,8 @@ public @interface ColumnSpec {
 	boolean insertable() default true;
 	
 	/**
-	 * 额外的SQL定义，列定义时生成在DEFAULT之后
+	 * Additional SQL definitions, generated after DEFAULT in column definition.
+	 * <p>额外的SQL定义，列定义时生成在DEFAULT之后
 	 */
 	SpecialSpec[] special() default {};
 }

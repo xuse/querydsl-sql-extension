@@ -3,7 +3,7 @@ package com.github.xuse.querydsl.sql.expression;
 import java.util.List;
 import java.util.Map;
 
-import com.github.xuse.querydsl.util.FastHashtable;
+import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.group.QPair;
 import com.querydsl.core.types.ArrayConstructorExpression;
 import com.querydsl.core.types.ConstructorExpression;
@@ -17,21 +17,39 @@ import com.querydsl.sql.Beans;
 import com.querydsl.sql.RelationalPath;
 
 public class ProjectionsAlter {
-	
+
+	/**
+	 * Cache for QBeanExWithConverter instances.
+	 * Key: (dtoType, tableType) pair.
+	 */
+	private static final Map<ClassPairKey, QBeanExWithConverter<?>> CONVERTER_CACHE = MapCreator.createConcurrentMap(128);
+
 	@SuppressWarnings("unchecked")
 	public static <T> QBeanEx<T> bean(Class<? extends T> type, RelationalPath<?> beanPath) {
-		if (type == beanPath.getType()) {
-			 Expression<?> expr=beanPath.getProjection();
-			if(expr instanceof QBeanEx) {
-				return (QBeanEx<T>)expr;
+		boolean isNativeType = type == beanPath.getType(); 
+		if (isNativeType) {
+			Expression<?> expr = beanPath.getProjection();
+			if (expr instanceof QBeanEx) {
+				return (QBeanEx<T>) expr;
 			}
+			Map<String, Expression<?>> bindings = buildBindings(beanPath);
+			return new QBeanEx<T>(type, bindings);
 		}
-		List<Path<?>> paths=beanPath.getColumns();
-		Map<String, Expression<?>> bindings = new FastHashtable<>(paths.size());
+		return (QBeanEx<T>) CONVERTER_CACHE.computeIfAbsent(
+				new ClassPairKey(type, beanPath.getType()),
+				k -> {
+					Map<String, Expression<?>> bindings = buildBindings(beanPath);
+					return new QBeanExWithConverter<>(type, bindings);
+				});
+	}
+
+	private static Map<String, Expression<?>> buildBindings(RelationalPath<?> beanPath) {
+		List<Path<?>> paths = beanPath.getColumns();
+		Map<String, Expression<?>> bindings = MapCreator.createFastMap(paths.size());
 		for (Path<?> p : paths) {
 			bindings.put(p.getMetadata().getName(), p);
 		}
-		return new QBeanEx<T>(type, bindings);
+		return bindings;
 	}
 
 	/**
@@ -105,7 +123,7 @@ public class ProjectionsAlter {
 
 	public static <T> QBeanEx<T> createBeanProjection(RelationalPath<T> path) {
 		List<Path<?>> paths=path.getColumns();
-		Map<String, Expression<?>> bindings = new FastHashtable<Expression<?>>(paths.size());
+		Map<String, Expression<?>> bindings = MapCreator.createFastMap(paths.size());
 		for (Path<?> column : paths) {
 			bindings.put(column.getMetadata().getName(), column);
 		}
@@ -200,10 +218,9 @@ public class ProjectionsAlter {
     	return QBeansDiscontinuous.builder();
     }
     
-    public static QAliasBeansDiscontinuous.Builder aliasBeansBuilder(RelationalPath<?>... tables){
+    public static QAliasBeansDiscontinuous.Builder aliasBeansBuilder(){
     	return QAliasBeansDiscontinuous.builder();
     }
-    
     
     public static <K,V> QPair<K,V> pair(Expression<K> expr1,Expression<V> expr2){
     	return new QPair<>(expr1,expr2);

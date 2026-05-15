@@ -16,6 +16,9 @@ import com.querydsl.core.types.dsl.SimpleOperation;
 import com.querydsl.core.types.dsl.StringOperation;
 
 /**
+ * <h2>English:</h2>
+ * Extends QueryDSL to support functions for JSON data structures.
+ * <h2>Chinese:</h2>
  * 扩展QueryDSL，支持JSON数据结构的函数
  *
  * @author Joey
@@ -132,9 +135,8 @@ public class JsonExpressions {
 	 * @param paths paths
 	 * @return StringOperation
 	 */
-	public static StringOperation jsonExtract(Expression<String> jsonDoc, boolean trueAsAll, String... paths) {
-		Expression<String> oneAll = Expressions.asString(trueAsAll ? "all" : "one");
-		return Expressions.stringOperation(JsonOps.JSON_EXTRACT, jsonDoc, oneAll, ConstantImpl.create(paths));
+	public static StringOperation jsonExtract(Expression<String> jsonDoc, String... paths) {
+		return Expressions.stringOperation(JsonOps.JSON_EXTRACT, jsonDoc, ConstantImpl.create(paths));
 	}
 
 	/**
