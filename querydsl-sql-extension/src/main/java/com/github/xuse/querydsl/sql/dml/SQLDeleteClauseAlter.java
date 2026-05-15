@@ -225,10 +225,26 @@ public class SQLDeleteClauseAlter extends AbstractSQLDeleteClause<SQLDeleteClaus
 	}
 
 	/**
+	 * Apply a single DTO object for delete. The DTO's fields annotated with
+	 * {@link com.github.xuse.querydsl.annotation.query.Condition @Condition} are used
+	 * as WHERE conditions.
+	 *
+	 * <h2>中文</h2>
+	 * 应用单个 DTO 对象进行删除。DTO 中标注 {@code @Condition} 的字段用作 WHERE 条件。
+	 *
+	 * @param bean the DTO object
+	 * @return this
+	 */
+	public SQLDeleteClauseAlter apply(Object bean) {
+		DmlConditionHelper helper = new DmlConditionHelper(bean.getClass(), entity);
+		where(helper.buildConditions(bean));
+		return this;
+	}
+
+	/**
 	 * Apply a batch of DTO objects for delete. Each DTO's fields annotated with
 	 * {@link com.github.xuse.querydsl.annotation.query.Condition @Condition} are used
-	 * as WHERE conditions. If no @Condition annotations are present, all fields are
-	 * treated as EQ conditions.
+	 * as WHERE conditions.
 	 *
 	 * <h2>中文</h2>
 	 * 批量应用 DTO 对象进行删除。每个 DTO 中标注 {@code @Condition} 的字段用作 WHERE 条件。

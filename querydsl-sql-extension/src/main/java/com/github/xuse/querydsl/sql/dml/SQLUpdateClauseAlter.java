@@ -250,6 +250,38 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	}
 
 	/**
+	 * Apply a single DTO object for update. The DTO's fields are split into:
+	 * <ul>
+	 *   <li>Fields annotated with {@link com.github.xuse.querydsl.annotation.query.Condition @Condition} → WHERE clause</li>
+	 *   <li>Remaining fields → SET clause</li>
+	 * </ul>
+	 *
+	 * <h2>中文</h2>
+	 * 应用单个 DTO 对象进行更新。DTO 的字段被分为：
+	 * <ul>
+	 *   <li>标注 {@code @Condition} 的字段 → WHERE 条件</li>
+	 *   <li>其余字段 → SET 子句</li>
+	 * </ul>
+	 *
+	 * @param bean the DTO object
+	 * @return this
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public SQLUpdateClauseAlter apply(Object bean) {
+		DmlConditionHelper helper = new DmlConditionHelper(bean.getClass(), entity);
+		Object target = wrapIfNeeded(bean);
+		Mapper mapper = Mappers.getUpdate(false, updateNulls);
+		Map<Path<?>, Object> values = mapper.createMap(entity, target);
+		for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+			if (!helper.isConditionPath(entry.getKey())) {
+				set((Path) entry.getKey(), entry.getValue());
+			}
+		}
+		where(helper.buildConditions(target));
+		return this;
+	}
+
+	/**
 	 * Apply a batch of DTO objects for update. Each DTO's fields are split into:
 	 * <ul>
 	 *   <li>Fields annotated with {@link com.github.xuse.querydsl.annotation.query.Condition @Condition} → WHERE clause</li>
