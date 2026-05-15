@@ -2,19 +2,23 @@ package com.github.xuse.querydsl.lambda;
 
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 
-public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
-	DateTimeExpression<T> mixin();
-	
+public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
+
+	@SuppressWarnings("rawtypes")
+	DateTimeExpression mixin();
+
     /**
      * Create a day of month expression (range 1-31)
      *
      * @return day of month
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> dayOfMonth() {
-        return mixin().dayOfMonth();
+        return ((DateTimeExpression) mixin()).dayOfMonth();
     }
 
     /**
@@ -23,8 +27,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return day of week
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> dayOfWeek() {
-    	  return mixin().dayOfWeek();
+    	  return ((DateTimeExpression) mixin()).dayOfWeek();
     }
 
     /**
@@ -33,8 +38,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return day of year
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> dayOfYear() {
-    	return mixin().dayOfYear();
+    	return ((DateTimeExpression) mixin()).dayOfYear();
     }
 
     /**
@@ -42,8 +48,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return hour
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> hour() {
-    	return mixin().hour();
+    	return ((DateTimeExpression) mixin()).hour();
     }
 
     /**
@@ -51,9 +58,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return max(this)
      */
-    @Override
-    default DateTimeExpression<T> max() {
-    	return mixin().max();
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> max() {
+    	return ((DateTimeExpression) mixin()).max();
     }
 
     /**
@@ -62,8 +69,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return milli seconds
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> milliSecond() {
-    	return mixin().milliSecond();
+    	return ((DateTimeExpression) mixin()).milliSecond();
     }
 
     /**
@@ -71,9 +79,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return min(this)
      */
-    @Override
-    default DateTimeExpression<T> min() {
-    	return mixin().min();
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> min() {
+    	return ((DateTimeExpression) mixin()).min();
     }
 
     /**
@@ -81,8 +89,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return minute
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> minute() {
-    	return mixin().minute();
+    	return ((DateTimeExpression) mixin()).minute();
     }
 
     /**
@@ -90,8 +99,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return month
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> month() {
-    	return mixin().month();
+    	return ((DateTimeExpression) mixin()).month();
     }
 
     /**
@@ -99,8 +109,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return second
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> second() {
-    	return mixin().second();
+    	return ((DateTimeExpression) mixin()).second();
     }
 
     /**
@@ -108,8 +119,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return week
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> week() {
-    	return mixin().week();
+    	return ((DateTimeExpression) mixin()).week();
     }
 
     /**
@@ -117,8 +129,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return year
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> year() {
-    	return mixin().year();
+    	return ((DateTimeExpression) mixin()).year();
     }
 
     /**
@@ -126,8 +139,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return year month
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> yearMonth() {
-    	return mixin().yearMonth();
+    	return ((DateTimeExpression) mixin()).yearMonth();
     }
 
     /**
@@ -135,8 +149,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return year week
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> yearWeek() {
-    	return mixin().yearWeek();
+    	return ((DateTimeExpression) mixin()).yearWeek();
     }
 
     /**
@@ -145,9 +160,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param other
      * @return nullif(this, other)
      */
-    @Override
-    default DateTimeExpression<T> nullif(Expression<T> other) {
-    	return mixin().nullif(other);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> nullif(Expression<T> other) {
+    	return ((DateTimeExpression) mixin()).nullif(other);
     }
 
     /**
@@ -156,8 +171,7 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param other
      * @return nullif(this, other)
      */
-    @Override
-    default DateTimeExpression<T> nullif(T other) {
+    default ComparableExpression<T> nullif(T other) {
         return nullif(ConstantImpl.create(other));
     }
 
@@ -167,9 +181,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param expr additional argument
      * @return coalesce
      */
-    @Override
-    default DateTimeExpression<T> coalesce(Expression<T> expr) {
-    	return mixin().coalesce(expr);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(Expression<T> expr) {
+    	return ((DateTimeExpression) mixin()).coalesce(expr);
     }
 
     /**
@@ -178,9 +192,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param exprs additional arguments
      * @return coalesce
      */
-    @Override
-    default DateTimeExpression<T> coalesce(Expression<?>... exprs) {
-    	return mixin().coalesce(exprs);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(Expression<?>... exprs) {
+    	return ((DateTimeExpression) mixin()).coalesce(exprs);
     }
 
     /**
@@ -189,9 +203,9 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param arg additional argument
      * @return coalesce
      */
-    @Override
-    default DateTimeExpression<T> coalesce(T arg) {
-    	return mixin().coalesce(arg);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(T arg) {
+    	return ((DateTimeExpression) mixin()).coalesce(arg);
     }
 
     /**
@@ -200,9 +214,8 @@ public interface ExprDateTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param args additional arguments
      * @return coalesce
      */
-    @Override
-    @SuppressWarnings("unchecked")
-    default DateTimeExpression<T> coalesce(T... args) {
-    	return mixin().coalesce(args);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(T... args) {
+    	return ((DateTimeExpression) mixin()).coalesce(args);
     }
 }

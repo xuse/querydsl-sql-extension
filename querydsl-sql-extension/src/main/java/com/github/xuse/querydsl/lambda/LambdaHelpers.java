@@ -114,7 +114,7 @@ public interface LambdaHelpers {
 	 * @param path the method reference / 方法引用
 	 * @return column model / 字段模型
 	 */
-	default <B, T extends Comparable<T>> DateLambdaColumn<B,T> date(DateLambdaColumn<B,T> path) {
+	default <B, T extends Comparable<?>> DateLambdaColumn<B,T> date(DateLambdaColumn<B,T> path) {
 		return path;
 	}
 	
@@ -125,7 +125,7 @@ public interface LambdaHelpers {
 	 * @param path the method reference / 方法引用
 	 * @return column model / 字段模型
 	 */
-	default <B, T extends Comparable<T>> TimeLambdaColumn<B,T> time(TimeLambdaColumn<B,T> path) {
+	default <B, T extends Comparable<?>> TimeLambdaColumn<B,T> time(TimeLambdaColumn<B,T> path) {
 		return path;
 	}
 	
@@ -136,7 +136,7 @@ public interface LambdaHelpers {
 	 * @param path the method reference / 方法引用
 	 * @return column model / 字段模型
 	 */
-	default <B, T extends Comparable<T>> DateTimeLambdaColumn<B,T> datetime(DateTimeLambdaColumn<B,T> path) {
+	default <B, T extends Comparable<?>> DateTimeLambdaColumn<B,T> datetime(DateTimeLambdaColumn<B,T> path) {
 		return path;
 	}
 	
@@ -147,7 +147,7 @@ public interface LambdaHelpers {
 	 * @param path the method reference / 方法引用
 	 * @return column model / 字段模型
 	 */
-	default <B, T extends Comparable<T>> DateTimeLambdaColumn<B,T> dt(DateTimeLambdaColumn<B,T> path) {
+	default <B, T extends Comparable<?>> DateTimeLambdaColumn<B,T> dt(DateTimeLambdaColumn<B,T> path) {
 		return path;
 	}
 	

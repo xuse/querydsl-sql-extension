@@ -156,7 +156,6 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		factory.update(t1).set(t1.taskStatus, TaskStatus.FAIL).set(t1.version, t1.version.add(Expressions.ONE))
 				.where(t1.id.eq(id).and(t1.version.eq(b.getVersion()))).execute();
 		a.setGender(Gender.MALE);
-		factory.update(t1).populate(a, AdvancedMapper.ofNullsBinding(0), false).where(Expressions.TRUE).execute();
 
 		b = factory.selectFrom(t1).where(
 				t1.taskStatus.in(Arrays.asList(TaskStatus.FAIL, TaskStatus.INIT)).and(t1.gender.eq(Gender.FEMALE)))

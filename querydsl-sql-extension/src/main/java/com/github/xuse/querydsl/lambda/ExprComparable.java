@@ -24,9 +24,14 @@ import com.querydsl.core.types.dsl.SimpleExpression;
  * @param <T> the type of path.
  */
 @SuppressWarnings("unchecked")
-public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
+public interface ExprComparable<T extends Comparable<T>> extends ExprBase<T> {
 	ComparableExpression<T> mixin();
     
+	@Override
+	default SimpleExpression<T> mixinBase() {
+		return mixin();
+	}
+
     /**
      * Create an OrderSpecifier for ascending order of this expression
      *
@@ -109,6 +114,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param alias alias
      * @return alias expression
      */
+    @Override
     default SimpleExpression<T> as(Path<T> alias) {
         return mixin().as(alias);
     }
@@ -118,6 +124,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      *@param alias alias
      * @return alias expression
      */
+    @Override
     default SimpleExpression<T> as(String alias) {
         return mixin().as(alias);
     }
@@ -127,6 +134,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      *
      * @return this is not null
      */
+    @Override
     default BooleanExpression isNotNull() {
         return mixin().isNotNull();
     }
@@ -136,6 +144,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      *
      * @return this is null
      */
+    @Override
     default BooleanExpression isNull() {
     	return mixin().isNull();
     }
@@ -145,6 +154,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      *
      * @return count(this)
      */
+    @Override
     default NumberExpression<Long> count() {
         return mixin().count();
     }
@@ -155,6 +165,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      *
      * @return count(distinct this)
      */
+    @Override
     default NumberExpression<Long> countDistinct() {
     	return mixin().countDistinct();
     }
@@ -167,6 +178,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this == right
      */
+    @Override
     default BooleanExpression eq(T right) {
         return mixin().eq(right);
     }
@@ -177,6 +189,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this == right
      */
+    @Override
     default BooleanExpression eq(Expression<? super T> right) {
         return mixin().eq(right);
     }
@@ -187,6 +200,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right right
      * @return this == all right
      */
+    @Override
     default BooleanExpression eqAll(CollectionExpression<?, ? super T> right) {
     	return mixin().eqAll(right);
     }
@@ -197,6 +211,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right right
      * @return this == any right
      */
+    @Override
     default BooleanExpression eqAny(CollectionExpression<?, ? super T> right) {
     	return mixin().eqAny(right);
     }
@@ -207,6 +222,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right right
      * @return this == all right
      */
+    @Override
     default BooleanExpression eqAll(SubQueryExpression<? extends T> right) {
     	return mixin().eqAll(right);
     }
@@ -217,6 +233,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right right
      * @return this == any right
      */
+    @Override
     default BooleanExpression eqAny(SubQueryExpression<? extends T> right) {
     	return mixin().eqAny(right);
     }
@@ -228,6 +245,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this in right
      */
+    @Override
     default BooleanExpression in(Collection<? extends T> right) {
     	return mixin().in(right); 
     }
@@ -238,6 +256,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this in right
      */
+    @Override
     default BooleanExpression in(T... right) {
     	return mixin().in(right);
     }
@@ -248,6 +267,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this in right
      */
+    @Override
     default BooleanExpression in(CollectionExpression<?,? extends T> right) {
         return mixin().in(right);
     }
@@ -258,6 +278,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this in right
      */
+    @Override
     default BooleanExpression in(SubQueryExpression<? extends T> right) {
         return mixin().in(right);
     }
@@ -268,6 +289,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this in right
      */
+    @Override
     default BooleanExpression in(Expression<? extends T>... right) {
         return mixin().in(right);
     }
@@ -278,6 +300,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this != right
      */
+    @Override
     default BooleanExpression ne(T right) {
         return mixin().ne(right);
     }
@@ -288,6 +311,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this != right
      */
+    @Override
     default BooleanExpression ne(Expression<? super T> right) {
         return mixin().ne(right);
     }
@@ -298,6 +322,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right right
      * @return this != all right
      */
+    @Override
     default BooleanExpression neAll(CollectionExpression<?, ? super T> right) {
         return mixin().neAll(right);
     }
@@ -308,6 +333,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right right
      * @return this != any right
      */
+    @Override
     default BooleanExpression neAny(CollectionExpression<?, ? super T> right) {
         return mixin().neAny(right);
     }
@@ -318,6 +344,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this not in right
      */
+    @Override
     default BooleanExpression notIn(Collection<? extends T> right) {
     	return mixin().notIn(right);
     }
@@ -328,6 +355,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this not in right
      */
+    @Override
 	default BooleanExpression notIn(T... right) {
     	return mixin().notIn(right);
     }
@@ -338,6 +366,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this not in right
      */
+    @Override
     default BooleanExpression notIn(CollectionExpression<?,? extends T> right) {
     	return mixin().notIn(right);
     }
@@ -348,6 +377,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this not in right
      */
+    @Override
     default BooleanExpression notIn(SubQueryExpression<? extends T> right) {
         return mixin().notIn(right);
     }
@@ -358,6 +388,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param right rhs of the comparison
      * @return this not in right
      */
+    @Override
     default BooleanExpression notIn(Expression<? extends T>... right) {
         return mixin().notIn(right);
     }
@@ -377,6 +408,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param other other
      * @return case expression builder
      */
+    @Override
     default CaseForEqBuilder<T> when(T other) {
         return mixin().when(other); 
     }
@@ -387,6 +419,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
      * @param other other
      * @return case expression builder
      */
+    @Override
     default CaseForEqBuilder<T> when(Expression<? extends T> other) {
         return mixin().when(other);
     }
@@ -421,7 +454,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
     /**
      * Create a {@code this not between from and to} expression
      *
-     * <p>Is equivalent to {@code this < from || this > to}</p>
+     * <p>Is equivalent to {@code this < from || this > to}</p>
      *
      * @param from inclusive start of range
      * @param to inclusive end of range
@@ -434,7 +467,7 @@ public interface ExprComparable<T extends Comparable<T>> extends Expression<T> {
     /**
      * Create a {@code this not between from and to} expression
      *
-     * <p>Is equivalent to {@code this < from || this > to}</p>
+     * <p>Is equivalent to {@code this < from || this > to}</p>
      *
      * @param from inclusive start of range
      * @param to inclusive end of range

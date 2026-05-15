@@ -140,15 +140,15 @@ public class SelectBuilder<B> {
 		return new SelectNumberExpr<>(column);
 	}
 	
-	public <C extends Comparable<C>> SelectDateExpr<C> date(DateLambdaColumn<B,C> column) {
+	public <C extends Comparable<?>> SelectDateExpr<C> date(DateLambdaColumn<B,C> column) {
 		return new SelectDateExpr<>(column);
 	}
 	
-	public <C extends Comparable<C>> SelectTimeExpr<C> time(TimeLambdaColumn<B,C> column) {
+	public <C extends Comparable<?>> SelectTimeExpr<C> time(TimeLambdaColumn<B,C> column) {
 		return new SelectTimeExpr<>(column);
 	}
 
-	public <C extends Comparable<C>> SelectDateTimeExpr<C> datetime(DateTimeLambdaColumn<B,C> column) {
+	public <C extends Comparable<?>> SelectDateTimeExpr<C> datetime(DateTimeLambdaColumn<B,C> column) {
 		return new SelectDateTimeExpr<>(column);
 	}
 	
@@ -315,7 +315,7 @@ public class SelectBuilder<B> {
 		}
 	}
 	
-	public class SelectDateExpr<C extends Comparable<C>> {
+	public class SelectDateExpr<C extends Comparable<?>> {
 		protected DateExpression<C> expr;
 		
 		@SuppressWarnings("unchecked")
@@ -336,7 +336,7 @@ public class SelectBuilder<B> {
 			return endExpr(this.expr);
 		}
 	}
-	public class SelectTimeExpr<C extends Comparable<C>> {
+	public class SelectTimeExpr<C extends Comparable<?>> {
 		protected TimeExpression<C> expr;
 		
 		@SuppressWarnings("unchecked")
@@ -357,7 +357,7 @@ public class SelectBuilder<B> {
 			return endExpr(this.expr);
 		}
 	}
-	public class SelectDateTimeExpr<C extends Comparable<C>> {
+	public class SelectDateTimeExpr<C extends Comparable<?>> {
 		protected DateTimeExpression<C> expr;
 		
 		@SuppressWarnings("unchecked")

@@ -1,10 +1,13 @@
 package com.github.xuse.querydsl.lambda;
 
+import java.util.function.Function;
+
 import com.querydsl.core.types.dsl.DateExpression;
 
-public interface DateLambdaColumn<B, T extends Comparable<T>> extends LambdaColumn<B, T>,ExprDate<T>{
-	@SuppressWarnings("unchecked")
+@FunctionalInterface
+public interface DateLambdaColumn<B, T extends Comparable<?>> extends Function<B, T>, LambdaColumnBase<B, T>, ExprDate<T> {
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	default DateExpression<T> mixin() {
-		return (DateExpression<T>) PathCache.getPath(this);
+		return (DateExpression) PathCache.getPath(this);
 	}
 }

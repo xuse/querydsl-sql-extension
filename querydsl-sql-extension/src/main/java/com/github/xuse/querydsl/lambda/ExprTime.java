@@ -2,19 +2,23 @@ package com.github.xuse.querydsl.lambda;
 
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.TimeExpression;
 
-public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
-	TimeExpression<T> mixin();
+public interface ExprTime<T extends Comparable<?>> extends ExprTemporal<T> {
+
+	@SuppressWarnings("rawtypes")
+	TimeExpression mixin();
 
 	/**
      * Create a hours expression (range 0-23)
      *
      * @return hour
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> hour() {
-        return mixin().hour();
+        return ((TimeExpression) mixin()).hour();
     }
 
     /**
@@ -22,8 +26,9 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return minute
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> minute() {
-    	 return mixin().minute();
+    	 return ((TimeExpression) mixin()).minute();
     }
 
     /**
@@ -31,8 +36,9 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return second
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> second() {
-    	return mixin().second();
+    	return ((TimeExpression) mixin()).second();
     }
 
     /**
@@ -41,18 +47,9 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      *
      * @return milli second
      */
+	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> milliSecond() {
-    	return mixin().milliSecond();
-    }
-    /**
-     * Create a {@code nullif(this, other)} expression
-     *
-     * @param other
-     * @return nullif(this, other)
-     */
-    @Override
-    default TimeExpression<T> nullif(Expression<T> other) {
-    	return mixin().nullif(other);
+    	return ((TimeExpression) mixin()).milliSecond();
     }
 
     /**
@@ -61,8 +58,18 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param other
      * @return nullif(this, other)
      */
-    @Override
-    default TimeExpression<T> nullif(T other) {
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> nullif(Expression<T> other) {
+    	return ((TimeExpression) mixin()).nullif(other);
+    }
+
+    /**
+     * Create a {@code nullif(this, other)} expression
+     *
+     * @param other
+     * @return nullif(this, other)
+     */
+    default ComparableExpression<T> nullif(T other) {
         return nullif(ConstantImpl.create(other));
     }
 
@@ -72,9 +79,9 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param expr additional argument
      * @return coalesce
      */
-    @Override
-    default TimeExpression<T> coalesce(Expression<T> expr) {
-    	return mixin().coalesce(expr);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(Expression<T> expr) {
+    	return ((TimeExpression) mixin()).coalesce(expr);
     }
 
     /**
@@ -83,9 +90,9 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param exprs additional arguments
      * @return coalesce
      */
-    @Override
-    default TimeExpression<T> coalesce(Expression<?>... exprs) {
-    	return mixin().coalesce(exprs);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(Expression<?>... exprs) {
+    	return ((TimeExpression) mixin()).coalesce(exprs);
     }
 
     /**
@@ -94,9 +101,10 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param arg additional argument
      * @return coalesce
      */
-    @Override
-    default TimeExpression<T> coalesce(T arg) {
-    	return mixin().coalesce(arg);    }
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(T arg) {
+    	return ((TimeExpression) mixin()).coalesce(arg);
+    }
 
     /**
      * Create a {@code coalesce(this, args...)} expression
@@ -104,9 +112,8 @@ public interface ExprTime<T extends Comparable<T>> extends ExprTemporal<T> {
      * @param args additional arguments
      * @return coalesce
      */
-    @Override
-    @SuppressWarnings({"unchecked"})
-    default TimeExpression<T> coalesce(T... args) {
-    	return mixin().coalesce(args);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    default ComparableExpression<T> coalesce(T... args) {
+    	return ((TimeExpression) mixin()).coalesce(args);
     }
 }

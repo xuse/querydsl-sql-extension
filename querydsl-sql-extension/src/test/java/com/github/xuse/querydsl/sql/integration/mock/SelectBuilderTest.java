@@ -1,9 +1,9 @@
 package com.github.xuse.querydsl.sql.integration.mock;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.Instant;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.Foo;
+import com.github.xuse.querydsl.lambda.DateTimeLambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.LambdaTable;
@@ -20,7 +21,6 @@ import com.github.xuse.querydsl.mock.MockedTestBase;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.repository.LambdaQueryWrapper;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.ComparableExpression;
 
 /**
@@ -33,7 +33,7 @@ class SelectBuilderTest extends MockedTestBase implements LambdaHelpers {
 	static final NumberLambdaColumn<Foo, Integer> ID = Foo::getId;
 	static final NumberLambdaColumn<Foo, Integer> VOLUME = Foo::getVolume;
 	static final LambdaColumn<Foo, Instant> CREATED = Foo::getCreated;
-	static final LambdaColumn<Foo, Date> UPDATED = Foo::getUpdated;
+	static final DateTimeLambdaColumn<Foo, LocalDateTime> UPDATED = Foo::getUpdated;
 
 	@BeforeAll
 	static void setup() {

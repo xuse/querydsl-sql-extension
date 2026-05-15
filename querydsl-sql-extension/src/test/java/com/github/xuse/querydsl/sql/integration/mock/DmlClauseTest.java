@@ -113,7 +113,7 @@ class DmlClauseTest extends MockedTestBase {
 		TableDataTypes a = makeEntity();
 		int id = factory.insert(T).populate(a).executeWithKey(Integer.class);
 		a.setGender(Gender.MALE);
-		long count = factory.update(T).populate(a, AdvancedMapper.ofNullsBinding(0), false)
+		long count = factory.update(T).populate(a,false)
 				.where(T.id.eq(id)).execute();
 		assertTrue(count >= 0);
 	}
