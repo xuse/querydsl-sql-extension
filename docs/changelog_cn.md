@@ -8,10 +8,16 @@ v{querydsl 版本号} - r(extension version)
 
 **v5.0.0-r173**  (2026-05)
 
-* **新增：`@PathBinder` 注解** — 支持使用与实体不同的 DTO 类作为查询结果、插入和更新操作的载体，无需手动字段映射。
+* **新增：`@PathBinder` 注解重新设计** — 属性重命名 `readConverter`/`writeConverter` → `fromDb`/`toDb`，语义更直观。新增 `converterSource`（共享转换器查找类）、`skipTypeCheck`（自定义 JDBC Type 场景）、`value` 默认为空（同名绑定）。
+* **新增：`BuiltinConverters` 内置转换器** — 对称的 DTO↔entity 类型转换器：全部数值类型互转、String↔Date/Timestamp/Time（JDBC 标准格式）、long↔Date、Enum 转换（CodeEnum 按 code、普通枚举按 ordinal、String 按 name）。
+* **新增：`ConfigurationEx.registerDtoConverter()`** — 注册全局自定义 DTO 字段转换器。另有 `globalConverterSource` 设置共享转换器引用查找类。
+* **新增：Update/Delete 的 `applyBatch()`** — 使用 DTO 对象批量更新/删除，`@Condition` 标注的字段作为 WHERE 条件，其余字段作为 SET 子句。生成 `UPDATE SET ... WHERE ...` / `DELETE WHERE ...` 并通过 JDBC batch 执行。
 * **新增：DTO 批量插入/更新** — `@PathBinder` DTO 用于 `populateBatch()` 时，仅映射列参与 SQL，未映射列自动使用数据库 DEFAULT 值。
 * **新增：`ConfigurationEx.batchNullStrategy`** — 控制批量插入时空值处理策略（`AUTO_DEFAULT` / `AGGRESSIVE_DEFAULT` / null）。
 * **新增：DDL 方言扩展至 10 种数据库** — 新增 Oracle、SQL Server（2005/2008/2012）、HSQLDB、SQLite、DB2、CUBRID 方言实现。原有 MySQL、PostgreSQL、Derby、H2 不受影响。
+* **修复：`CodecClassGenerator` 包名保留** — 生成的 codec 类现在与目标 bean 在同一运行时包中，修复了对包级私有内部类的 `IllegalAccessError`。
+* **变更：`@PathBinder` 属性名变更** — `readConverter` → `fromDb`、`readConverterRef` → `fromDbRef`、`writeConverter` → `toDb`、`writeConverterRef` → `toDbRef`。
+* **变更：类型不匹配强制检查** — 当 DTO 字段类型与实体列类型不匹配且无转换器时，抛出异常而非静默放过。使用 `@PathBinder(skipTypeCheck=true)` 可跳过检查。
 * **变更：权限检测机制** — 各数据库改用原生命令检测权限（如 MySQL `SHOW GRANTS`、PostgreSQL `pg_has_role`）。`SimpleDetector` 标记为 `@Deprecated`，现有代码如直接引用需迁移。
 * **重构：内部实现优化** — Map 实现、JDKEnvironment 迁移、ProjectionsAlter 缓存等，对外 API 无影响。GraalVM Native Image 兼容性改善。
 

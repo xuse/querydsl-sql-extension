@@ -249,6 +249,46 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		return this;
 	}
 
+	/**
+	 * Apply a batch of DTO objects for update. Each DTO's fields are split into:
+	 * <ul>
+	 *   <li>Fields annotated with {@link com.github.xuse.querydsl.annotation.query.Condition @Condition} → WHERE clause</li>
+	 *   <li>Remaining fields → SET clause</li>
+	 * </ul>
+	 * All DTOs produce the same SQL structure (same SET columns, same WHERE pattern).
+	 *
+	 * <h2>中文</h2>
+	 * 批量应用 DTO 对象进行更新。每个 DTO 的字段被分为：
+	 * <ul>
+	 *   <li>标注 {@code @Condition} 的字段 → WHERE 条件</li>
+	 *   <li>其余字段 → SET 子句</li>
+	 * </ul>
+	 *
+	 * @param beans collection of DTO objects
+	 * @return this
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public SQLUpdateClauseAlter applyBatch(Collection<?> beans) {
+		if (beans==null || beans.isEmpty()) {
+			return this;
+		}
+		DmlConditionHelper helper = new DmlConditionHelper(
+				beans.iterator().next().getClass(), entity);
+		Mapper mapper = Mappers.getUpdate(false, updateNulls);
+		for (Object bean : beans) {
+			Object target = wrapIfNeeded(bean);
+			Map<Path<?>, Object> values = mapper.createMap(entity, target);
+			for (Map.Entry<Path<?>, Object> entry : values.entrySet()) {
+				if (!helper.isConditionPath(entry.getKey())) {
+					set((Path) entry.getKey(), entry.getValue());
+				}
+			}
+			where(helper.buildConditions(target));
+			addBatch();
+		}
+		return this;
+	}
+
 	private Object wrapIfNeeded(Object bean) {
 		return ConverterWrappedBean.wrapIfNeeded(bean, entity);
 	}

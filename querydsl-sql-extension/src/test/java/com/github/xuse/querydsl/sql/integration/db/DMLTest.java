@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.annotation.query.Condition;
 import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.CaAsset;
@@ -356,6 +357,26 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		
 		private String inDay;
 	}
+
+	/**
+	 * DTO for batch update: code is WHERE condition, volume is SET field.
+	 */
+	@Data
+	static class UpdateVolumeByCode {
+		@Condition
+		private String code;
+
+		private int volume;
+	}
+
+	/**
+	 * DTO for batch delete: code is WHERE condition.
+	 */
+	@Data
+	static class DeleteByCode {
+		@Condition
+		private String code;
+	}
 	
 	@Test
 	public void testOperateWithDto2() {
@@ -440,19 +461,43 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		assertEquals("Feb", allDtos.get(1).getName());       // TEST_CODE_2
 		assertEquals("Mar", allDtos.get(2).getName());       // TEST_CODE_3
 
-		// === 6. DELETE by business key ===
-		long deleted = factory.delete(qFoo).where(_Code.eq("TEST_CODE_2")).execute();
-		assertEquals(1, deleted);
+		// === 6. BATCH UPDATE via applyBatch (update volume by code) ===
+		UpdateVolumeByCode u1 = new UpdateVolumeByCode();
+		u1.setCode("TEST_CODE_1");
+		u1.setVolume(999);
 
-		long remaining = factory.selectFrom(qFoo).fetchCount();
-		assertEquals(2, remaining);
+		UpdateVolumeByCode u2 = new UpdateVolumeByCode();
+		u2.setCode("TEST_CODE_3");
+		u2.setVolume(888);
 
-		// === 7. Verify remaining records ===
-		List<Foo1> remainingDtos = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
+		long batchUpdateCount = factory.update(qFoo)
+				.applyBatch(Arrays.asList(u1, u2)).execute();
+		assertTrue(batchUpdateCount >= 2);
+
+		// Verify batch update results
+		List<Foo1> afterUpdate = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
 				.from(qFoo).orderBy(_Code.asc()).fetch();
-		assertEquals(2, remainingDtos.size());
-		assertEquals("TEST_CODE_1", remainingDtos.get(0).getCode());
-		assertEquals("TEST_CODE_3", remainingDtos.get(1).getCode());
+		assertEquals(999, afterUpdate.get(0).getVolume()); // TEST_CODE_1
+		assertEquals(888, afterUpdate.get(2).getVolume()); // TEST_CODE_3
+
+		// === 7. BATCH DELETE via applyBatch (delete by code) ===
+		DeleteByCode d1 = new DeleteByCode();
+		d1.setCode("TEST_CODE_2");
+
+		DeleteByCode d2 = new DeleteByCode();
+		d2.setCode("TEST_CODE_3");
+
+		long batchDeleteCount = factory.delete(qFoo)
+				.applyBatch(Arrays.asList(d1, d2)).execute();
+		assertTrue(batchDeleteCount >= 2);
+
+		// Verify: only TEST_CODE_1 remains
+		long remaining = factory.selectFrom(qFoo).fetchCount();
+		assertEquals(1, remaining);
+		Foo1 last = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
+				.from(qFoo).fetchFirst();
+		assertEquals("TEST_CODE_1", last.getCode());
+		assertEquals(999, last.getVolume());
 	}
 	
 	@Test

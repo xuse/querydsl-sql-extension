@@ -10,10 +10,16 @@ v{querydsl version} - r(extension version)
 
 **v5.0.0-r173**  (2026-05)
 
-* **New: `@PathBinder` annotation** — Use a DTO class (different from entity) for query results, insert, and update without manual field mapping.
+* **New: `@PathBinder` annotation redesign** — Renamed `readConverter`/`writeConverter` to `fromDb`/`toDb` for clarity. Added `converterSource` for shared converter lookup, `skipTypeCheck` for custom JDBC Type scenarios, and `value` now defaults to empty (same-name binding).
+* **New: `BuiltinConverters`** — Symmetric built-in type converters for DTO↔entity mapping: all numeric types, String↔Date/Timestamp/Time (JDBC standard format), long↔Date, and Enum conversions (CodeEnum by code, ordinary enum by ordinal, String by name).
+* **New: `ConfigurationEx.registerDtoConverter()`** — Register custom global converters for DTO field mapping. Also `globalConverterSource` for shared converter ref lookup class.
+* **New: `applyBatch()` for Update/Delete** — Batch update and delete using DTO objects with `@Condition` annotated fields as WHERE clause and remaining fields as SET clause. Generates `UPDATE SET ... WHERE ...` / `DELETE WHERE ...` with JDBC batch execution.
 * **New: Batch insert/update with DTO** — `@PathBinder` DTOs in `populateBatch()` only include mapped columns; unmapped columns use database DEFAULT values.
 * **New: `ConfigurationEx.batchNullStrategy`** — Controls null handling in batch insert (`AUTO_DEFAULT` / `AGGRESSIVE_DEFAULT` / null).
 * **New: DDL dialect support expanded to 10 databases** — Added Oracle, SQL Server (2005/2008/2012), HSQLDB, SQLite, DB2, CUBRID. Existing MySQL, PostgreSQL, Derby, H2 dialects unchanged.
+* **Fix: `CodecClassGenerator` package preservation** — Generated codec classes now reside in the same runtime package as the target bean, fixing `IllegalAccessError` on package-private inner classes.
+* **Breaking: `@PathBinder` attribute names changed** — `readConverter` → `fromDb`, `readConverterRef` → `fromDbRef`, `writeConverter` → `toDb`, `writeConverterRef` → `toDbRef`.
+* **Breaking: Type-mismatch enforcement** — When no converter is found between DTO field type and entity column type, an exception is thrown instead of silent pass-through. Use `@PathBinder(skipTypeCheck=true)` to opt out.
 * **Breaking: Privilege detection** — Each database now uses native commands for privilege checks (e.g., MySQL `SHOW GRANTS`, PostgreSQL `pg_has_role`). `SimpleDetector` is `@Deprecated`; migrate if referenced directly.
 * **Internal: Map implementations, JDKEnvironment, ProjectionsAlter caching** — No public API changes. Improved GraalVM Native Image compatibility.
 
