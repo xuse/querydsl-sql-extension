@@ -22,12 +22,8 @@ import java.util.function.Function;
 
 import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.util.Exceptions;
-import com.github.xuse.querydsl.util.TypeUtils;
-import com.github.xuse.querydsl.util.Util;
-import com.github.xuse.querydsl.util.lang.Primitives;
 import com.querydsl.core.types.Expression;
-
-import lombok.extern.slf4j.Slf4j;
+import com.querydsl.core.types.dsl.PathBuilderValidator;
 
 /**
  * <h2>English:</h2>
@@ -42,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  *       preserving DTO default values for unmapped fields</li>
  * </ol>
  * Additionally supports simple type conversions via {@link Function} implementations
- * declared in the {@link PathBinder#readConverter()} attribute.
+ * declared in the {@link PathBinder#fromDb()} attribute.
  * </p>
  *
  * <h2>Chinese:</h2>
@@ -54,13 +50,13 @@ import lombok.extern.slf4j.Slf4j;
  *       从中读取 DTO 字段元数据及 {@link PathBinder} 注解</li>
  *   <li>第二阶段：生成仅覆盖有映射字段的 BeanCodec，未映射字段保留 DTO 默认值</li>
  * </ol>
- * 同时支持通过 {@link PathBinder#readConverter()} 声明的 {@link Function} 实现进行简单类型转换。
+ * 同时支持通过 {@link PathBinder#fromDb()} 声明的 {@link Function} 实现进行简单类型转换。
  * </p>
  *
  * @param <T> the type of target DTO
  * @author Joey
  */
-@Slf4j
+@SuppressWarnings("serial")
 public class QBeanExWithConverter<T> extends QBeanEx<T> {
 
 	private static final long serialVersionUID = 1L;
@@ -129,7 +125,7 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 			String fieldName = field.getName();
 			// Determine source name: check @PathBinder annotation
 			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
-			String sourceName = (pathBinder != null) ? pathBinder.value() : fieldName;
+			String sourceName = (pathBinder == null || pathBinder.value().isEmpty()) ? fieldName : pathBinder.value();
 
 			Expression<?> sourceExpr = sourceBindings.get(sourceName);
 			if (sourceExpr == null) {
@@ -140,7 +136,8 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 			targetBindings.put(fieldName, sourceExpr);
 
 			// Determine converter
-			Function converter = resolveConverter(dtoType, field, pathBinder, sourceExpr.getType());
+			Function converter = resolveReadConverter(dtoType, field,
+					pathBinder == null ? BuiltinConverters.DEFAULT_PATH_BINDER : pathBinder, sourceExpr.getType());
 			converterList.add(converter);
 		}
 
@@ -165,41 +162,9 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 	 * Resolve the converter for a field mapping.
 	 */
 	@SuppressWarnings("rawtypes")
-	private static Function resolveConverter(Class<?> dtoType, Property field, PathBinder pathBinder, Class<?> sourceType) {
-		// If explicit read converter class is specified via @PathBinder
-		if (pathBinder != null) {
-			Class<? extends Function> converterClass = pathBinder.readConverter();
-			if (converterClass != Function.class) {
-				return (Function) TypeUtils.newInstance(converterClass);
-			}
-			// If readConverterRef is specified, look up static field in DTO class
-			String ref = pathBinder.readConverterRef();
-			if (!ref.isEmpty()) {
-				return Util.getStaticFunctionField(dtoType, ref, field.getName());
-			}
-		}
-		// Check if type conversion is needed
-		Class<?> targetType = field.getType();
-		if (sourceType == targetType || isAssignableWithBoxing(sourceType, targetType)) {
-			return Function.identity();
-		}
-		// Try built-in converters
-		Function builtin = BuiltinConverters.find(sourceType, targetType);
-		if (builtin != null) {
-			return builtin;
-		}
-		log.warn("No converter found for {} -> {} on field [{}]. Direct assignment will be attempted.",
-				sourceType.getName(), targetType.getName(), field.getName());
-		return Function.identity();
-	}
-
-	private static boolean isAssignableWithBoxing(Class<?> source, Class<?> target) {
-		if (target.isAssignableFrom(source)) {
-			return true;
-		}
-		// Handle primitive/wrapper compatibility
-		Class<?> wrappedTarget = Primitives.toWrapperClass(target);
-		Class<?> wrappedSource = Primitives.toWrapperClass(source);
-		return wrappedTarget.isAssignableFrom(wrappedSource);
+	private static Function resolveReadConverter(Class<?> dtoType, Property field, PathBinder pathBinder, Class<?> sourceType) {
+		Class<?> refSource = BuiltinConverters.resolveConverterSource(pathBinder, dtoType);
+		return BuiltinConverters.resolveConverter(dtoType, field, pathBinder.fromDb(),
+				pathBinder.fromDbRef(), refSource, sourceType, field.getType(), pathBinder.skipTypeCheck());
 	}
 }

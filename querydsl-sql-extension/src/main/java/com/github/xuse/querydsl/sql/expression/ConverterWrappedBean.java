@@ -3,17 +3,17 @@ package com.github.xuse.querydsl.sql.expression;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
-import com.github.xuse.querydsl.util.TypeUtils;
-import com.github.xuse.querydsl.util.Util;
 import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.types.Path;
+import com.querydsl.sql.RelationalPath;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <h2>English:</h2>
@@ -66,6 +66,7 @@ import com.querydsl.core.types.Path;
  *
  * @author Joey
  */
+@Slf4j
 public class ConverterWrappedBean {
 
 	/**
@@ -87,10 +88,6 @@ public class ConverterWrappedBean {
 		}
 	};
 
-	/** Cache: classes that have been checked for @PathBinder presence. */
-	private static final Set<Class<?>> HAS_PATH_BINDER = ConcurrentHashMap.newKeySet();
-	private static final Set<Class<?>> NO_PATH_BINDER = ConcurrentHashMap.newKeySet();
-
 	/**
 	 * Cache: (dtoType, entityType) -> DtoMappingInfo.
 	 * The DtoMappingInfo contains the BeanCodec for the DTO and a FieldSlot[] aligned
@@ -109,7 +106,7 @@ public class ConverterWrappedBean {
 	/**
 	 * Wrap a DTO object explicitly.
 	 *
-	 * @param dto the DTO object with {@link PathBinder} annotations
+	 * @param dto the DTO object
 	 * @return wrapped bean
 	 */
 	public static ConverterWrappedBean of(Object dto) {
@@ -117,28 +114,15 @@ public class ConverterWrappedBean {
 	}
 
 	/**
-	 * Check if a class has any {@link PathBinder} annotations on its fields.
-	 * Result is cached for performance.
+	 * If the bean is not an instance of the entity type, wrap it for
+	 * transparent field name remapping and type conversion.
 	 *
-	 * @param clazz the class to check
-	 * @return true if any field has @PathBinder
+	 * @param bean   the bean object
+	 * @param entity the target relational path
+	 * @return the original bean or a wrapped instance
 	 */
-	public static boolean hasPathBinder(Class<?> clazz) {
-		if (HAS_PATH_BINDER.contains(clazz)) {
-			return true;
-		}
-		if (NO_PATH_BINDER.contains(clazz)) {
-			return false;
-		}
-		BeanCodec codec = BeanCodecManager.getInstance().getCodec(clazz);
-		for (Property field : codec.getFields()) {
-			if (field.getAnnotation(PathBinder.class) != null) {
-				HAS_PATH_BINDER.add(clazz);
-				return true;
-			}
-		}
-		NO_PATH_BINDER.add(clazz);
-		return false;
+	public static Object wrapIfNeeded(Object bean, RelationalPath<?> entity) {
+		return entity.getType().isInstance(bean) ? bean : of(bean);
 	}
 
 	/**
@@ -237,29 +221,37 @@ public class ConverterWrappedBean {
 		if (cached != null) {
 			return cached;
 		}
-		// Build DTO field metadata: targetName -> (dtoFieldIndex, writeConverter)
+		// Phase 1: Build DTO field metadata: targetName -> (dtoFieldIndex, Property)
 		BeanCodec codec = BeanCodecManager.getInstance().getCodec(dtoType);
 		Property[] fields = codec.getFields();
-		Map<String, FieldSlot> fieldMap = new HashMap<>(fields.length);
-
+		Map<String, int[]> indexMap = new HashMap<>(fields.length);
 		for (int i = 0; i < fields.length; i++) {
 			Property field = fields[i];
 			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
-
 			if (pathBinder != null && !pathBinder.writable()) {
 				continue;
 			}
-			String targetName = (pathBinder != null) ? pathBinder.value() : field.getName();
-			Function writeConverter = resolveWriteConverter(dtoType, pathBinder, field);
-			fieldMap.put(targetName, new FieldSlot(i, writeConverter));
+			String targetName = (pathBinder == null || pathBinder.value().isEmpty()) ? field.getName() : pathBinder.value();
+			indexMap.put(targetName, new int[] { i });
 		}
 
-		// Align slots with original column order
+		// Phase 2: Align slots with original column order.
+		// Now we know the target column type, so we can resolve write converters
+		// with built-in converter fallback.
 		List<Path<?>> columns = entity.getColumns();
 		FieldSlot[] slots = new FieldSlot[columns.size()];
 		for (int c = 0; c < columns.size(); c++) {
 			String colName = columns.get(c).getMetadata().getName();
-			slots[c] = fieldMap.get(colName);
+			int[] idx = indexMap.get(colName);
+			if (idx == null) {
+				continue;
+			}
+			int fieldIndex = idx[0];
+			Property field = fields[fieldIndex];
+			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
+			Class<?> columnType = columns.get(c).getType();
+			Function writeConverter = resolveWriteConverter(dtoType, pathBinder == null ? BuiltinConverters.DEFAULT_PATH_BINDER : pathBinder, field, columnType);
+			slots[c] = new FieldSlot(fieldIndex, writeConverter);
 		}
 		DtoMappingInfo info = new DtoMappingInfo(codec, slots);
 		MAPPING_CACHE.put(key, info);
@@ -267,19 +259,10 @@ public class ConverterWrappedBean {
 	}
 
 	@SuppressWarnings("rawtypes")
-	private static Function resolveWriteConverter(Class<?> dtoType, PathBinder pathBinder, Property field) {
-		if (pathBinder == null) {
-			return Function.identity();
-		}
-		Class<? extends Function> writeClass = pathBinder.writeConverter();
-		if (writeClass != Function.class) {
-			return (Function) TypeUtils.newInstance(writeClass);
-		}
-		String ref = pathBinder.writeConverterRef();
-		if (!ref.isEmpty()) {
-			return Util.getStaticFunctionField(dtoType, ref, field.getName());
-		}
-		return Function.identity();
+	private static Function resolveWriteConverter(Class<?> dtoType, PathBinder pathBinder, Property field, Class<?> columnType) {
+		Class<?> refSource = BuiltinConverters.resolveConverterSource(pathBinder, dtoType);
+		return BuiltinConverters.resolveConverter(dtoType, field, pathBinder.toDb(),
+				pathBinder.toDbRef(), refSource, field.getType(), columnType, pathBinder.skipTypeCheck());
 	}
 
 	// ==================== Inner classes ====================

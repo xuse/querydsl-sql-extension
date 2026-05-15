@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import com.github.xuse.querydsl.init.TableInitTask;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
+import com.github.xuse.querydsl.sql.expression.BuiltinConverters;
 import com.github.xuse.querydsl.sql.dbmeta.DriverInfo;
 import com.github.xuse.querydsl.sql.dialect.DefaultSQLTemplatesEx;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
@@ -67,6 +69,39 @@ public class ConfigurationEx {
 	public static int MAXIMUM_EXPECTED_COLUMNS = 64;
 	
 	public static int WRAPPERED_BEAN_CACHE_SIZE = 128;
+
+	/**
+	 * Global default class for looking up static converter fields referenced by
+	 * {@link com.github.xuse.querydsl.annotation.query.PathBinder#fromDbRef()} and
+	 * {@link com.github.xuse.querydsl.annotation.query.PathBinder#toDbRef()}.
+	 * <p>
+	 * When set, converter ref fields are looked up in this class if not found in the DTO class
+	 * and no per-field {@code converterSource} is specified.
+	 * </p>
+	 * <p>
+	 * 全局默认的转换器静态字段查找类。设置后，当 DTO 类中找不到 ref 字段且未指定
+	 * 字段级 converterSource 时，会在此类中查找。
+	 * </p>
+	 */
+	public static Class<?> globalConverterSource = null;
+
+	/**
+	 * Register a custom global converter for DTO field mapping.
+	 * The converter will be used automatically when no explicit @PathBinder converter
+	 * is specified and the source/target types are not directly assignable.
+	 * <p>
+	 * 注册全局 DTO 字段映射转换器。当未指定显式 @PathBinder 转换器且类型不兼容时自动使用。
+	 * </p>
+	 *
+	 * @param sourceType source type
+	 * @param targetType target type
+	 * @param converter  conversion function
+	 * @param <S>        source type
+	 * @param <T>        target type
+	 */
+	public static <S, T> void registerDtoConverter(Class<S> sourceType, Class<T> targetType, Function<S, T> converter) {
+		BuiltinConverters.registerGlobal(sourceType, targetType, converter);
+	}
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationEx.class);

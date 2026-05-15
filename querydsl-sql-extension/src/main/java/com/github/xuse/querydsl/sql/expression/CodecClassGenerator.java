@@ -106,16 +106,30 @@ public class CodecClassGenerator implements Opcodes {
 	 *         生成并加载的 {@link BeanCodec} 类，如果生成失败则返回 {@code null}。
 	 */
 	public Class<?> generate(Class<?> beanType, List<FieldProperty> methods, String clzName, boolean record) {
-		clzName = clzName.replace('.', '_');
+		// Preserve the package of the target class so that the generated codec class
+		// resides in the same runtime package. This is required to access package-private
+		// bean classes (e.g., non-public inner classes).
+		int lastDot = clzName.lastIndexOf('.');
+		String binaryName;
+		String internalName;
+		if (lastDot >= 0) {
+			String pkg = clzName.substring(0, lastDot);
+			String simpleName = clzName.substring(lastDot + 1).replace('.', '_');
+			binaryName = pkg + "." + simpleName;
+			internalName = pkg.replace('.', '/') + "/" + simpleName;
+		} else {
+			binaryName = clzName.replace('.', '_');
+			internalName = binaryName;
+		}
 		try {
-			byte[] data = generate0(beanType, methods, clzName,record);
+			byte[] data = generate0(beanType, methods, internalName, record);
 			if (debug) {
-				File file = new File(System.getProperty("user.dir"), clzName + ".class");
+				File file = new File(System.getProperty("user.dir"), binaryName + ".class");
 				IOUtils.saveAsFile(file, data);
 				log.info("The codec class {} was generate for debug.", file.getAbsolutePath());
 			}
-			Class<?> clz = cl.defineClz(clzName, data);
-			log.info("The codec class {} was load.", clzName);
+			Class<?> clz = cl.defineClz(binaryName, data);
+			log.info("The codec class {} was load.", binaryName);
 			return clz;
 		} catch (Throwable ex) {
 			log.error("ASM generation error for class {}", clzName, ex);

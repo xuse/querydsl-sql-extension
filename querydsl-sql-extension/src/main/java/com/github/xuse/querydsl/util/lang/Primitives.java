@@ -312,4 +312,21 @@ public final class Primitives {
 	public static boolean isEven(long i) {
 		return (i & 1) == 0;
 	}
+
+	/**
+	 * Check if source type is assignable to target type, considering
+	 * primitive/wrapper compatibility.
+	 *
+	 * @param source the source type
+	 * @param target the target type
+	 * @return true if source is assignable to target (including boxing/unboxing)
+	 */
+	public static boolean isAssignableWithBoxing(Class<?> source, Class<?> target) {
+		if (target.isAssignableFrom(source)) {
+			return true;
+		}
+		Class<?> wrappedTarget = toWrapperClass(target);
+		Class<?> wrappedSource = toWrapperClass(source);
+		return wrappedTarget.isAssignableFrom(wrappedSource);
+	}
 }

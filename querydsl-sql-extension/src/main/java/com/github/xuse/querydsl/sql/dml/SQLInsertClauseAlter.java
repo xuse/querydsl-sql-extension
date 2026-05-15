@@ -533,15 +533,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		return populate(bean, Mappers.get(SCENARIO_INSERT,type));
 	}
 
-	/**
-	 * If the bean type differs from the entity type and has @PathBinder annotations,
-	 * wrap it with ConverterWrappedBean for transparent field name remapping and type conversion.
-	 */
 	private Object wrapIfNeeded(Object bean) {
-		if (!entity.getType().isInstance(bean) && ConverterWrappedBean.hasPathBinder(bean.getClass())) {
-			return ConverterWrappedBean.of(bean);
-		}
-		return bean;
+		return ConverterWrappedBean.wrapIfNeeded(bean, entity);
 	}
 
 	/**
@@ -553,7 +546,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			return beans;
 		}
 		Object first = beans.iterator().next();
-		if (entity.getType().isInstance(first) || !ConverterWrappedBean.hasPathBinder(first.getClass())) {
+		if (entity.getType().isInstance(first)) {
 			return beans;
 		}
 		List<ConverterWrappedBean> wrapped = new ArrayList<>(beans.size());

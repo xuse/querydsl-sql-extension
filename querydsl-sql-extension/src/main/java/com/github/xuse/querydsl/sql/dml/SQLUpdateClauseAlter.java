@@ -249,15 +249,8 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 		return this;
 	}
 
-	/**
-	 * If the bean type differs from the entity type and has @PathBinder annotations,
-	 * wrap it with ConverterWrappedBean for transparent field name remapping and type conversion.
-	 */
 	private Object wrapIfNeeded(Object bean) {
-		if (!entity.getType().isInstance(bean) && ConverterWrappedBean.hasPathBinder(bean.getClass())) {
-			return ConverterWrappedBean.of(bean);
-		}
-		return bean;
+		return ConverterWrappedBean.wrapIfNeeded(bean, entity);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

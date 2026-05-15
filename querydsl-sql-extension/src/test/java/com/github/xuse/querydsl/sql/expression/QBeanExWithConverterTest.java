@@ -314,17 +314,6 @@ class QBeanExWithConverterTest {
 		assertEquals(2, values2[1]);
 	}
 
-	/**
-	 * Test hasPathBinder detection.
-	 */
-	@Test
-	void testHasPathBinder() {
-		// FooDTO has @PathBinder on codeTypeX
-		assertTrue(ConverterWrappedBean.hasPathBinder(FooDTO.class));
-		// Foo entity does not have @PathBinder
-		assertFalse(ConverterWrappedBean.hasPathBinder(Foo.class));
-	}
-
 	// ========== NOT_AVAILABLE sentinel tests ==========
 
 	/**
