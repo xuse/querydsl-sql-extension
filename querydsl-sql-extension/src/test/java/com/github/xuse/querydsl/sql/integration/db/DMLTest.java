@@ -354,37 +354,105 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 		private int codeType;
 		
-		@PathBinder(fromDbRef = "fromSqlDate", toDbRef = "toSqlDate")
 		private String inDay;
-		
-		static final Function<String,java.sql.Date> toSqlDate = s-> java.sql.Date.valueOf(s);
-		static final Function<java.sql.Date,String> fromSqlDate = s->s.toString();
 	}
 	
 	@Test
 	public void testOperateWithDto2() {
 		RelationalPathEx<Foo> qFoo = PathCache.getPath(() -> Foo.class, null);
-		NumberLambdaColumn<Foo, Integer> _Id = Foo::getId;
 		StringLambdaColumn<Foo> _Code = Foo::getCode;
 		factory.getMetadataFactory().truncate(qFoo).execute();
-		
+
+		// === 1. INSERT single DTO (no id, business key = code) ===
 		Foo1 f1=new Foo1();
 		f1.setCode("TEST_CODE_1");
 		f1.setName("Jan");
 		f1.setGender(1);
 		f1.setInDay("2026-02-01");
 		f1.setVolume(100);
-		//f1.setCodeType(0);
-		
+		f1.setCodeType(3);
+		factory.insert(qFoo).populate(f1).execute();
+
+		// Verify insert via entity query
+		Foo inserted = factory.selectFrom(qFoo).where(_Code.eq("TEST_CODE_1")).fetchOne();
+		assertEquals("Jan", inserted.getName());
+		assertEquals(Gender.FEMALE, inserted.getGender()); // code=1 -> FEMALE
+		assertEquals(100, inserted.getVolume());
+
+		// === 2. SELECT as DTO (read path: Gender->int, sql.Date->String) ===
+		List<Foo1> dtoList = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
+				.from(qFoo).where(_Code.eq("TEST_CODE_1")).fetch();
+		assertEquals(1, dtoList.size());
+		Foo1 readBack = dtoList.get(0);
+		assertEquals("TEST_CODE_1", readBack.getCode());
+		assertEquals("Jan", readBack.getName());
+		assertEquals(1, readBack.getGender());
+		assertEquals(100, readBack.getVolume());
+		assertEquals("2026-02-01", readBack.getInDay());
+
+		// === 3. UPDATE via DTO (use code as where condition) ===
+		Foo1 updateDto=new Foo1();
+		updateDto.setName("January");
+		updateDto.setGender(0);
+		updateDto.setVolume(200);
+		updateDto.setInDay("2026-03-15");
+		updateDto.setCodeType(5);
+		long updateCount = factory.update(qFoo)
+				.populate(updateDto)
+				.where(_Code.eq("TEST_CODE_1"))
+				.execute();
+		assertEquals(1, updateCount);
+
+		// Verify update
+		Foo updated = factory.selectFrom(qFoo).where(_Code.eq("TEST_CODE_1")).fetchOne();
+		assertEquals("January", updated.getName());
+		assertEquals(Gender.MALE, updated.getGender()); // code=0 -> MALE
+		assertEquals(200, updated.getVolume());
+
+		// === 4. BATCH INSERT via DTO collection ===
 		Foo1 f2=new Foo1();
 		f2.setCode("TEST_CODE_2");
 		f2.setName("Feb");
 		f2.setGender(0);
-		f2.setInDay("2026-02-01");
-		f2.setVolume(100);
-		factory.insert(qFoo).populate(f1).execute();
-		
-		
+		f2.setInDay("2026-04-01");
+		f2.setVolume(50);
+		f2.setCodeType(1);
+
+		Foo1 f3=new Foo1();
+		f3.setCode("TEST_CODE_3");
+		f3.setName("Mar");
+		f3.setGender(1);
+		f3.setInDay("2026-05-01");
+		f3.setVolume(75);
+		f3.setCodeType(2);
+
+		factory.insert(qFoo).populateBatch(Arrays.asList(f2, f3)).execute();
+
+		// Verify batch insert
+		long totalCount = factory.selectFrom(qFoo).fetchCount();
+		assertEquals(3, totalCount);
+
+		// === 5. SELECT all as DTO, verify batch results ===
+		List<Foo1> allDtos = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
+				.from(qFoo).orderBy(_Code.asc()).fetch();
+		assertEquals(3, allDtos.size());
+		assertEquals("January", allDtos.get(0).getName());  // TEST_CODE_1 (updated)
+		assertEquals("Feb", allDtos.get(1).getName());       // TEST_CODE_2
+		assertEquals("Mar", allDtos.get(2).getName());       // TEST_CODE_3
+
+		// === 6. DELETE by business key ===
+		long deleted = factory.delete(qFoo).where(_Code.eq("TEST_CODE_2")).execute();
+		assertEquals(1, deleted);
+
+		long remaining = factory.selectFrom(qFoo).fetchCount();
+		assertEquals(2, remaining);
+
+		// === 7. Verify remaining records ===
+		List<Foo1> remainingDtos = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
+				.from(qFoo).orderBy(_Code.asc()).fetch();
+		assertEquals(2, remainingDtos.size());
+		assertEquals("TEST_CODE_1", remainingDtos.get(0).getCode());
+		assertEquals("TEST_CODE_3", remainingDtos.get(1).getCode());
 	}
 	
 	@Test

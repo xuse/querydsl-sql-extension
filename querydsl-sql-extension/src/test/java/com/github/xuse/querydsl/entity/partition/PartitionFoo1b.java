@@ -51,6 +51,7 @@ public class PartitionFoo1b {
 	
 	@ColumnSpec(name="record_time",nullable = false)
 	@Comment("The time number of the asset.")
+	@UnsavedValue(UnsavedValue.ZeroAndMinus)
 	private int recordTime;
 	
 	@ColumnSpec(nullable = false)

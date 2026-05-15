@@ -128,7 +128,15 @@ public class CodecClassGenerator implements Opcodes {
 				IOUtils.saveAsFile(file, data);
 				log.info("The codec class {} was generate for debug.", file.getAbsolutePath());
 			}
-			Class<?> clz = cl.defineClz(binaryName, data);
+			// For non-public bean types, use Lookup.defineClass to ensure the generated
+			// class is in the same runtime package (same ClassLoader) as the target class.
+			// This avoids IllegalAccessError on JDK 9+ where runtime package = package name + ClassLoader.
+			Class<?> clz;
+			if (!java.lang.reflect.Modifier.isPublic(beanType.getModifiers())) {
+				clz = cl.defineClz(binaryName, data, beanType);
+			} else {
+				clz = cl.defineClz(binaryName, data);
+			}
 			log.info("The codec class {} was load.", binaryName);
 			return clz;
 		} catch (Throwable ex) {
