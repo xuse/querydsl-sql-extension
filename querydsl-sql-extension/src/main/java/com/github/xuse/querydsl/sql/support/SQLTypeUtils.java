@@ -200,13 +200,11 @@ public class SQLTypeUtils {
 		case "java.util.Date":
 		case "java.sql.Timestamp":
 		case "java.time.Instant":
+		case "java.time.LocalDateTime":
 			return Types.TIMESTAMP;
 		case "java.sql.Time":
-			return Types.TIME;
 		case "java.time.LocalTime":
-			return Types.TIME_WITH_TIMEZONE;
-		case "java.time.LocalDateTime":
-			return Types.TIMESTAMP_WITH_TIMEZONE;
+			return Types.TIME;
 		case "[B":
 			return Types.VARBINARY;
 		}

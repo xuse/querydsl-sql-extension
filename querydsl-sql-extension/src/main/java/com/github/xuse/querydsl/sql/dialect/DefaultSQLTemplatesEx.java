@@ -7,6 +7,7 @@ import java.util.Set;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
 import com.github.xuse.querydsl.sql.ddl.ConstraintTypeDef;
 import com.github.xuse.querydsl.util.Assert;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.sql.SQLTemplates;
@@ -44,7 +45,12 @@ public class DefaultSQLTemplatesEx implements SQLTemplatesEx {
 	}
 	
 	public ColumnDef getColumnDataType(int sqlTypes, int size, int scale) {
-		return typeNames.get(sqlTypes, size, scale);
+		try {
+			return typeNames.get(sqlTypes, size, scale);	
+		}catch(IllegalArgumentException e) {
+			throw Exceptions.unsupportedOperation("get SQL Mapping error,Dialect:{},{},{},{}",this.getClass().getSimpleName(),sqlTypes,size,scale,e);
+		}
+		
 	}
 
 	@Override

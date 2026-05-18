@@ -38,7 +38,21 @@ public final class FieldProperty implements Property{
 
 	@Override
 	public String toString() {
-		return "getter=" + getter + ", setter=" + setter + ", field=" + field;
+		StringBuilder sb=new StringBuilder("[");
+		if(field!=null) {
+			sb.append(field.getDeclaringClass().getSimpleName()).append('.').append(field.getName()).append(':');
+		}
+		if(getter!=null) {
+			sb.append(getter.getDeclaringClass().getSimpleName()).append('.').append(getter.getName()).append(':');
+		}
+		if(setter!=null) {
+			sb.append(setter.getDeclaringClass().getSimpleName()).append('.').append(setter.getName());
+		}
+		if(sb.length()==1) {
+			return "";
+		}
+		sb.append(']');
+		return sb.toString();
 	}
 
 	public Class<?> getBindingType() {
@@ -46,11 +60,11 @@ public final class FieldProperty implements Property{
 	}
 
 	public void setBindingType(Class<?> bindingType) {
-		if(field!=null) {
-			if(isNotAssignableFrom(field, bindingType)) {
-				log.warn("Data type incompatible between field [{}] and expression type {}",field,bindingType);
-			}
-		}
+//		if(field!=null) {
+//			if(isNotAssignableFrom(field, bindingType)) {
+//				log.warn("Data type incompatible between field [{}] and expression type {}",field,bindingType);
+//			}
+//		}
 		this.bindingType = bindingType;
 	}
 

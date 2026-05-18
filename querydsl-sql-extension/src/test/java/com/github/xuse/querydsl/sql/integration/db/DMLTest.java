@@ -350,7 +350,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		
 		private int gender;
 		
-		private int volume;
+		private int volume = -1;
 
 		private int codeType;
 		
@@ -411,12 +411,14 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		assertEquals("2026-02-01", readBack.getInDay());
 
 		// === 3. UPDATE via DTO (use code as where condition) ===
+		System.out.println("3. UPDATE via DTO (use code as where condition)");
 		Foo1 updateDto=new Foo1();
 		updateDto.setName("January");
 		updateDto.setGender(0);
-		updateDto.setVolume(200);
 		updateDto.setInDay("2026-03-15");
 		updateDto.setCodeType(5);
+		
+		//updateDto.setVolume(200);
 		long updateCount = factory.update(qFoo)
 				.populate(updateDto)
 				.where(_Code.eq("TEST_CODE_1"))
@@ -427,9 +429,10 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		Foo updated = factory.selectFrom(qFoo).where(_Code.eq("TEST_CODE_1")).fetchOne();
 		assertEquals("January", updated.getName());
 		assertEquals(Gender.MALE, updated.getGender()); // code=0 -> MALE
-		assertEquals(200, updated.getVolume());
+		assertEquals(100, updated.getVolume());
 
 		// === 4. BATCH INSERT via DTO collection ===
+		System.out.println("4. BATCH INSERT via DTO collection");
 		Foo1 f2=new Foo1();
 		f2.setCode("TEST_CODE_2");
 		f2.setName("Feb");
@@ -453,6 +456,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		assertEquals(3, totalCount);
 
 		// === 5. SELECT all as DTO, verify batch results ===
+		System.out.println("5. SELECT all as DTO, verify batch results");
 		List<Foo1> allDtos = factory.select(ProjectionsAlter.bean(Foo1.class, qFoo))
 				.from(qFoo).orderBy(_Code.asc()).fetch();
 		assertEquals(3, allDtos.size());
@@ -461,6 +465,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		assertEquals("Mar", allDtos.get(2).getName());       // TEST_CODE_3
 
 		// === 6. BATCH UPDATE via applyBatch (update volume by code) ===
+		System.out.println("6. BATCH UPDATE via applyBatch (update volume by code)");
 		UpdateVolumeByCode u1 = new UpdateVolumeByCode();
 		u1.setCode("TEST_CODE_1");
 		u1.setVolume(999);
@@ -480,6 +485,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		assertEquals(888, afterUpdate.get(2).getVolume()); // TEST_CODE_3
 
 		// === 7. BATCH DELETE via applyBatch (delete by code) ===
+		System.out.println("7. BATCH DELETE via applyBatch (delete by code)");
 		DeleteByCode d1 = new DeleteByCode();
 		d1.setCode("TEST_CODE_2");
 

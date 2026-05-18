@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,7 +138,7 @@ public class CodecClassGenerator implements Opcodes {
 			} else {
 				clz = cl.defineClz(binaryName, data);
 			}
-			log.info("The codec class {} was load.", binaryName);
+			log.info("The codec class {} was load for:{}", binaryName, methods);
 			return clz;
 		} catch (Throwable ex) {
 			log.error("ASM generation error for class {}", clzName, ex);

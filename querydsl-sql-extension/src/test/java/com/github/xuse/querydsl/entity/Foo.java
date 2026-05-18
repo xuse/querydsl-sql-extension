@@ -75,7 +75,7 @@ public class Foo implements Serializable {
 	
 	@ColumnSpec(type=Types.INTEGER,nullable = false,unsigned = true)
 	@UnsavedValue(UnsavedValue.MinusNumber)
-	private int volume;
+	private int volume = -1;
 	
 	@ColumnSpec(type=Types.INTEGER,nullable = false,unsigned = true,defaultValue = "1")
 	@UnsavedValue(UnsavedValue.ZeroAndMinus)
