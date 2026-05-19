@@ -94,9 +94,10 @@ public abstract class Threads {
 	public static final int doWait(Object obj, long timeout) {
 		synchronized (obj) {
 			try {
-				long expectTimeout = System.currentTimeMillis() + timeout;
+				long startNanos = System.nanoTime();
 				obj.wait(timeout);
-				return System.currentTimeMillis() >= expectTimeout ? WAIT_TIMEOUT : WAIT_NOTIFIED;
+				long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000L;
+				return elapsedMillis >= timeout ? WAIT_TIMEOUT : WAIT_NOTIFIED;
 			} catch (InterruptedException e) {
 				return WAIT_INTERRUPTED;
 			}
@@ -210,7 +211,7 @@ public abstract class Threads {
 	 * @see Appendable
 	 */
 	public static void toStackTraceString(StackTraceElement[] stacks, int skipLines,Appendable output) {
-		String newLine = ")\r\n";
+		String newLine = ")\n";
 		try {
 			for (int i = skipLines; i < stacks.length; i++) {
 				StackTraceElement e = stacks[i];
@@ -306,17 +307,18 @@ public abstract class Threads {
 	 * @return Future<T> Future
 	 */
     public static <T> Future<T> asyncExecute(Callable<T> callable) {
-        BasicFuture<T> f=new BasicFuture<T>();
+        BasicFuture<T> f=new BasicFuture<>();
         new Thread(() -> {
             try {
                 f.result = callable.call();
                 f.completed = true;
                 log.info("Async Exec Success:{}", callable);
-                Threads.doNotifyAll(f);
             } catch (Exception e) {
                 f.ex=e;
                 f.completed = true;
                 log.error("Async Calling {}", callable, e);
+            }finally {
+            	doNotifyAll(f);
             }
         }).start();
         return f;
@@ -373,15 +375,16 @@ public abstract class Threads {
         @Override
         public T get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
             Assert.notNull(unit, "Time unit");
-            if (!completed) {
-                long wait=unit.toMillis(timeout);
-                if(wait<=0) {
-                    throw new TimeoutException();
-                }
-                synchronized (this) {
-                    wait(wait);
-                }
-            }
+            long deadline = System.currentTimeMillis() + unit.toMillis(timeout);
+			synchronized (this) {
+				while (!completed) {
+					long remaining = deadline - System.currentTimeMillis();
+					if (remaining <= 0) {
+						throw new TimeoutException();
+					}
+					wait(remaining);
+				}
+			}
             return getResult();
         }
     }
@@ -439,6 +442,11 @@ public abstract class Threads {
 		}
 		@Override
 		public void setCoreSize(int size) {
+			int max=pool.getMaximumPoolSize();
+			if (size > max) {
+				//调节不可以大于maximumSize
+				size = max;
+			}
 			int from = pool.getCorePoolSize(); 
 			if (from > size) {
 				throw Exceptions.illegalArgument("RISK is too high to adjust core pool size from {} to {} once in a PRD environment.", from, size);
@@ -461,6 +469,15 @@ public abstract class Threads {
 		private boolean noJmx;
 
 		public ThreadPoolExecutor build() {
+			if (coreSize <= 0) {
+				throw Exceptions.illegalArgument("Core size({}) must be positive.", coreSize);
+			}
+			if (maximumSize <= 0) {
+				throw Exceptions.illegalArgument("Maximum size({}) must be positive.", maximumSize);
+			}
+			if (maximumSize < coreSize) {
+				throw Exceptions.illegalArgument("Maximum size({}) must be >= core size({}).", maximumSize, coreSize);
+			}
 			if (queueSize <= 0) {
 				queueSize = Integer.MAX_VALUE;
 			}
@@ -480,12 +497,12 @@ public abstract class Threads {
 					new TempQueuedPolicy(queue, rejectionHandler));
 			if(!noJmx) {
 				PoolMonitor monitor=new PoolMonitor(pool, queue, namePrefix, queueSize);
-				registeJmx(monitor);	
+				registerJmx(monitor);	
 			}
 			return pool;
 		}
 
-		private void registeJmx(PoolMonitor monitor) {
+		private void registerJmx(PoolMonitor monitor) {
 			String name = monitor.name;
 			if (name == null) {
 				name = "";
@@ -606,7 +623,7 @@ public abstract class Threads {
 			int size = size();
 			boolean result = size < pressureSize && super.offer(e);
 			if(result) {
-				 listener.onTaskAdd(size);;
+				 listener.onTaskAdd(size);
 			}
 			return result;
 		}
@@ -645,7 +662,7 @@ public abstract class Threads {
 	/**
 	 * 创建ThreadFactory对象
 	 * 
-	 * @param name
+	 * @param name The name prefix of thread.
 	 * @return ThreadFactory
 	 */
 	public static ThreadFactory threadFactory(String name) {
@@ -663,7 +680,9 @@ public abstract class Threads {
 		}
 
 		public Thread newThread(Runnable r) {
-			return new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0L);
+			Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0L);
+			t.setPriority(Thread.NORM_PRIORITY);
+			return t;
 		}
 	}
 }
