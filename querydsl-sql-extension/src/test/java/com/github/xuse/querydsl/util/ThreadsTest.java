@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,7 +19,7 @@ class ThreadsTest {
 
 	@Test
 	void testThreadPoolBuilder_basic() {
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.namePrefix("test-pool")
 				.coreSize(2)
 				.maximumSize(4)
@@ -27,14 +27,12 @@ class ThreadsTest {
 				.noJMX()
 				.build();
 		assertNotNull(pool);
-		assertEquals(2, pool.getCorePoolSize());
-		assertEquals(4, pool.getMaximumPoolSize());
 		pool.shutdown();
 	}
 
 	@Test
 	void testThreadPoolBuilder_withPressure() {
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.namePrefix("pressure-pool")
 				.coreSize(1)
 				.maximumSize(2)
@@ -62,7 +60,7 @@ class ThreadsTest {
 
 	@Test
 	void testThreadPoolBuilder_executeTask() throws Exception {
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.namePrefix("exec-pool")
 				.coreSize(2)
 				.maximumSize(4)
@@ -85,7 +83,7 @@ class ThreadsTest {
 	@Test
 	void testThreadPoolBuilder_defaultQueueSize() {
 		// queueSize=0 should default to Integer.MAX_VALUE
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.namePrefix("default-q")
 				.coreSize(1)
 				.maximumSize(2)
@@ -99,7 +97,7 @@ class ThreadsTest {
 	@Test
 	void testThreadPoolBuilder_withJmx() {
 		// Test with JMX registration (default behavior)
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.namePrefix("jmx-pool")
 				.coreSize(1)
 				.maximumSize(2)
@@ -111,7 +109,7 @@ class ThreadsTest {
 
 	@Test
 	void testThreadFactory() {
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.namePrefix("named")
 				.coreSize(1)
 				.maximumSize(1)
@@ -137,7 +135,7 @@ class ThreadsTest {
 	@Test
 	void testThreadPoolBuilder_noNamePrefix() {
 		// Without name prefix, should use default thread factory
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		ExecutorServiceEx pool = Threads.newPoolBuilder()
 				.coreSize(1)
 				.maximumSize(1)
 				.queueSize(5)
@@ -145,5 +143,29 @@ class ThreadsTest {
 				.build();
 		assertNotNull(pool);
 		pool.shutdown();
+	}
+
+	@Test
+	void testThreadPoolBuilder_invalidCoreSize() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			Threads.newPoolBuilder()
+					.coreSize(0)
+					.maximumSize(2)
+					.queueSize(10)
+					.noJMX()
+					.build();
+		});
+	}
+
+	@Test
+	void testThreadPoolBuilder_invalidMaximumSize() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			Threads.newPoolBuilder()
+					.coreSize(4)
+					.maximumSize(2) // max < core
+					.queueSize(10)
+					.noJMX()
+					.build();
+		});
 	}
 }

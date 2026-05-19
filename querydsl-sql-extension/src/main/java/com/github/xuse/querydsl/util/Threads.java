@@ -2,13 +2,10 @@ package com.github.xuse.querydsl.util;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,8 +18,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -30,8 +25,6 @@ import javax.management.ObjectName;
 import com.github.xuse.querydsl.jmx.IntrospectedMXBean;
 import com.github.xuse.querydsl.util.Exceptions.WrapException;
 
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -113,12 +106,24 @@ public abstract class Threads {
 		}
 	}
 
+	/**
+	 * Notify a single thread waiting on the specified object.
+	 * <p>
+	 * 唤醒在指定对象上等待的单个线程。
+	 * @param obj the object to notify on / 锁所在的对象
+	 */
 	public static final void doNotify(Object obj) {
 		synchronized (obj) {
 			obj.notify();
 		}
 	}
 
+	/**
+	 * Notify all threads waiting on the specified object.
+	 * <p>
+	 * 唤醒在指定对象上等待的所有线程。
+	 * @param obj the object to notify on / 锁所在的对象
+	 */
 	public static final void doNotifyAll(Object obj) {
 		synchronized (obj) {
 			obj.notifyAll();
@@ -257,17 +262,26 @@ public abstract class Threads {
 	public static ExecutorServiceEx newFixedThreadPool(int coreSize, String threadNamePrefix) {
 		return wrapPoolEx(new ThreadPoolExecutor(coreSize, coreSize, 0L, TimeUnit.MILLISECONDS,
 				new LinkedBlockingQueue<Runnable>(coreSize * 2), threadFactory(threadNamePrefix),
-				new ThreadPoolExecutor.CallerRunsPolicy()));
+				new ThreadPoolExecutor.CallerRunsPolicy()),TaskDecorator.NONE, new PoolMetrics());
 	}
 
-	private static ExecutorServiceEx wrapPoolEx(final ThreadPoolExecutor pool) {
-		return new ExecutorServiceExImpl(pool);
+	private static ExecutorServiceEx wrapPoolEx(final ThreadPoolExecutor pool, TaskDecorator decorator, PoolMetrics metrics) {
+		return new ExecutorServiceExImpl(pool, decorator, metrics);
 	}
-	
+
+	/**
+	 * {@link ExecutorServiceEx} 的内部实现，委托给底层 {@link ThreadPoolExecutor}，
+	 * 并在任务提交时应用 {@link TaskDecorator} 和 {@link PoolMetrics} 采集。
+	 */
 	static final class ExecutorServiceExImpl extends AbstractExecutorService implements ExecutorServiceEx{
 		private final ExecutorService pool;
-		ExecutorServiceExImpl(ExecutorService pool){
+		private final TaskDecorator decorator;
+		private final PoolMetrics metrics;
+
+		ExecutorServiceExImpl(ExecutorService pool, TaskDecorator decorator, PoolMetrics metrics){
 			this.pool = pool;
+			this.decorator = decorator;
+			this.metrics = metrics;
 		}
 		@Override
 		public void shutdown() {
@@ -296,19 +310,19 @@ public abstract class Threads {
 
 		@Override
 		public void execute(Runnable command) {
-			pool.execute(command);
+			pool.execute(wrapWithMetrics(decorator.decorate(command)));
 		}
 		@Override
 		public Future<?> submit(Runnable task) {
-			return pool.submit(task);
+			return pool.submit(wrapWithMetrics(decorator.decorate(task)));
 		}
 		@Override
 		public <T> Future<T> submit(Runnable task, T result) {
-			return pool.submit(task, result);
+			return pool.submit(wrapWithMetrics(decorator.decorate(task)), result);
 		}
 		@Override
 		public <T> Future<T> submit(Callable<T> task) {
-			return pool.submit(task);
+			return pool.submit(wrapWithMetrics(decorator.decorate(task)));
 		}
 		@Override
 		public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
@@ -329,7 +343,32 @@ public abstract class Threads {
 				throws InterruptedException {
 			return pool.invokeAll(tasks, timeout, unit);
 		}
-		
+
+		private Runnable wrapWithMetrics(Runnable task) {
+			long enqueueTime = System.currentTimeMillis();
+			return () -> {
+				long start = System.currentTimeMillis();
+				try {
+					task.run();
+				} finally {
+					long now = System.currentTimeMillis();
+					metrics.recordCompleted(now - start, start - enqueueTime);
+				}
+			};
+		}
+
+		private <T> Callable<T> wrapWithMetrics(Callable<T> task) {
+			long enqueueTime = System.currentTimeMillis();
+			return () -> {
+				long start = System.currentTimeMillis();
+				try {
+					return task.call();
+				} finally {
+					long now = System.currentTimeMillis();
+					metrics.recordCompleted(now - start, start - enqueueTime);
+				}
+			};
+		}
 	}
 
 	/**
@@ -379,69 +418,6 @@ public abstract class Threads {
 	 */
 	public static ThreadPoolBuilder newPoolBuilder() {
 		return new ThreadPoolBuilder();
-	}
-	
-	public interface ExecutorServiceEx extends ExecutorService{
-		/**
-		 * 分批并发执行任务，控制最大并发度。每批任务全部完成后再提交下一批，不会额外占用线程池资源。
-		 * @implNote
-		 * 传入函数应自行处理执行异常。如某个任务异常，将不会添加到结果集List.
-		 * @param items 待处理的数据列表
-		 * @param task 将单个数据项转换为结果的函数
-		 * @param concurrencyLevel 最大并发数（每批提交的任务数）
-		 * @param <T> 输入类型
-		 * @param <R> 输出类型
-		 * @return 所有非null结果的列表（顺序不保证）
-		 */
-		default <T, R> List<R> batchSubmit(List<T> items, Function<T, R> task, int concurrencyLevel){
-			if (items == null || items.isEmpty()) {
-				return Collections.emptyList();
-			}
-			List<R> results = new ArrayList<>();
-			for (int i = 0; i < items.size(); i += concurrencyLevel) {
-				List<T> batch = items.subList(i, Math.min(i + concurrencyLevel, items.size()));
-				List<CompletableFuture<R>> futures = batch.stream()
-						.map(item -> CompletableFuture.supplyAsync(() -> task.apply(item), this))
-						.collect(Collectors.toList());
-				for (CompletableFuture<R> f : futures) {
-					try {
-						R result = f.join();
-						if (result != null) {
-							results.add(result);
-						}
-					} catch (Exception ex) {
-						log.error("Batch concurrent executing error", ex);
-					}
-				}
-			}
-			return results;
-		}
-
-		/**
-		 * 分批并发执行无返回值任务，控制最大并发度。
-		 * 
-		 * @implNote 失败的 item 会被跳过，仅记录日志
-		 * @param items            待处理的数据列表
-		 * @param task             处理单个数据项的逻辑
-		 * @param concurrencyLevel 最大并发数（每批提交的任务数）
-		 * @param <T>              输入类型
-		 */
-		default <T> void batchSubmit(List<T> items, java.util.function.Consumer<T> task, int concurrencyLevel) {
-			if (items == null || items.isEmpty()) {
-				return;
-			}
-			for (int i = 0; i < items.size(); i += concurrencyLevel) {
-				List<T> batch = items.subList(i, Math.min(i + concurrencyLevel, items.size()));
-				CompletableFuture<?>[] futures = batch.stream()
-						.map(item -> CompletableFuture.runAsync(() -> task.accept(item), this))
-						.toArray(CompletableFuture<?>[]::new);
-				try {
-					CompletableFuture.allOf(futures).join();
-				} catch (Exception ex) {
-					log.error("Batch concurrent executing error", ex);
-				}
-			}
-		}
 	}
 	
 	/**
@@ -533,73 +509,7 @@ public abstract class Threads {
         }
     }
     
-    @AllArgsConstructor
-	public static class PoolMonitor implements FrontPressurePoolMXBean {
-    	@NonNull
-    	private final ThreadPoolExecutor pool;
-    	@NonNull
-    	private final FrontPressureBlockingQueue<Runnable> queue;
-
-    	private String name;
-    	
-    	private int queueCapacity;
-    	
-		@Override
-		public int getCoreSize() {
-			return pool.getCorePoolSize();
-		}
-		@Override
-		public int getCurrentSize() {
-			return pool.getPoolSize();
-		}
-		@Override
-		public int getMaximumSize() {
-			return pool.getMaximumPoolSize();
-		}
-		@Override
-		public int getLargestSize() {
-			return pool.getLargestPoolSize();
-		}
-		@Override
-		public int getQueueLength() {
-			return queue.size();
-		}
-		@Override
-		public int getQueueMaximumLength() {
-			return queueCapacity;
-		}
-		@Override
-		public int getQueuePressureLength() {
-			return queue.pressureSize;
-		}
-		@Override
-		public int getActiveCount() {
-			return pool.getActiveCount();
-		}
-		@Override
-		public void setMaximumSize(int size) {
-			int from = pool.getMaximumPoolSize();
-			if (from > size) {
-				throw Exceptions.illegalArgument("RISK is too high to adjust pool size from {} to {} once in a PRD environment.", from, size);
-			}
-			pool.setMaximumPoolSize(size);
-		}
-		@Override
-		public void setCoreSize(int size) {
-			int max=pool.getMaximumPoolSize();
-			if (size > max) {
-				//调节不可以大于maximumSize
-				size = max;
-			}
-			int from = pool.getCorePoolSize(); 
-			if (from > size) {
-				throw Exceptions.illegalArgument("RISK is too high to adjust core pool size from {} to {} once in a PRD environment.", from, size);
-			}
-			pool.setCorePoolSize(size);
-		}
-    }
-
-	/**
+    /**
 	 * 构造器，用于创建一个在任务队列未满前开始扩容的线程池。
 	 */
 	public static class ThreadPoolBuilder {
@@ -610,6 +520,7 @@ public abstract class Threads {
 		private int queuePressureSize = 0;
 		private RejectedExecutionHandler rejectionHandler;
 		private ThreadPoolListener listener = ThreadPoolListener.EMPTY;
+		private TaskDecorator taskDecorator = TaskDecorator.NONE;
 		private boolean noJmx;
 
 		public ExecutorServiceEx build() {
@@ -634,16 +545,18 @@ public abstract class Threads {
 			if (rejectionHandler == null) {
 				rejectionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
 			}
+			PoolMetrics metrics = new PoolMetrics();
 			ThreadFactory factory = StringUtils.isEmpty(namePrefix) ? Executors.defaultThreadFactory()
 					: threadFactory(namePrefix);
 			FrontPressureBlockingQueue<Runnable> queue = new FrontPressureBlockingQueue<>(queueSize, queuePressureSize, listener);
+			queue.setMetrics(metrics);
 			ThreadPoolExecutor pool = new ThreadPoolExecutor(coreSize, maximumSize, 60L, TimeUnit.SECONDS, queue, factory,
-					new TempQueuedPolicy(queue, rejectionHandler));
+					new TempQueuedPolicy(queue, rejectionHandler, metrics));
 			if(!noJmx) {
-				PoolMonitor monitor=new PoolMonitor(pool, queue, namePrefix, queueSize);
+				PoolMonitor monitor=new PoolMonitor(pool, queue, namePrefix, queueSize, queuePressureSize, metrics);
 				registerJmx(monitor);	
 			}
-			return wrapPoolEx(pool);
+			return wrapPoolEx(pool, taskDecorator, metrics);
 		}
 
 		private void registerJmx(PoolMonitor monitor) {
@@ -669,6 +582,18 @@ public abstract class Threads {
 		 */
 		public ThreadPoolBuilder withListener(ThreadPoolListener listener) {
 			this.listener = listener;
+			return this;
+		}
+
+		/**
+		 * 设置任务装饰器，用于在任务执行前后传递上下文（如 MDC、SecurityContext）。
+		 * <p>
+		 * Set a task decorator for context propagation (e.g. MDC, SecurityContext).
+		 * @param decorator 任务装饰器
+		 * @return this
+		 */
+		public ThreadPoolBuilder taskDecorator(TaskDecorator decorator) {
+			this.taskDecorator = decorator == null ? TaskDecorator.NONE : decorator;
 			return this;
 		}
 		
@@ -755,6 +680,7 @@ public abstract class Threads {
 		private static final long serialVersionUID = 1L;
 		private final int pressureSize;
 		private final ThreadPoolListener listener;
+		private PoolMetrics metrics;
 
 		public FrontPressureBlockingQueue(int queueSize, int pressureSize,ThreadPoolListener listener) {
 			super(queueSize);
@@ -762,12 +688,18 @@ public abstract class Threads {
 			this.listener = listener;
 		}
 
+		void setMetrics(PoolMetrics metrics) {
+			this.metrics = metrics;
+		}
+
 		@Override
 		public boolean offer(E e) {
 			int size = size();
 			boolean result = size < pressureSize && super.offer(e);
 			if(result) {
-				 listener.onTaskAdd(size);
+				listener.onTaskAdd(size);
+			} else if (metrics != null) {
+				metrics.recordPressure();
 			}
 			return result;
 		}
@@ -776,6 +708,9 @@ public abstract class Threads {
 			boolean result=super.offer(e);
 			int size = size();
 			if (result) {
+				if (metrics != null) {
+					metrics.recordSaturated();
+				}
 				listener.onTaskForceAdd(size);
 			} else {
 				listener.onTaskReject(size);
@@ -787,17 +722,19 @@ public abstract class Threads {
 	static final class TempQueuedPolicy implements RejectedExecutionHandler {
 		private final FrontPressureBlockingQueue<Runnable> queue;
 		private final RejectedExecutionHandler nextRejectHandler;
+		private final PoolMetrics metrics;
 
 		public TempQueuedPolicy(FrontPressureBlockingQueue<Runnable> queue,
-				RejectedExecutionHandler nextRejectHandler) {
+				RejectedExecutionHandler nextRejectHandler, PoolMetrics metrics) {
 			this.queue = queue;
 			this.nextRejectHandler = nextRejectHandler;
+			this.metrics = metrics;
 		}
 
 		@Override
 		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 			if (!queue.offerWithoutPressure(r)) {
-				
+				metrics.recordRejected();
 				nextRejectHandler.rejectedExecution(r, executor);
 			}
 		}
