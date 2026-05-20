@@ -11,8 +11,9 @@ import com.querydsl.core.types.dsl.ComparableExpression;
  * @param <T> the type of the column
  */
 @FunctionalInterface
-public interface LambdaColumn<B,T extends Comparable<T>> extends Function<B, T>, LambdaColumnBase<B, T>,ExprComparable<T> {
+public interface LambdaColumn<B,T extends Comparable<?>> extends Function<B, T>, LambdaColumnBase<B, T>,ExprComparable<T> {
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	default ComparableExpression<T> mixin() {
-		return PathCache.getPathAsExpr(this);
+		return (ComparableExpression) PathCache.getPathAsExpr(this);
 	}
 }

@@ -30,25 +30,25 @@ public class LambdaQueryWrapper<T> extends LambdaQuery<T, T> {
 		return new LambdaQueryWrapper<>(table,new DefaultQueryMetadata());
 	}
 	
-	public <C extends Comparable<C>> LambdaQuery<T,C> selectSingleColumn(LambdaColumn<T, C> expr) {
+	public <C extends Comparable<?>> LambdaQuery<T,C> selectSingleColumn(LambdaColumn<T, C> expr) {
 		mixin.setProjection(expr);
 		LambdaQuery<T,C> ch=new LambdaQuery<>(table,mixin);
 		return ch;
 	}
 	
-	public <C extends Comparable<C>,X> LambdaQuery<T,X> selectSingleColumn(LambdaColumn<T, C> expr,Function<LambdaColumn<T, C>,Expression<X>> func) {
+	public <C extends Comparable<?>,X> LambdaQuery<T,X> selectSingleColumn(LambdaColumn<T, C> expr,Function<LambdaColumn<T, C>,Expression<X>> func) {
 		mixin.setProjection(func.apply(expr));
 		LambdaQuery<T,X> ch=new LambdaQuery<>(table,mixin);
 		return ch;
 	}
 	
-	public <K extends Comparable<K>,V extends Comparable<V>> LambdaQuery<T,Pair<K,V>> selectPair(LambdaColumn<T, K> expr1,LambdaColumn<T, V> expr2) {
+	public <K extends Comparable<?>,V extends Comparable<?>> LambdaQuery<T,Pair<K,V>> selectPair(LambdaColumn<T, K> expr1,LambdaColumn<T, V> expr2) {
 		mixin.setProjection(new QPair<K,V>(expr1,expr2));
 		LambdaQuery<T,Pair<K,V>> ch=new LambdaQuery<>(table,mixin);
 		return ch;
 	}
 	
-	public <K extends Comparable<K>,V extends Comparable<V>> LambdaQuery<T,Pair<K,V>> selectPair(Expression<K> expr1,Expression<V> expr2) {
+	public <K extends Comparable<?>,V extends Comparable<?>> LambdaQuery<T,Pair<K,V>> selectPair(Expression<K> expr1,Expression<V> expr2) {
 		mixin.setProjection(new QPair<K,V>(expr1,expr2));
 		LambdaQuery<T,Pair<K,V>> ch=new LambdaQuery<>(table,mixin);
 		return ch;

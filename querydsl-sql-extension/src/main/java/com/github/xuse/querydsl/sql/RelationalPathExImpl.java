@@ -277,7 +277,7 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <C extends Comparable<C>> ComparableExpression<C> get(LambdaColumn<T, C> column) {
+	public <C extends Comparable<?>> ComparableExpression<C> get(LambdaColumn<T, C> column) {
 		Pair<Class<?>, String> pair = Lambdas.analysis(column);
 		if (pair.getFirst() == this.getType()) {
 			// 应当相同

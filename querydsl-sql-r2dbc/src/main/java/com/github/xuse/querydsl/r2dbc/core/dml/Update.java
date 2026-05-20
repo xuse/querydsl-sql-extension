@@ -34,22 +34,22 @@ public class Update<E> extends SQLUpdateClauseAlter implements R2Clause,SQLConta
 		return new QueryBuilder<>((RelationalPath<E>)super.entity, meta, this);
 	}
 
-	public <T extends Comparable<T>> Update<E> set(LambdaColumn<E,T> path, T value) {
+	public <T extends Comparable<?>> Update<E> set(LambdaColumn<E,T> path, T value) {
 		super.set(path, value);
 		return this;
 	}
 	
-	public <T extends Comparable<T>> Update<E> set(LambdaColumn<E,T> path, Expression<T> value) {
+	public <T extends Comparable<?>> Update<E> set(LambdaColumn<E,T> path, Expression<T> value) {
 		super.set(path, value);
 		return this;
 	}
 	
-	public <T extends Comparable<T>> Update<E> setIf(boolean doSet, LambdaColumn<E,T> path, T value) {
+	public <T extends Comparable<?>> Update<E> setIf(boolean doSet, LambdaColumn<E,T> path, T value) {
 		setIf(doSet, (Path<T>)path, value);
 		return this;
 	}
 	
-	public <T extends Comparable<T>> Update<E> setIf(boolean doSet, LambdaColumn<E, T> path, Expression<? extends T> expression) {
+	public <T extends Comparable<?>> Update<E> setIf(boolean doSet, LambdaColumn<E, T> path, Expression<? extends T> expression) {
 		setIf(doSet, (Path<T>)path, expression);
 		return this;
 	}

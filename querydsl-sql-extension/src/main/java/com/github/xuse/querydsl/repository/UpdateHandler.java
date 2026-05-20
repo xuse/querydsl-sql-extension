@@ -19,17 +19,17 @@ public class UpdateHandler<B> {
 		this.update=update;
 	}
 	
-	public <C extends Comparable<C>> UpdateHandler<B> set(LambdaColumn<B, C> path, C value) {
+	public <C extends Comparable<?>> UpdateHandler<B> set(LambdaColumn<B, C> path, C value) {
 		update.set(path, value);
 		return this;
 	}
 	
-	protected <C extends Comparable<C>> UpdateHandler<B> set0(LambdaColumnBase<B, C> path, C value) {
+	protected <C extends Comparable<?>> UpdateHandler<B> set0(LambdaColumnBase<B, C> path, C value) {
 		update.set(path, value);
 		return this;
 	}
 	
-	public <C extends Comparable<C>> UpdateHandler<B> set(LambdaColumn<B, C> path, Expression<C> value) {
+	public <C extends Comparable<?>> UpdateHandler<B> set(LambdaColumn<B, C> path, Expression<C> value) {
 		update.set(path, value);
 		return this;
 	}
@@ -79,14 +79,14 @@ public class UpdateHandler<B> {
 		return this;
 	}
 	
-	public <C extends Comparable<C>> UpdateHandler<B> setIf(boolean mayDo,LambdaColumn<B, C> path, C value) {
+	public <C extends Comparable<?>> UpdateHandler<B> setIf(boolean mayDo,LambdaColumn<B, C> path, C value) {
 		if(mayDo) {
 			update.set(path, value);
 		}
 		return this;
 	}
 	
-	public <C extends Comparable<C>> UpdateHandler<B> setIf(boolean mayDo,LambdaColumn<B, C> path, Expression<C> value) {
+	public <C extends Comparable<?>> UpdateHandler<B> setIf(boolean mayDo,LambdaColumn<B, C> path, Expression<C> value) {
 		if(mayDo) {
 			update.set(path, value);
 		}

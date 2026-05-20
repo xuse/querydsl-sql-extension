@@ -127,25 +127,25 @@ public class QueryExecutor<T,R> extends QueryWrapper<T,R, QueryExecutor<T,R>> {
 	}
 	
 	
-	public <C extends Comparable<C>> QueryExecutor<T,C> selectSingleColumn(LambdaColumn<T, C> expr) {
+	public <C extends Comparable<?>> QueryExecutor<T,C> selectSingleColumn(LambdaColumn<T, C> expr) {
 		mixin.setProjection(expr);
 		QueryExecutor<T,C> ch=new QueryExecutor<>(this.table,mixin,this.repository);
 		return ch;
 	}
 	
-	public <C extends Comparable<C>,X> QueryExecutor<T,X> selectSingleColumn(LambdaColumn<T, C> expr,Function<LambdaColumn<T, C>,Expression<X>> func) {
+	public <C extends Comparable<?>,X> QueryExecutor<T,X> selectSingleColumn(LambdaColumn<T, C> expr,Function<LambdaColumn<T, C>,Expression<X>> func) {
 		mixin.setProjection(func.apply(expr));
 		QueryExecutor<T,X> ch=new QueryExecutor<>(table,mixin,repository);
 		return ch;
 	}
 	
-	public <K extends Comparable<K>,V extends Comparable<V>> QueryExecutor<T,Pair<K,V>> selectPair(LambdaColumn<T, K> expr1,LambdaColumn<T, V> expr2) {
+	public <K extends Comparable<?>,V extends Comparable<?>> QueryExecutor<T,Pair<K,V>> selectPair(LambdaColumn<T, K> expr1,LambdaColumn<T, V> expr2) {
 		mixin.setProjection(new QPair<K,V>(expr1,expr2));
 		QueryExecutor<T,Pair<K,V>> ch=new QueryExecutor<>(table,mixin,repository);
 		return ch;
 	}
 	
-	public <K extends Comparable<K>,V extends Comparable<V>> QueryExecutor<T,Pair<K,V>> selectPair(Expression<K> expr1,Expression<V> expr2) {
+	public <K extends Comparable<?>,V extends Comparable<?>> QueryExecutor<T,Pair<K,V>> selectPair(Expression<K> expr1,Expression<V> expr2) {
 		mixin.setProjection(new QPair<K,V>(expr1,expr2));
 		QueryExecutor<T,Pair<K,V>> ch=new QueryExecutor<>(table,mixin,repository);
 		return ch;

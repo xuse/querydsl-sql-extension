@@ -690,11 +690,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
         }
 	}
 
-	public <B,T extends Comparable<T>> SQLInsertClauseAlter set(LambdaColumn<B,T> path, T value) {
+	public <B,T extends Comparable<?>> SQLInsertClauseAlter set(LambdaColumn<B,T> path, T value) {
 		return super.set(path, value);
 	}
 	
-	public <B,T extends Comparable<T>> SQLInsertClauseAlter set(LambdaColumn<B,T> path, Expression<T> value) {
+	public <B,T extends Comparable<?>> SQLInsertClauseAlter set(LambdaColumn<B,T> path, Expression<T> value) {
 		return super.set(path, value);
 	}
 	

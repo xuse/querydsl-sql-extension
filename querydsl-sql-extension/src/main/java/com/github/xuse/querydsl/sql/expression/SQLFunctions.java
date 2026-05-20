@@ -7,11 +7,12 @@ import com.querydsl.core.types.dsl.Expressions;
 
 public class SQLFunctions {
 	
-	public static final <T extends Comparable<T>> ComparableExpression<T> ifnull(ComparableExpression<T> mixin, T other){
+	public static final <T extends Comparable<?>> ComparableExpression<T> ifnull(ComparableExpression<T> mixin, T other){
 		return ifnull(mixin,ConstantImpl.create(other));
 	}
 	
-	public static final <T extends Comparable<T>> ComparableExpression<T> ifnull(ComparableExpression<T> mixin, Expression<T> other){
-		return Expressions.comparableOperation(mixin.getType(),FunctionOps.IF_NULL, mixin, other);
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static final <T extends Comparable<?>> ComparableExpression<T> ifnull(ComparableExpression<T> mixin, Expression<T> other){
+		return (ComparableExpression) Expressions.comparableOperation(mixin.getType(),FunctionOps.IF_NULL, mixin, other);
 	}
 }

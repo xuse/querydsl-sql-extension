@@ -7,7 +7,7 @@ import com.querydsl.core.types.dsl.DateExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 
 public interface ExprDate<T extends Comparable<?>> extends ExprTemporal<T>{
-	
+
 	@SuppressWarnings("rawtypes")
 	DateExpression mixin();
 

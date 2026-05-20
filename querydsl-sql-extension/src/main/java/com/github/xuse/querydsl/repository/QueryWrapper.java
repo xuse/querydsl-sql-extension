@@ -64,27 +64,27 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain eq(LambdaColumn<T, C> column, C value) {
+	public <C extends Comparable<?>> Chain eq(LambdaColumn<T, C> column, C value) {
 		mixin.addWhere(column.eq(value));
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain ne(LambdaColumn<T, C> column, C value) {
+	public <C extends Comparable<?>> Chain ne(LambdaColumn<T, C> column, C value) {
 		mixin.addWhere(column.ne(value));
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain gt(LambdaColumn<T, C> column, C value) {
+	public <C extends Comparable<?>> Chain gt(LambdaColumn<T, C> column, C value) {
 		mixin.addWhere(column.gt(value));
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain ge(LambdaColumn<T, C> column, C value) {
+	public <C extends Comparable<?>> Chain ge(LambdaColumn<T, C> column, C value) {
 		mixin.addWhere(column.goe(value));
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain allEq(boolean condition, Map<LambdaColumn<T, C>, C> params, boolean null2IsNull) {
+	public <C extends Comparable<?>> Chain allEq(boolean condition, Map<LambdaColumn<T, C>, C> params, boolean null2IsNull) {
 		java.util.function.Predicate<Object> p = UnsavedValuePredicateFactory.NullOrEmpty;
 		if (condition && CollectionUtils.isNotEmpty(params)) {
 			params.forEach((k, v) -> {
@@ -100,7 +100,7 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain allEq(boolean condition, BiPredicate<LambdaColumn<T, C>, C> filter,
+	public <C extends Comparable<?>> Chain allEq(boolean condition, BiPredicate<LambdaColumn<T, C>, C> filter,
 			Map<LambdaColumn<T, C>, C> params, boolean null2IsNull) {
 		java.util.function.Predicate<Object> p = UnsavedValuePredicateFactory.NullOrEmpty;
 		if (condition && CollectionUtils.isNotEmpty(params)) {
@@ -119,22 +119,22 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain isNull(LambdaColumn<T, C> column) {
+	public <C extends Comparable<?>> Chain isNull(LambdaColumn<T, C> column) {
 		mixin.addWhere(column.isNull());
 		return typedThis;
 	}
 	
-	public <C extends Comparable<C>> Chain isNotNull(LambdaColumn<T, C> column) {
+	public <C extends Comparable<?>> Chain isNotNull(LambdaColumn<T, C> column) {
 		mixin.addWhere(column.isNotNull());
 		return typedThis;
 	}
 	
-	public <C extends Comparable<C>> Chain lt(LambdaColumn<T, C> column, C value) {
+	public <C extends Comparable<?>> Chain lt(LambdaColumn<T, C> column, C value) {
 		mixin.addWhere(column.lt(value));
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain le(LambdaColumn<T, C> column, C value) {
+	public <C extends Comparable<?>> Chain le(LambdaColumn<T, C> column, C value) {
 		mixin.addWhere(column.loe(value));
 		return typedThis;
 	}
@@ -179,7 +179,7 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 		return typedThis;
 	}
 
-	public <C extends Comparable<C>> Chain between(LambdaColumn<T, C> column, C value, C value2) {
+	public <C extends Comparable<?>> Chain between(LambdaColumn<T, C> column, C value, C value2) {
 		mixin.addWhere(column.between(value, value2));
 		return typedThis;
 	}
@@ -193,12 +193,12 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
 		return typedThis; 
 	}
 	
-	public <C extends Comparable<C>> Chain groupBy(LambdaColumn<T, C> column) {
+	public <C extends Comparable<?>> Chain groupBy(LambdaColumn<T, C> column) {
 		mixin.addGroupBy(column);
 		return typedThis; 
 	}
 	
-	public <C extends Comparable<C>,D extends Comparable<D>> Chain groupBy(LambdaColumn<T, C> c1,LambdaColumn<T, D> c2) {
+	public <C extends Comparable<?>,D extends Comparable<?>> Chain groupBy(LambdaColumn<T, C> c1,LambdaColumn<T, D> c2) {
 		mixin.addGroupBy(c1);
 		mixin.addGroupBy(c2);
 		return typedThis; 
@@ -233,12 +233,12 @@ public abstract class QueryWrapper<T,R,Chain extends QueryWrapper<T,R,Chain>> {
         }
     }
 	
-	public <C extends Comparable<C>> Chain orderByDesc(LambdaColumn<T, C> column) {
+	public <C extends Comparable<?>> Chain orderByDesc(LambdaColumn<T, C> column) {
 		mixin.addOrderBy(new OrderSpecifier<>(Order.DESC, column));
 		return typedThis; 
 	}
 	
-	public <C extends Comparable<C>> Chain orderByAsc(LambdaColumn<T, C> column) {
+	public <C extends Comparable<?>> Chain orderByAsc(LambdaColumn<T, C> column) {
 		mixin.addOrderBy(new OrderSpecifier<>(Order.ASC, column));
 		return typedThis; 
 	}

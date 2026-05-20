@@ -120,7 +120,7 @@ public class SelectBuilder<B> {
 		return this;
 	}
 	
-	public <C extends Comparable<C>> SelectComparableExpr<C> column(LambdaColumn<B,C> column) {
+	public <C extends Comparable<?>> SelectComparableExpr<C> column(LambdaColumn<B,C> column) {
 		return new SelectComparableExpr<>(column);
 	}
 	
@@ -255,10 +255,11 @@ public class SelectBuilder<B> {
 		}
 	}
 	
-	public class SelectComparableExpr<C extends Comparable<C>>{
+	public class SelectComparableExpr<C extends Comparable<?>>{
 		protected ComparableExpression<C> expr;
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		SelectComparableExpr(LambdaColumn<B,C> column){
-			this.expr=PathCache.getPathAsExpr(column);
+			this.expr=(ComparableExpression) PathCache.getPathAsExpr(column);
 		}
 		public CustomExpr to(Function<ComparableExpression<C>,SimpleExpression<?>> function) {
 			return new CustomExpr(function.apply(expr));

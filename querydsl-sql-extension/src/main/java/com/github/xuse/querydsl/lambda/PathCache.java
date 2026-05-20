@@ -79,13 +79,13 @@ public class PathCache {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static <B, T extends Comparable<T>> ComparableExpression<T> getPathAsExpr(LambdaColumn<B, T> func) {
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <B, T extends Comparable<?>> ComparableExpression<T> getPathAsExpr(LambdaColumn<B, T> func) {
 		Path<T> path=getPath(func);
 		if(path instanceof ComparableExpression){
 			return (ComparableExpression<T>)path;
 		}else {
-			return Expressions.asComparable(path);
+			return (ComparableExpression) Expressions.asComparable(path);
 		}
 	}
 

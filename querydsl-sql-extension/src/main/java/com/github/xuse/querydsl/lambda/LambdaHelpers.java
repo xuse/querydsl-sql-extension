@@ -47,7 +47,7 @@ public interface LambdaHelpers {
 	 * @param path the method reference / 方法引用
 	 * @return column model / 字段模型
 	 */
-	default <B, T extends Comparable<T>> LambdaColumn<B, T> $(LambdaColumn<B, T> path) {
+	default <B, T extends Comparable<?>> LambdaColumn<B, T> $(LambdaColumn<B, T> path) {
 		return path;
 	}
 	
@@ -59,7 +59,7 @@ public interface LambdaHelpers {
 	 * @param path the method reference / 方法引用
 	 * @return column model / 字段模型
 	 */
-	default <B, T extends Comparable<T>> LambdaColumn<B, T> column(LambdaColumn<B, T> path) {
+	default <B, T extends Comparable<?>> LambdaColumn<B, T> column(LambdaColumn<B, T> path) {
 		return path;
 	}
 	

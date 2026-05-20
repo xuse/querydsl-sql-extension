@@ -14,7 +14,7 @@ public interface TablePath<T> extends RelationalPathEx<T> {
 	
 	<C extends Number & Comparable<C>> NumberPath<C> get(NumberLambdaColumn<T,C> column);
 	
-	<C extends Comparable<C>> ComparableExpression<C> get(LambdaColumn<T, C> column);
+	<C extends Comparable<?>> ComparableExpression<C> get(LambdaColumn<T, C> column);
 	
 	default RelationalPathExImpl<T> forVariable(String variable){
     	@SuppressWarnings("unchecked")
