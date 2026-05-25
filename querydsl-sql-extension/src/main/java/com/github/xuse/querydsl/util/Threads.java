@@ -5,10 +5,10 @@ import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -24,6 +24,7 @@ import javax.management.ObjectName;
 
 import com.github.xuse.querydsl.jmx.IntrospectedMXBean;
 import com.github.xuse.querydsl.util.Exceptions.WrapException;
+import com.github.xuse.querydsl.util.ExecutorServiceEx.PoolExecutor;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -265,7 +266,7 @@ public abstract class Threads {
 				new ThreadPoolExecutor.CallerRunsPolicy()),TaskDecorator.NONE, new PoolMetrics());
 	}
 
-	private static ExecutorServiceEx wrapPoolEx(final ThreadPoolExecutor pool, TaskDecorator decorator, PoolMetrics metrics) {
+	private static PoolExecutor wrapPoolEx(final ThreadPoolExecutor pool, TaskDecorator decorator, PoolMetrics metrics) {
 		return new ExecutorServiceExImpl(pool, decorator, metrics);
 	}
 
@@ -273,12 +274,12 @@ public abstract class Threads {
 	 * {@link ExecutorServiceEx} 的内部实现，委托给底层 {@link ThreadPoolExecutor}，
 	 * 并在任务提交时应用 {@link TaskDecorator} 和 {@link PoolMetrics} 采集。
 	 */
-	static final class ExecutorServiceExImpl extends AbstractExecutorService implements ExecutorServiceEx{
-		private final ExecutorService pool;
+	static final class ExecutorServiceExImpl extends AbstractExecutorService implements ExecutorServiceEx,PoolExecutor{
+		private final ThreadPoolExecutor pool;
 		private final TaskDecorator decorator;
 		private final PoolMetrics metrics;
 
-		ExecutorServiceExImpl(ExecutorService pool, TaskDecorator decorator, PoolMetrics metrics){
+		ExecutorServiceExImpl(ThreadPoolExecutor pool, TaskDecorator decorator, PoolMetrics metrics){
 			this.pool = pool;
 			this.decorator = decorator;
 			this.metrics = metrics;
@@ -368,6 +369,20 @@ public abstract class Threads {
 					metrics.recordCompleted(now - start, start - enqueueTime);
 				}
 			};
+		}
+		@Override
+		public int getPoolSize() {
+			return pool.getPoolSize();
+		}
+		
+		@Override
+		public int getCorePoolSize() {
+			return pool.getCorePoolSize();
+		}
+		
+		@Override
+		public BlockingQueue<Runnable> getQueue() {
+			return pool.getQueue();
 		}
 	}
 
@@ -523,7 +538,7 @@ public abstract class Threads {
 		private TaskDecorator taskDecorator = TaskDecorator.NONE;
 		private boolean noJmx;
 
-		public ExecutorServiceEx build() {
+		public PoolExecutor build() {
 			if (coreSize <= 0) {
 				throw Exceptions.illegalArgument("Core size({}) must be positive.", coreSize);
 			}

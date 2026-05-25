@@ -3,11 +3,9 @@ package com.github.xuse.querydsl.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -16,45 +14,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 扩展的 ExecutorService 接口，提供带超时控制的任务提交和分批并发执行能力。
+ * 扩展的 ExecutorService 接口，提供分批并发执行能力。
  * <p>
- * Extended ExecutorService interface with timeout-aware submission and batch execution.
+ * Extended ExecutorService interface with batch concurrent execution.
  */
 public interface ExecutorServiceEx extends ExecutorService {
 
 	Logger log = LoggerFactory.getLogger(ExecutorServiceEx.class);
 
 	/**
-	 * 提交一个带超时控制的任务。超时后任务将被中断取消。
+	 * 优雅关闭线程池。先停止接受新任务，等待已提交任务完成；超时后强制终止。
 	 * <p>
-	 * Submit a task with timeout control. The task will be cancelled (interrupted) if it exceeds the timeout.
+	 * Gracefully shuts down the executor. Stops accepting new tasks and waits for
+	 * in-progress tasks to complete. If the timeout elapses, forces shutdown.
 	 *
-	 * @param <T>     返回值类型
-	 * @param task    待执行的任务
-	 * @param timeout 超时时间
-	 * @param unit    超时时间单位
-	 * @return Future 对象，可用于获取结果或检查状态
+	 * @param timeout 等待已提交任务完成的最大时间
+	 * @param unit    时间单位
+	 * @return {@code true} 如果所有任务在超时前完成；{@code false} 如果超时后被强制终止
 	 */
-	default <T> Future<T> submitWithTimeout(Callable<T> task, long timeout, TimeUnit unit) {
-		Future<T> future = submit(task);
-		ScheduledFuture<?> cancelTask = TimeoutScheduler.INSTANCE.schedule(
-				() -> future.cancel(true), timeout, unit);
-		return new TimeoutAwareFuture<>(future, cancelTask);
-	}
-
-	/**
-	 * 提交一个带超时控制的 Runnable 任务。超时后任务将被中断取消。
-	 *
-	 * @param task    待执行的任务
-	 * @param timeout 超时时间
-	 * @param unit    超时时间单位
-	 * @return Future 对象
-	 */
-	default Future<?> submitWithTimeout(Runnable task, long timeout, TimeUnit unit) {
-		Future<?> future = submit(task);
-		ScheduledFuture<?> cancelTask = TimeoutScheduler.INSTANCE.schedule(
-				() -> future.cancel(true), timeout, unit);
-		return new TimeoutAwareFuture<>(future, cancelTask);
+	default boolean shutdownGracefully(long timeout, TimeUnit unit) {
+		shutdown();
+		try {
+			if (!awaitTermination(timeout, unit)) {
+				shutdownNow();
+				return awaitTermination(timeout, unit);
+			}
+			return true;
+		} catch (InterruptedException e) {
+			shutdownNow();
+			Thread.currentThread().interrupt();
+			return false;
+		}
 	}
 
 	/**
@@ -189,5 +179,13 @@ public interface ExecutorServiceEx extends ExecutorService {
 		} catch (Exception ex) {
 			log.error("Batch concurrent executing error", ex);
 		}
+	}
+	
+	static interface PoolExecutor extends ExecutorServiceEx{
+		int getPoolSize();
+		
+		int getCorePoolSize();
+		
+		BlockingQueue<Runnable> getQueue();		
 	}
 }

@@ -17,7 +17,7 @@ public class QCaAsset extends RelationalPathBaseEx<CaAsset> {
 
 	public static final QCaAsset caAsset = new QCaAsset("as");
 	
-	public final NumberPath<Integer> id = createNumber("id", int.class);
+	public final NumberPath<Integer> id = createNumber("id", Integer.class);
 
 	public final StringPath code = createString("code");
 	

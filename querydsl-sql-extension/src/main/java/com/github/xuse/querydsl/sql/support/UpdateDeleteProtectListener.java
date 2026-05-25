@@ -78,7 +78,7 @@ public class UpdateDeleteProtectListener  extends SQLBaseListener {
 					List<Expression<?>> args= expr.getArgs();
 					// Reference identity check: same Path object on both sides means self-referencing.
 					// Accepts the risk that two distinct Path instances with same meaning won't be caught.
-					if(args.size()==2 && args.get(0)== args.get(1)){
+					if(args.size()==2 && args.get(0).equals(args.get(1)) ){
 						return null;
 					}
 					context[0]++;

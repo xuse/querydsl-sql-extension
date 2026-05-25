@@ -10,6 +10,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.jupiter.api.Test;
 
+import com.github.xuse.querydsl.util.ExecutorServiceEx.PoolExecutor;
+
 public class ThreadPoolTest {
 	/**
 	 * 正压线程池测试。
@@ -21,7 +23,7 @@ public class ThreadPoolTest {
 		Runnable task=()-> {
 			Threads.doSleep(1000);
 		};
-		ThreadPoolExecutor pool = Threads.newPoolBuilder()
+		PoolExecutor pool = Threads.newPoolBuilder()
 		.coreSize(1)
 		.maximumSize(5)
 		.queueSize(5)
