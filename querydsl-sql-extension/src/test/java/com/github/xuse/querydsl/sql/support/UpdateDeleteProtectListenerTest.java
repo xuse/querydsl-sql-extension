@@ -77,11 +77,12 @@ class UpdateDeleteProtectListenerTest {
 	}
 
 	@Test
-	@DisplayName("delete: OR of self-referencing EQ and valid condition should pass")
+	@DisplayName("delete: OR of self-referencing EQ and valid condition should be rejected (tautological branch)")
 	void deleteWithSelfEqOrValidCondition() {
 		QueryMetadata md = new DefaultQueryMetadata();
 		md.addWhere(t.id.eq(t.id).or(t.id.eq(1)));
-		assertDoesNotThrow(() -> listener.notifyDelete(t, md));
+		assertThrows(UnsupportedOperationException.class,
+				() -> listener.notifyDelete(t, md));
 	}
 
 	@Test
@@ -89,6 +90,14 @@ class UpdateDeleteProtectListenerTest {
 	void deleteWithSelfEqAndValidCondition() {
 		QueryMetadata md = new DefaultQueryMetadata();
 		md.addWhere(t.id.eq(t.id).and(t.id.gt(0)));
+		assertDoesNotThrow(() -> listener.notifyDelete(t, md));
+	}
+
+	@Test
+	@DisplayName("delete: OR of two valid conditions should pass")
+	void deleteWithOrBothValid() {
+		QueryMetadata md = new DefaultQueryMetadata();
+		md.addWhere(t.id.eq(1).or(t.id.eq(2)));
 		assertDoesNotThrow(() -> listener.notifyDelete(t, md));
 	}
 

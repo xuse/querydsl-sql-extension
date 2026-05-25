@@ -47,10 +47,10 @@ public class UpdateDeleteProtectListener  extends SQLBaseListener {
 	/**
 	 * Visitor that counts effective (non-tautological) conditions in a WHERE expression tree.
 	 * <p>
-	 * A self-referencing equality like {@code column.eq(column)} is detected by reference
-	 * identity ({@code ==}) and treated as a tautology (always-true), contributing zero to
-	 * the counter. Logical operators (AND, OR, NOT) are traversed recursively. Any other
-	 * operation increments the counter, indicating a meaningful condition exists.
+	 * A self-referencing equality like {@code column.eq(column)} is detected by
+	 * {@link Object#equals(Object)} and treated as a tautology (always-true), contributing
+	 * zero to the counter. Logical operators (AND, OR, NOT) are traversed recursively.
+	 * Any other operation increments the counter, indicating a meaningful condition exists.
 	 * </p>
 	 * <p>
 	 * Note: NOT(self-eq) is technically always-false and won't cause full-table operations,
@@ -76,17 +76,27 @@ public class UpdateDeleteProtectListener  extends SQLBaseListener {
 				switch(op) {
 				case EQ:
 					List<Expression<?>> args= expr.getArgs();
-					// Reference identity check: same Path object on both sides means self-referencing.
-					// Accepts the risk that two distinct Path instances with same meaning won't be caught.
-					if(args.size()==2 && args.get(0).equals(args.get(1)) ){
+					// Equality check: both sides represent the same expression (self-referencing).
+					if(args.size()==2 && args.get(0).equals(args.get(1))){
 						return null;
 					}
 					context[0]++;
 					break;
 				case OR:
+					// OR: each branch must independently contain an effective condition.
+					// If any branch has zero effective conditions (tautology), the whole OR is tautological.
+					for(Expression<?> e : expr.getArgs()) {
+						int[] branchCounter = new int[]{0};
+						e.accept(this, branchCounter);
+						if(branchCounter[0] == 0) {
+							return null;
+						}
+					}
+					context[0]++;
+					break;
 				case AND:
 				case NOT:
-					// Logical connectors: recurse into sub-expressions
+					// AND/NOT: recurse into sub-expressions, accumulate into same counter
 					expr.getArgs().forEach(e->e.accept(this, context));
 					break;
 				default:
@@ -110,11 +120,13 @@ public class UpdateDeleteProtectListener  extends SQLBaseListener {
 
 		@Override
 		public Void visit(SubQueryExpression<?> expr, @Nullable int[] context) {
+			context[0]++;
 			return null;
 		}
 
 		@Override
 		public Void visit(TemplateExpression<?> expr, @Nullable int[] context) {
+			context[0]++;
 			return null;
 		}
 		
