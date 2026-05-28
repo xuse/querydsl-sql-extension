@@ -2,11 +2,11 @@ package com.github.xuse.querydsl.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -15,6 +15,24 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link KVSplitter}.
  */
 class KVSplitterTest {
+	
+	@Test
+	void testStringElements() {
+		String str="303103754@CS-H90-V105-8H55WFL4G,311100033@AK-WA3,@AK-K5-V100,*@AK-K5-V100-BK6,*@AK-K5-V100-BK5,*@AK-K5-V100-WH6,*@AK-K5-V100-WH5,*@AK-D5-V100-BK,*@AK-D5-V100-WH";
+		List<Entry<String,String>> map= KVSplitter.on(',', '@').split(str).collect();
+		map.forEach(System.err::println);
+		assertEquals(9,map.size());
+	}
+	
+	@Test
+	void testStringElementMap() {
+		String str="303103754@CS-H90-V105-8H55WFL4G,311100033@AK-WA3,@AK-K5-V100,*@AK-D5-V100-WH";
+		Map<String,String> map= KVSplitter.on(',', '@').split(str).collect(HashMap::new);
+		assertEquals(4,map.size());
+		
+		map= KVSplitter.on(',', '@').split(str).ignoreEmptyKeys().collect(HashMap::new);
+		assertEquals(3,map.size());
+	}
 
 	@Test
 	void testBasicParsing() {

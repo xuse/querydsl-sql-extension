@@ -1,5 +1,7 @@
 package com.github.xuse.querydsl.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
@@ -9,11 +11,16 @@ import java.util.function.Supplier;
  * 对KV类型的字符串进行高效率解析的工具。
  */
 public class KVSplitter {
+	private static final IntUnaryOperator KEEP_INDEX = i -> i;
+	private static final Predicate<String> ACCEPT_ALL = s -> true;
+	private static final Predicate<String> NO_EMPTY = s -> s.length() > 0;
+    
     private String str;
     private int begin;
     private int len;
     private final char entrySep;
     private final char keyValueSep;
+    
     //Use to ignore chars before the key or value. By default, it ignores spaces.
     private IntUnaryOperator ignorePrevChars = (i) -> {
         while (str.charAt(i) == ' ') {
@@ -29,9 +36,7 @@ public class KVSplitter {
         return i;
     };
     
-	private Predicate<String> keyFilter = (s) -> true;
-    
-    private static final IntUnaryOperator KEEP_INDEX = (i) -> i;
+	private Predicate<String> keyFilter = ACCEPT_ALL;
 
     public static KVSplitter on(char entrySep, char kvSep) {
         KVSplitter p = new KVSplitter(entrySep, kvSep);
@@ -61,6 +66,11 @@ public class KVSplitter {
     	return this;
     }
     
+    public KVSplitter ignoreEmptyKeys() {
+		keyFilter = keyFilter == ACCEPT_ALL ? NO_EMPTY : keyFilter.and(NO_EMPTY);
+    	return this;
+    }
+    
 	public KVSplitter keyFilter(Predicate<String> filter) {
 		this.keyFilter = filter;
 		return this;
@@ -71,9 +81,6 @@ public class KVSplitter {
         try {
             String k;
             while ((k = nextKey()) != null) {
-                if (k.length() == 0) {
-                    continue;
-                }
                 if (keyFilter.test(k)) {
 					map.put(k, nextValue());
 				}else {
@@ -82,6 +89,28 @@ public class KVSplitter {
 				}
             }
             return map;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error parse map at '" + errorPosition() + "'", e);
+        }
+    }
+    
+    /**
+     * 支持解析成字符串对列表。可通过 {@link #ignoreEmptyKeys()} 或 {@link #keyFilter(Predicate)} 过滤不需要的key。
+     * @return List&lt;Entry&lt;String, String&gt;&gt;
+     */
+    public List<Entry<String, String>> collect() {
+    	List<Entry<String, String>> list = new ArrayList<>();
+    	try {
+            String k;
+            while ((k = nextKey()) != null) {
+                if (keyFilter.test(k)) {
+					list.add(new Entry<>(k, nextValue()));
+				}else {
+					//skip create the string object if the value is not used.
+					ignoreNextValue();
+				}
+            }
+            return list;
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parse map at '" + errorPosition() + "'", e);
         }
