@@ -6,9 +6,10 @@ import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
 
-	@SuppressWarnings("rawtypes")
+	
 	DateTimeExpression mixin();
 
     /**
@@ -16,7 +17,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return day of month
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> dayOfMonth() {
         return ((DateTimeExpression) mixin()).dayOfMonth();
     }
@@ -27,7 +27,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return day of week
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> dayOfWeek() {
     	  return ((DateTimeExpression) mixin()).dayOfWeek();
     }
@@ -38,7 +37,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return day of year
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> dayOfYear() {
     	return ((DateTimeExpression) mixin()).dayOfYear();
     }
@@ -48,7 +46,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return hour
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> hour() {
     	return ((DateTimeExpression) mixin()).hour();
     }
@@ -58,7 +55,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return max(this)
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> max() {
     	return ((DateTimeExpression) mixin()).max();
     }
@@ -69,7 +65,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return milli seconds
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> milliSecond() {
     	return ((DateTimeExpression) mixin()).milliSecond();
     }
@@ -79,7 +74,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return min(this)
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> min() {
     	return ((DateTimeExpression) mixin()).min();
     }
@@ -89,7 +83,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return minute
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> minute() {
     	return ((DateTimeExpression) mixin()).minute();
     }
@@ -99,7 +92,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return month
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> month() {
     	return ((DateTimeExpression) mixin()).month();
     }
@@ -109,7 +101,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return second
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> second() {
     	return ((DateTimeExpression) mixin()).second();
     }
@@ -119,7 +110,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return week
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> week() {
     	return ((DateTimeExpression) mixin()).week();
     }
@@ -129,7 +119,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return year
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> year() {
     	return ((DateTimeExpression) mixin()).year();
     }
@@ -139,7 +128,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return year month
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> yearMonth() {
     	return ((DateTimeExpression) mixin()).yearMonth();
     }
@@ -149,7 +137,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      *
      * @return year week
      */
-	@SuppressWarnings("rawtypes")
     default NumberExpression<Integer> yearWeek() {
     	return ((DateTimeExpression) mixin()).yearWeek();
     }
@@ -160,7 +147,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      * @param other
      * @return nullif(this, other)
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> nullif(Expression<T> other) {
     	return ((DateTimeExpression) mixin()).nullif(other);
     }
@@ -181,7 +167,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      * @param expr additional argument
      * @return coalesce
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> coalesce(Expression<T> expr) {
     	return ((DateTimeExpression) mixin()).coalesce(expr);
     }
@@ -192,7 +177,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      * @param exprs additional arguments
      * @return coalesce
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> coalesce(Expression<?>... exprs) {
     	return ((DateTimeExpression) mixin()).coalesce(exprs);
     }
@@ -203,7 +187,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      * @param arg additional argument
      * @return coalesce
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> coalesce(T arg) {
     	return ((DateTimeExpression) mixin()).coalesce(arg);
     }
@@ -214,7 +197,6 @@ public interface ExprDateTime<T extends Comparable<?>> extends ExprTemporal<T> {
      * @param args additional arguments
      * @return coalesce
      */
-	@SuppressWarnings({"unchecked", "rawtypes"})
     default ComparableExpression<T> coalesce(T... args) {
     	return ((DateTimeExpression) mixin()).coalesce(args);
     }

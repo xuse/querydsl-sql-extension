@@ -23,7 +23,7 @@ import com.querydsl.core.types.dsl.SimpleExpression;
  * @author Joey
  * @param <T> the type of path.
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings({"unchecked"})
 public interface ExprComparable<T extends Comparable<?>> extends Expression<T> {
 	ComparableExpression<T> mixin();
 

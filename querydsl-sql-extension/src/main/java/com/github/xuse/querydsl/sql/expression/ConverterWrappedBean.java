@@ -9,6 +9,7 @@ import java.util.function.Function;
 import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
+import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.collection.MapCreator;
 import com.querydsl.core.types.Path;
 import com.querydsl.sql.RelationalPath;
@@ -199,7 +200,11 @@ public class ConverterWrappedBean {
 				// DTO has no field for this entity column
 				result[i] = NOT_AVAILABLE;
 			} else {
-				result[i] = slot.writeConverter.apply(dtoValues[slot.dtoFieldIndex]);
+				try {
+					result[i] = slot.writeConverter.apply(dtoValues[slot.dtoFieldIndex]);	
+				}catch(RuntimeException e) {
+					throw Exceptions.illegalState("DTO value converter fail on field: {}",slot.name,e);
+				}
 			}
 		}
 		return result;
@@ -251,7 +256,7 @@ public class ConverterWrappedBean {
 			PathBinder pathBinder = field.getAnnotation(PathBinder.class);
 			Class<?> columnType = columns.get(c).getType();
 			Function writeConverter = resolveWriteConverter(dtoType, pathBinder == null ? BuiltinConverters.DEFAULT_PATH_BINDER : pathBinder, field, columnType);
-			slots[c] = new FieldSlot(fieldIndex, writeConverter);
+			slots[c] = new FieldSlot(fieldIndex, writeConverter, field.getName());
 		}
 		DtoMappingInfo info = new DtoMappingInfo(codec, slots);
 		MAPPING_CACHE.put(key, info);
@@ -396,11 +401,14 @@ public class ConverterWrappedBean {
 		/** Write converter (Function.identity() if no conversion needed). Never null. */
 		@SuppressWarnings("rawtypes")
 		final Function writeConverter;
+		
+		final String name;
 
 		@SuppressWarnings("rawtypes")
-		FieldSlot(int dtoFieldIndex, Function writeConverter) {
+		FieldSlot(int dtoFieldIndex, Function writeConverter, String name) {
 			this.dtoFieldIndex = dtoFieldIndex;
 			this.writeConverter = writeConverter;
+			this.name = name;
 		}
 	}
 }

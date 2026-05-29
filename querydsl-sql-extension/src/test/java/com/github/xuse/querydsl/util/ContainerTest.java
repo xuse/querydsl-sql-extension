@@ -54,15 +54,15 @@ public class ContainerTest {
 		map.put("2", "b");
 		map.put("3", "b");
 		map.put("4", "b");
-		map.put("5", "b");
-		map.put("6", "b");
+		// Now size=6 (a, b, 1, 2, 3, 4), which equals maxSize (75% of 8 = 6)
+		assertEquals(6, map.size());
 		try {
 			// CacheMap has capacity limit (75% of 8 = 6), 7th element should throw
-			map.put("7", "b");
+			map.put("5", "b");
 			fail("Should have thrown");
 		}catch(IllegalStateException e) {
 		}
-		assertFalse(map.containsKey("7"));
+		assertFalse(map.containsKey("5"));
 	}
 	
 	@Test

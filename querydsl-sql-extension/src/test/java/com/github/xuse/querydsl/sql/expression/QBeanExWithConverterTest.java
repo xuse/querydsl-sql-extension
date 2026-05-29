@@ -162,9 +162,9 @@ class QBeanExWithConverterTest {
 		// Verify codeTypeX value is mapped to codeType path
 		Path<?> codeTypePath = fooPath.getColumn("codeType");
 		assertNotNull(codeTypePath);
-		// Without writeConverter, the String "99" is passed as-is
+		// writeConverter converts String "99" to int 99 via built-in String->int converter
 		assertTrue(map.containsKey(codeTypePath), "codeType path should be in the map");
-		assertEquals("99", map.get(codeTypePath));
+		assertEquals(99, map.get(codeTypePath));
 
 		// Verify normal fields are mapped correctly
 		Path<?> codePath = fooPath.getColumn("code");
@@ -237,7 +237,7 @@ class QBeanExWithConverterTest {
 				case "code": assertEquals("BATCH-01", values[i]); break;
 				case "name": assertEquals("Batch Test", values[i]); break;
 				case "volume": assertEquals(77, values[i]); break;
-				case "codeType": assertEquals("55", values[i]); break; // @PathBinder remapped from codeTypeX
+				case "codeType": assertEquals(55, values[i]); break; // @PathBinder remapped from codeTypeX, String "55" -> int 55
 			}
 		}
 	}

@@ -42,167 +42,167 @@ public final class BuiltinConverters {
 	private static final Map<ClassPairKey, Function<?, ?>> CONVERTERS = new HashMap<>();
 
 	static {
-		// String -> numeric
-		register(String.class, int.class, s -> Integer.parseInt((String) s));
-		register(String.class, Integer.class, s -> Integer.valueOf((String) s));
-		register(String.class, long.class, s -> Long.parseLong((String) s));
-		register(String.class, Long.class, s -> Long.valueOf((String) s));
-		register(String.class, double.class, s -> Double.parseDouble((String) s));
-		register(String.class, Double.class, s -> Double.valueOf((String) s));
-		register(String.class, float.class, s -> Float.parseFloat((String) s));
-		register(String.class, Float.class, s -> Float.valueOf((String) s));
-		register(String.class, short.class, s -> Short.parseShort((String) s));
-		register(String.class, Short.class, s -> Short.valueOf((String) s));
-		register(String.class, boolean.class, s -> Boolean.parseBoolean((String) s));
-		register(String.class, Boolean.class, s -> Boolean.valueOf((String) s));
+		// String -> numeric (null-safe: String is reference type, may be null)
+		register(String.class, int.class, s -> s == null ? null : Integer.parseInt((String) s));
+		register(String.class, Integer.class, s -> s == null ? null : Integer.valueOf((String) s));
+		register(String.class, long.class, s -> s == null ? null : Long.parseLong((String) s));
+		register(String.class, Long.class, s -> s == null ? null : Long.valueOf((String) s));
+		register(String.class, double.class, s -> s == null ? null : Double.parseDouble((String) s));
+		register(String.class, Double.class, s -> s == null ? null : Double.valueOf((String) s));
+		register(String.class, float.class, s -> s == null ? null : Float.parseFloat((String) s));
+		register(String.class, Float.class, s -> s == null ? null : Float.valueOf((String) s));
+		register(String.class, short.class, s -> s == null ? null : Short.parseShort((String) s));
+		register(String.class, Short.class, s -> s == null ? null : Short.valueOf((String) s));
+		register(String.class, boolean.class, s -> s == null ? null : Boolean.parseBoolean((String) s));
+		register(String.class, Boolean.class, s -> s == null ? null : Boolean.valueOf((String) s));
 
-		// Numeric -> String
-		register(Integer.class, String.class, n -> String.valueOf(n));
+		// Numeric -> String (null-safe: boxed types may be null)
+		register(Integer.class, String.class, n -> n == null ? null : String.valueOf(n));
 		register(int.class, String.class, n -> String.valueOf(n));
-		register(Long.class, String.class, n -> String.valueOf(n));
+		register(Long.class, String.class, n -> n == null ? null : String.valueOf(n));
 		register(long.class, String.class, n -> String.valueOf(n));
-		register(Double.class, String.class, n -> String.valueOf(n));
+		register(Double.class, String.class, n -> n == null ? null : String.valueOf(n));
 		register(double.class, String.class, n -> String.valueOf(n));
-		register(Float.class, String.class, n -> String.valueOf(n));
+		register(Float.class, String.class, n -> n == null ? null : String.valueOf(n));
 		register(float.class, String.class, n -> String.valueOf(n));
-		register(Short.class, String.class, n -> String.valueOf(n));
+		register(Short.class, String.class, n -> n == null ? null : String.valueOf(n));
 		register(short.class, String.class, n -> String.valueOf(n));
-		register(Boolean.class, String.class, n -> String.valueOf(n));
+		register(Boolean.class, String.class, n -> n == null ? null : String.valueOf(n));
 		register(boolean.class, String.class, n -> String.valueOf(n));
 
-		// Integer <-> Long
-		register(Integer.class, long.class, n -> ((Integer) n).longValue());
-		register(Integer.class, Long.class, n -> ((Integer) n).longValue());
+		// Integer <-> Long (null-safe for boxed source)
+		register(Integer.class, long.class, n -> n == null ? null : ((Integer) n).longValue());
+		register(Integer.class, Long.class, n -> n == null ? null : ((Integer) n).longValue());
 		register(int.class, long.class, n -> ((Integer) n).longValue());
 		register(int.class, Long.class, n -> ((Integer) n).longValue());
-		register(Long.class, int.class, n -> ((Long) n).intValue());
-		register(Long.class, Integer.class, n -> ((Long) n).intValue());
+		register(Long.class, int.class, n -> n == null ? null : ((Long) n).intValue());
+		register(Long.class, Integer.class, n -> n == null ? null : ((Long) n).intValue());
 		register(long.class, int.class, n -> ((Long) n).intValue());
 		register(long.class, Integer.class, n -> ((Long) n).intValue());
 
-		// Integer <-> Double
-		register(Integer.class, double.class, n -> ((Integer) n).doubleValue());
-		register(Integer.class, Double.class, n -> ((Integer) n).doubleValue());
+		// Integer <-> Double (null-safe for boxed source)
+		register(Integer.class, double.class, n -> n == null ? null : ((Integer) n).doubleValue());
+		register(Integer.class, Double.class, n -> n == null ? null : ((Integer) n).doubleValue());
 		register(int.class, double.class, n -> ((Integer) n).doubleValue());
 		register(int.class, Double.class, n -> ((Integer) n).doubleValue());
-		register(Double.class, int.class, n -> ((Double) n).intValue());
-		register(Double.class, Integer.class, n -> ((Double) n).intValue());
+		register(Double.class, int.class, n -> n == null ? null : ((Double) n).intValue());
+		register(Double.class, Integer.class, n -> n == null ? null : ((Double) n).intValue());
 		register(double.class, int.class, n -> ((Double) n).intValue());
 		register(double.class, Integer.class, n -> ((Double) n).intValue());
 
-		// Integer <-> Float
-		register(Integer.class, float.class, n -> ((Integer) n).floatValue());
-		register(Integer.class, Float.class, n -> ((Integer) n).floatValue());
+		// Integer <-> Float (null-safe for boxed source)
+		register(Integer.class, float.class, n -> n == null ? null : ((Integer) n).floatValue());
+		register(Integer.class, Float.class, n -> n == null ? null : ((Integer) n).floatValue());
 		register(int.class, float.class, n -> ((Integer) n).floatValue());
 		register(int.class, Float.class, n -> ((Integer) n).floatValue());
-		register(Float.class, int.class, n -> ((Float) n).intValue());
-		register(Float.class, Integer.class, n -> ((Float) n).intValue());
+		register(Float.class, int.class, n -> n == null ? null : ((Float) n).intValue());
+		register(Float.class, Integer.class, n -> n == null ? null : ((Float) n).intValue());
 		register(float.class, int.class, n -> ((Float) n).intValue());
 		register(float.class, Integer.class, n -> ((Float) n).intValue());
 
-		// Integer <-> Short
-		register(Integer.class, short.class, n -> ((Integer) n).shortValue());
-		register(Integer.class, Short.class, n -> ((Integer) n).shortValue());
+		// Integer <-> Short (null-safe for boxed source)
+		register(Integer.class, short.class, n -> n == null ? null : ((Integer) n).shortValue());
+		register(Integer.class, Short.class, n -> n == null ? null : ((Integer) n).shortValue());
 		register(int.class, short.class, n -> ((Integer) n).shortValue());
 		register(int.class, Short.class, n -> ((Integer) n).shortValue());
-		register(Short.class, int.class, n -> ((Short) n).intValue());
-		register(Short.class, Integer.class, n -> ((Short) n).intValue());
+		register(Short.class, int.class, n -> n == null ? null : ((Short) n).intValue());
+		register(Short.class, Integer.class, n -> n == null ? null : ((Short) n).intValue());
 		register(short.class, int.class, n -> ((Short) n).intValue());
 		register(short.class, Integer.class, n -> ((Short) n).intValue());
 
-		// Long <-> Double
-		register(Long.class, double.class, n -> ((Long) n).doubleValue());
-		register(Long.class, Double.class, n -> ((Long) n).doubleValue());
+		// Long <-> Double (null-safe for boxed source)
+		register(Long.class, double.class, n -> n == null ? null : ((Long) n).doubleValue());
+		register(Long.class, Double.class, n -> n == null ? null : ((Long) n).doubleValue());
 		register(long.class, double.class, n -> ((Long) n).doubleValue());
 		register(long.class, Double.class, n -> ((Long) n).doubleValue());
-		register(Double.class, long.class, n -> ((Double) n).longValue());
-		register(Double.class, Long.class, n -> ((Double) n).longValue());
+		register(Double.class, long.class, n -> n == null ? null : ((Double) n).longValue());
+		register(Double.class, Long.class, n -> n == null ? null : ((Double) n).longValue());
 		register(double.class, long.class, n -> ((Double) n).longValue());
 		register(double.class, Long.class, n -> ((Double) n).longValue());
 
-		// Long <-> Float
-		register(Long.class, float.class, n -> ((Long) n).floatValue());
-		register(Long.class, Float.class, n -> ((Long) n).floatValue());
+		// Long <-> Float (null-safe for boxed source)
+		register(Long.class, float.class, n -> n == null ? null : ((Long) n).floatValue());
+		register(Long.class, Float.class, n -> n == null ? null : ((Long) n).floatValue());
 		register(long.class, float.class, n -> ((Long) n).floatValue());
 		register(long.class, Float.class, n -> ((Long) n).floatValue());
-		register(Float.class, long.class, n -> ((Float) n).longValue());
-		register(Float.class, Long.class, n -> ((Float) n).longValue());
+		register(Float.class, long.class, n -> n == null ? null : ((Float) n).longValue());
+		register(Float.class, Long.class, n -> n == null ? null : ((Float) n).longValue());
 		register(float.class, long.class, n -> ((Float) n).longValue());
 		register(float.class, Long.class, n -> ((Float) n).longValue());
 
-		// Long <-> Short
-		register(Long.class, short.class, n -> ((Long) n).shortValue());
-		register(Long.class, Short.class, n -> ((Long) n).shortValue());
+		// Long <-> Short (null-safe for boxed source)
+		register(Long.class, short.class, n -> n == null ? null : ((Long) n).shortValue());
+		register(Long.class, Short.class, n -> n == null ? null : ((Long) n).shortValue());
 		register(long.class, short.class, n -> ((Long) n).shortValue());
 		register(long.class, Short.class, n -> ((Long) n).shortValue());
-		register(Short.class, long.class, n -> ((Short) n).longValue());
-		register(Short.class, Long.class, n -> ((Short) n).longValue());
+		register(Short.class, long.class, n -> n == null ? null : ((Short) n).longValue());
+		register(Short.class, Long.class, n -> n == null ? null : ((Short) n).longValue());
 		register(short.class, long.class, n -> ((Short) n).longValue());
 		register(short.class, Long.class, n -> ((Short) n).longValue());
 
-		// Float <-> Double
-		register(Float.class, double.class, n -> ((Float) n).doubleValue());
-		register(Float.class, Double.class, n -> ((Float) n).doubleValue());
+		// Float <-> Double (null-safe for boxed source)
+		register(Float.class, double.class, n -> n == null ? null : ((Float) n).doubleValue());
+		register(Float.class, Double.class, n -> n == null ? null : ((Float) n).doubleValue());
 		register(float.class, double.class, n -> ((Float) n).doubleValue());
 		register(float.class, Double.class, n -> ((Float) n).doubleValue());
-		register(Double.class, float.class, n -> ((Double) n).floatValue());
-		register(Double.class, Float.class, n -> ((Double) n).floatValue());
+		register(Double.class, float.class, n -> n == null ? null : ((Double) n).floatValue());
+		register(Double.class, Float.class, n -> n == null ? null : ((Double) n).floatValue());
 		register(double.class, float.class, n -> ((Double) n).floatValue());
 		register(double.class, Float.class, n -> ((Double) n).floatValue());
 
-		// Float <-> Short
-		register(Float.class, short.class, n -> ((Float) n).shortValue());
-		register(Float.class, Short.class, n -> ((Float) n).shortValue());
+		// Float <-> Short (null-safe for boxed source)
+		register(Float.class, short.class, n -> n == null ? null : ((Float) n).shortValue());
+		register(Float.class, Short.class, n -> n == null ? null : ((Float) n).shortValue());
 		register(float.class, short.class, n -> ((Float) n).shortValue());
 		register(float.class, Short.class, n -> ((Float) n).shortValue());
-		register(Short.class, float.class, n -> ((Short) n).floatValue());
-		register(Short.class, Float.class, n -> ((Short) n).floatValue());
+		register(Short.class, float.class, n -> n == null ? null : ((Short) n).floatValue());
+		register(Short.class, Float.class, n -> n == null ? null : ((Short) n).floatValue());
 		register(short.class, float.class, n -> ((Short) n).floatValue());
 		register(short.class, Float.class, n -> ((Short) n).floatValue());
 
-		// Double <-> Short
-		register(Double.class, short.class, n -> ((Double) n).shortValue());
-		register(Double.class, Short.class, n -> ((Double) n).shortValue());
+		// Double <-> Short (null-safe for boxed source)
+		register(Double.class, short.class, n -> n == null ? null : ((Double) n).shortValue());
+		register(Double.class, Short.class, n -> n == null ? null : ((Double) n).shortValue());
 		register(double.class, short.class, n -> ((Double) n).shortValue());
 		register(double.class, Short.class, n -> ((Double) n).shortValue());
-		register(Short.class, double.class, n -> ((Short) n).doubleValue());
-		register(Short.class, Double.class, n -> ((Short) n).doubleValue());
+		register(Short.class, double.class, n -> n == null ? null : ((Short) n).doubleValue());
+		register(Short.class, Double.class, n -> n == null ? null : ((Short) n).doubleValue());
 		register(short.class, double.class, n -> ((Short) n).doubleValue());
 		register(short.class, Double.class, n -> ((Short) n).doubleValue());
 
-		// String <-> java.sql.Date (ISO format: yyyy-MM-dd)
-		register(String.class, java.sql.Date.class, s -> java.sql.Date.valueOf((String) s));
-		register(java.sql.Date.class, String.class, d -> ((java.sql.Date) d).toString());
+		// String <-> java.sql.Date (null-safe)
+		register(String.class, java.sql.Date.class, s -> s == null ? null : java.sql.Date.valueOf((String) s));
+		register(java.sql.Date.class, String.class, d -> d == null ? null : ((java.sql.Date) d).toString());
 
-		// String <-> java.sql.Timestamp (ISO format: yyyy-MM-dd HH:mm:ss[.fffffffff])
-		register(String.class, java.sql.Timestamp.class, s -> java.sql.Timestamp.valueOf((String) s));
-		register(java.sql.Timestamp.class, String.class, t -> ((java.sql.Timestamp) t).toString());
+		// String <-> java.sql.Timestamp (null-safe)
+		register(String.class, java.sql.Timestamp.class, s -> s == null ? null : java.sql.Timestamp.valueOf((String) s));
+		register(java.sql.Timestamp.class, String.class, t -> t == null ? null : ((java.sql.Timestamp) t).toString());
 
-		// String <-> java.sql.Time (ISO format: HH:mm:ss)
-		register(String.class, java.sql.Time.class, s -> java.sql.Time.valueOf((String) s));
-		register(java.sql.Time.class, String.class, t -> ((java.sql.Time) t).toString());
+		// String <-> java.sql.Time (null-safe)
+		register(String.class, java.sql.Time.class, s -> s == null ? null : java.sql.Time.valueOf((String) s));
+		register(java.sql.Time.class, String.class, t -> t == null ? null : ((java.sql.Time) t).toString());
 
-		// long <-> java.sql.Date (millis since epoch)
-		register(Long.class, java.sql.Date.class, n -> new java.sql.Date(((Long) n).longValue()));
+		// long <-> java.sql.Date (null-safe for boxed Long source)
+		register(Long.class, java.sql.Date.class, n -> n == null ? null : new java.sql.Date(((Long) n).longValue()));
 		register(long.class, java.sql.Date.class, n -> new java.sql.Date(((Long) n).longValue()));
-		register(java.sql.Date.class, Long.class, d -> ((java.sql.Date) d).getTime());
-		register(java.sql.Date.class, long.class, d -> ((java.sql.Date) d).getTime());
+		register(java.sql.Date.class, Long.class, d -> d == null ? null : ((java.sql.Date) d).getTime());
+		register(java.sql.Date.class, long.class, d -> d == null ? null : ((java.sql.Date) d).getTime());
 
-		// long <-> java.sql.Timestamp (millis since epoch)
-		register(Long.class, java.sql.Timestamp.class, n -> new java.sql.Timestamp(((Long) n).longValue()));
+		// long <-> java.sql.Timestamp (null-safe for boxed/reference source)
+		register(Long.class, java.sql.Timestamp.class, n -> n == null ? null : new java.sql.Timestamp(((Long) n).longValue()));
 		register(long.class, java.sql.Timestamp.class, n -> new java.sql.Timestamp(((Long) n).longValue()));
-		register(java.sql.Timestamp.class, Long.class, t -> ((java.sql.Timestamp) t).getTime());
-		register(java.sql.Timestamp.class, long.class, t -> ((java.sql.Timestamp) t).getTime());
+		register(java.sql.Timestamp.class, Long.class, t -> t == null ? null : ((java.sql.Timestamp) t).getTime());
+		register(java.sql.Timestamp.class, long.class, t -> t == null ? null : ((java.sql.Timestamp) t).getTime());
 
-		// long <-> java.util.Date (millis since epoch)
-		register(Long.class, java.util.Date.class, n -> new java.util.Date(((Long) n).longValue()));
+		// long <-> java.util.Date (null-safe for boxed/reference source)
+		register(Long.class, java.util.Date.class, n -> n == null ? null : new java.util.Date(((Long) n).longValue()));
 		register(long.class, java.util.Date.class, n -> new java.util.Date(((Long) n).longValue()));
-		register(java.util.Date.class, Long.class, d -> ((java.util.Date) d).getTime());
-		register(java.util.Date.class, long.class, d -> ((java.util.Date) d).getTime());
+		register(java.util.Date.class, Long.class, d -> d == null ? null : ((java.util.Date) d).getTime());
+		register(java.util.Date.class, long.class, d -> d == null ? null : ((java.util.Date) d).getTime());
 
-		// String <-> java.util.Date (ISO format via java.sql.Timestamp as intermediary)
-		register(String.class, java.util.Date.class, s -> new java.util.Date(java.sql.Timestamp.valueOf((String) s).getTime()));
-		register(java.util.Date.class, String.class, d -> new java.sql.Timestamp(((java.util.Date) d).getTime()).toString());
+		// String <-> java.util.Date (null-safe)
+		register(String.class, java.util.Date.class, s -> s == null ? null : new java.util.Date(java.sql.Timestamp.valueOf((String) s).getTime()));
+		register(java.util.Date.class, String.class, d -> d == null ? null : new java.sql.Timestamp(((java.util.Date) d).getTime()).toString());
 	}
 
 	/**

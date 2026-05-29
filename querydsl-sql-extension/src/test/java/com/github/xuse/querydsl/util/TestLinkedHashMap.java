@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.util.collection.FastHashtable;
-import com.github.xuse.querydsl.util.collection.CacheMap;
 
 @SuppressWarnings("unused")
 public class TestLinkedHashMap {
@@ -35,8 +34,6 @@ public class TestLinkedHashMap {
 		Map<String, String> map0 = new LinkedHashMap<>(SIZE);
 		//测试目标
 		FastHashtable< String> map1 = new FastHashtable<>(SIZE);
-		//对照组
-		Map<String, String> map3 = new CacheMap<>(SIZE);
 
 		String s;
 		
@@ -75,23 +72,6 @@ public class TestLinkedHashMap {
 			}
 			System.out.println((System.currentTimeMillis() - time) + "ms (MyLinkedMap Write)");
 		}
-		{
-			long time = System.currentTimeMillis();
-			Map<String, String> map = map3;
-
-			for (int j = 0; j < LOOP_TIMES; j++) {
-				map.clear();
-				for (int i = 0; i < list.size(); i++) {
-					final String str = String.valueOf(i);
-					map.computeIfAbsent(list.get(i), (e) -> str);
-				}
-
-				for (int i = 0; i < list.size(); i++) {
-					s = map.get(list.get(i));
-				}
-			}
-			System.out.println((System.currentTimeMillis() - time) + "ms (MyAlterMap Write)");
-		}
 
 		{
 			Map<String, String> map = map0;
@@ -115,19 +95,7 @@ public class TestLinkedHashMap {
 					s = e.getValue();
 				}
 			}
-			System.out.println((System.currentTimeMillis() - time) + "ms (MyAlterMap Iterate)");
-		}
-		{
-			Map<String, String> map = map3;
-
-			long time = System.currentTimeMillis();
-			for (int j = 0; j < LOOP_TIMES; j++) {
-				for (Map.Entry<String, String> e : map.entrySet()) {
-					String x = e.getKey();
-					s = e.getValue();
-				}
-			}
-			System.out.println((System.currentTimeMillis() - time) + "ms (MyAlterMap Iterate)");
+			System.out.println((System.currentTimeMillis() - time) + "ms (FastHashtable Iterate)");
 		}
 
 		System.out.println(map1.size());

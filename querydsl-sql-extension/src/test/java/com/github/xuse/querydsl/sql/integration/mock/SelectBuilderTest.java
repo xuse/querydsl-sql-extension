@@ -3,7 +3,7 @@ package com.github.xuse.querydsl.sql.integration.mock;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +33,7 @@ class SelectBuilderTest extends MockedTestBase implements LambdaHelpers {
 	static final NumberLambdaColumn<Foo, Integer> ID = Foo::getId;
 	static final NumberLambdaColumn<Foo, Integer> VOLUME = Foo::getVolume;
 	static final LambdaColumn<Foo, Instant> CREATED = Foo::getCreated;
-	static final DateTimeLambdaColumn<Foo, LocalDateTime> UPDATED = Foo::getUpdated;
+	static final DateTimeLambdaColumn<Foo, Date> UPDATED = Foo::getUpdated;
 
 	@BeforeAll
 	static void setup() {
