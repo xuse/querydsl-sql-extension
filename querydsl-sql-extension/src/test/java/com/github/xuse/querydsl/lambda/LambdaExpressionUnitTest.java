@@ -49,14 +49,12 @@ class LambdaExpressionUnitTest {
 
 			@Override
 			public <R, C> @Nullable R accept(Visitor<R, C> v, @Nullable C context) {
-				// TODO Auto-generated method stub
-				return null;
+				return stringPath.accept(v, context);
 			}
 
 			@Override
 			public Class<? extends String> getType() {
-				// TODO Auto-generated method stub
-				return null;
+				return String.class;
 			}
         };
 
@@ -210,6 +208,7 @@ class LambdaExpressionUnitTest {
     class ExprNumberTests {
 
         private final NumberExpression<Integer> numberPath = Expressions.numberPath(Integer.class, "testId");
+        private final ComparableExpression<Integer> comparablePath = Expressions.comparablePath(Integer.class, "testId");
         private final ExprNumber<Integer> exprNumber = new ExprNumber<Integer>() {
             @Override
             public NumberExpression<Integer> mixinNumber() {
@@ -218,20 +217,17 @@ class LambdaExpressionUnitTest {
 
 			@Override
 			public ComparableExpression<Integer> mixin() {
-				// TODO Auto-generated method stub
-				return null;
+				return comparablePath;
 			}
 
 			@Override
 			public <R, C> @Nullable R accept(Visitor<R, C> v, @Nullable C context) {
-				// TODO Auto-generated method stub
-				return null;
+				return numberPath.accept(v, context);
 			}
 
 			@Override
 			public Class<? extends Integer> getType() {
-				// TODO Auto-generated method stub
-				return null;
+				return Integer.class;
 			}
         };
 

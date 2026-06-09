@@ -18,7 +18,31 @@ import com.github.xuse.querydsl.util.JefBase64;
 import com.github.xuse.querydsl.util.StringUtils;
 
 public class Codecs {
+	private static final Codecs DEFAULT = new Codecs();
+	
+	private final Map<Type, CsvCodec<?>> CACHE = new HashMap<Type, CsvCodec<?>>();
+	
+	@SuppressWarnings("rawtypes")
+	private CsvCodec objectCodec;
+	
     private Codecs() {
+    	initDefault();
+    }
+    
+    public Codecs create() {
+    	return new Codecs();
+    }
+    
+    public void register(Class<?> type, CsvCodec<?> codec) {
+    	CACHE.put(type, codec);
+    }
+    
+    public boolean remove(Class<?> type) {
+		return CACHE.remove(type) != null;
+    }
+    
+    public void clearAllCodec() {
+    	CACHE.clear();
     }
 
     private static final CsvCodec<String> STRING = new CsvCodec<String>() {
@@ -277,12 +301,8 @@ public class Codecs {
         }
     };
 
-    private static final Map<Type, CsvCodec<?>> CACHE = new HashMap<Type, CsvCodec<?>>();
-    static {
-        init();
-    }
 
-    private static void init() {
+    private void initDefault() {
         CACHE.put(String.class, STRING);
 
         CACHE.put(Integer.class, I);
@@ -318,10 +338,20 @@ public class Codecs {
         CACHE.put(LocalDate.class, sLocalDate);
         CACHE.put(LocalTime.class, sLocalTime);
         CACHE.put(LocalDateTime.class, sLocalDateTime);
+        
+        this.objectCodec = OTHER;
+    }
+    
+    public static String toString(Object obj, Type type) {
+    	return DEFAULT.format(obj,type);
+    }
+    
+    public static Object fromString(String s, Type type) {
+    	return DEFAULT.parse(s,type);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static String toString(Object obj, Type type) {
+    public String format(Object obj, Type type) {
         if (type instanceof Class<?>) {
             Class<?> clz = (Class<?>) type;
             if (clz.isEnum()) {
@@ -332,17 +362,15 @@ public class Codecs {
         if (codec == null) {
         	if(obj ==null) {
         		return "";
-        	}else if (obj instanceof Serializable) {
-                return OTHER.toString((Serializable) obj);
-            } else {
-                throw new UnsupportedOperationException("Object to String error, type " + type + " was not supported.");
+        	}else{
+                return objectCodec.toString( obj);
             }
         }
         return codec.toString(obj);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static Object fromString(String s, Type type) {
+    public Object parse(String s, Type type) {
         if (type instanceof Class<?>) {
             Class<?> clz = (Class<?>) type;
             if (clz.isEnum()) {
@@ -354,7 +382,7 @@ public class Codecs {
         }
         CsvCodec<?> codec = CACHE.get(type);
         if (codec == null) {
-            return OTHER.fromString(s);
+            return objectCodec.fromString(s);
         }
         return codec.fromString(s);
     }

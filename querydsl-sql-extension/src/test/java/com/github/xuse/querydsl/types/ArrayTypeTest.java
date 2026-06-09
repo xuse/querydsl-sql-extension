@@ -305,6 +305,133 @@ class ArrayTypeTest {
 			type.setValue(ps, 1, new String[]{});
 			verify(ps).setString(1, "");
 		}
+
+		@Test
+		void getValue_singleElement() throws SQLException {
+			when(rs.getString(1)).thenReturn("only");
+			String[] result = type.getValue(rs, 1);
+			assertArrayEquals(new String[]{"only"}, result);
+		}
+
+		@Test
+		void setValue_singleElement() throws SQLException {
+			type.setValue(ps, 1, new String[]{"single"});
+			verify(ps).setString(1, "single");
+		}
+	}
+
+	// ==================== Additional serialization/deserialization tests ====================
+
+	@Nested
+	class AdditionalSerializationTests {
+
+		@Test
+		void intArray_singleElement_serialization() throws SQLException {
+			IntArrayAsVarcharType type = new IntArrayAsVarcharType();
+			type.setValue(ps, 1, new int[]{42});
+			verify(ps).setString(1, "42.0");
+		}
+
+		@Test
+		void intArray_singleElement_deserialization() throws SQLException {
+			IntArrayAsVarcharType type = new IntArrayAsVarcharType();
+			when(rs.getString(1)).thenReturn("42");
+			int[] result = type.getValue(rs, 1);
+			assertArrayEquals(new int[]{42}, result);
+		}
+
+		@Test
+		void longArray_largeValues() throws SQLException {
+			LongArrayAsVarcharType type = new LongArrayAsVarcharType();
+			when(rs.getString(1)).thenReturn("9223372036854775807,-9223372036854775808");
+			long[] result = type.getValue(rs, 1);
+			assertArrayEquals(new long[]{Long.MAX_VALUE, Long.MIN_VALUE}, result);
+		}
+
+		@Test
+		void doubleArray_specialValues() throws SQLException {
+			DoubleArrayAsVarcharType type = new DoubleArrayAsVarcharType();
+			when(rs.getString(1)).thenReturn("0.0,-0.0,Infinity,-Infinity,NaN");
+			double[] result = type.getValue(rs, 1);
+			assertEquals(5, result.length);
+			assertEquals(0.0, result[0], 0.0);
+			assertEquals(-0.0, result[1], 0.0);
+			assertEquals(Double.POSITIVE_INFINITY, result[2], 0.0);
+			assertEquals(Double.NEGATIVE_INFINITY, result[3], 0.0);
+			assertTrue(Double.isNaN(result[4]));
+		}
+
+		@Test
+		void floatArray_singleElement_deserialization() throws SQLException {
+			FloatArrayAsVarcharType type = new FloatArrayAsVarcharType();
+			when(rs.getString(1)).thenReturn("3.14");
+			float[] result = type.getValue(rs, 1);
+			assertArrayEquals(new float[]{3.14f}, result, 0.001f);
+		}
+
+		@Test
+		void intArray_getterSetter_sepChar() {
+			IntArrayAsVarcharType type = new IntArrayAsVarcharType();
+			assertEquals(',', type.getSepChar());
+			type.setSepChar('|');
+			assertEquals('|', type.getSepChar());
+		}
+
+		@Test
+		void intArray_getterSetter_invalidStrAsZero() {
+			IntArrayAsVarcharType type = new IntArrayAsVarcharType();
+			assertFalse(type.isInvalidStrAsZero());
+			type.invalidStrAsZero(true);
+			assertTrue(type.isInvalidStrAsZero());
+		}
+
+		@Test
+		void longArray_getterSetter_sepChar() {
+			LongArrayAsVarcharType type = new LongArrayAsVarcharType();
+			assertEquals(',', type.getSepChar());
+			type.setSepChar(';');
+			assertEquals(';', type.getSepChar());
+		}
+
+		@Test
+		void longArray_getterSetter_invalidStrAsZero() {
+			LongArrayAsVarcharType type = new LongArrayAsVarcharType();
+			assertFalse(type.isInvalidStrAsZero());
+			type.invalidStrAsZero(true);
+			assertTrue(type.isInvalidStrAsZero());
+		}
+
+		@Test
+		void doubleArray_getterSetter_sepChar() {
+			DoubleArrayAsVarcharType type = new DoubleArrayAsVarcharType();
+			assertEquals(',', type.getSepChar());
+			type.setSepChar(':');
+			assertEquals(':', type.getSepChar());
+		}
+
+		@Test
+		void doubleArray_getterSetter_invalidStrAsZero() {
+			DoubleArrayAsVarcharType type = new DoubleArrayAsVarcharType();
+			assertFalse(type.isInvalidStrAsZero());
+			type.invalidStrAsZero(true);
+			assertTrue(type.isInvalidStrAsZero());
+		}
+
+		@Test
+		void floatArray_getterSetter_sepChar() {
+			FloatArrayAsVarcharType type = new FloatArrayAsVarcharType();
+			assertEquals(',', type.getSepChar());
+			type.setSepChar('-');
+			assertEquals('-', type.getSepChar());
+		}
+
+		@Test
+		void floatArray_getterSetter_invalidStrAsZero() {
+			FloatArrayAsVarcharType type = new FloatArrayAsVarcharType();
+			assertFalse(type.isInvalidStrAsZero());
+			type.invalidStrAsZero(true);
+			assertTrue(type.isInvalidStrAsZero());
+		}
 	}
 
 	// ==================== EnumByCodeType ====================

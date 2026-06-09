@@ -1,0 +1,4 @@
+[id],[code],[name],[volume],[codeType],[version]
+1001,INIT01,Init Record One,10,1,1
+1002,INIT02,Init Record Two,20,2,1
+1003,INIT03,Init Record Three,30,3,1

@@ -59,6 +59,7 @@ public class SQLInsertClauseAlterBatchTest {
 		@DisplayName("Empty batch: execute() returns 0")
 		public void testEmptyBatchInsert() {
 			long count = factory.insert(FOO)
+					.writeAutoColumns(false)
 					.populateBatch(Collections.emptyList())
 					.execute();
 
