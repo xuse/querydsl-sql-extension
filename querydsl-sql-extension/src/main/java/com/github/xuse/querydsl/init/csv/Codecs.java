@@ -18,7 +18,6 @@ import com.github.xuse.querydsl.util.JefBase64;
 import com.github.xuse.querydsl.util.StringUtils;
 
 public class Codecs {
-	private static final Codecs DEFAULT = new Codecs();
 	
 	private final Map<Type, CsvCodec<?>> CACHE = new HashMap<Type, CsvCodec<?>>();
 	
@@ -29,7 +28,7 @@ public class Codecs {
     	initDefault();
     }
     
-    public Codecs create() {
+    public static Codecs create() {
     	return new Codecs();
     }
     
@@ -300,6 +299,8 @@ public class Codecs {
             return (Serializable) IOUtils.deserialize(JefBase64.decode(s));
         }
     };
+
+    private static final Codecs DEFAULT = new Codecs();
 
 
     private void initDefault() {

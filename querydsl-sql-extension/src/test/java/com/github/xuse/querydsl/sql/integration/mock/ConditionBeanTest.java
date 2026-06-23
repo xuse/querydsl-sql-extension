@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.entity.AvsAuthParams;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
-import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.mock.MockedTestBase;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.querydsl.core.QueryResults;
@@ -30,8 +29,8 @@ class ConditionBeanTest extends MockedTestBase {
 	static void setup() {
 		doInit();
 		// Create the table if not exists
-		factory.getMetadataFactory().createTable(QAvsUserAuthority.avsUserAuthority).ifExists().execute();
-		repo = factory.asRepository(QAvsUserAuthority.avsUserAuthority);
+		factory.getMetadataFactory().createTable(() -> AvsUserAuthority.class).ifExists().execute();
+		repo = factory.asRepository(() -> AvsUserAuthority.class);
 	}
 
 	@Test

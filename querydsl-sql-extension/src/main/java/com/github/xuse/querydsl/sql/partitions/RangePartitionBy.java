@@ -65,7 +65,8 @@ public class RangePartitionBy extends PartitionAssigned {
 		for(Partition p: partitionDefs) {
 			partitions.add(defineOnePartition(p, config));
 		}
-		return DDLExpressions.simple(op, getExpr(), DDLExpressions.wrapList(partitions));
+		return DDLExpressions.simpleWithSuffix(op, config.getTemplates(), getExpr(),
+				DDLExpressions.wrapList(partitions));
 	}
 
 	public List<Partition> partitions() {

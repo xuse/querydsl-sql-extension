@@ -4,8 +4,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
@@ -140,6 +142,9 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		this('\\', false, false, true);
 	}
 	
+	private final Map<Operator,String> onlineDDLSuffixs = new HashMap<>(); 
+	
+	
 	public MySQLWithJSONTemplates(char escape, boolean quote,boolean supportsCheckConstraint, boolean batchToBulk) {
 		super(escape, quote);
 		super.setPrintSchema(false);
@@ -148,27 +153,21 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		SQLTemplatesEx.initDefaultDDLTemplate(this);
 		initJsonFunctions();
 		initPartitionOps();
+		initOnlineDDLS();
+		
 		
 		add(ConstraintTypeDef.FULLTEXT, "FULLTEXT KEY {1} {2}");
-		
-		
 		
 		add(Basic.TIME_EQ, "UNIX_TIMESTAMP({0}) = UNIX_TIMESTAMP({1})");
 		add(DDLOps.AUTOINCREMENT_BEGIN, "{0} AUTO_INCREMENT={1}");
 		add(DDLOps.COMMENT_ON_COLUMN, "{0} COMMENT {1}");
 		add(DDLOps.COMMENT_ON_TABLE, "{0} COMMENT {1}");
-		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1},ALGORITHM=INPLACE, LOCK=NONE");
-		//add(AlterTableOps.COMMENT_ON_TABLE, "COMMENT = {0}");
 		
-		add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
-		add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0},ALGORITHM=INPLACE, LOCK=NONE");
+		add(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, "DROP KEY {0}");
+		add(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, "DROP KEY {0}");
 		
-		add(AlterTableOps.ALTER_TABLE_ADD, "ADD {0}, ALGORITHM=INPLACE, LOCK=SHARED");
-		add(CreateStatement.CREATE_INDEX, "CREATE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_FULLTEXT, "CREATE FULLTEXT INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=SHARED");
-		add(CreateStatement.CREATE_UNIQUE, "CREATE UNIQUE INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_HASH, "CREATE INDEX {1} ON {0} USING HASH, ALGORITHM=INPLACE, LOCK=NONE");
-		add(CreateStatement.CREATE_SPATIAL, "CREATE SPATIAL INDEX {1} ON {0} {2}, ALGORITHM=INPLACE, LOCK=NONE");
+		add(AlterTableOps.CHANGE_COLUMN, "CHANGE {0} {1}");
+		add(CreateStatement.CREATE_FULLTEXT, "CREATE FULLTEXT INDEX {1} ON {0} {2}");
 		add(SpecialFeature.MULTI_COLUMNS_IN_ALTER_TABLE, "");
 		add(SpecialFeature.PARTITION_KEY_MUST_IN_PRIMARY,"");
 		//MySQ:L 8.0.16之后的版本才支持 CONSTRAINT {1} CHECK {2} [ENFORCED]语法
@@ -176,7 +175,6 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 			unsupports.add(ConstraintTypeDef.CHECK);
 		}
 		unsupports.add(CreateStatement.CREATE_BITMAP);
-		
 		typeNames.put(Types.BOOLEAN, "bit(1)").type(Types.BIT);
 		typeNames.put(Types.FLOAT, "float").type(Types.REAL);
 
@@ -218,6 +216,21 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		typeNames.put(Types.CLOB, 1024 * 1024 * 16, "mediumtext").noSize();
 		typeNames.put(Types.BLOB, 1024 * 1024 * 1024, "longblob").noSize();
 		typeNames.put(Types.CLOB, 1024 * 1024 * 1024, "longtext").noSize();
+	}
+
+	private void initOnlineDDLS() {
+		String NONLOCK=",ALGORITHM=INPLACE, LOCK=NONE";
+		String INPLACE_SHARED=", ALGORITHM=INPLACE, LOCK=SHARED";
+		String COPY_SHARED =",ALGORITHM=COPY, LOCK=SHARED";
+		onlineDDLSuffixs.put(AlterTableConstraintOps.ALTER_TABLE_DROP_KEY, NONLOCK);
+		onlineDDLSuffixs.put(AlterTableConstraintOps.ALTER_TABLE_DROP_UNIQUE, NONLOCK);
+		onlineDDLSuffixs.put(AlterTableOps.CHANGE_COLUMN, COPY_SHARED);
+		onlineDDLSuffixs.put(AlterTableOps.ALTER_TABLE_ADD, INPLACE_SHARED);
+		onlineDDLSuffixs.put(CreateStatement.CREATE_INDEX, NONLOCK);
+		onlineDDLSuffixs.put(CreateStatement.CREATE_FULLTEXT, NONLOCK);
+		onlineDDLSuffixs.put(CreateStatement.CREATE_UNIQUE, NONLOCK);
+		onlineDDLSuffixs.put(CreateStatement.CREATE_HASH, NONLOCK);
+		onlineDDLSuffixs.put(CreateStatement.CREATE_SPATIAL, NONLOCK);
 	}
 
 	private void initPartitionOps() {
@@ -350,5 +363,15 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	@Override
 	public PrivilegeDetector getPrivilegeDetector() {
 		return new MySQLPrivilegeDetector();
+	}
+
+	@Override
+	public String getOnlineDDLSuffix(Operator operator) {
+		String s=onlineDDLSuffixs.get(operator);
+		return s == null ? "" : s; 
+	}
+
+	public Map<Operator, String> getOnlineDDLSuffixs() {
+		return onlineDDLSuffixs;
 	}
 }

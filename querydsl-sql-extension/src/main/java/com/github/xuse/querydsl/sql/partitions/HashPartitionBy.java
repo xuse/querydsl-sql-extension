@@ -97,7 +97,8 @@ public class HashPartitionBy implements PartitionBy{
 	}
 
 	public Expression<?> define(ConfigurationEx configurationEx) {
-		return DDLExpressions.simple(getMethod(), getExpr(), DDLExpressions.text(String.valueOf(count)));
+		return DDLExpressions.simpleWithSuffix(getMethod(), configurationEx.getTemplates(), getExpr(),
+				DDLExpressions.text(String.valueOf(count)));
 	}
 
 	public HashType type() {

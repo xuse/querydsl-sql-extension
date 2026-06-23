@@ -35,7 +35,8 @@ public class ListPartitionBy extends PartitionAssigned{
 		for(Partition p:this.partitions) {
 			partitions.add(defineOnePartition(p,configurationEx));
 		}
-		return DDLExpressions.simple(op, expr, DDLExpressions.wrapList(partitions));
+		return DDLExpressions.simpleWithSuffix(op, configurationEx.getTemplates(), expr,
+				DDLExpressions.wrapList(partitions));
 	}
 
 	public List<Partition> partitions() {

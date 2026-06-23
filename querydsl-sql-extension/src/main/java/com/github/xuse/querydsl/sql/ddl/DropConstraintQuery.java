@@ -143,7 +143,7 @@ public class DropConstraintQuery extends AbstractDDLClause<DropConstraintQuery> 
 		for (Constraint constraint : toDrop) {
 			AlterTableConstraintOps ops = constraint.getConstraintType().getDropOpsInAlterTable();
 			if (configuration.getTemplates().supports(ops)) {
-				exp.add(DDLExpressions.simple(ops, DDLExpressions.text(constraint.getName())));
+				exp.add(DDLExpressions.simpleWithSuffix(ops,configuration.getTemplates(), DDLExpressions.text(constraint.getName())));
 			} else {
 				independentOps.add(constraint);
 			}

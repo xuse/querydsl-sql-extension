@@ -73,7 +73,7 @@ public class DDLMetadataBuilder {
 		DDLMetadata meta = new DDLMetadata(false, true);
 		Assert.isNotEmpty(c.getName());
 		SchemaAndTable name = generateConstraintName(c.getName(), table, false);
-		Expression<?> dropExpr = DDLExpressions.simple(DropStatement.DROP_INDEX,
+		Expression<?> dropExpr = DDLExpressions.simpleWithSuffix(DropStatement.DROP_INDEX,configuration.getTemplates(),
 				Expressions.path(Object.class, name.getTable()));
 		meta.addExpression(dropExpr);
 		result.add(meta);
@@ -81,7 +81,7 @@ public class DDLMetadataBuilder {
 
 	public void serializeSimple(Operator ops, Expression<?>... exprs) {
 		DDLMetadata meta = new DDLMetadata(true, true);
-		meta.addExpression(DDLExpressions.simple(ops, exprs));
+		meta.addExpression(DDLExpressions.simpleWithSuffix(ops,configuration.getTemplates(), exprs));
 		result.add(meta);
 	}
 	
@@ -386,7 +386,7 @@ public class DDLMetadataBuilder {
 		List<Expression<?>> tableDefExpressions = new ArrayList<>();
 		// drop columns
 		for (String drop : compareResults.getDropColumns()) {
-			tableDefExpressions.add(DDLExpressions.simple(AlterTableOps.DROP_COLUMN,
+			tableDefExpressions.add(DDLExpressions.simpleWithSuffix(AlterTableOps.DROP_COLUMN,configuration.getTemplates(),
 					Expressions.path(Object.class, table, drop), DDLExpressions.empty()));
 		}
 		// add columns
@@ -394,7 +394,7 @@ public class DDLMetadataBuilder {
 		for (ColumnMapping column : compareResults.getAddColumns()) {
 			boolean isPk = keys == null ? false : keys.getLocalColumns().contains(column.getPath());
 			Expression<?> columnSpec = generateColumnDefinition(column.getPath(), column, isPk);
-			tableDefExpressions.add(DDLExpressions.simple(AlterTableOps.ADD_COLUMN, columnSpec));
+			tableDefExpressions.add(DDLExpressions.simpleWithSuffix(AlterTableOps.ADD_COLUMN, configuration.getTemplates(),columnSpec));
 		}
 		// change columns
 		for (ColumnModification change : compareResults.getChangeColumns()) {
@@ -402,10 +402,10 @@ public class DDLMetadataBuilder {
 				if(change.hasRename()) {
 					Expression<?> old=DDLExpressions.text(change.getOriginalName());
 					if(configuration.getTemplates().supports(AlterTableOps.RENAME_COLUMN)) {
-						tableDefExpressions.add(DDLExpressions.simple(AlterTableOps.RENAME_COLUMN, old,change.getPath()));
+						tableDefExpressions.add(DDLExpressions.simpleWithSuffix(AlterTableOps.RENAME_COLUMN,configuration.getTemplates(), old,change.getPath()));
 					}else if(configuration.getTemplates().supports(OtherStatement.RENAME_COLUMN)) {
 						DDLMetadata renameStatement = new DDLMetadata(true, true);
-						renameStatement.addExpression(DDLExpressions.simple(OtherStatement.RENAME_COLUMN, old, change.getPath(), change.getPath().getMetadata().getParent()));
+						renameStatement.addExpression(DDLExpressions.simpleWithSuffix(OtherStatement.RENAME_COLUMN,configuration.getTemplates(), old, change.getPath(), change.getPath().getMetadata().getParent()));
 						result.add(renameStatement);
 					}else {
 						throw new UnsupportedOperationException("Unable to rename the column due to the absence of an appropriate statement in SQLTemplates.");
@@ -423,13 +423,13 @@ public class DDLMetadataBuilder {
 						}
 					}else if(cg.getType()==AlterColumnOps.SET_DATATYPE) {
 						//SET_DATATYPE表达式比较特殊，已经带有SET_DATATYPE操作了。
-						Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_COLUMN, change.getPath(),cg.getTo());
+						Expression<?> alterClause = DDLExpressions.simpleWithSuffix(AlterTableOps.ALTER_COLUMN,configuration.getTemplates(), change.getPath(),cg.getTo());
 						tableDefExpressions.add(alterClause);
 						continue;
 					}
 					//构造列修改表达式
-					Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_COLUMN, change.getPath(),
-							DDLExpressions.simple(op, cg.getTo()));
+					Expression<?> alterClause = DDLExpressions.simpleWithSuffix(AlterTableOps.ALTER_COLUMN,
+							configuration.getTemplates(), change.getPath(), DDLExpressions.simple(op, cg.getTo()));
 					tableDefExpressions.add(alterClause);
 				}
 			} else {
@@ -440,7 +440,7 @@ public class DDLMetadataBuilder {
 					oldPath = DDLExpressions.text(change.getOriginalName());
 				}
 				tableDefExpressions
-						.add(DDLExpressions.simple(AlterTableOps.CHANGE_COLUMN, oldPath, columnSpec));
+						.add(DDLExpressions.simpleWithSuffix(AlterTableOps.CHANGE_COLUMN, configuration.getTemplates(), oldPath, columnSpec));
 			}
 		}
 
@@ -456,7 +456,7 @@ public class DDLMetadataBuilder {
 				serializeConstraintIndependentDrop(constraint);
 			} else {
 				SchemaAndTable constraintName = generateConstraintName(constraint.getName(), table, false);
-				Expression<?> dropClause = DDLExpressions.simple(ops,
+				Expression<?> dropClause = DDLExpressions.simpleWithSuffix(ops,configuration.getTemplates(),
 						Expressions.path(Object.class, constraintName.getTable()));
 				tableDefExpressions.add(dropClause);
 			}
@@ -469,7 +469,7 @@ public class DDLMetadataBuilder {
 					addIndependConstraintMeta(constraint);
 				} else {
 					Expression<?> expr = generateConstraintDefinition(constraint, table);
-					Expression<?> alterClause = DDLExpressions.simple(AlterTableOps.ALTER_TABLE_ADD, expr);
+					Expression<?> alterClause = DDLExpressions.simpleWithSuffix(AlterTableOps.ALTER_TABLE_ADD, configuration.getTemplates(),expr);
 					tableDefExpressions.add(alterClause);
 				}
 			}	

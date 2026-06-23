@@ -217,5 +217,8 @@ public interface SQLTemplatesEx {
 	default Expression<?> getDefaultExpr() {
 		return DDLExpressions.DEFAULT;
 	}
-
+	
+	default String getOnlineDDLSuffix(Operator operator) {
+		return "";
+	}
 }

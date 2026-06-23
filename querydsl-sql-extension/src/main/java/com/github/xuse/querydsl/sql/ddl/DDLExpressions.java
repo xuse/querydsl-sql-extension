@@ -10,6 +10,7 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Operator;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.SQLTemplatesEx;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.SimplePath;
 import com.querydsl.sql.RelationalPath;
@@ -152,6 +153,15 @@ public class DDLExpressions {
 		return Expressions.simpleOperation(Void.class, op, expressions);
 	}
 
+	public static Expression<?> simpleWithSuffix(Operator op,SQLTemplatesEx templates ,Expression<?>... expressions) {
+		Expression<?> result = Expressions.simpleOperation(Void.class, op, expressions);
+		String s= templates.getOnlineDDLSuffix(op);
+		if(StringUtils.isEmpty(s)) {
+			return result;
+		}
+		return simple(DDLOps.DEF_LIST, result, text(s));
+	}
+	
 	public static Expression<?> text(String str) {
 		if (str == null || str.isEmpty()) {
 			return EMPTY;

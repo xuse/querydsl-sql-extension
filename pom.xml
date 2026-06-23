@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.xuse</groupId>
 	<artifactId>querydsl-sql-extension-parent</artifactId>
-	<version>5.0.0-r173</version>
+	<version>5.0.0-r172.8</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>querydsl-sql-extension-annotation</module>
@@ -168,30 +168,7 @@
 					<defaultManifestFile />
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-gpg-plugin</artifactId>
-				<version>3.1.0</version>
-				<executions>
-					<execution>
-						<id>sign-artifacts</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>sign</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.sonatype.central</groupId>
-				<artifactId>central-publishing-maven-plugin</artifactId>
-				<version>0.4.0</version>
-				<extensions>true</extensions>
-				<configuration>
-					<publishingServerId>sonatype</publishingServerId>
-					<tokenAuth>true</tokenAuth>
-				</configuration>
-			</plugin>
+			
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
@@ -232,4 +209,18 @@
 			</plugin>
 		</plugins>
 	</build>
+	<distributionManagement>
+		<repository>
+			<id>af-fsdmdept-release</id>
+			<name>af-fsdmdept-release</name>
+			<url>http://10.1.74.162:80/artifactory/fsdmdept-release/
+			</url>
+			<layout>default</layout>
+		</repository>
+		<snapshotRepository>
+			<id>af-fsdmdept-snapshot</id>
+			<name>af-fsdmdept-release</name>
+			<url>http://10.1.74.162:80/artifactory/fsdmdept-snapshot/</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>

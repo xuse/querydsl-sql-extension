@@ -16,36 +16,34 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
 import com.github.xuse.querydsl.annotation.query.Condition;
-import com.github.xuse.querydsl.annotation.query.PathBinder;
 import com.github.xuse.querydsl.entity.AvsUserAuthority;
 import com.github.xuse.querydsl.entity.CaAsset;
 import com.github.xuse.querydsl.entity.Foo;
 import com.github.xuse.querydsl.entity.FooDTO;
-import com.github.xuse.querydsl.entity.QAvsUserAuthority;
 import com.github.xuse.querydsl.entity.QCaAsset;
 import com.github.xuse.querydsl.entity.QTableDataTypes;
 import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
+import com.github.xuse.querydsl.lambda.DateTimeLambdaColumn;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
-import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Column;
@@ -110,11 +108,11 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	public void reCreateTable() {
 		SQLMetadataQueryFactory metadataFactory = factory.getMetadataFactory();
 		metadataFactory.dropTable(QTableDataTypes.aaa).ifExists(true).execute();
-		metadataFactory.dropTable(QAvsUserAuthority.avsUserAuthority).ifExists(true).execute();
+		metadataFactory.dropTable(() -> AvsUserAuthority.class).ifExists(true).execute();
 		metadataFactory.dropTable(QCaAsset.caAsset).ifExists(true).execute();
 		metadataFactory.dropTable(() -> Foo.class).ifExists(true).execute();
 		metadataFactory.createTable(QTableDataTypes.aaa).execute();
-		metadataFactory.createTable(QAvsUserAuthority.avsUserAuthority).execute();
+		metadataFactory.createTable(() -> AvsUserAuthority.class).execute();
 		metadataFactory.createTable(QCaAsset.caAsset).execute();
 		metadataFactory.createTable(() -> Foo.class).execute();
 	}
@@ -161,17 +159,25 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 				t1.taskStatus.in(Arrays.asList(TaskStatus.FAIL, TaskStatus.INIT)).and(t1.gender.eq(Gender.FEMALE)))
 				.fetchFirst();
 
-		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
-		Integer sid = factory.insert(t2).set(t2.authContent, "abcdefg").set(t2.devId, "123").set(t2.userId, "ddefe")
-				.set(t2.createTime, LocalDateTime.now()).set(t2.updateTime, "01/12/2019 12:30:21")
-				.set(t2.gender, Gender.MALE).executeWithKey(t2.id);
-		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
+		RelationalPathEx<AvsUserAuthority> t2 = PathCache.getPath(() -> AvsUserAuthority.class, null);
+		NumberLambdaColumn<AvsUserAuthority, Integer> _id2 = AvsUserAuthority::getId;
+		StringLambdaColumn<AvsUserAuthority> _userId2 = AvsUserAuthority::getUserId;
+		AvsUserAuthority authData = new AvsUserAuthority();
+		authData.setAuthContent("abcdefg");
+		authData.setDevId("123");
+		authData.setUserId("ddefe");
+		authData.setCreateTime(LocalDateTime.now());
+		authData.setUpdateTime("01/12/2019 12:30:21");
+		authData.setGender(Gender.MALE);
+		Integer sid = factory.insert(t2).populate(authData).executeWithKey(Integer.class);
+		long count = factory.selectFrom(t2).where(_id2.eq(sid)).fetchCount();
 
-		factory.selectFrom(t2).where(t2.id.eq(sid)).fetchOne();
-		factory.selectFrom(t2).where(t2.id.eq(sid)).fetchFirst();
+		factory.selectFrom(t2).where(_id2.eq(sid)).fetchOne();
+		factory.selectFrom(t2).where(_id2.eq(sid)).fetchFirst();
 		factory.update(t1).set(t1.name, t1.name.concat("Abc123")).where(t1.id.eq(id)).execute();
-		factory.update(t2).set(t2.createTime, DateTimeExpression.currentTimestamp(LocalDateTime.class))
-				.where(t2.userId.eq("1")).execute();
+		DateTimeLambdaColumn<AvsUserAuthority, LocalDateTime> _createTime2 = AvsUserAuthority::getCreateTime;
+		factory.update(t2).set(_createTime2, DateTimeExpression.currentTimestamp(LocalDateTime.class))
+				.where(_userId2.eq("1")).execute();
 	}
 
 	/** Test update via populate(). */
@@ -190,7 +196,7 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	/** Test selectFrom with fetchResults (returns total count). */
 	@Test
 	public void test3() {
-		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
+		RelationalPathEx<AvsUserAuthority> t2 = PathCache.getPath(() -> AvsUserAuthority.class, null);
 		List<AvsUserAuthority> eee = factory.selectFrom(t2).fetch();
 		QueryResults<AvsUserAuthority> results = factory.selectFrom(t2).fetchResults();
 	}
@@ -275,7 +281,8 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 	/** Test insert and query with @CustomType mapped fields (JSON, encrypted, etc.). */
 	@Test
 	public void testComplexType() {
-		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
+		RelationalPathEx<AvsUserAuthority> t2 = PathCache.getPath(() -> AvsUserAuthority.class, null);
+		NumberLambdaColumn<AvsUserAuthority, Integer> _id2 = AvsUserAuthority::getId;
 		AvsUserAuthority data = new AvsUserAuthority();
 		data.setUserId("user-daslfnskfn23");
 		data.setDevId("C12345678");
@@ -287,23 +294,25 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		CaAsset sub = new CaAsset();
 		sub.setCode("123"); sub.setGender(Gender.FEMALE); sub.setName("李四");
 		data.setAsserts(sub);
-		Integer sid = factory.insert(t2).populate(data).executeWithKey(t2.id);
-		long count = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchCount();
-		AvsUserAuthority d = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchOne();
-		d = factory.selectFrom(t2).where(t2.id.eq(sid)).fetchFirst();
+		Integer sid = factory.insert(t2).populate(data).executeWithKey(Integer.class);
+		long count = factory.selectFrom(t2).where(_id2.eq(sid)).fetchCount();
+		AvsUserAuthority d = factory.selectFrom(t2).where(_id2.eq(sid)).fetchOne();
+		d = factory.selectFrom(t2).where(_id2.eq(sid)).fetchFirst();
 	}
 
 	/** Test selectFrom with orderBy. */
 	@Test
 	public void testFetchAll() {
-		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
-		List<AvsUserAuthority> list = factory.selectFrom(t2).orderBy(t2.authType.asc()).fetch();
+		RelationalPathEx<AvsUserAuthority> t2 = PathCache.getPath(() -> AvsUserAuthority.class, null);
+		NumberLambdaColumn<AvsUserAuthority, Integer> _authType = AvsUserAuthority::getAuthType;
+		List<AvsUserAuthority> list = factory.selectFrom(t2).orderBy(_authType.asc()).fetch();
 	}
 
 	/** Test insert with platform-specific behavior (MySQL insertIgnore). */
 	@Test
 	public void testInsert() {
-		QAvsUserAuthority t2 = QAvsUserAuthority.avsUserAuthority;
+		RelationalPathEx<AvsUserAuthority> t2 = PathCache.getPath(() -> AvsUserAuthority.class, null);
+		NumberLambdaColumn<AvsUserAuthority, Integer> _id2 = AvsUserAuthority::getId;
 		AvsUserAuthority data = new AvsUserAuthority();
 		data.setUserId("user-daslfnskfn23");
 		data.setDevId("C12345678");
@@ -315,11 +324,23 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		data.getMap().put("attr2", "女");
 		Integer sid;
 		if (factory.getMetadataFactory().getDatabaseProduct().startsWith("MySQL")) {
-			sid = factory.asMySQL().insertIgnore(t2).populate(data).executeWithKey(t2.id);
+			System.out.println("=============insertIgnore================");
+			sid = factory.asMySQL().insertIgnore(t2).populate(data).executeWithKey(Integer.class);
+			
+			System.out.println(sid);
+			
+			System.out.println("=============insertOnDuplicateKeyUpdate================");
+			//再测试一下insertOnDuplicateKeyUpdate
+			NumberLambdaColumn<AvsUserAuthority, Integer> _authType = AvsUserAuthority::getAuthType;
+			sid = factory.asMySQL().insertOnDuplicateKeyUpdate(t2, Expressions.predicate(Ops.EQ, _authType, _authType.add(Expressions.ONE))).populate(data).executeWithKey(Integer.class);
+			
+			System.out.println(sid);
+			
+			
 		} else {
-			sid = factory.insert(t2).populate(data).executeWithKey(t2.id);
+			sid = factory.insert(t2).populate(data).executeWithKey(Integer.class);
 		}
-		CRUDRepository<AvsUserAuthority, Integer> repository = factory.asRepository(t2);
+		CRUDRepository<AvsUserAuthority, Integer> repository = factory.asRepository(() -> AvsUserAuthority.class);
 		AvsUserAuthority obj = repository.load(sid);
 	}
 
