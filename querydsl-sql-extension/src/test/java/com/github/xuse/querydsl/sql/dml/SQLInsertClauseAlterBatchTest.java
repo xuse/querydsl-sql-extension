@@ -1,11 +1,11 @@
 package com.github.xuse.querydsl.sql.dml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,6 +21,7 @@ import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.mock.MockedTestBase;
 import com.github.xuse.querydsl.repository.CRUDRepository;
 import com.github.xuse.querydsl.sql.MySQLQueryFactory2;
+import com.github.xuse.querydsl.sql.expression.SQLExpressions;
 import com.github.xuse.querydsl.sql.integration.AbstractTestBase;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.SQLBindings;
@@ -309,5 +310,56 @@ public class SQLInsertClauseAlterBatchTest {
 			assertTrue(sql.toLowerCase().contains("on duplicate key update"),
 					"SQL should contain ON DUPLICATE KEY UPDATE clause, got: " + sql);
 		}
-	}
+
+		/**
+		 * Test the new fluent onDuplicateKeyUpdate() API with set(column, expression).
+		 */
+		@Test
+		@DisplayName("Fluent API: onDuplicateKeyUpdate().set(column, expr)")
+		public void testFluentUpsert_SetColumnExpression() {
+			QTableDataTypes entity = QTableDataTypes.aaa;
+
+			SQLInsertClauseAlter insertClause = factory.asMySQL().insertOnDuplicateKeyUpdate(entity,SQLExpressions.set(entity.dataInt, entity.dataInt.add(1)));
+			insertClause.set(entity.name, "test_value");
+			insertClause.set(entity.dataInt, 42);
+
+			List<SQLBindings> sqlList = insertClause.getSQL();
+			assertNotNull(sqlList);
+			assertEquals(1, sqlList.size());
+
+			String sql = sqlList.get(0).getSQL();
+			String sqlLower = sql.toLowerCase();
+			assertTrue(sqlLower.contains("on duplicate key update"),
+					"SQL should contain ON DUPLICATE KEY UPDATE, got: " + sql);
+			assertTrue(sqlLower.contains("c_int"),
+					"SQL should contain column name C_INT in update clause, got: " + sql);
+			// Verify skipParent works: column names in ON DUPLICATE KEY UPDATE should NOT have table prefix
+			String updateClausePart = sql.substring(sql.toLowerCase().indexOf("on duplicate key update"));
+			assertFalse(updateClausePart.contains("aaa."),
+					"Column in ON DUPLICATE KEY UPDATE should not be prefixed with table name, got: " + updateClausePart);
+		}
+
+		/**
+		 * Test the new fluent API with setValues(column) which generates VALUES(column).
+		 */
+		@Test
+		@DisplayName("Fluent API: onDuplicateKeyUpdate().setValues(column)")
+		public void testFluentUpsert_SetValues() {
+			QTableDataTypes entity = QTableDataTypes.aaa;
+
+			SQLInsertClauseAlter insertClause = factory.asMySQL().insertOnDuplicateKeyUpdate(entity,SQLExpressions.setValues(entity.name));
+			insertClause.set(entity.name, "test_value");
+			insertClause.set(entity.dataInt, 42);
+
+			List<SQLBindings> sqlList = insertClause.getSQL();
+			assertNotNull(sqlList);
+			assertEquals(1, sqlList.size());
+
+			String sql = sqlList.get(0).getSQL();
+			assertTrue(sql.toLowerCase().contains("on duplicate key update"),
+					"SQL should contain ON DUPLICATE KEY UPDATE, got: " + sql);
+			assertTrue(sql.toLowerCase().contains("values("),
+					"SQL should contain VALUES() function, got: " + sql);
+		}
+		}
 }

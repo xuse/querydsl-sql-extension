@@ -18,7 +18,7 @@ import com.github.xuse.querydsl.types.EnumByCodeType;
 import lombok.Data;
 
 @Data
-@TableSpec(name = "AVS_USER_AUTHORITY", primaryKeys = "id")
+@TableSpec(name = "AVS_USER_AUTHORITY", primaryKeys = "id",alias = "au")
 public class AvsUserAuthority {
 
 	@ColumnSpec(name = "ID", nullable = false, autoIncrement = true)

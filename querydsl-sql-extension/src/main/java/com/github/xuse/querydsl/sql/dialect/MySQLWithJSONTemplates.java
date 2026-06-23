@@ -4,15 +4,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.github.xuse.querydsl.sql.SQLQueryFactory;
 import com.github.xuse.querydsl.sql.dbmeta.ColumnDef;
+import com.github.xuse.querydsl.sql.dbmeta.Constraint;
 import com.github.xuse.querydsl.sql.dbmeta.InformationSchemaReader;
+import com.github.xuse.querydsl.sql.dbmeta.KeyColumn;
 import com.github.xuse.querydsl.sql.dbmeta.ObjectType;
 import com.github.xuse.querydsl.sql.dbmeta.PartitionInfo;
 import com.github.xuse.querydsl.sql.dbmeta.SchemaReader;
@@ -104,6 +108,62 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		@Override
 		public List<PartitionInfo> getPartitions(String catalog, String schema, String table, ConnectionWrapper conn) {
 			return mysqlPartitions(catalog, schema, table, conn);
+		}
+
+		@Override
+		public List<Constraint> getIndexes(String catalog, String schema, String tableName, ConnectionWrapper conn) {
+			String effectiveSchema = mergeSchema(catalog, schema);
+			List<Object> params = new ArrayList<>();
+			params.add(tableName);
+			String sql = "SELECT INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX, NON_UNIQUE, INDEX_TYPE, NULLABLE"
+					+ " FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = ?";
+			if (StringUtils.isNotEmpty(effectiveSchema) && !"%".equals(effectiveSchema)) {
+				sql += " AND TABLE_SCHEMA = ?";
+				params.add(effectiveSchema);
+			}
+			// Exclude PRIMARY key since it's handled separately
+			sql += " AND INDEX_NAME != 'PRIMARY' ORDER BY INDEX_NAME, SEQ_IN_INDEX";
+			SQLBindings sb = new SQLBindings(sql, params);
+			Map<String, List<KeyColumn>> map = conn.query(sb, rs -> {
+				KeyColumn k = new KeyColumn();
+				k.setTableSchema(effectiveSchema);
+				k.setTableName(tableName);
+				k.setKeyName(rs.getString("INDEX_NAME"));
+				k.setColumnName(rs.getString("COLUMN_NAME"));
+				k.setSeq(rs.getInt("SEQ_IN_INDEX"));
+				k.setNonUnique(rs.getBoolean("NON_UNIQUE"));
+				// Store INDEX_TYPE (BTREE, FULLTEXT, SPATIAL, HASH) in filterCondition field
+				k.setFilterCondition(rs.getString("INDEX_TYPE"));
+				return k;
+			}).stream().collect(Collectors.groupingBy(KeyColumn::getKeyName));
+
+			List<Constraint> result = new ArrayList<>(map.size());
+			for (Map.Entry<String, List<KeyColumn>> entry : map.entrySet()) {
+				Constraint index = new Constraint();
+				List<KeyColumn> columns = entry.getValue();
+				columns.sort(Comparator.comparingInt(a -> a.seq));
+				index.setColumnNames(columns.stream().map(KeyColumn::getColumnName).collect(Collectors.toList()));
+				KeyColumn kc = columns.get(0);
+				index.setCatalog(kc.getTableCat());
+				index.setSchema(kc.getTableSchema());
+				index.setTableName(kc.getTableName());
+				index.setName(kc.getKeyName());
+
+				boolean isUnique = !kc.isNonUnique();
+				String indexType = kc.getFilterCondition();
+				if ("FULLTEXT".equalsIgnoreCase(indexType)) {
+					index.setConstraintType(ConstraintTypeDef.FULLTEXT);
+				} else if ("SPATIAL".equalsIgnoreCase(indexType)) {
+					index.setConstraintType(ConstraintTypeDef.SPATIAL);
+				} else if ("HASH".equalsIgnoreCase(indexType)) {
+					index.setConstraintType(ConstraintTypeDef.HASH);
+				} else {
+					// BTREE or other
+					index.setConstraintType(isUnique ? ConstraintTypeDef.UNIQUE : ConstraintTypeDef.KEY);
+				}
+				result.add(index);
+			}
+			return result;
 		}
 	};
 	
@@ -197,13 +257,13 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 		typeNames.put(Types.VARCHAR, 65535, "text").type(Types.LONGVARCHAR).noSize();
 		typeNames.put(Types.VARBINARY, 65535, "blob").type(Types.BLOB).noSize();
 
-		typeNames.put(Types.LONGVARCHAR, 65535, "text").type(Types.CLOB).noSize();
+		typeNames.put(Types.LONGVARCHAR, 65535, "text").noSize();
 		typeNames.put(Types.LONGVARBINARY, 65535, "blob").type(Types.LONGVARBINARY).noSize();
 		
 		typeNames.put(Types.VARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB).noSize();
 		typeNames.put(Types.VARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.LONGVARBINARY).noSize();
 		
-		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").type(Types.CLOB).noSize();
+		typeNames.put(Types.LONGVARCHAR, 1024 * 1024 * 16, "mediumtext").noSize();
 		typeNames.put(Types.LONGVARBINARY, 1024 * 1024 * 16, "mediumblob").type(Types.LONGVARBINARY).noSize();
 		// LOBS
 		typeNames.put(Types.CLOB, "mediumtext").noSize();

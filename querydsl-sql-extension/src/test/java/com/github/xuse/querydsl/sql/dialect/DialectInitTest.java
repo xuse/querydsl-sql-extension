@@ -2,6 +2,7 @@ package com.github.xuse.querydsl.sql.dialect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -192,6 +193,22 @@ class DialectInitTest {
 		}
 	}
 
+	/**
+	 * Verify LONGVARCHAR maps to 'text' and retains its own JDBC type (not remapped to CLOB).
+	 * This ensures MySQL DDL generates 'text' instead of incorrectly treating LONGVARCHAR as CLOB.
+	 */
+	@Test
+	void testMySQLLongVarcharNotRemappedToClob() {
+		MySQLWithJSONTemplates mysql = new MySQLWithJSONTemplates();
+		// With a size that triggers the weighted entry (e.g. a typical TEXT column)
+		ColumnDef def = mysql.getColumnDataType(Types.LONGVARCHAR, 255, 0);
+		assertNotNull(def);
+		assertEquals("text", def.getDataType());
+		// The jdbcType should remain LONGVARCHAR, NOT be remapped to CLOB
+		assertNotEquals(Types.CLOB, def.getJdbcType(),
+				"LONGVARCHAR should not be remapped to CLOB in MySQL");
+	}
+
 	@Test
 	void testMySQLTimestampPrecision() {
 		MySQLWithJSONTemplates mysql = new MySQLWithJSONTemplates();
@@ -321,7 +338,7 @@ class DialectInitTest {
 		PrivilegeDetector detector = def.getPrivilegeDetector();
 		assertNotNull(detector);
 		// Default uses SimpleDetector as fallback
-		assertTrue(detector instanceof SimpleDetector);
+		assertTrue(detector instanceof CreateTableDetector);
 	}
 
 	// --- SchemaPolicy edge cases ---

@@ -29,8 +29,8 @@ import com.github.xuse.querydsl.entity.QTableDataTypes;
 import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
-import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.DateTimeLambdaColumn;
+import com.github.xuse.querydsl.lambda.LambdaHelpers;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
@@ -39,11 +39,11 @@ import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.ddl.SQLMetadataQueryFactory;
 import com.github.xuse.querydsl.sql.expression.JavaTimes;
 import com.github.xuse.querydsl.sql.expression.ProjectionsAlter;
+import com.github.xuse.querydsl.sql.expression.SQLExpressions;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.sql.Column;
@@ -331,12 +331,14 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 			
 			System.out.println("=============insertOnDuplicateKeyUpdate================");
 			//再测试一下insertOnDuplicateKeyUpdate
+			//.setValues(AvsUserAuthority::getAuthContent)
 			NumberLambdaColumn<AvsUserAuthority, Integer> _authType = AvsUserAuthority::getAuthType;
-			sid = factory.asMySQL().insertOnDuplicateKeyUpdate(t2, Expressions.predicate(Ops.EQ, _authType, _authType.add(Expressions.ONE))).populate(data).executeWithKey(Integer.class);
-			
+			StringLambdaColumn<AvsUserAuthority> _authContent = AvsUserAuthority::getAuthContent;
+			sid = factory.asMySQL().insertOnDuplicateKeyUpdate(t2, SQLExpressions.set(_authType, _authType.add(Expressions.ONE)),
+					SQLExpressions.setValues(_authContent))
+					.populate(data)
+					.executeWithKey(Integer.class);
 			System.out.println(sid);
-			
-			
 		} else {
 			sid = factory.insert(t2).populate(data).executeWithKey(Integer.class);
 		}

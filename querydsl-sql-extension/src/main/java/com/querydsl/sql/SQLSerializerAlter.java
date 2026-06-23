@@ -200,7 +200,9 @@ public class SQLSerializerAlter extends SQLSerializer {
 
 	public void serializeForInsert(QueryMetadata metadata, RelationalPath<?> entity, List<Path<?>> columns,
 			List<Expression<?>> values, SubQueryExpression<?> subQuery) {
+		boolean skip = this.skipParent;
 		super.serializeForInsert(metadata, entity, columns, values, subQuery);
+		this.skipParent = skip;
 	}
 	
     public void handle(String template, Object... args) {

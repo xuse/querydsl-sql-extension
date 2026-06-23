@@ -40,7 +40,6 @@ import com.github.xuse.querydsl.sql.SQLBindingsAlter;
 import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.sql.dialect.SpecialFeature;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
-import com.github.xuse.querydsl.sql.expression.BeanCodec;
 import com.github.xuse.querydsl.sql.expression.BeanCodecManager;
 import com.github.xuse.querydsl.sql.expression.BindingProvider.ListPathBindings;
 import com.github.xuse.querydsl.sql.expression.ConverterWrappedBean;
@@ -421,7 +420,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 */
 	@Override
 	protected SQLSerializerAlter createSerializer() {
-		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true);
+		SQLSerializerAlter serializer = new SQLSerializerAlter(configuration, true, false, true);
 		serializer.setUseLiterals(useLiterals);
 		serializer.setRouting(routing);
 		return serializer;

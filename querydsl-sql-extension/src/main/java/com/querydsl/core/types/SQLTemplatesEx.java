@@ -15,7 +15,7 @@ import com.github.xuse.querydsl.sql.ddl.DDLOps.CreateStatement;
 import com.github.xuse.querydsl.sql.ddl.DDLOps.DropStatement;
 import com.github.xuse.querydsl.sql.dialect.PrivilegeDetector;
 import com.github.xuse.querydsl.sql.dialect.SchemaPolicy;
-import com.github.xuse.querydsl.sql.dialect.SimpleDetector;
+import com.github.xuse.querydsl.sql.dialect.CreateTableDetector;
 import com.github.xuse.querydsl.sql.dialect.SizeParser;
 import com.github.xuse.querydsl.sql.expression.FunctionOps;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
@@ -71,7 +71,7 @@ public interface SQLTemplatesEx {
 	}
 	
 	default PrivilegeDetector getPrivilegeDetector() {
-		return new SimpleDetector();
+		return new CreateTableDetector();
 	}
 
 	/*

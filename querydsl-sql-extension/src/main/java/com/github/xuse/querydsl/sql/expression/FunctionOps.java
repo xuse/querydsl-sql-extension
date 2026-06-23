@@ -9,7 +9,7 @@ import com.querydsl.core.types.Operator;
  * @author Joey
  */
 public enum FunctionOps implements Operator {
-	IF_NULL(Object.class)
+	IF_NULL(Object.class),
 	;
 
 	final Class<?> type;
