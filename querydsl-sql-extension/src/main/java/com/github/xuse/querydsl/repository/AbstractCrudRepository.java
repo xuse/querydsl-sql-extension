@@ -136,43 +136,76 @@ public abstract class AbstractCrudRepository<T, ID> implements CRUDRepository<T,
 	@Override
 	public ID insert(T t) {
 		SQLQueryFactory factory = getFactory();
+		RelationalPath<T> path = getPath();
+		RelationalPathEx<T> pathEx = getPathExOrNull();
 		List<? extends Path<?>> columns = getPkColumn();
-		SQLInsertClauseAlter insert = factory.insert(getPath()).populate(t);
+		SQLInsertClauseAlter insert = factory.insert(path).populate(t);
 		if (columns.size() != 1) {
 			insert.execute();
 			return null;
 		} else {
-			ID result = (ID) insert.executeWithKey(columns.get(0));
+			Path<?> idColumn = columns.get(0);
+			ColumnMapping idMapping = null;
+			boolean isAutoColumn = false;
+			if (pathEx != null) {
+				idMapping = pathEx.getColumnMetadata(idColumn);
+				isAutoColumn = idMapping.isAutoIncrement();
+			}
+			ID result = (ID) insert.executeWithKey(idColumn);
+			if (isAutoColumn && result != null) {
+				idMapping.writeback(t, result);
+			}
 			return result;
 		}
 	}
 
-	@Override
-	public int insertBatch(List<T> ts) {
-		if (ts == null || ts.isEmpty()) {
-			return 0;
+	public RelationalPathEx<T> getPathExOrNull() {
+		RelationalPath<T> path = getPath();
+		if (path instanceof RelationalPathEx) {
+			return (RelationalPathEx<T>) path;
 		}
-		SQLInsertClauseAlter insert = getFactory().insert(getPath());
-		if (ts.size() == 1) {
-			insert.populate(ts.get(0));
-		}else {
-			insert.populateBatch(ts);
-		}
-		return (int) insert.execute();
+		return null;
 	}
 	
 	@Override
-	public int insertBatch(List<T> ts, boolean selective) {
+	public int insertBatch(List<T> ts, boolean selective, boolean writeBack) {
 		if (ts == null || ts.isEmpty()) {
 			return 0;
 		}
-		SQLInsertClauseAlter insert = getFactory().insert(getPath()).writeNulls(!selective);
 		if (ts.size() == 1) {
-			insert.populate(ts.get(0));
-		} else {
-			insert.populateBatch(ts);
+			this.insert(ts.get(0));
+			return 1;
 		}
-		return (int) insert.execute();
+
+		RelationalPath<T> path = getPath();
+		RelationalPathEx<T> pathEx = getPathExOrNull();
+		List<? extends Path<?>> idColumns = getPkColumn();
+		ColumnMapping idMapping = null;
+		boolean autoId = false;
+
+		SQLInsertClauseAlter insert = getFactory().insert(path);
+		if (!selective) {
+			insert.writeNulls(true);
+		}
+		insert.populateBatch(ts);
+
+		if (writeBack && pathEx != null && idColumns.size() == 1) {
+			idMapping = pathEx.getColumnMetadata(idColumns.get(0));
+			autoId = idMapping.isAutoIncrement();
+		}
+
+		if (autoId) {
+			List<?> ids = insert.executeWithKeys(idMapping.getPath());
+			int idsSize = ids.size();
+			if (idsSize == ts.size()) {
+				for (int i = 0; i < idsSize; i++) {
+					idMapping.writeback(ts.get(i), ids.get(i));
+				}
+			}
+			return ids.size();
+		} else {
+			return (int) insert.execute();
+		}
 	}
 
 	@Override

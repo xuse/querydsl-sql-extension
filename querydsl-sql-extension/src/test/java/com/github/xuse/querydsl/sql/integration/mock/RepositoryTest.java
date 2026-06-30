@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -780,6 +781,83 @@ class RepositoryTest extends MockedTestBase {
 	}
 
 	// ==================== Cleanup test (restore CODE_B) ====================
+
+	@Test
+	@Order(80)
+	void testInsertWritebackAutoId() {
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(FOO_TABLE);
+		Foo foo = new Foo();
+		foo.setCode("CODE_WB_" + System.currentTimeMillis());
+		foo.setName("WritebackTest");
+		foo.setVolume(10);
+		foo.setCodeType(1);
+		assertEquals(0, foo.getId());
+		Integer key = repo.insert(foo);
+		assertNotNull(key);
+		assertTrue(key > 0);
+		// After insert, auto-generated ID should be written back to the bean
+		assertEquals(key.intValue(), foo.getId());
+	}
+
+	@Test
+	@Order(81)
+	void testInsertBatchWritebackAutoId() {
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(FOO_TABLE);
+
+		Foo foo1 = new Foo();
+		foo1.setCode("CODE_BATCH_1_" + System.currentTimeMillis());
+		foo1.setName("BatchWB1");
+		foo1.setVolume(10);
+		foo1.setCodeType(1);
+
+		Foo foo2 = new Foo();
+		foo2.setCode("CODE_BATCH_2_" + System.currentTimeMillis());
+		foo2.setName("BatchWB2");
+		foo2.setVolume(20);
+		foo2.setCodeType(2);
+
+		Foo foo3 = new Foo();
+		foo3.setCode("CODE_BATCH_3_" + System.currentTimeMillis());
+		foo3.setName("BatchWB3");
+		foo3.setVolume(30);
+		foo3.setCodeType(1);
+
+		List<Foo> batch = Arrays.asList(foo1, foo2, foo3);
+		int count = repo.insertBatch(batch);
+		assertEquals(3, count);
+		// All beans should have their auto-increment IDs written back
+		for (Foo foo : batch) {
+			assertTrue(foo.getId() > 0, "Auto-id should be written back: " + foo.getName());
+		}
+		// IDs should be unique
+		assertTrue(foo1.getId() != foo2.getId());
+		assertTrue(foo2.getId() != foo3.getId());
+	}
+
+	@Test
+	@Order(82)
+	void testInsertBatchEmpty() {
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(FOO_TABLE);
+		int count = repo.insertBatch(Arrays.<Foo>asList());
+		assertEquals(0, count);
+		count = repo.insertBatch(null);
+		assertEquals(0, count);
+	}
+
+	@Test
+	@Order(83)
+	void testInsertBatchSingleElement() {
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(FOO_TABLE);
+		Foo foo = new Foo();
+		foo.setCode("CODE_SINGLE_" + System.currentTimeMillis());
+		foo.setName("SingleBatch");
+		foo.setVolume(5);
+		foo.setCodeType(1);
+		int count = repo.insertBatch(Arrays.asList(foo));
+		assertEquals(1, count);
+		// Single-element batch delegates to insert(), so writeback should work
+		assertTrue(foo.getId() > 0);
+	}
 
 	@Test
 	@Order(99)

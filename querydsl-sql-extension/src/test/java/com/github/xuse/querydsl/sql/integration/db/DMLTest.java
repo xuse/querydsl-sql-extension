@@ -252,8 +252,15 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		TableDataTypes d = new TableDataTypes();
 		d.setName("李四"); d.setGender(Gender.MALE); d.setTaskStatus(TaskStatus.RUNNING);
 		d.setTrantField("dsaasdsa"); d.setVersion(123);
-		List<Integer> x = factory.insert(t1).writeNulls(false).populateBatch(Arrays.asList(a, b, c, d))
-				.executeWithKeys(Integer.class);
+		
+		
+		List<TableDataTypes> list = Arrays.asList(a, b, c, d);
+		List<Integer> ids = factory.insert(t1).populateBatch(list).executeWithKeys(Integer.class);
+		assertEquals(list.size(), ids.size());
+		for (int i = 0; i < ids.size(); i++) {
+			list.get(i).setId(ids.get(i));
+		}
+		System.out.println(ids);
 	}
 
 	/** Test batch update with addBatch(). */

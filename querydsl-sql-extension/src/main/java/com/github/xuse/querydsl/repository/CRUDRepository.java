@@ -116,8 +116,14 @@ public interface CRUDRepository<T, ID> {
 	 * @param ts 插入记录对象列表 / list of records.
 	 * @return 写入记录数 / count of records inserted.
 	 */
-	int insertBatch(List<T> ts);
+	default int insertBatch(List<T> ts) {
+		return insertBatch(ts, true, true);
+	}
 
+	default int insertBatch(List<T> ts, boolean selective) {
+		return insertBatch(ts,selective,true);
+	}
+	
 	/**
 	 * <h2>Chinese:</h2> 批量插入数据
 	 * <h2>English:</h2> In Batch mode, setting {@code selective} to true can have
@@ -130,9 +136,10 @@ public interface CRUDRepository<T, ID> {
 	 * @param selective 为true时，null字段不参与插入（使用数据库默认值）。
 	 *                  注意：在Batch方式下，判空以列表第一个对象为准。如果第一个对象某字段为null，后续对象即便有值也无法写入该字段。
 	 *                  除非您准确理解此行为，否则请使用{@link #insertBatch(List)}
+	 * @param writeback true: 如果有自增主键，回写到bean　
 	 * @return 写入记录数 / count of records inserted.
 	 */
-	int insertBatch(List<T> ts, boolean selective);
+	int insertBatch(List<T> ts, boolean selective, boolean writeback);
 
 	/**
 	 * <h2>Chinese:</h2> 按主键删除记录
