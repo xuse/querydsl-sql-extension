@@ -8,9 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit tests for {@link Threads} utility class and ThreadPoolBuilder.
@@ -167,5 +170,81 @@ class ThreadsTest {
 					.noJMX()
 					.build();
 		});
+	}
+
+	@Test
+	void testAsyncCatch_normalExecution() throws Exception {
+		AtomicBoolean executed = new AtomicBoolean(false);
+		Runnable wrapped = Threads.asyncCatch(() -> executed.set(true), null);
+		wrapped.run();
+		assertTrue(executed.get(), "Task should have executed normally");
+	}
+
+	@Test
+	void testAsyncCatch_catchesException() throws Exception {
+		// Should not propagate the exception
+		Runnable wrapped = Threads.asyncCatch(() -> {
+			throw new RuntimeException("test error");
+		}, null);
+		// Should not throw
+		wrapped.run();
+	}
+
+	@Test
+	void testAsyncCatch_withCustomLogger() throws Exception {
+		Logger customLog = LoggerFactory.getLogger("custom-async-test");
+		AtomicBoolean executed = new AtomicBoolean(false);
+		Runnable wrapped = Threads.asyncCatch(() -> {
+			executed.set(true);
+			throw new IllegalStateException("custom logger test");
+		}, customLog);
+		// Should not throw, should log to custom logger
+		wrapped.run();
+		assertTrue(executed.get(), "Task body should have been executed");
+	}
+
+	@Test
+	void testAsyncCatch_catchesError() throws Exception {
+		// Even Throwable (Error) should be caught
+		Runnable wrapped = Threads.asyncCatch(() -> {
+			throw new OutOfMemoryError("simulated OOM");
+		}, null);
+		// Should not propagate
+		wrapped.run();
+	}
+
+	@Test
+	void testAsyncCatch_inThreadPool() throws Exception {
+		ExecutorService pool = Threads.newFixedThreadPool(2, "async-catch-pool");
+		CountDownLatch latch = new CountDownLatch(2);
+		AtomicInteger successCount = new AtomicInteger(0);
+
+		// Submit a normal task
+		pool.submit(Threads.asyncCatch(() -> {
+			successCount.incrementAndGet();
+			latch.countDown();
+		}, null));
+
+		// Submit a failing task - should not break the pool
+		pool.submit(Threads.asyncCatch(() -> {
+			latch.countDown();
+			throw new RuntimeException("pool task failure");
+		}, null));
+
+		assertTrue(latch.await(5, TimeUnit.SECONDS), "Both tasks should complete");
+		assertEquals(1, successCount.get());
+		pool.shutdown();
+	}
+
+	@Test
+	void testAsyncCatch_nullLogger_usesDefault() {
+		// Verify null logger doesn't cause NPE
+		AtomicBoolean executed = new AtomicBoolean(false);
+		Runnable wrapped = Threads.asyncCatch(() -> {
+			executed.set(true);
+			throw new RuntimeException("null logger test");
+		}, null);
+		wrapped.run();
+		assertTrue(executed.get());
 	}
 }

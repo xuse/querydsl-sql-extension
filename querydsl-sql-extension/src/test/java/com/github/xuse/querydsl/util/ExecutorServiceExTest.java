@@ -1,11 +1,14 @@
 package com.github.xuse.querydsl.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -164,5 +167,68 @@ class ExecutorServiceExTest {
 		assertEquals(9, results.size(), "Should have 9 results (item 5 failed)");
 		assertTrue(!results.contains(5) || results.size() == 9,
 				"Item 5 should not be in results due to exception");
+	}
+
+	/**
+	 * Test safeSubmit executes task normally.
+	 */
+	@Test
+	@DisplayName("safeSubmit executes a normal task successfully")
+	void testSafeSubmit_normalExecution() throws Exception {
+		AtomicBoolean executed = new AtomicBoolean(false);
+		Future<?> future = executor.safeSubmit(() -> executed.set(true));
+		assertNotNull(future);
+		future.get(5, TimeUnit.SECONDS);
+		assertTrue(executed.get(), "Task should have been executed");
+	}
+
+	/**
+	 * Test safeSubmit does not propagate exception to the Future.
+	 */
+	@Test
+	@DisplayName("safeSubmit catches exception without propagating to caller")
+	void testSafeSubmit_catchesException() throws Exception {
+		Future<?> future = executor.safeSubmit(() -> {
+			throw new RuntimeException("should be caught");
+		});
+		assertNotNull(future);
+		// Should complete normally since the exception is caught inside asyncCatch
+		future.get(5, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Test safeSubmit with multiple concurrent failing tasks - pool stays healthy.
+	 */
+	@Test
+	@DisplayName("safeSubmit keeps pool healthy after multiple failures")
+	void testSafeSubmit_poolStaysHealthyAfterFailures() throws Exception {
+		// Submit multiple failing tasks
+		for (int i = 0; i < 10; i++) {
+			executor.safeSubmit(() -> {
+				throw new RuntimeException("repeated failure");
+			});
+		}
+
+		// Pool should still work for normal tasks
+		AtomicBoolean executed = new AtomicBoolean(false);
+		Future<?> future = executor.safeSubmit(() -> executed.set(true));
+		future.get(5, TimeUnit.SECONDS);
+		assertTrue(executed.get(), "Pool should still accept and execute tasks after failures");
+	}
+
+	/**
+	 * Test safeSubmit returns a Future that completes without ExecutionException.
+	 */
+	@Test
+	@DisplayName("safeSubmit Future.get() does not throw ExecutionException on task failure")
+	void testSafeSubmit_futureGetNoExecutionException() throws Exception {
+		AtomicInteger counter = new AtomicInteger(0);
+		Future<?> future = executor.safeSubmit(() -> {
+			counter.incrementAndGet();
+			throw new IllegalStateException("will be swallowed");
+		});
+		// This should NOT throw ExecutionException
+		future.get(5, TimeUnit.SECONDS);
+		assertEquals(1, counter.get(), "Task body should have run once");
 	}
 }

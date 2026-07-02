@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,6 +46,10 @@ public interface ExecutorServiceEx extends ExecutorService {
 			Thread.currentThread().interrupt();
 			return false;
 		}
+	}
+	
+	default Future<?> safeSubmit(Runnable task){
+		return submit(Threads.asyncCatch(task, null));
 	}
 
 	/**

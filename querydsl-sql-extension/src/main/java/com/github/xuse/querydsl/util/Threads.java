@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.slf4j.Logger;
+
 import com.github.xuse.querydsl.jmx.IntrospectedMXBean;
 import com.github.xuse.querydsl.util.Exceptions.WrapException;
 import com.github.xuse.querydsl.util.ExecutorServiceEx.PoolExecutor;
@@ -248,6 +250,23 @@ public abstract class Threads {
 		StringBuilder sb = new StringBuilder();
 		toStackTraceString(stacks,skipLines,sb);
 		return sb.toString();
+	}
+	
+	/**
+	 * 向线程池提交任务时，如果担心任务可能抛出异常，用此方法包裹
+	 * @param runnable  异步任务
+	 * @param log 异常日志输出到，传入null则输出到默认Logger
+	 * @return Runnable
+	 */
+	public static Runnable asyncCatch(Runnable runnable,Logger log) {
+		final Logger useLog = log == null ? Threads.log : log; 
+		return () -> {
+			try {
+				runnable.run();
+			} catch (Throwable e) {
+				useLog.error("Async task error:", e);
+			}
+		};
 	}
 
 	/**

@@ -102,6 +102,22 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	private final Formatter errorFormatter;
 
 	private final Formatter infoFormatter;
+
+	/**
+	 * 异常日志级别。默认 ERROR。
+	 * 业务方可设置为 WARN，适用于预期内可恢复异常（如唯一键冲突后降级处理）不希望触发告警的场景。
+	 */
+	private int exceptionLogLevel = LOG_LEVEL_ERROR;
+
+	/**
+	 * 异常日志级别：ERROR（默认）
+	 */
+	public static final int LOG_LEVEL_ERROR = 0;
+
+	/**
+	 * 异常日志级别：WARN
+	 */
+	public static final int LOG_LEVEL_WARN = 1;
 	
 	static final TLDateFormat DATE_FORMAT = DateFormats.DATE_TIME_CS;
 	static final Map<Class<?>,Function<Object,String>> VALUE_APPENDERS=new HashMap<>();
@@ -345,6 +361,16 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		}
 	}
 
+	/**
+	 * 设置异常日志级别。
+	 * @param level {@link #LOG_LEVEL_ERROR} 或 {@link #LOG_LEVEL_WARN}
+	 * @return this
+	 */
+	public QueryDSLSQLListener setExceptionLogLevel(int level) {
+		this.exceptionLogLevel = level;
+		return this;
+	}
+
 	@Override
 	public final void prePrepare(SQLListenerContext context) {
 		if (log.isInfoEnabled()) {
@@ -399,7 +425,13 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 
 	@Override
 	public final void exception(SQLListenerContext context) {
-		log.error(errorFormatter.format(context.getAllSQLBindings()), context.getException());
+		String message = errorFormatter.format(context.getAllSQLBindings());
+		Exception ex = context.getException();
+		if (exceptionLogLevel == LOG_LEVEL_WARN) {
+			log.warn(message, ex);
+		} else {
+			log.error(message, ex);
+		}
 	}
 
 	@Override
