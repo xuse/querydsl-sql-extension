@@ -92,7 +92,10 @@ public class BeanCodecManager {
 		Property[] fields=accessor.getFields();
 		int len=fields.length;
 		for(int i=0;i<len;i++) {
-			map.put(fields[i].getName(), i);
+			Property p=fields[i];
+			if(p.hasField()) {
+				map.put(p.getName(), i);	
+			}
 		}
 		accessor.setRandomAccessIndex(Collections.unmodifiableMap(map));
 		return accessor;

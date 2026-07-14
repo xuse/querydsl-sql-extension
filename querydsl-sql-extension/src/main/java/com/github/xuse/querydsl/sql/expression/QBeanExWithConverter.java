@@ -122,6 +122,9 @@ public class QBeanExWithConverter<T> extends QBeanEx<T> {
 		Map<String, Expression<?>> targetBindings = new LinkedHashMap<>();
 
 		for (Property field : allFields) {
+			if(!field.hasField()) {
+				continue;
+			}
 			String fieldName = field.getName();
 			// Determine source name: check @PathBinder annotation
 			PathBinder pathBinder = field.getAnnotation(PathBinder.class);

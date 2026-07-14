@@ -19,6 +19,8 @@ public interface Property {
 
 	int getModifiers();
 	
+	boolean hasField();
+	
 	default String properName() {
 		String name;
 		Column c=getAnnotation(Column.class);

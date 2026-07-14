@@ -99,4 +99,9 @@ public final class FieldProperty implements Property{
 	public int getModifiers() {
 		return field.getModifiers();
 	}
+
+	@Override
+	public boolean hasField() {
+		return field!=null;
+	}
 }
