@@ -10,6 +10,8 @@ import java.util.List;
 
 import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.lambda.LambdaColumn;
+import com.github.xuse.querydsl.lambda.LambdaColumnBase;
+import com.github.xuse.querydsl.lambda.ColumnTypeValidator;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
@@ -193,10 +195,12 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 		}
 		PathMetadata pm = PathMetadataFactory.forVariable(variable);
 		RelationalPathExImpl<T> t = new RelationalPathExImpl<>(beanType, pm, null, null);
+		List<LambdaColumnInfo> lambdaColumns = new ArrayList<>();
 		t.scanClassMetadata(() -> {
 			List<Path<?>> paths = new ArrayList<>();
 			for (Field field : TypeUtils.getAllDeclaredFields(beanType)) {
 				if (Modifier.isStatic(field.getModifiers())) {
+					collectLambdaColumnInfo(field, lambdaColumns);
 					continue;
 				}
 				Column column = field.getAnnotation(Column.class);
@@ -212,7 +216,50 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 			}
 			return paths;
 		});
+		// scanClassMetadata 完成后，通过 path 获取字段的实际类型来校验
+		for (LambdaColumnInfo info : lambdaColumns) {
+			Path<?> path = t.getColumn(info.fieldName);
+			if (path != null) {
+				ColumnTypeValidator.validate(info.columnRef, beanType.getSimpleName() + "." + info.staticFieldName, path.getType());
+			}
+		}
 		return t;
+	}
+
+	/**
+	 * 收集 static final LambdaColumnBase 字段的元信息，用于后续校验。
+	 */
+	private static void collectLambdaColumnInfo(Field staticField, List<LambdaColumnInfo> result) {
+		if (!Modifier.isFinal(staticField.getModifiers())) {
+			return;
+		}
+		if (!LambdaColumnBase.class.isAssignableFrom(staticField.getType())) {
+			return;
+		}
+		LambdaColumnBase<?, ?> columnRef;
+		try {
+			staticField.setAccessible(true);
+			columnRef = (LambdaColumnBase<?, ?>) staticField.get(null);
+		} catch (Exception e) {
+			return;
+		}
+		if (columnRef == null) {
+			return;
+		}
+		Pair<Class<?>, String> pair = Lambdas.analysis(columnRef);
+		result.add(new LambdaColumnInfo(staticField.getName(), pair.getSecond(), columnRef));
+	}
+
+	private static class LambdaColumnInfo {
+		final String staticFieldName;
+		final String fieldName;
+		final LambdaColumnBase<?, ?> columnRef;
+
+		LambdaColumnInfo(String staticFieldName, String fieldName, LambdaColumnBase<?, ?> columnRef) {
+			this.staticFieldName = staticFieldName;
+			this.fieldName = fieldName;
+			this.columnRef = columnRef;
+		}
 	}
 
 	private static <T> RelationalPathExImpl<T> generateForOriginal(RelationalPath<T> path) {
@@ -287,4 +334,5 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 			throw Exceptions.illegalArgument("Lambda value is {}, this type is{}", pair, getType());
 		}
 	}
+
 }

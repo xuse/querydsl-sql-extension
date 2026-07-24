@@ -17,6 +17,16 @@ public class Lambdas {
 	private Lambdas() {
 	}
 	
+	/**
+	 * 解析方法引用（lambda）的元信息，提取目标类和字段名。
+	 * <p>
+	 * 例如 {@code Foo::getId} 会被解析为 {@code Pair.of(Foo.class, "id")}。
+	 * </p>
+	 *
+	 * @param func 可序列化的 lambda 表达式（通常是方法引用，如 {@code Entity::getXxx}）
+	 * @return Pair，其中 first 为方法引用的目标类（即 getter 所在的 Class），
+	 *         second 为从 getter 名推导出的字段名（去掉 get/is 前缀并首字母小写）
+	 */
 	public static Pair<Class<?>, String> analysis(Serializable func) {
 		return LAMBDA_CACHE.computeIfAbsent(func, Lambdas::analysis0);
 	}
