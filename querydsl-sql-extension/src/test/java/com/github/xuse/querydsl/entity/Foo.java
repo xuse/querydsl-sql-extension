@@ -17,6 +17,13 @@ import com.github.xuse.querydsl.annotation.dbdef.Key;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
 import com.github.xuse.querydsl.entity.type.TestForJSONObjectType;
 import com.github.xuse.querydsl.enums.Gender;
+import com.github.xuse.querydsl.lambda.DateLambdaColumn;
+import com.github.xuse.querydsl.lambda.DateTimeLambdaColumn;
+import com.github.xuse.querydsl.lambda.LambdaColumn;
+import com.github.xuse.querydsl.lambda.LambdaTable;
+import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
+import com.github.xuse.querydsl.lambda.SimpleLambdaColumn;
+import com.github.xuse.querydsl.lambda.StringLambdaColumn;
 import com.github.xuse.querydsl.sql.ddl.ConstraintType;
 
 import lombok.Data;
@@ -33,6 +40,38 @@ keys = {
 )
 @Comment("Test table for Foo.")
 public class Foo implements Serializable {
+
+	public static final LambdaTable<Foo> foo = () -> Foo.class;
+
+	public static final NumberLambdaColumn<Foo, Integer> _id = Foo::getId;
+
+	public static final StringLambdaColumn<Foo> _code = Foo::getCode;
+
+	public static final StringLambdaColumn<Foo> _name = Foo::getName;
+
+	public static final StringLambdaColumn<Foo> _content = Foo::getContent;
+
+	public static final DateTimeLambdaColumn<Foo, Instant> _created = Foo::getCreated;
+
+	public static final DateTimeLambdaColumn<Foo, Date> _updated = Foo::getUpdated;
+
+	public static final LambdaColumn<Foo, Gender> _gender = Foo::getGender;
+
+	public static final SimpleLambdaColumn<Foo, TableDataTypes> _ext = Foo::getExt;
+
+	public static final SimpleLambdaColumn<Foo, Map<String, String>> _map = Foo::getMap;
+
+	public static final NumberLambdaColumn<Foo, Integer> _volume = Foo::getVolume;
+
+	public static final NumberLambdaColumn<Foo, Integer> _version = Foo::getVersion;
+
+	public static final NumberLambdaColumn<Foo, Integer> _codeType = Foo::getCodeType;
+
+	public static final DateLambdaColumn<Foo, java.sql.Date> _inDay = Foo::getInDay;
+
+	public static final DateLambdaColumn<Foo, LocalDate> _inDay2 = Foo::getInDay2;
+
+	public static final DateLambdaColumn<Foo, LocalDate> _inDay3 = Foo::getInDay3;
 	
 	@ColumnSpec(autoIncrement = true,type = Types.INTEGER,unsigned = true,nullable = false)
 	@Comment("primary key，auto increment.")
