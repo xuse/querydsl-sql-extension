@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,7 +26,9 @@ import com.github.xuse.querydsl.types.DoubleArrayAsVarcharType;
 import com.github.xuse.querydsl.types.EnumByCodeType;
 import com.github.xuse.querydsl.types.FloatArrayAsVarcharType;
 import com.github.xuse.querydsl.types.IntArrayAsVarcharType;
+import com.github.xuse.querydsl.types.LocalDateToTimestampType;
 import com.github.xuse.querydsl.types.LongArrayAsVarcharType;
+import com.github.xuse.querydsl.types.SqlDateToTimestampType;
 import com.github.xuse.querydsl.types.StringArrayAsVarcharType;
 import com.github.xuse.querydsl.util.DateUtils;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -218,6 +221,7 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Type<?> tryAddAutoMapping(int jdbcType, Class<?> fieldType, Path field) {
 		if(fieldType.isEnum()){
+			//处理自动的枚举映射
 			boolean isNum=SQLTypeUtils.isNumeric(jdbcType);
 			if(CodeEnum.class.isAssignableFrom(fieldType)&& isNum) {
 				return new EnumByCodeType<>((Class)fieldType);
@@ -230,8 +234,16 @@ public class PathMapping extends AbstractColumnMetadataEx implements ColumnMappi
 				return new EnumByOrdinalType<>(jdbcType, (Class)fieldType);
 			}	
 		}else if(fieldType.isArray() && jdbcType == Types.VARCHAR) {
+			//处理Java数组对数据库文本类型的映射
 			Class<?> elementType = fieldType.getComponentType();
 			return CUSTOM_VARCHAR_TO_ARRAY_TYPES.get(elementType);
+		} else if (jdbcType == Types.TIMESTAMP) {
+			//处理Java精度小于数据库精度情况。其中java.util.Date对应 Date是允许的。但是如果Java字段精度小于数据库字段，就要额外处理
+			if(fieldType==java.sql.Date.class) {
+				return SqlDateToTimestampType.INSTANCE;
+			}else if(fieldType == LocalDate.class) {
+				return LocalDateToTimestampType.INSTANCE;
+			}
 		}
 		return null;
 	}

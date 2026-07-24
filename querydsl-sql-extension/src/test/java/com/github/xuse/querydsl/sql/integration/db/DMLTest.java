@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
@@ -29,8 +30,10 @@ import com.github.xuse.querydsl.entity.QTableDataTypes;
 import com.github.xuse.querydsl.entity.TableDataTypes;
 import com.github.xuse.querydsl.enums.Gender;
 import com.github.xuse.querydsl.enums.TaskStatus;
+import com.github.xuse.querydsl.lambda.DateLambdaColumn;
 import com.github.xuse.querydsl.lambda.DateTimeLambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaHelpers;
+import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
 import com.github.xuse.querydsl.lambda.PathCache;
 import com.github.xuse.querydsl.lambda.StringLambdaColumn;
@@ -406,6 +409,107 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 		@Condition
 		private String code;
 	}
+	
+	@Test
+	public void testFoo() {
+		LambdaTable<Foo> t = () -> Foo.class;
+		DateLambdaColumn<Foo, LocalDate> _InDay2 = Foo::getInDay2;
+		StringLambdaColumn<Foo> _Code = Foo::getCode;
+
+		// === Setup: clean table ===
+		factory.getMetadataFactory().truncate(PathCache.getPath(t, null)).execute();
+
+		// === 1. INSERT: LocalDate field mapped to TIMESTAMP column ===
+		LocalDate today = LocalDate.of(2026, 1, 15);
+		Foo foo = new Foo();
+		foo.setCode("FOO_DATE_1");
+		foo.setCodeType(1);
+		foo.setName("DateTest");
+		foo.setInDay2(today);
+		factory.insert(t).populate(foo).execute();
+
+		// === 2. SELECT: verify LocalDate read back correctly ===
+		Foo fetched = factory.selectFrom(t).where(_Code.eq("FOO_DATE_1")).fetchOne();
+		assertEquals(today, fetched.getInDay2());
+		assertEquals("DateTest", fetched.getName());
+
+		// === 3. WHERE eq with LocalDate: the key scenario ===
+		// DB stores '2026-01-15 00:00:00' as TIMESTAMP, verify eq with LocalDate works
+		List<Foo> matched = factory.selectFrom(t).where(_InDay2.eq(today)).fetch();
+		assertEquals(1, matched.size());
+		assertEquals("FOO_DATE_1", matched.get(0).getCode());
+
+		// Verify non-matching date returns empty
+		List<Foo> noMatch = factory.selectFrom(t).where(_InDay2.eq(LocalDate.of(2026, 1, 16))).fetch();
+		assertTrue(noMatch.isEmpty());
+
+		// === 4. UPDATE: change the date field ===
+		LocalDate newDate = LocalDate.of(2026, 3, 20);
+		long updateCount = factory.update(t)
+				.set(_InDay2, newDate)
+				.where(_Code.eq("FOO_DATE_1"))
+				.execute();
+		assertEquals(1, updateCount);
+
+		// Verify updated value and eq still works
+		Foo afterUpdate = factory.selectFrom(t).where(_InDay2.eq(newDate)).fetchOne();
+		assertEquals(newDate, afterUpdate.getInDay2());
+		assertEquals("FOO_DATE_1", afterUpdate.getCode());
+
+		// Old date should no longer match
+		assertTrue(factory.selectFrom(t).where(_InDay2.eq(today)).fetch().isEmpty());
+
+		// === 5. INSERT more records for range query ===
+		Foo foo2 = new Foo();
+		foo2.setCode("FOO_DATE_2");
+		foo2.setCodeType(2);
+		foo2.setName("DateTest2");
+		foo2.setInDay2(LocalDate.of(2026, 3, 25));
+		factory.insert(t).populate(foo2).execute();
+
+		// === 6. DELETE by date condition ===
+		long deleteCount = factory.delete(t).where(_InDay2.eq(newDate)).execute();
+		assertEquals(1, deleteCount);
+
+		// Only FOO_DATE_2 remains
+		List<Foo> remaining = factory.selectFrom(t).fetch();
+		assertEquals(1, remaining.size());
+		assertEquals("FOO_DATE_2", remaining.get(0).getCode());
+
+		// === 7. TIMESTAMP(3) millisecond precision: inDay3 field ===
+		// Column is datetime(3)/timestamp(3), but Java type is still LocalDate.
+		// Verify that eq comparison works even when DB column has sub-second precision.
+		factory.getMetadataFactory().truncate(PathCache.getPath(t, null)).execute();
+
+		DateLambdaColumn<Foo, LocalDate> _InDay3 = Foo::getInDay3;
+		LocalDate day = LocalDate.of(2026, 6, 10);
+		Foo foo3 = new Foo();
+		foo3.setCode("FOO_MS_1");
+		foo3.setCodeType(1);
+		foo3.setName("MillisTest");
+		foo3.setInDay3(day);
+		factory.insert(t).populate(foo3).execute();
+
+		// Read back: should still be the same LocalDate
+		Foo fetchedMs = factory.selectFrom(t).where(_Code.eq("FOO_MS_1")).fetchOne();
+		assertEquals(day, fetchedMs.getInDay3());
+
+		// eq with LocalDate on TIMESTAMP(3) column: '2026-06-10 00:00:00.000' == '2026-06-10'
+		List<Foo> msMatched = factory.selectFrom(t).where(_InDay3.eq(day)).fetch();
+		assertEquals(1, msMatched.size());
+		assertEquals("FOO_MS_1", msMatched.get(0).getCode());
+
+		// Different date should not match
+		assertTrue(factory.selectFrom(t).where(_InDay3.eq(LocalDate.of(2026, 6, 11))).fetch().isEmpty());
+
+		// Update and verify eq on TIMESTAMP(3)
+		LocalDate newDay = LocalDate.of(2026, 12, 31);
+		factory.update(t).set(_InDay3, newDay).where(_Code.eq("FOO_MS_1")).execute();
+		Foo updatedMs = factory.selectFrom(t).where(_InDay3.eq(newDay)).fetchOne();
+		assertEquals(newDay, updatedMs.getInDay3());
+	}
+	
+	
 	
 	@Test
 	public void testOperateWithDto2() {

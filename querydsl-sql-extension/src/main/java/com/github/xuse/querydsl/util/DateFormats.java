@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -251,6 +252,19 @@ public abstract class DateFormats {
 			} catch (ParseException e) {
 				throw new IllegalArgumentException("Invalid date:" + text, e);
 			}
+		}
+		
+		public LocalDate parseLocalDate(CharSequence s) {
+			return LocalDate.parse(s, df);
+		}
+		
+		public LocalDateTime parseLocalDateTime(CharSequence s) {
+			return LocalDateTime.parse(s,df);
+		}
+		
+		public java.sql.Date parseSqlDate(String s)throws IllegalArgumentException {
+			java.util.Date d=parse(s);
+			return d == null ? null : new java.sql.Date(d.getTime());
 		}
 
 		/**

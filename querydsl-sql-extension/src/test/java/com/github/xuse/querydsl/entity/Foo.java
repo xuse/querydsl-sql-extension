@@ -3,6 +3,7 @@ package com.github.xuse.querydsl.entity;
 import java.io.Serializable;
 import java.sql.Types;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Map;
 
@@ -87,5 +88,11 @@ public class Foo implements Serializable {
 	
 	@ColumnSpec(type=Types.DATE)
 	private java.sql.Date inDay;
+	
+	@ColumnSpec(type=Types.TIMESTAMP)
+	private LocalDate inDay2;
+	
+	@ColumnSpec(type=Types.TIMESTAMP, size=3)
+	private LocalDate inDay3;
 
 }
