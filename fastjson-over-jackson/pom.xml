@@ -6,7 +6,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.xuse</groupId>
 	<artifactId>fastjson-over-jackson</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<name>fastjson-over-jackson</name>
 	<description>Fastjson API compatibility layer implemented over Jackson.
 		Drop-in replacement: change imports from com.alibaba.fastjson to

@@ -135,7 +135,7 @@ public class JsonCompatibilityTest {
 
     @Test
     public void testParseObject_nullAndEmpty() {
-        assertThat(JSON.parseObject(null, User.class)).isNull();
+        assertThat(JSON.parseObject((String)null, User.class)).isNull();
         assertThat(JSON.parseObject("", User.class)).isNull();
 
         assertThat(com.alibaba.fastjson.JSON.parseObject((String) null, User.class)).isNull();

@@ -1,6 +1,11 @@
 package io.github.xuse.fastjson.adapter;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Writer;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
@@ -212,6 +217,127 @@ public final class JSON {
         } catch (JsonProcessingException e) {
             throw new JSONException("Convert JSONObject to JavaObject failed", e);
         }
+    }
+
+    // ==================== parseObject (InputStream) ====================
+
+    /**
+     * 从 InputStream 反序列化为 JavaBean（默认 UTF-8 编码）。
+     * <p>
+     * 兼容 fastjson 的 JSON.parseObject(InputStream, Type)
+     */
+    public static <T> T parseObject(InputStream is, Type type) throws IOException {
+        if (is == null) {
+            return null;
+        }
+        return MAPPER.readValue(is, MAPPER.getTypeFactory().constructType(type));
+    }
+
+    /**
+     * 从 InputStream 反序列化为 JavaBean，指定字符集。
+     * <p>
+     * 兼容 fastjson 的 JSON.parseObject(InputStream, Charset, Type)
+     * <p>
+     * 注意：Jackson 内部始终以字节流处理并自动检测编码，charset 参数仅为 API 兼容保留。
+     */
+    public static <T> T parseObject(InputStream is, Charset charset, Type type) throws IOException {
+        if (is == null) {
+            return null;
+        }
+        return MAPPER.readValue(is, MAPPER.getTypeFactory().constructType(type));
+    }
+
+    /**
+     * 从 InputStream 反序列化为指定 Class 的 JavaBean（默认 UTF-8 编码）。
+     */
+    public static <T> T parseObject(InputStream is, Class<T> clazz) throws IOException {
+        if (is == null) {
+            return null;
+        }
+        return MAPPER.readValue(is, clazz);
+    }
+
+    // ==================== parseObject (byte[]) ====================
+
+    /**
+     * 从 UTF-8 编码的 byte[] 反序列化为 JavaBean。
+     * <p>
+     * 兼容 fastjson 的 JSON.parseObject(byte[], Type)
+     */
+    public static <T> T parseObject(byte[] jsonBytes, Type type) {
+        if (jsonBytes == null || jsonBytes.length == 0) {
+            return null;
+        }
+        try {
+            return MAPPER.readValue(jsonBytes, MAPPER.getTypeFactory().constructType(type));
+        } catch (IOException e) {
+            throw new JSONException("Deserialize from bytes failed", e);
+        }
+    }
+
+    /**
+     * 从 UTF-8 编码的 byte[] 反序列化为指定 Class 的 JavaBean。
+     */
+    public static <T> T parseObject(byte[] jsonBytes, Class<T> clazz) {
+        if (jsonBytes == null || jsonBytes.length == 0) {
+            return null;
+        }
+        try {
+            return MAPPER.readValue(jsonBytes, clazz);
+        } catch (IOException e) {
+            throw new JSONException("Deserialize from bytes failed", e);
+        }
+    }
+
+    // ==================== toJSONBytes ====================
+
+    /**
+     * 将 Java 对象序列化为 JSON 格式的 UTF-8 byte[]。
+     * <p>
+     * 兼容 fastjson 的 JSON.toJSONBytes(Object)
+     */
+    public static byte[] toJSONBytes(Object object) {
+        if (object == null) {
+            return "null".getBytes();
+        }
+        try {
+            return MAPPER.writeValueAsBytes(object);
+        } catch (JsonProcessingException e) {
+            throw new JSONException("Serialize to bytes failed", e);
+        }
+    }
+
+    // ==================== writeJSONString (OutputStream / Writer) ====================
+
+    /**
+     * 将 Java 对象序列化为 JSON 字符串，按 UTF-8 编码写入 OutputStream。
+     * <p>
+     * 兼容 fastjson 的 JSON.writeJSONString(OutputStream, Object)
+     *
+     * @return 写入的字节数
+     */
+    public static int writeJSONString(OutputStream os, Object object) throws IOException {
+        if (object == null) {
+            byte[] nullBytes = "null".getBytes();
+            os.write(nullBytes);
+            return nullBytes.length;
+        }
+        byte[] bytes = MAPPER.writeValueAsBytes(object);
+        os.write(bytes);
+        return bytes.length;
+    }
+
+    /**
+     * 将 Java 对象序列化为 JSON 字符串，写入 Writer。
+     * <p>
+     * 兼容 fastjson 的 JSON.writeJSONString(Writer, Object)
+     */
+    public static void writeJSONString(Writer writer, Object object) throws IOException {
+        if (object == null) {
+            writer.write("null");
+            return;
+        }
+        MAPPER.writeValue(writer, object);
     }
 
     // ==================== 内部工具 ====================
