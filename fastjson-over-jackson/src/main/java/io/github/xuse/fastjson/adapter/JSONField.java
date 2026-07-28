@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.json;
+package io.github.xuse.fastjson.adapter;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

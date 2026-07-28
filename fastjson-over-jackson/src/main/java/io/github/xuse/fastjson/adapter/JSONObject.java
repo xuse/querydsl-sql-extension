@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.json;
+package io.github.xuse.fastjson.adapter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * 兼容 com.alibaba.fastjson.JSONObject 的 API。
  * <p>
- * 底层使用 Jackson 的 ObjectNode，对外暴露与 fastjson JSONObject 一致的方法签名。
+ * 底层使用 Jackson 的 ObjectNode。
  */
 public class JSONObject implements Serializable {
 
@@ -31,19 +31,14 @@ public class JSONObject implements Serializable {
         this.node = node != null ? node : JSON.getObjectMapper().createObjectNode();
     }
 
-    /** 获取底层 Jackson ObjectNode */
     public ObjectNode getInner() {
         return node;
     }
 
-    // ==================== 静态工厂 ====================
-
-    /** 兼容 JSONObject.parseObject(str) */
     public static JSONObject parseObject(String text) {
         return JSON.parseObject(text);
     }
 
-    /** 兼容 JSONObject.toJSONString(obj) */
     public static String toJSONString(Object obj) {
         return JSON.toJSONString(obj);
     }
@@ -175,7 +170,6 @@ public class JSONObject implements Serializable {
         if (child.isObject()) {
             return new JSONObject((ObjectNode) child);
         }
-        // 如果是字符串，尝试解析
         if (child.isTextual()) {
             return JSON.parseObject(child.asText());
         }
@@ -217,7 +211,6 @@ public class JSONObject implements Serializable {
         } else if (value instanceof JSONArray) {
             node.set(key, ((JSONArray) value).getInner());
         } else {
-            // 将任意对象转为 JsonNode
             node.set(key, JSON.getObjectMapper().valueToTree(value));
         }
         return this;
@@ -249,7 +242,6 @@ public class JSONObject implements Serializable {
         return keys;
     }
 
-    /** 转为 Map（浅层） */
     public Map<String, Object> getInnerMap() {
         Map<String, Object> map = new LinkedHashMap<>();
         Iterator<Map.Entry<String, JsonNode>> it = node.fields();
@@ -260,21 +252,14 @@ public class JSONObject implements Serializable {
         return map;
     }
 
-    // ==================== toJavaObject ====================
-
-    /** 兼容 jsonObject.toJavaObject(Class) */
     public <T> T toJavaObject(Class<T> clazz) {
         return JSON.toJavaObject(this, clazz);
     }
-
-    // ==================== toString ====================
 
     @Override
     public String toString() {
         return node.toString();
     }
-
-    // ==================== 内部工具 ====================
 
     private static Object nodeToValue(JsonNode n) {
         if (n == null || n.isNull()) return null;

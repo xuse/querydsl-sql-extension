@@ -1,9 +1,10 @@
-package com.github.xuse.querydsl.datatype.json;
+package io.github.xuse.fastjson.adapter;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
@@ -18,7 +19,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /**
  * Fastjson API 兼容层 — 基于 Jackson 实现。
  * <p>
- * 迁移方式：将 import com.alibaba.fastjson.JSON 替换为 import com.ezviz.vas.simcard.carrier.json.JSON
+ * 迁移方式：将 import com.alibaba.fastjson.JSON 替换为 import io.github.xuse.fastjson.adapter.JSON
  */
 public final class JSON {
     /** 全局共享 ObjectMapper（线程安全，不可修改配置） */
@@ -26,7 +27,6 @@ public final class JSON {
 
     /**
      * 兼容 fastjson 的 DEFFAULT_DATE_FORMAT 字段。
-     * 注意：修改此字段不会影响已创建的 MAPPER，仅影响 toJSONStringWithDateFormat。
      */
     public static String DEFFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
@@ -34,15 +34,11 @@ public final class JSON {
 
     private static ObjectMapper createMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        // 忽略未知属性（兼容 fastjson 默认行为）
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        // 空对象不报错
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        // Date 序列化为时间戳毫秒（与 fastjson 默认行为一致）
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
-        // 注册兼容模块（Date 灵活反序列化 + serialize/deserialize 过滤）
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.registerModule(new FastjsonCompatModule());
-        // 注册 @JSONField 注解支持（追加在 Jackson 默认注解之后，不覆盖 @JsonProperty 等）
         AnnotationIntrospector defaultAi = mapper.getSerializationConfig().getAnnotationIntrospector();
         AnnotationIntrospector pair = AnnotationIntrospectorPair.pair(defaultAi, new FastjsonAnnotationIntrospector());
         mapper.setAnnotationIntrospector(pair);
@@ -67,10 +63,6 @@ public final class JSON {
         }
     }
 
-    /**
-     * 兼容 fastjson 的 toJSONString(obj, prettyFormat) 和 toJSONString(obj, SerializerFeature...)
-     * 当 prettyFormat=true 时格式化输出
-     */
     public static String toJSONString(Object object, boolean prettyFormat) {
         if (object == null) {
             return "null";
@@ -85,9 +77,6 @@ public final class JSON {
         }
     }
 
-    /**
-     * 兼容 fastjson 的 toJSONString(obj, SerializerFeature.WriteDateUseDateFormat)
-     */
     public static String toJSONStringWithDateFormat(Object object, String dateFormat) {
         if (object == null) {
             return "null";
@@ -125,6 +114,10 @@ public final class JSON {
         }
     }
 
+    /**
+     * 泛型反序列化。
+     * <p>用法: JSON.parseObject(text, new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {})
+     */
     public static <T> T parseObject(String text, TypeReference<T> typeRef) {
         if (text == null || text.isEmpty()) {
             return null;

@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.json;
+package io.github.xuse.fastjson.adapter;
 
 /**
  * JSON 操作异常（兼容 fastjson 的 com.alibaba.fastjson.JSONException）。

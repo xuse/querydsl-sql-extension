@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.json;
+package io.github.xuse.fastjson.adapter;
 
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -17,12 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Jackson Module 提供 fastjson 兼容能力：
- * <ul>
- *   <li>Date 灵活反序列化</li>
- *   <li>@JSONField(serialize=false) — 序列化时过滤</li>
- *   <li>@JSONField(deserialize=false) — 反序列化时过滤</li>
- * </ul>
+ * Jackson Module 提供 fastjson 兼容能力。
  */
 public class FastjsonCompatModule extends SimpleModule {
 
@@ -35,9 +30,6 @@ public class FastjsonCompatModule extends SimpleModule {
         setDeserializerModifier(new DeserializeFilterModifier());
     }
 
-    /**
-     * 序列化时过滤 @JSONField(serialize=false) 的字段
-     */
     private static class SerializeFilterModifier extends BeanSerializerModifier {
         @Override
         public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
@@ -54,9 +46,6 @@ public class FastjsonCompatModule extends SimpleModule {
         }
     }
 
-    /**
-     * 反序列化时过滤 @JSONField(deserialize=false) 的字段
-     */
     private static class DeserializeFilterModifier extends BeanDeserializerModifier {
         @Override
         public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,
@@ -65,7 +54,7 @@ public class FastjsonCompatModule extends SimpleModule {
             for (BeanPropertyDefinition prop : propDefs) {
                 JSONField ann = getFieldAnnotation(beanDesc.getBeanClass(), prop.getInternalName());
                 if (ann != null && !ann.deserialize()) {
-                    continue; // 跳过
+                    continue;
                 }
                 result.add(prop);
             }
@@ -73,9 +62,6 @@ public class FastjsonCompatModule extends SimpleModule {
         }
     }
 
-    /**
-     * 从类的声明字段上查找 @JSONField 注解
-     */
     private static JSONField getFieldAnnotation(Class<?> clazz, String fieldName) {
         Class<?> current = clazz;
         while (current != null && current != Object.class) {

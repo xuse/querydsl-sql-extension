@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.datatype.json;
+package io.github.xuse.fastjson.adapter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -26,12 +26,9 @@ public class JSONArray implements Serializable, Iterable<Object> {
         this.node = node != null ? node : JSON.getObjectMapper().createArrayNode();
     }
 
-    /** 获取底层 Jackson ArrayNode */
     public ArrayNode getInner() {
         return node;
     }
-
-    // ==================== size / isEmpty ====================
 
     public int size() {
         return node.size();
@@ -156,15 +153,10 @@ public class JSONArray implements Serializable, Iterable<Object> {
         return this;
     }
 
-    // ==================== toJavaList ====================
-
-    /** 兼容 jsonArray.toJavaList(Class) */
     public <T> java.util.List<T> toJavaList(Class<T> clazz) {
         return JSON.getObjectMapper().convertValue(node,
                 JSON.getObjectMapper().getTypeFactory().constructCollectionType(java.util.List.class, clazz));
     }
-
-    // ==================== Iterable ====================
 
     @Override
     public Iterator<Object> iterator() {
@@ -181,14 +173,10 @@ public class JSONArray implements Serializable, Iterable<Object> {
         };
     }
 
-    // ==================== toString ====================
-
     @Override
     public String toString() {
         return node.toString();
     }
-
-    // ==================== 内部工具 ====================
 
     private static Object nodeToValue(JsonNode n) {
         if (n == null || n.isNull()) return null;

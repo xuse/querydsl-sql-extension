@@ -1,4 +1,4 @@
-package com.github.xuse.querydsl.util;
+package io.github.xuse.fastjson.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -8,12 +8,6 @@ import java.util.Date;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-
-import com.github.xuse.querydsl.datatype.json.JSON;
-import com.github.xuse.querydsl.datatype.json.JSONArray;
-import com.github.xuse.querydsl.datatype.json.JSONException;
-import com.github.xuse.querydsl.datatype.json.JSONField;
-import com.github.xuse.querydsl.datatype.json.JSONObject;
 
 /**
  * 验证 Jackson 兼容层与 fastjson 输出的等效性。
