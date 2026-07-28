@@ -13,7 +13,7 @@ import com.github.xuse.querydsl.annotation.dbdef.ColumnSpec;
 import com.github.xuse.querydsl.annotation.dbdef.Comment;
 import com.github.xuse.querydsl.annotation.dbdef.Key;
 import com.github.xuse.querydsl.annotation.dbdef.TableSpec;
-import com.github.xuse.querydsl.datatype.JSONObjectType;
+import com.github.xuse.querydsl.datatype.FastJsonObjectType;
 import com.github.xuse.querydsl.lambda.DateTimeLambdaColumn;
 import com.github.xuse.querydsl.lambda.LambdaTable;
 import com.github.xuse.querydsl.lambda.NumberLambdaColumn;
@@ -68,7 +68,7 @@ public class Foo implements Serializable {
     private int version;
 
     @ColumnSpec(type = Types.VARCHAR, size = 1024)
-    @CustomType(JSONObjectType.class)
+    @CustomType(FastJsonObjectType.class)
     private Map<String, String> ext;
 
     @ColumnSpec(type = Types.BIT)

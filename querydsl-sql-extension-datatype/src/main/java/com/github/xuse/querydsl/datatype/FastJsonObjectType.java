@@ -14,13 +14,13 @@ import com.querydsl.sql.types.AbstractType;
  * @author Administrator
  * @param <T> type of target
  */
-public class JSONObjectType<T> extends AbstractType<T> {
+public class FastJsonObjectType<T> extends AbstractType<T> {
 
 	/**
 	 * 使用Class构造
 	 * @param clz clz
 	 */
-	public JSONObjectType(Class<T> clz) {
+	public FastJsonObjectType(Class<T> clz) {
 		super(Types.VARCHAR);
 		this.clz = clz;
 		this.type = clz;
@@ -30,7 +30,7 @@ public class JSONObjectType<T> extends AbstractType<T> {
 	 * 使用Type构造
 	 * @param clz clz
 	 */
-	public JSONObjectType(Type clz) {
+	public FastJsonObjectType(Type clz) {
 		super(Types.VARCHAR);
 		this.clz = null;
 		this.type = clz;
