@@ -217,6 +217,76 @@ public class NativeJSONFieldAnnotationTest {
         assertThat(obj.containsKey("DeviceID")).isFalse();
     }
 
+    // ==================== name 与 serialize/deserialize 组合 ====================
+
+    /**
+     * name 与 serialize/deserialize 组合使用。
+     * <p>
+     * 属性被重命名后，过滤逻辑不能用外部 JSON 名去查 Java 字段，否则过滤会失效。
+     */
+    public static class NativeRenamedVisibilityBean {
+        @com.alibaba.fastjson.annotation.JSONField(name = "public_info")
+        private String publicInfo;
+
+        @com.alibaba.fastjson.annotation.JSONField(name = "secret_key", serialize = false)
+        private String secret;
+
+        @com.alibaba.fastjson.annotation.JSONField(name = "computed_value", deserialize = false)
+        private String computedField;
+
+        @com.alibaba.fastjson.annotation.JSONField(name = "ignored_all", serialize = false, deserialize = false)
+        private String ignored;
+
+        public NativeRenamedVisibilityBean() {}
+
+        public String getPublicInfo() { return publicInfo; }
+        public void setPublicInfo(String publicInfo) { this.publicInfo = publicInfo; }
+        public String getSecret() { return secret; }
+        public void setSecret(String secret) { this.secret = secret; }
+        public String getComputedField() { return computedField; }
+        public void setComputedField(String computedField) { this.computedField = computedField; }
+        public String getIgnored() { return ignored; }
+        public void setIgnored(String ignored) { this.ignored = ignored; }
+    }
+
+    @Test
+    public void testNativeRenamed_serializeFalse() {
+        NativeRenamedVisibilityBean bean = new NativeRenamedVisibilityBean();
+        bean.setPublicInfo("visible");
+        bean.setSecret("pwd123");
+        bean.setComputedField("calc");
+        bean.setIgnored("skip");
+
+        String json = JSON.toJSONString(bean);
+        JSONObject obj = JSON.parseObject(json);
+
+        assertThat(obj.getString("public_info")).isEqualTo("visible");
+        // serialize=false：重命名后的名字和原字段名都不应出现
+        assertThat(obj.containsKey("secret_key")).isFalse();
+        assertThat(obj.containsKey("secret")).isFalse();
+        // deserialize=false 不影响序列化
+        assertThat(obj.getString("computed_value")).isEqualTo("calc");
+        // 两者都 false：完全不出现
+        assertThat(obj.containsKey("ignored_all")).isFalse();
+        assertThat(obj.containsKey("ignored")).isFalse();
+    }
+
+    @Test
+    public void testNativeRenamed_deserializeFalse() {
+        String json = "{\"public_info\":\"hello\",\"secret_key\":\"pwd\","
+                + "\"computed_value\":\"should_ignore\",\"ignored_all\":\"nope\"}";
+
+        NativeRenamedVisibilityBean bean = JSON.parseObject(json, NativeRenamedVisibilityBean.class);
+
+        assertThat(bean.getPublicInfo()).isEqualTo("hello");
+        // serialize=false 不影响反序列化
+        assertThat(bean.getSecret()).isEqualTo("pwd");
+        // deserialize=false => 字段保持 null
+        assertThat(bean.getComputedField()).isNull();
+        // 两者都 false => 字段保持 null
+        assertThat(bean.getIgnored()).isNull();
+    }
+
     // ==================== 自定义注解优先于原生注解 ====================
 
     public static class MixedAnnotationBean {

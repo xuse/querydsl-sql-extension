@@ -112,6 +112,36 @@ public class JacksonJsonTypeTest {
         public void setIccid(String iccid) { this.iccid = iccid; }
     }
 
+    /**
+     * name 与 serialize/deserialize 组合使用。
+     * <p>
+     * 属性被重命名后，过滤逻辑不能用外部 JSON 名去查 Java 字段，否则过滤会失效。
+     */
+    public static class RenamedVisibilityData {
+        @JSONField(name = "public_info")
+        private String publicInfo;
+
+        @JSONField(name = "secret_key", serialize = false)
+        private String secret;
+
+        @JSONField(name = "computed_value", deserialize = false)
+        private String computedField;
+
+        @JSONField(name = "ignored_all", serialize = false, deserialize = false)
+        private String ignored;
+
+        public RenamedVisibilityData() {}
+
+        public String getPublicInfo() { return publicInfo; }
+        public void setPublicInfo(String publicInfo) { this.publicInfo = publicInfo; }
+        public String getSecret() { return secret; }
+        public void setSecret(String secret) { this.secret = secret; }
+        public String getComputedField() { return computedField; }
+        public void setComputedField(String computedField) { this.computedField = computedField; }
+        public String getIgnored() { return ignored; }
+        public void setIgnored(String ignored) { this.ignored = ignored; }
+    }
+
     // ==================== 基本序列化/反序列化 ====================
 
     private final JacksonJsonType<SimplePojo> simpleType = new JacksonJsonType<>(SimplePojo.class);
@@ -314,6 +344,53 @@ public class JacksonJsonTypeTest {
 
         CardResponse result = type.getValue(rs, 1);
         assertThat(result.getIccid()).isEqualTo("89860002");
+    }
+
+    // ==================== name 与 serialize/deserialize 组合 ====================
+
+    @Test
+    public void testJSONField_renamed_serializeFalse() throws SQLException {
+        JacksonJsonType<RenamedVisibilityData> type = new JacksonJsonType<>(RenamedVisibilityData.class);
+
+        RenamedVisibilityData data = new RenamedVisibilityData();
+        data.setPublicInfo("visible");
+        data.setSecret("pwd123");
+        data.setComputedField("calc");
+        data.setIgnored("skip");
+
+        PreparedStatement ps = Mockito.mock(PreparedStatement.class);
+        type.setValue(ps, 1, data);
+        Mockito.verify(ps).setString(Mockito.eq(1), Mockito.argThat(json -> {
+            assertThat(json).contains("\"public_info\":\"visible\"");
+            // serialize=false：重命名后的名字和原字段名都不应出现
+            assertThat(json).doesNotContain("secret_key");
+            assertThat(json).doesNotContain("pwd123");
+            // deserialize=false 不影响序列化
+            assertThat(json).contains("\"computed_value\":\"calc\"");
+            // 两者都 false：完全不出现
+            assertThat(json).doesNotContain("ignored_all");
+            assertThat(json).doesNotContain("skip");
+            return true;
+        }));
+    }
+
+    @Test
+    public void testJSONField_renamed_deserializeFalse() throws SQLException {
+        JacksonJsonType<RenamedVisibilityData> type = new JacksonJsonType<>(RenamedVisibilityData.class);
+
+        String json = "{\"public_info\":\"hello\",\"secret_key\":\"pwd\","
+                + "\"computed_value\":\"should_ignore\",\"ignored_all\":\"nope\"}";
+        ResultSet rs = Mockito.mock(ResultSet.class);
+        Mockito.when(rs.getString(1)).thenReturn(json);
+
+        RenamedVisibilityData result = type.getValue(rs, 1);
+        assertThat(result.getPublicInfo()).isEqualTo("hello");
+        // serialize=false 不影响反序列化
+        assertThat(result.getSecret()).isEqualTo("pwd");
+        // deserialize=false → 字段保持 null
+        assertThat(result.getComputedField()).isNull();
+        // 两者都 false → 字段保持 null
+        assertThat(result.getIgnored()).isNull();
     }
 
     // ==================== 忽略未知字段 ====================

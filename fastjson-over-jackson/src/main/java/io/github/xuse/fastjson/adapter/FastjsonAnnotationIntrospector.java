@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.introspect.Annotated;
@@ -14,10 +15,12 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
 
 /**
- * Jackson AnnotationIntrospector，识别自定义 @JSONField 注解。
+ * Jackson AnnotationIntrospector，识别 {@link JSONField} 注解。
  * <p>
- * 同时通过反射支持原生 com.alibaba.fastjson.annotation.JSONField 注解，
- * 当 classpath 中存在 fastjson 依赖时自动生效。自定义注解优先级高于原生注解。
+ * 原生 {@code com.alibaba.fastjson.annotation.JSONField} 会被适配为 {@link JSONField}
+ * 后一并处理，见 {@link NativeJSONFieldAdapter}。同一属性上两者都存在时，以 {@link JSONField} 为准。
+ * <p>
+ * Jackson 原生注解的优先级高于本 Introspector，由 {@code AnnotationIntrospectorPair} 保证。
  */
 public class FastjsonAnnotationIntrospector extends NopAnnotationIntrospector {
 
@@ -31,23 +34,8 @@ public class FastjsonAnnotationIntrospector extends NopAnnotationIntrospector {
     @Override
     public PropertyName findNameForSerialization(Annotated a) {
         JSONField ann = findAnnotation(a);
-        if (ann != null) {
-            if (!ann.serialize()) {
-                return null;
-            }
-            if (!ann.name().isEmpty()) {
-                return PropertyName.construct(ann.name());
-            }
-        }
-        // fallback: 原生 fastjson 注解
-        FastjsonFieldAnnotationProxy.FieldValues nv = findNativeAnnotation(a);
-        if (nv != null) {
-            if (!nv.serialize) {
-                return null;
-            }
-            if (nv.name != null && !nv.name.isEmpty()) {
-                return PropertyName.construct(nv.name);
-            }
+        if (ann != null && ann.serialize() && !ann.name().isEmpty()) {
+            return PropertyName.construct(ann.name());
         }
         return null;
     }
@@ -55,23 +43,8 @@ public class FastjsonAnnotationIntrospector extends NopAnnotationIntrospector {
     @Override
     public PropertyName findNameForDeserialization(Annotated a) {
         JSONField ann = findAnnotation(a);
-        if (ann != null) {
-            if (!ann.deserialize()) {
-                return null;
-            }
-            if (!ann.name().isEmpty()) {
-                return PropertyName.construct(ann.name());
-            }
-        }
-        // fallback: 原生 fastjson 注解
-        FastjsonFieldAnnotationProxy.FieldValues nv = findNativeAnnotation(a);
-        if (nv != null) {
-            if (!nv.deserialize) {
-                return null;
-            }
-            if (nv.name != null && !nv.name.isEmpty()) {
-                return PropertyName.construct(nv.name);
-            }
+        if (ann != null && ann.deserialize() && !ann.name().isEmpty()) {
+            return PropertyName.construct(ann.name());
         }
         return null;
     }
@@ -79,24 +52,11 @@ public class FastjsonAnnotationIntrospector extends NopAnnotationIntrospector {
     @Override
     public List<PropertyName> findPropertyAliases(Annotated a) {
         JSONField ann = findAnnotation(a);
-        String[] alternates = null;
-        boolean deserialize = true;
-        if (ann != null) {
-            deserialize = ann.deserialize();
-            alternates = ann.alternateNames();
-        } else {
-            // fallback: 原生 fastjson 注解
-            FastjsonFieldAnnotationProxy.FieldValues nv = findNativeAnnotation(a);
-            if (nv != null) {
-                deserialize = nv.deserialize;
-                alternates = nv.alternateNames;
-            }
-        }
-        if (!deserialize || alternates == null || alternates.length == 0) {
+        if (ann == null || !ann.deserialize()) {
             return null;
         }
-        List<PropertyName> aliases = new ArrayList<>(alternates.length);
-        for (String alt : alternates) {
+        List<PropertyName> aliases = new ArrayList<>();
+        for (String alt : ann.alternateNames()) {
             if (alt != null && !alt.isEmpty()) {
                 aliases.add(PropertyName.construct(alt));
             }
@@ -106,20 +66,39 @@ public class FastjsonAnnotationIntrospector extends NopAnnotationIntrospector {
 
     @Override
     public boolean hasIgnoreMarker(AnnotatedMember m) {
-        JSONField ann = m.getAnnotation(JSONField.class);
-        if (ann != null) {
-            return !ann.serialize() && !ann.deserialize();
-        }
-        // fallback: 原生 fastjson 注解
-        FastjsonFieldAnnotationProxy.FieldValues nv = findNativeValues(m);
-        if (nv != null) {
-            return !nv.serialize && !nv.deserialize;
-        }
-        return false;
+        JSONField ann = findAnnotation(m);
+        // serialize=false && deserialize=false → 完全忽略
+        return ann != null && !ann.serialize() && !ann.deserialize();
     }
 
     @Override
     public Boolean hasAsValue(Annotated a) {
+        return null;
+    }
+
+    /**
+     * 将 {@code serialize=false} / {@code deserialize=false} 映射为 Jackson 的单向可见性。
+     * <p>
+     * 走 Jackson 合并后的注解表，字段与 getter/setter 上的注解都能识别。
+     */
+    @Override
+    public JsonProperty.Access findPropertyAccess(Annotated a) {
+        JSONField ann = findAnnotation(a);
+        if (ann == null) {
+            return null;
+        }
+        if (!ann.serialize() && !ann.deserialize()) {
+            // 两者都 false 由 hasIgnoreMarker 整体忽略
+            return null;
+        }
+        if (!ann.serialize()) {
+            // 只写：不参与序列化输出
+            return JsonProperty.Access.WRITE_ONLY;
+        }
+        if (!ann.deserialize()) {
+            // 只读：不参与反序列化写入
+            return JsonProperty.Access.READ_ONLY;
+        }
         return null;
     }
 
@@ -130,43 +109,27 @@ public class FastjsonAnnotationIntrospector extends NopAnnotationIntrospector {
             return JsonFormat.Value.forPattern(ann.format())
                     .withTimeZone(java.util.TimeZone.getDefault());
         }
-        // fallback: 原生 fastjson 注解
-        FastjsonFieldAnnotationProxy.FieldValues nv = findNativeAnnotation(a);
-        if (nv != null && nv.format != null && !nv.format.isEmpty()) {
-            return JsonFormat.Value.forPattern(nv.format)
-                    .withTimeZone(java.util.TimeZone.getDefault());
-        }
-        return null;
-    }
-
-    private static JSONField findAnnotation(Annotated a) {
-        if (a instanceof AnnotatedField) {
-            return a.getAnnotation(JSONField.class);
-        }
-        if (a instanceof AnnotatedMethod) {
-            return a.getAnnotation(JSONField.class);
-        }
         return null;
     }
 
     /**
-     * 查找原生 com.alibaba.fastjson.annotation.JSONField 注解。
+     * 查找 {@link JSONField}：自定义注解优先，未标注时回退到适配后的原生注解。
      * <p>
-     * 通过 Jackson 的合并注解表查询（涵盖 field/getter/setter），
-     * 而非直接读取单个反射成员，否则 getter 上查不到字段注解。
+     * 两者都从 Jackson 合并后的注解表读取（涵盖 field/getter/setter），
+     * 不能直接查单个反射成员，否则内省到 getter 时读不到字段上的注解。
      */
-    private static FastjsonFieldAnnotationProxy.FieldValues findNativeAnnotation(Annotated a) {
-        Class<? extends Annotation> type = FastjsonFieldAnnotationProxy.nativeClass();
-        if (type == null || a == null) {
+    static JSONField findAnnotation(Annotated a) {
+        if (!(a instanceof AnnotatedField) && !(a instanceof AnnotatedMethod)) {
             return null;
         }
-        return FastjsonFieldAnnotationProxy.valuesOf(a.getAnnotation(type));
-    }
-
-    /**
-     * 查找 AnnotatedMember 上的原生注解
-     */
-    private static FastjsonFieldAnnotationProxy.FieldValues findNativeValues(AnnotatedMember m) {
-        return findNativeAnnotation(m);
+        JSONField ann = a.getAnnotation(JSONField.class);
+        if (ann != null) {
+            return ann;
+        }
+        Class<? extends Annotation> nativeClass = NativeJSONFieldAdapter.nativeClass();
+        if (nativeClass == null) {
+            return null;
+        }
+        return NativeJSONFieldAdapter.adapt(a.getAnnotation(nativeClass));
     }
 }
