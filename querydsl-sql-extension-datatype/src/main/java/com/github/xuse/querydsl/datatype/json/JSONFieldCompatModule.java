@@ -10,7 +10,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
  * 注解的字段名、别名、日期格式，以及 {@code serialize=false} / {@code deserialize=false}
  * 的可见性控制均由 Introspector 处理（映射为 Jackson 的 {@code JsonProperty.Access}），
  * 本 Module 当前不再需要额外的属性过滤逻辑。
+ *
+ * @deprecated 所有功能已移至 {@link JSONFieldAnnotationIntrospector}，保留此类仅为 API 兼容。
  */
+@Deprecated
 public class JSONFieldCompatModule extends SimpleModule {
 
 	private static final long serialVersionUID = 1L;

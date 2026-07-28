@@ -6,15 +6,33 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
-import java.util.TimeZone;
 
 /**
  * 兼容 fastjson 的 Date 反序列化逻辑。
+ * <p>
+ * 使用线程安全的 {@link DateTimeFormatter} 替代 SimpleDateFormat。
  */
 public class FlexibleDateDeserializer extends JsonDeserializer<Date> {
+
+    private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
+
+    private static final DateTimeFormatter FMT_YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter FMT_YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter FMT_YYYYMMDDHHMM = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+    private static final DateTimeFormatter FMT_YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final DateTimeFormatter FMT_YYYY_MM_DD_HH_MM = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter FMT_YYYY_MM_DD_T_HH_MM_SS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter FMT_YYYY_MM_DD_HH_MM_SS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter FMT_YYYY_MM_DD_T_HH_MM_SS_SSS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static final DateTimeFormatter FMT_YYYY_MM_DD_HH_MM_SS_SSS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter FMT_ISO_OFFSET = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     @Override
     public Date deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
@@ -36,12 +54,12 @@ public class FlexibleDateDeserializer extends JsonDeserializer<Date> {
         switch (len) {
             case 8:
                 if (isDigits(text)) {
-                    return parseDate(text, "yyyyMMdd");
+                    return toDate(LocalDate.parse(text, FMT_YYYYMMDD).atStartOfDay());
                 }
                 break;
             case 10:
                 if (text.charAt(4) == '-') {
-                    return parseDate(text, "yyyy-MM-dd");
+                    return toDate(LocalDate.parse(text, FMT_YYYY_MM_DD).atStartOfDay());
                 }
                 if (isDigits(text)) {
                     return new Date(Long.parseLong(text) * 1000L);
@@ -49,7 +67,7 @@ public class FlexibleDateDeserializer extends JsonDeserializer<Date> {
                 break;
             case 12:
                 if (isDigits(text)) {
-                    return parseDate(text, "yyyyMMddHHmm");
+                    return toDate(LocalDateTime.parse(text, FMT_YYYYMMDDHHMM));
                 }
                 break;
             case 13:
@@ -59,28 +77,28 @@ public class FlexibleDateDeserializer extends JsonDeserializer<Date> {
                 break;
             case 14:
                 if (isDigits(text)) {
-                    return parseDate(text, "yyyyMMddHHmmss");
+                    return toDate(LocalDateTime.parse(text, FMT_YYYYMMDDHHMMSS));
                 }
                 break;
             case 16:
                 if (text.charAt(4) == '-') {
-                    return parseDate(text, "yyyy-MM-dd HH:mm");
+                    return toDate(LocalDateTime.parse(text, FMT_YYYY_MM_DD_HH_MM));
                 }
                 break;
             case 19:
                 if (text.charAt(4) == '-') {
                     if (text.charAt(10) == 'T') {
-                        return parseDate(text, "yyyy-MM-dd'T'HH:mm:ss");
+                        return toDate(LocalDateTime.parse(text, FMT_YYYY_MM_DD_T_HH_MM_SS));
                     }
-                    return parseDate(text, "yyyy-MM-dd HH:mm:ss");
+                    return toDate(LocalDateTime.parse(text, FMT_YYYY_MM_DD_HH_MM_SS));
                 }
                 break;
             case 23:
                 if (text.charAt(4) == '-') {
                     if (text.charAt(10) == 'T') {
-                        return parseDate(text, "yyyy-MM-dd'T'HH:mm:ss.SSS");
+                        return toDate(LocalDateTime.parse(text, FMT_YYYY_MM_DD_T_HH_MM_SS_SSS));
                     }
-                    return parseDate(text, "yyyy-MM-dd HH:mm:ss.SSS");
+                    return toDate(LocalDateTime.parse(text, FMT_YYYY_MM_DD_HH_MM_SS_SSS));
                 }
                 break;
             default:
@@ -91,16 +109,12 @@ public class FlexibleDateDeserializer extends JsonDeserializer<Date> {
             return new Date(Long.parseLong(text));
         }
 
+        // 尝试带时区偏移的 ISO 格式，如 "2024-01-01T12:00:00+08:00"
         if (len > 19 && text.charAt(4) == '-') {
             try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-                return sdf.parse(text);
-            } catch (ParseException ignored) {
-            }
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-                return sdf.parse(text);
-            } catch (ParseException ignored) {
+                ZonedDateTime zdt = ZonedDateTime.parse(text, FMT_ISO_OFFSET);
+                return Date.from(zdt.toInstant());
+            } catch (DateTimeParseException ignored) {
             }
         }
 
@@ -116,13 +130,7 @@ public class FlexibleDateDeserializer extends JsonDeserializer<Date> {
         return str.length() > 0;
     }
 
-    private static Date parseDate(String text, String pattern) {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat(pattern);
-            sdf.setTimeZone(TimeZone.getDefault());
-            return sdf.parse(text);
-        } catch (ParseException e) {
-            throw new JSONException("Cannot parse date '" + text + "' with pattern " + pattern, e);
-        }
+    private static Date toDate(LocalDateTime ldt) {
+        return Date.from(ldt.atZone(DEFAULT_ZONE).toInstant());
     }
 }

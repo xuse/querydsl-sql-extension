@@ -77,7 +77,9 @@ public class JacksonJsonType<T> extends AbstractType<T> {
 			AnnotationIntrospector defaultAi = MAPPER.getSerializationConfig().getAnnotationIntrospector();
 			AnnotationIntrospector pair = AnnotationIntrospectorPair.pair(defaultAi, new JSONFieldAnnotationIntrospector());
 			MAPPER.setAnnotationIntrospector(pair);
-			MAPPER.registerModule(new JSONFieldCompatModule());
+			@SuppressWarnings("deprecation")
+			JSONFieldCompatModule compatModule = new JSONFieldCompatModule();
+			MAPPER.registerModule(compatModule);
 		}
 	}
 

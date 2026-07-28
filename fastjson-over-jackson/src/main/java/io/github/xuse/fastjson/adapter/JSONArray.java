@@ -158,6 +158,17 @@ public class JSONArray implements Serializable, Iterable<Object> {
                 JSON.getObjectMapper().getTypeFactory().constructCollectionType(java.util.List.class, clazz));
     }
 
+    /**
+     * 移除指定下标的元素并返回被移除的值。
+     * <p>
+     * 兼容 fastjson 的 JSONArray.remove(int index)
+     */
+    public Object remove(int index) {
+        Object old = get(index);
+        node.remove(index);
+        return old;
+    }
+
     @Override
     public Iterator<Object> iterator() {
         return new Iterator<Object>() {

@@ -242,6 +242,16 @@ public class JSONObject implements Serializable {
         return keys;
     }
 
+    /**
+     * 返回所有键值对的 entrySet 视图。
+     * <p>
+     * 兼容 fastjson 的 JSONObject.entrySet() 遍历模式。
+     */
+    public Set<Map.Entry<String, Object>> entrySet() {
+        Map<String, Object> map = getInnerMap();
+        return map.entrySet();
+    }
+
     public Map<String, Object> getInnerMap() {
         Map<String, Object> map = new LinkedHashMap<>();
         Iterator<Map.Entry<String, JsonNode>> it = node.fields();

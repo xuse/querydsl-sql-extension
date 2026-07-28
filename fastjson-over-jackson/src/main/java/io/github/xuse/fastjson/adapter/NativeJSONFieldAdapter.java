@@ -52,6 +52,12 @@ class NativeJSONFieldAdapter {
      * <p>
      * 原生注解缺失某属性时（版本差异）回退到 {@link JSONField} 的默认值。
      */
+    /**
+     * 基于原生注解取值的 {@link JSONField} 实现。
+     * <p>
+     * 注意：静态字段 {@code method()} 依赖外部类的 {@code NATIVE_CLASS}，
+     * 由于内部类静态初始化晚于外部类，此处引用是安全的。
+     */
     private static class NativeJSONField implements JSONField {
 
         private static final Method M_NAME = method("name");

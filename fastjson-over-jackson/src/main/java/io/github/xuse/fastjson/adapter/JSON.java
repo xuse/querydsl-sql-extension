@@ -2,12 +2,16 @@ package io.github.xuse.fastjson.adapter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,6 +20,7 @@ import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -30,12 +35,45 @@ public final class JSON {
     /** 全局共享 ObjectMapper（线程安全，不可修改配置） */
     private static final ObjectMapper MAPPER = createMapper();
 
+    /** 按日期格式缓存 ObjectWriter，避免每次调用 MAPPER.copy() 的开销 */
+    private static final ConcurrentMap<String, ObjectWriter> DATE_FORMAT_WRITERS = new ConcurrentHashMap<>();
+
     /**
      * 兼容 fastjson 的 DEFFAULT_DATE_FORMAT 字段。
+     * <p>
+     * 字段名 "DEFFAULT" 为 fastjson 原始拼写（历史遗留），此处刻意保持一致以确保源码级兼容。
+     * <p>
+     * 行为差异说明：在原版 fastjson 中，直接赋值 {@code JSON.DEFFAULT_DATE_FORMAT = "yyyy-MM-dd"}
+     * 即可全局生效。本兼容层由于底层 ObjectMapper 在类加载时已创建完毕，直接赋值不会触发格式切换。
+     * 请使用 {@link #setDefaultDateFormat(String)} 方法来修改全局日期格式，该方法会同步更新
+     * 内部 ObjectMapper 的 DateFormat 配置。
      */
     public static String DEFFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private JSON() {}
+
+    /**
+     * 设置全局默认日期格式，同步更新内部 ObjectMapper 的 DateFormat。
+     * <p>
+     * 兼容 fastjson 中 {@code JSON.DEFFAULT_DATE_FORMAT = "..."} 的全局配置行为。
+     * 调用后，序列化时 Date 类型将使用指定格式输出字符串（而非时间戳）。
+     * <p>
+     * 示例：
+     * <pre>
+     * // fastjson 原始写法（本兼容层中直接赋值无效）：
+     * // JSON.DEFFAULT_DATE_FORMAT = "yyyy-MM-dd";
+     *
+     * // 兼容层正确写法：
+     * JSON.setDefaultDateFormat("yyyy-MM-dd");
+     * </pre>
+     *
+     * @param dateFormat 日期格式字符串，如 "yyyy-MM-dd HH:mm:ss"
+     */
+    public static void setDefaultDateFormat(String dateFormat) {
+        DEFFAULT_DATE_FORMAT = dateFormat;
+        MAPPER.setDateFormat(new SimpleDateFormat(dateFormat));
+        MAPPER.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    }
 
     private static ObjectMapper createMapper() {
         ObjectMapper mapper = new ObjectMapper();
@@ -87,9 +125,9 @@ public final class JSON {
             return "null";
         }
         try {
-            ObjectMapper copy = MAPPER.copy();
-            copy.setDateFormat(new SimpleDateFormat(dateFormat));
-            return copy.writeValueAsString(object);
+            ObjectWriter writer = DATE_FORMAT_WRITERS.computeIfAbsent(dateFormat,
+                    fmt -> MAPPER.writer(new SimpleDateFormat(fmt)));
+            return writer.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new JSONException("Serialize failed", e);
         }
@@ -237,14 +275,13 @@ public final class JSON {
      * 从 InputStream 反序列化为 JavaBean，指定字符集。
      * <p>
      * 兼容 fastjson 的 JSON.parseObject(InputStream, Charset, Type)
-     * <p>
-     * 注意：Jackson 内部始终以字节流处理并自动检测编码，charset 参数仅为 API 兼容保留。
      */
     public static <T> T parseObject(InputStream is, Charset charset, Type type) throws IOException {
         if (is == null) {
             return null;
         }
-        return MAPPER.readValue(is, MAPPER.getTypeFactory().constructType(type));
+        Reader reader = new InputStreamReader(is, charset);
+        return MAPPER.readValue(reader, MAPPER.getTypeFactory().constructType(type));
     }
 
     /**
