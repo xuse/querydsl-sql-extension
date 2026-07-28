@@ -11,6 +11,14 @@
 	<description>Fastjson API compatibility layer implemented over Jackson.
 		Drop-in replacement: change imports from com.alibaba.fastjson to
 		io.github.xuse.fastjson.adapter.</description>
+   <properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+		<maven.compiler.source>8</maven.compiler.source>
+		<maven.compiler.target>8</maven.compiler.target>
+		<maven.compiler.testSource>8</maven.compiler.testSource>
+		<maven.compiler.testTarget>8</maven.compiler.testTarget>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
