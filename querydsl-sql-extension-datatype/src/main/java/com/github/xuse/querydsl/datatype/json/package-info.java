@@ -1,5 +1,5 @@
 /**
- * Fastjson API 兼容层 — 基于 Jackson 实现。
+ * 基于 Jackson 实现的Fastjson API 兼容层。
  * <p>
  * 迁移步骤：
  * <pre>
