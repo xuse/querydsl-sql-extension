@@ -46,32 +46,7 @@ public class JSONObject implements Serializable {
     // ==================== get 方法族 ====================
 
     public Object get(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        if (child.isObject()) {
-            return new JSONObject((ObjectNode) child);
-        }
-        if (child.isArray()) {
-            return new JSONArray((ArrayNode) child);
-        }
-        if (child.isTextual()) {
-            return child.asText();
-        }
-        if (child.isInt()) {
-            return child.intValue();
-        }
-        if (child.isLong()) {
-            return child.longValue();
-        }
-        if (child.isDouble() || child.isFloat()) {
-            return child.doubleValue();
-        }
-        if (child.isBoolean()) {
-            return child.booleanValue();
-        }
-        return child.toString();
+        return nodeToValue(node.get(key));
     }
 
     public String getString(String key) {
@@ -83,83 +58,51 @@ public class JSONObject implements Serializable {
     }
 
     public Integer getInteger(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asInt();
+        return TypeCast.toInteger(node.get(key));
     }
 
     public int getIntValue(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return 0;
-        }
-        return child.asInt();
+        return TypeCast.intValue(node.get(key));
     }
 
     public Long getLong(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asLong();
+        return TypeCast.toLong(node.get(key));
     }
 
     public long getLongValue(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return 0L;
-        }
-        return child.asLong();
+        return TypeCast.longValue(node.get(key));
     }
 
     public Double getDouble(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asDouble();
+        return TypeCast.toDouble(node.get(key));
     }
 
     public double getDoubleValue(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return 0.0;
-        }
-        return child.asDouble();
+        return TypeCast.doubleValue(node.get(key));
+    }
+
+    public Float getFloat(String key) {
+        return TypeCast.toFloat(node.get(key));
+    }
+
+    public float getFloatValue(String key) {
+        return TypeCast.floatValue(node.get(key));
     }
 
     public Boolean getBoolean(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asBoolean();
+        return TypeCast.toBoolean(node.get(key));
     }
 
     public boolean getBooleanValue(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return false;
-        }
-        return child.asBoolean();
+        return TypeCast.booleanValue(node.get(key));
     }
 
     public BigDecimal getBigDecimal(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.decimalValue();
+        return TypeCast.toBigDecimal(node.get(key));
     }
 
     public BigInteger getBigInteger(String key) {
-        JsonNode child = node.get(key);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.bigIntegerValue();
+        return TypeCast.toBigInteger(node.get(key));
     }
 
     public JSONObject getJSONObject(String key) {
@@ -272,14 +215,6 @@ public class JSONObject implements Serializable {
     }
 
     private static Object nodeToValue(JsonNode n) {
-        if (n == null || n.isNull()) return null;
-        if (n.isTextual()) return n.asText();
-        if (n.isInt()) return n.intValue();
-        if (n.isLong()) return n.longValue();
-        if (n.isDouble()) return n.doubleValue();
-        if (n.isBoolean()) return n.booleanValue();
-        if (n.isObject()) return new JSONObject((ObjectNode) n);
-        if (n.isArray()) return new JSONArray((ArrayNode) n);
-        return n.toString();
+        return JSONArray.nodeToValue(n);
     }
 }

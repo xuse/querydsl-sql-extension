@@ -6,12 +6,26 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.xuse</groupId>
 	<artifactId>fastjson-over-jackson</artifactId>
-	<version>1.0.3</version>
+	<version>1.0.4</version>
 	<name>fastjson-over-jackson</name>
 	<description>Fastjson API compatibility layer implemented over Jackson.
 		Drop-in replacement: change imports from com.alibaba.fastjson to
 		io.github.xuse.fastjson.adapter.</description>
-   <properties>
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<id>xuse</id>
+			<name>Joey</name>
+			<email>easyframe@163.com</email>
+		</developer>
+	</developers>
+	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
 		<maven.compiler.source>8</maven.compiler.source>
@@ -20,6 +34,12 @@
 		<maven.compiler.testTarget>8</maven.compiler.testTarget>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<scope>provided</scope>
+			<version>1.18.36</version>
+		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>

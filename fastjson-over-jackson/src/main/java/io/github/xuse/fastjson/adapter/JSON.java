@@ -15,11 +15,14 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair;
@@ -75,12 +78,46 @@ public final class JSON {
         MAPPER.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
 
+    /**
+     * 构建与 fastjson 默认行为等价的 ObjectMapper。
+     * <p>
+     * 对齐的 fastjson 默认开关（见 {@code com.alibaba.fastjson.JSON} 静态初始化块）：
+     * <ul>
+     * <li>{@code SkipTransientField} → transient 字段不序列化（含带 getter 的场景）</li>
+     * <li>{@code UseBigDecimal} → 浮点数解析为 BigDecimal</li>
+     * <li>{@code AllowSingleQuotes} / {@code AllowUnQuotedFieldNames} → 宽松语法</li>
+     * <li>{@code IgnoreNotMatch} → 忽略未知字段</li>
+     * <li>{@code WriteEnumUsingName} → 枚举按名称输出（与 Jackson 默认一致）</li>
+     * <li>尾部残留无效字符时报错（fastjson 报错，Jackson 默认静默忽略）</li>
+     * </ul>
+     * 刻意不对齐的行为：
+     * <ul>
+     * <li>{@code SortField}：fastjson 默认按字段名字典序输出属性。JSON 对象成员
+     * 本身无顺序语义，此处保留 Jackson 的声明顺序输出</li>
+     * <li>非 String 类型的 Map key：fastjson 输出不加引号（非合规 JSON），
+     * 此处保留 Jackson 的加引号行为</li>
+     * </ul>
+     */
     private static ObjectMapper createMapper() {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder()
+                // fastjson 默认 SkipTransientField：transient 字段不参与序列化。
+                // Jackson 仅在无 getter 时跳过，开启此开关后带 getter 的 transient 字段同样忽略
+                .enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
+                // fastjson 默认 AllowSingleQuotes / AllowUnQuotedFieldNames：宽松语法
+                .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+                .enable(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES)
+                .build();
+
+        // fastjson 默认 IgnoreNotMatch：忽略 JSON 中多出的字段
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        // fastjson 默认 UseBigDecimal：浮点数解析为 BigDecimal 而非 Double
+        mapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+        // fastjson 解析完整字符串时不允许尾部残留内容，Jackson 默认会静默忽略
+        mapper.configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true);
+
         mapper.registerModule(new FastjsonCompatModule());
         AnnotationIntrospector defaultAi = mapper.getSerializationConfig().getAnnotationIntrospector();
         AnnotationIntrospector pair = AnnotationIntrospectorPair.pair(defaultAi, new FastjsonAnnotationIntrospector());
@@ -178,8 +215,14 @@ public final class JSON {
             return null;
         }
         try {
-            ObjectNode node = (ObjectNode) MAPPER.readTree(text);
-            return new JSONObject(node);
+            JsonNode node = MAPPER.readTree(text);
+            if (node == null || node.isNull()) {
+                return null;
+            }
+            if (!node.isObject()) {
+                throw new JSONException("Not a JSON object: " + truncate(text));
+            }
+            return new JSONObject((ObjectNode) node);
         } catch (JsonProcessingException e) {
             throw new JSONException("Deserialize to JSONObject failed: " + truncate(text), e);
         }
@@ -204,8 +247,14 @@ public final class JSON {
             return null;
         }
         try {
-            ArrayNode node = (ArrayNode) MAPPER.readTree(text);
-            return new JSONArray(node);
+            JsonNode node = MAPPER.readTree(text);
+            if (node == null || node.isNull()) {
+                return null;
+            }
+            if (!node.isArray()) {
+                throw new JSONException("Not a JSON array: " + truncate(text));
+            }
+            return new JSONArray((ArrayNode) node);
         } catch (JsonProcessingException e) {
             throw new JSONException("Deserialize to JSONArray failed: " + truncate(text), e);
         }
@@ -219,25 +268,8 @@ public final class JSON {
             return null;
         }
         try {
-            JsonNode node = MAPPER.readTree(text);
-            if (node.isObject()) {
-                return new JSONObject((ObjectNode) node);
-            } else if (node.isArray()) {
-                return new JSONArray((ArrayNode) node);
-            } else if (node.isTextual()) {
-                return node.asText();
-            } else if (node.isInt()) {
-                return node.intValue();
-            } else if (node.isLong()) {
-                return node.longValue();
-            } else if (node.isDouble() || node.isFloat()) {
-                return node.doubleValue();
-            } else if (node.isBoolean()) {
-                return node.booleanValue();
-            } else if (node.isNull()) {
-                return null;
-            }
-            return node.toString();
+            // 数值类型的映射与 JSONObject.get 保持一致（浮点数 → BigDecimal）
+            return JSONArray.nodeToValue(MAPPER.readTree(text));
         } catch (JsonProcessingException e) {
             throw new JSONException("Parse failed: " + truncate(text), e);
         }

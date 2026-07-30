@@ -3,11 +3,15 @@ package io.github.xuse.fastjson.adapter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
+import lombok.Data;
 
 /**
  * 验证 Jackson 兼容层与 fastjson 输出的等效性。
@@ -18,10 +22,13 @@ public class JsonCompatibilityTest {
 
     // ==================== 测试用 POJO ====================
 
+	@Data
     public static class User {
         private String name;
         private int age;
         private Date createTime;
+        private LocalDate update;
+        private LocalDateTime updateTime;
         private List<String> tags;
         private Address address;
 
@@ -32,18 +39,9 @@ public class JsonCompatibilityTest {
             this.createTime = createTime;
             this.tags = tags;
             this.address = address;
+            this.update=LocalDate.now();
+            this.updateTime=LocalDateTime.now();
         }
-
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public int getAge() { return age; }
-        public void setAge(int age) { this.age = age; }
-        public Date getCreateTime() { return createTime; }
-        public void setCreateTime(Date createTime) { this.createTime = createTime; }
-        public List<String> getTags() { return tags; }
-        public void setTags(List<String> tags) { this.tags = tags; }
-        public Address getAddress() { return address; }
-        public void setAddress(Address address) { this.address = address; }
     }
 
     public static class Address {

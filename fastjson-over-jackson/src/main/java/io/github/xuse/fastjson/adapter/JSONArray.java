@@ -79,51 +79,51 @@ public class JSONArray implements Serializable, Iterable<Object> {
     }
 
     public Integer getInteger(int index) {
-        JsonNode child = node.get(index);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asInt();
+        return TypeCast.toInteger(node.get(index));
     }
 
     public int getIntValue(int index) {
-        JsonNode child = node.get(index);
-        if (child == null || child.isNull()) {
-            return 0;
-        }
-        return child.asInt();
+        return TypeCast.intValue(node.get(index));
     }
 
     public Long getLong(int index) {
-        JsonNode child = node.get(index);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asLong();
+        return TypeCast.toLong(node.get(index));
     }
 
     public long getLongValue(int index) {
-        JsonNode child = node.get(index);
-        if (child == null || child.isNull()) {
-            return 0L;
-        }
-        return child.asLong();
+        return TypeCast.longValue(node.get(index));
     }
 
     public Double getDouble(int index) {
-        JsonNode child = node.get(index);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asDouble();
+        return TypeCast.toDouble(node.get(index));
+    }
+
+    public double getDoubleValue(int index) {
+        return TypeCast.doubleValue(node.get(index));
+    }
+
+    public Float getFloat(int index) {
+        return TypeCast.toFloat(node.get(index));
+    }
+
+    public float getFloatValue(int index) {
+        return TypeCast.floatValue(node.get(index));
     }
 
     public Boolean getBoolean(int index) {
-        JsonNode child = node.get(index);
-        if (child == null || child.isNull()) {
-            return null;
-        }
-        return child.asBoolean();
+        return TypeCast.toBoolean(node.get(index));
+    }
+
+    public boolean getBooleanValue(int index) {
+        return TypeCast.booleanValue(node.get(index));
+    }
+
+    public java.math.BigDecimal getBigDecimal(int index) {
+        return TypeCast.toBigDecimal(node.get(index));
+    }
+
+    public java.math.BigInteger getBigInteger(int index) {
+        return TypeCast.toBigInteger(node.get(index));
     }
 
     // ==================== add ====================
@@ -189,12 +189,14 @@ public class JSONArray implements Serializable, Iterable<Object> {
         return node.toString();
     }
 
-    private static Object nodeToValue(JsonNode n) {
+    static Object nodeToValue(JsonNode n) {
         if (n == null || n.isNull()) return null;
         if (n.isTextual()) return n.asText();
         if (n.isInt()) return n.intValue();
         if (n.isLong()) return n.longValue();
-        if (n.isDouble()) return n.doubleValue();
+        // fastjson 默认 UseBigDecimal：浮点数以 BigDecimal 呈现
+        if (n.isFloatingPointNumber()) return n.decimalValue();
+        if (n.isBigInteger()) return n.bigIntegerValue();
         if (n.isBoolean()) return n.booleanValue();
         if (n.isObject()) return new JSONObject((ObjectNode) n);
         if (n.isArray()) return new JSONArray((ArrayNode) n);
