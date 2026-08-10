@@ -106,6 +106,8 @@ public final class JSON {
                 // fastjson 默认 AllowSingleQuotes / AllowUnQuotedFieldNames：宽松语法
                 .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
                 .enable(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES)
+                // 非规范字段名（TOTAL_BYTES_CNT / ICCID / Response）保留声明名
+                .accessorNaming(new FastjsonAccessorNaming.Provider())
                 .build();
 
         // fastjson 默认 IgnoreNotMatch：忽略 JSON 中多出的字段
@@ -117,6 +119,9 @@ public final class JSON {
         mapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
         // fastjson 解析完整字符串时不允许尾部残留内容，Jackson 默认会静默忽略
         mapper.configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true);
+
+        // 精确名未命中时，按 fastjson 的 smartMatch 规则模糊匹配
+        mapper.addHandler(new SmartMatchHandler());
 
         mapper.registerModule(new FastjsonCompatModule());
         AnnotationIntrospector defaultAi = mapper.getSerializationConfig().getAnnotationIntrospector();

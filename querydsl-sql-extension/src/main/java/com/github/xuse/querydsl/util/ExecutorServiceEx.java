@@ -186,11 +186,15 @@ public interface ExecutorServiceEx extends ExecutorService {
 		}
 	}
 	
-	static interface PoolExecutor extends ExecutorServiceEx{
+	public static interface PoolExecutor extends ExecutorServiceEx{
 		int getPoolSize();
 		
 		int getCorePoolSize();
 		
 		BlockingQueue<Runnable> getQueue();		
+		
+		void setCorePoolSize(int corePoolSize);
+		 
+		void setMaximumPoolSize(int maximumPoolSize);
 	}
 }

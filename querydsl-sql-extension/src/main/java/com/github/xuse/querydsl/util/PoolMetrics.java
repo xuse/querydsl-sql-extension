@@ -120,6 +120,27 @@ public final class PoolMetrics {
 		return saturatedCount.sum();
 	}
 
+	/**
+	 * 将所有指标输出为 JSON 字符串。
+	 * <p>
+	 * Serialize all metrics to a JSON string (no external dependency).
+	 */
+	public String toJson() {
+		StringBuilder sb = new StringBuilder(256);
+		sb.append('{');
+		sb.append("\"completedCount\":").append(getCompletedCount());
+		sb.append(",\"rejectedCount\":").append(getRejectedCount());
+		sb.append(",\"avgExecutionMs\":").append(getAverageExecutionTimeMs());
+		sb.append(",\"maxExecutionMs\":").append(getMaxExecutionTimeMs());
+		sb.append(",\"minExecutionMs\":").append(getMinExecutionTimeMs());
+		sb.append(",\"avgWaitMs\":").append(getAverageWaitTimeMs());
+		sb.append(",\"maxWaitMs\":").append(getMaxWaitTimeMs());
+		sb.append(",\"pressureCount\":").append(getPressureCount());
+		sb.append(",\"saturatedCount\":").append(getSaturatedCount());
+		sb.append('}');
+		return sb.toString();
+	}
+
 	private static void updateMax(AtomicLong holder, long value) {
 		long current;
 		do {

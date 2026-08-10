@@ -68,48 +68,8 @@ public class PoolMonitor implements FrontPressurePoolMXBean {
 	}
 
 	@Override
-	public long getCompletedTaskCount() {
-		return metrics.getCompletedCount();
-	}
-
-	@Override
-	public long getRejectedTaskCount() {
-		return metrics.getRejectedCount();
-	}
-
-	@Override
-	public double getAverageExecutionTimeMs() {
-		return metrics.getAverageExecutionTimeMs();
-	}
-
-	@Override
-	public long getMaxExecutionTimeMs() {
-		return metrics.getMaxExecutionTimeMs();
-	}
-
-	@Override
-	public long getMinExecutionTimeMs() {
-		return metrics.getMinExecutionTimeMs();
-	}
-
-	@Override
-	public double getAverageWaitTimeMs() {
-		return metrics.getAverageWaitTimeMs();
-	}
-
-	@Override
-	public long getMaxWaitTimeMs() {
-		return metrics.getMaxWaitTimeMs();
-	}
-
-	@Override
-	public long getPressureCount() {
-		return metrics.getPressureCount();
-	}
-
-	@Override
-	public long getSaturatedCount() {
-		return metrics.getSaturatedCount();
+	public String getMetricsJson() {
+		return metrics.toJson();
 	}
 
 	@Override

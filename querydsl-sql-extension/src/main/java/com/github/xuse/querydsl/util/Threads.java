@@ -403,6 +403,14 @@ public abstract class Threads {
 		public BlockingQueue<Runnable> getQueue() {
 			return pool.getQueue();
 		}
+		@Override
+		public void setCorePoolSize(int corePoolSize) {
+			pool.setCorePoolSize(corePoolSize);
+		}
+		@Override
+		public void setMaximumPoolSize(int maximumPoolSize) {
+			pool.setMaximumPoolSize(maximumPoolSize);
+		}
 	}
 
 	/**
