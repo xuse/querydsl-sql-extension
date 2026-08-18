@@ -38,6 +38,28 @@ class SelectBuilderTest extends MockedTestBase implements LambdaHelpers {
 	@BeforeAll
 	static void setup() {
 		doInit();
+		try {
+			factory.getConnection().createStatement().execute("DROP TABLE IF EXISTS ca_foo");
+			factory.getConnection().createStatement().execute(
+				"CREATE TABLE IF NOT EXISTS ca_foo (" +
+				"id INT AUTO_INCREMENT PRIMARY KEY, " +
+				"code VARCHAR(64) NOT NULL DEFAULT '', " +
+				"asset_name VARCHAR(128) NOT NULL DEFAULT '', " +
+				"content TEXT, " +
+				"created TIMESTAMP, " +
+				"updated TIMESTAMP, " +
+				"gender VARCHAR(16), " +
+				"ext VARCHAR(256), " +
+				"map VARCHAR(256), " +
+				"volume INT NOT NULL DEFAULT 0, " +
+				"version INT NOT NULL DEFAULT 1, " +
+				"codetype INT NOT NULL DEFAULT 1, " +
+				"inday DATE, " +
+				"inday2 TIMESTAMP, " +
+				"inday3 TIMESTAMP(3))");
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/** Test select single column with aggregation. */

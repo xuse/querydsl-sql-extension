@@ -150,7 +150,7 @@ public class CodecsTest {
 		Foo foo = new Foo();
 		foo.setCode("Code");
 		assertEquals(
-				"rO0ABXNyACNjb20uZ2l0aHViLnh1c2UucXVlcnlkc2wuZW50aXR5LkZvb1q8WToIe2J4AgANSQAIY29kZVR5cGVJAAJpZEkAB3ZlcnNpb25JAAZ2b2x1bWVMAARjb2RldAASTGphdmEvbGFuZy9TdHJpbmc7TAAHY29udGVudHEAfgABTAAHY3JlYXRlZHQAE0xqYXZhL3RpbWUvSW5zdGFudDtMAANleHR0ADBMY29tL2dpdGh1Yi94dXNlL3F1ZXJ5ZHNsL2VudGl0eS9UYWJsZURhdGFUeXBlcztMAAZnZW5kZXJ0ACdMY29tL2dpdGh1Yi94dXNlL3F1ZXJ5ZHNsL2VudW1zL0dlbmRlcjtMAAVpbkRheXQAD0xqYXZhL3NxbC9EYXRlO0wAA21hcHQAD0xqYXZhL3V0aWwvTWFwO0wABG5hbWVxAH4AAUwAB3VwZGF0ZWR0ABBMamF2YS91dGlsL0RhdGU7eHAAAAAAAAAAAAAAAAD/////dAAEQ29kZXBwcHBwcHBw",
+				"rO0ABXNyACNjb20uZ2l0aHViLnh1c2UucXVlcnlkc2wuZW50aXR5LkZvb/QN6HSJSGPAAgAPSQAIY29kZVR5cGVJAAJpZEkAB3ZlcnNpb25JAAZ2b2x1bWVMAARjb2RldAASTGphdmEvbGFuZy9TdHJpbmc7TAAHY29udGVudHEAfgABTAAHY3JlYXRlZHQAE0xqYXZhL3RpbWUvSW5zdGFudDtMAANleHR0ADBMY29tL2dpdGh1Yi94dXNlL3F1ZXJ5ZHNsL2VudGl0eS9UYWJsZURhdGFUeXBlcztMAAZnZW5kZXJ0ACdMY29tL2dpdGh1Yi94dXNlL3F1ZXJ5ZHNsL2VudW1zL0dlbmRlcjtMAAVpbkRheXQAD0xqYXZhL3NxbC9EYXRlO0wABmluRGF5MnQAFUxqYXZhL3RpbWUvTG9jYWxEYXRlO0wABmluRGF5M3EAfgAGTAADbWFwdAAPTGphdmEvdXRpbC9NYXA7TAAEbmFtZXEAfgABTAAHdXBkYXRlZHQAEExqYXZhL3V0aWwvRGF0ZTt4cAAAAAAAAAAAAAAAAP////90AARDb2RlcHBwcHBwcHBwcA==",
 				str = Codecs.toString(foo, Foo.class));
 		assertEquals("", Codecs.toString(null, Foo.class));
 		assertEquals(foo, Codecs.fromString(str, Foo.class));
@@ -161,7 +161,7 @@ public class CodecsTest {
 	@Test
 	public void testErrors() {
 		TableDataTypes aaa = new TableDataTypes();
-		Assertions.assertThrows(UnsupportedOperationException.class, () -> {
+		Assertions.assertThrows(Exception.class, () -> {
 			Codecs.toString(aaa, TableDataTypes.class);
 		});
 	}

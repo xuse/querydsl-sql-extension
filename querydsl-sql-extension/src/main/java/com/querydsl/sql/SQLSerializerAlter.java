@@ -11,6 +11,7 @@ import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.JoinExpression;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Constant;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.PathMetadata;
 import com.querydsl.core.types.SubQueryExpression;
@@ -235,13 +236,20 @@ public class SQLSerializerAlter extends SQLSerializer {
 	
 	public final SQLSerializerAlter handleValueList(List<? extends Expression<?>> expressions, 
 			List<Path<?>> columns) {
-		String sep=COMMA;
+		String sep = COMMA;
 		if (!expressions.isEmpty()) {
-			this.constantPaths.addAll(columns);
-			handle(expressions.get(0));
+			Expression<?> expr = expressions.get(0);
+			if (expr instanceof Constant<?> || expr == Null.CONSTANT) {
+				constantPaths.add(columns.get(0));
+			}
+			expr.accept(this, null);
 			for (int i = 1; i < expressions.size(); i++) {
 				append(sep);
-				expressions.get(i).accept(this, null);
+				expr = expressions.get(i);
+				if (expr instanceof Constant<?> || expr == Null.CONSTANT) {
+					constantPaths.add(columns.get(i));
+				}
+				expr.accept(this, null);
 			}
 		}
 		return this;

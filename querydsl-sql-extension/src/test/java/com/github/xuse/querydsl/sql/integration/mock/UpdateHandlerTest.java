@@ -35,6 +35,7 @@ class UpdateHandlerTest extends MockedTestBase {
 	static void setup() {
 		doInit();
 		try {
+			factory.getConnection().createStatement().execute("DROP TABLE IF EXISTS ca_foo");
 			factory.getConnection().createStatement().execute(
 				"CREATE TABLE IF NOT EXISTS ca_foo (" +
 				"id INT AUTO_INCREMENT PRIMARY KEY, " +
@@ -49,7 +50,9 @@ class UpdateHandlerTest extends MockedTestBase {
 				"volume INT NOT NULL DEFAULT 0, " +
 				"version INT NOT NULL DEFAULT 1, " +
 				"codetype INT NOT NULL DEFAULT 1, " +
-				"inday DATE)");
+				"inday DATE, " +
+				"inday2 TIMESTAMP, " +
+				"inday3 TIMESTAMP(3))");
 			factory.getConnection().createStatement().execute("DELETE FROM ca_foo");
 			// Seed data
 			CRUDRepository<Foo, Integer> repo = factory.asRepository(FOO);

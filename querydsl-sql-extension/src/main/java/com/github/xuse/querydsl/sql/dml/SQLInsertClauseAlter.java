@@ -51,6 +51,7 @@ import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.QueryFlag.Position;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
@@ -392,27 +393,43 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	}
 
 	private PreparedStatement newStatementBulk(Collection<Object> beans, boolean withKeys) throws SQLException {
-		Iterator<Object> iter = beans.iterator();
-		Object bean = iter.next();
-		BatchProcessor batch = createBatch(bean);
-		int repeatTime = beans.size() - 1;
-		List<Object[]> values = batch.collectBatchValues(iter,repeatTime);
-		listeners.prePrepare(context);
-		
-		//数据全部准备完成，开始操作数据库
-		batch.prepareBulk(repeatTime, withKeys);
-		Configuration configuration = this.configuration.get();
-		for(Object[] vs:values) {
-			batch.setBulkParameter(vs,configuration);
+		// 将所有bean转为SQLInsertBatch列表，交给序列化器在AST层面一次性生成完整SQL（含多组values和END flags）
+		List<SQLInsertBatch> batches = new ArrayList<>(beans.size());
+		for (Object bean : beans) {
+			batches.add(beanToInsertBatch(bean));
 		}
-		listeners.prepared(context);
-		return batch.stmt;
+		listeners.preRender(context);
+		SQLSerializerAlter serializer = createSerializer();
+		serializer.serializeInsert(metadata, entity, batches);
+		SQLBindingsAlter bindings = createBindings(metadata, serializer);
+		context.addSQL(bindings);
+		listeners.rendered(context);
+		return prepareStatementAndSetParameters(bindings, withKeys);
+	}
+
+	@SuppressWarnings("unchecked")
+	private SQLInsertBatch beanToInsertBatch(Object bean) {
+		Map<Path<?>, Object> map = batchMapper.createMap(entity, bean);
+		List<Path<?>> columns = new ArrayList<>(map.size());
+		List<Expression<?>> values = new ArrayList<>(map.size());
+		for (Map.Entry<Path<?>, Object> entry : map.entrySet()) {
+			columns.add(entry.getKey());
+			Object value = entry.getValue();
+			if (value instanceof Expression<?>) {
+				values.add((Expression<?>) value);
+			} else if (value != null) {
+				values.add(ConstantImpl.create(value));
+			} else {
+				values.add(Null.CONSTANT);
+			}
+		}
+		return new SQLInsertBatch(columns, values, null);
 	}
 
 	private PreparedStatement newStatementBatch(Collection<Object> beans, boolean withKeys) throws SQLException {
 		Iterator<Object> iter = beans.iterator();
 		Object bean = iter.next();
-		BatchProcessor batch = createBatch(bean);
+		BatchProcessor batch = createBatch(bean,-1);
 		List<Object[]> values = batch.collectBatchValues(iter, beans.size() - 1);
 		listeners.prePrepare(context);
 		
@@ -885,12 +902,23 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		
 		private int count = 0;
 
-		BatchProcessor(SQLInsertBatch batch, Object firstBean) {
+		BatchProcessor(SQLInsertBatch batch, Object firstBean,int repeatSize) {
 			useLiterals=false;
 			SQLSerializerAlter serializer = createSerializer(); 
 			listeners.preRender(context);
 			//此处使用已经处理过位于Batch中的值序。
 			serializer.serializeForInsert(metadata, entity, batch.getColumns(), batch.getValues(), null);
+			
+			//TODO
+			for(int i=0;i<repeatSize;i++){
+				
+			}
+			
+			if (!metadata.getFlags().isEmpty()) {
+				serializer.serialize(Position.END, metadata.getFlags());
+	        }
+			
+			
 			principle = new SQLBindingsAlter(serializer.toString(), serializer.getConstants(),
 					serializer.getConstantPaths());
 			this.constantPath = serializer.getConstantPaths();
@@ -1012,7 +1040,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	// Full Path: Entity的全部列。RelationalPath.getColumns()得到这个列表
 	// SQL Path: 参与到SQL中的列，在SQL Batch中的是是这个列表
 	// Constant Path: 参与绑定变量，即每条数据需要传入的列,在SQLSerializer.getConstantPath()得到这个列表
-	private BatchProcessor createBatch(Object obj) {
+	private BatchProcessor createBatch(Object obj, int repeatSize) {
 		List<Path<?>> columns = new ArrayList<>();
 		List<Expression<?>> values = new ArrayList<>();
 		@SuppressWarnings("unchecked")
@@ -1029,7 +1057,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				values.add(Null.CONSTANT);
 			}
 		}
-		return new BatchProcessor(new SQLInsertBatch(columns, values, null), obj);
+		return new BatchProcessor(new SQLInsertBatch(columns, values, null), obj, repeatSize);
 	}
 	
 	public SQLInsertClauseAlter normalizeBatch(boolean flag) {
