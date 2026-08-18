@@ -191,6 +191,8 @@ public interface ExecutorServiceEx extends ExecutorService {
 		
 		int getCorePoolSize();
 		
+		int getMaximumPoolSize();
+		
 		BlockingQueue<Runnable> getQueue();		
 		
 		void setCorePoolSize(int corePoolSize);

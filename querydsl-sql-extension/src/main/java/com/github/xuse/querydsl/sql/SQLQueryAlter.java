@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.expression.Projection;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.log.ExceptionLogDetail;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.Holder;
 import com.mysema.commons.lang.CloseableIterator;
@@ -83,6 +84,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 	private boolean exceedSizeLog;
 
 	private RoutingStrategy routing;
+
+	private ExceptionLogDetail exceptionLogDetail;
 
 	public SQLQueryAlter(Connection conn, ConfigurationEx configuration, QueryMetadata metadata) {
 		super(conn, configuration.get(), metadata);
@@ -477,6 +480,29 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		setMaxRows(maxRows);
 		this.exceedSizeLog = true;
 		return this;
+	}
+
+	/**
+	 * Set how much detail is logged if this statement fails.
+	 * <p>设置本语句执行失败时的异常日志详细度。适用于预期内的异常（如主键冲突用于流程控制），
+	 * 避免完整堆栈淹没业务日志，同时不影响其它语句的错误日志。
+	 *
+	 * @param detail {@link ExceptionLogDetail#FULL_STACK} 完整堆栈（默认）、
+	 *        {@link ExceptionLogDetail#BRIEF} 仅SQL和异常摘要、
+	 *        {@link ExceptionLogDetail#NONE} 不打印
+	 * @return this
+	 */
+	public SQLQueryAlter<T> exceptionLog(ExceptionLogDetail detail) {
+		this.exceptionLogDetail = detail;
+		return this;
+	}
+
+	@Override
+	protected void onException(SQLListenerContextImpl context, Exception e) {
+		if (this.exceptionLogDetail != null) {
+			context.setData(ContextKeyConstants.EXCEPTION_LOG_DETAIL, this.exceptionLogDetail);
+		}
+		super.onException(context, e);
 	}
 
 	/**

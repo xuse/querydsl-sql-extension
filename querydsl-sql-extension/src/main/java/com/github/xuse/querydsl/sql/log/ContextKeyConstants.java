@@ -27,6 +27,12 @@ public interface ContextKeyConstants {
 	 */
 	String EXCEED="EXCEED";
 	
+	/**
+	 * 语句级的异常日志详细度，值类型为 {@link ExceptionLogDetail}。
+	 * 未设置时使用监听器的全局配置。
+	 */
+	String EXCEPTION_LOG_DETAIL = "EX_LOG_DETAIL";
+	
 	
 	String[] IMPORTANT_HINT = { "", "SlowSQL:", "DDL:", "SlowDDL:" };
 	

@@ -12,6 +12,7 @@ import com.github.xuse.querydsl.config.ConfigurationEx;
 import com.github.xuse.querydsl.sql.RelationalPathEx;
 import com.github.xuse.querydsl.sql.dbmeta.MetadataQuerySupport;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.log.ExceptionLogDetail;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.DistributedLock;
 import com.github.xuse.querydsl.util.Entry;
@@ -74,6 +75,8 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
     protected RoutingStrategy routing;
 	
 	protected boolean useDDLLock = false;
+	
+	protected ExceptionLogDetail exceptionLogDetail;
 	
 	private static final String DDL_DISTRIBUTED_LOCK_NAME = "lock#table_ddl";
 	
@@ -159,6 +162,9 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
     }
 
 	protected void onException(SQLListenerContextImpl context, Exception e) {
+		if (this.exceptionLogDetail != null) {
+			context.setData(ContextKeyConstants.EXCEPTION_LOG_DETAIL, this.exceptionLogDetail);
+		}
         context.setException(e);
         listeners.exception(context);
     }
@@ -205,6 +211,22 @@ public abstract class AbstractDDLClause<C extends DDLClause<C>> implements DDLCl
 		return (C)this;
 	}
 	
+	/**
+	 * Set how much detail is logged if this statement fails.
+	 * <p>设置本语句执行失败时的异常日志详细度。适用于预期内的异常（如对象已存在），
+	 * 避免完整堆栈淹没业务日志，同时不影响其它语句的错误日志。
+	 *
+	 * @param detail {@link ExceptionLogDetail#FULL_STACK} 完整堆栈（默认）、
+	 *        {@link ExceptionLogDetail#BRIEF} 仅SQL和异常摘要、
+	 *        {@link ExceptionLogDetail#NONE} 不打印
+	 * @return this
+	 */
+	@SuppressWarnings("unchecked")
+	public C exceptionLog(ExceptionLogDetail detail) {
+		this.exceptionLogDetail = detail;
+		return (C) this;
+	}
+
 	@SuppressWarnings("unchecked")
 	public C useDDLLock() {
 		this.useDDLLock = true;

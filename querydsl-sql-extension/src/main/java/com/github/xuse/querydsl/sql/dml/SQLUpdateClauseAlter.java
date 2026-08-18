@@ -33,6 +33,7 @@ import com.github.xuse.querydsl.sql.expression.AbstractMapperSupport;
 import com.github.xuse.querydsl.sql.expression.AdvancedMapper;
 import com.github.xuse.querydsl.sql.expression.ConverterWrappedBean;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.log.ExceptionLogDetail;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.querydsl.core.QueryMetadata;
@@ -61,6 +62,8 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 	private final ConfigurationEx configEx;
 
 	private RoutingStrategy routing;
+
+	private ExceptionLogDetail exceptionLogDetail;
 
 	private boolean updateNulls = false;
 
@@ -603,6 +606,29 @@ public class SQLUpdateClauseAlter extends AbstractSQLUpdateClause<SQLUpdateClaus
 			updates.remove(p);
 		}
 		return this;
+	}
+
+	/**
+	 * Set how much detail is logged if this statement fails.
+	 * <p>设置本语句执行失败时的异常日志详细度。适用于预期内的异常（如唯一键冲突用于流程控制），
+	 * 避免完整堆栈淹没业务日志，同时不影响其它语句的错误日志。
+	 *
+	 * @param detail {@link ExceptionLogDetail#FULL_STACK} 完整堆栈（默认）、
+	 *        {@link ExceptionLogDetail#BRIEF} 仅SQL和异常摘要、
+	 *        {@link ExceptionLogDetail#NONE} 不打印
+	 * @return this
+	 */
+	public SQLUpdateClauseAlter exceptionLog(ExceptionLogDetail detail) {
+		this.exceptionLogDetail = detail;
+		return this;
+	}
+
+	@Override
+	protected void onException(SQLListenerContextImpl context, Exception e) {
+		if (this.exceptionLogDetail != null) {
+			context.setData(ContextKeyConstants.EXCEPTION_LOG_DETAIL, this.exceptionLogDetail);
+		}
+		super.onException(context, e);
 	}
 
 	public SQLUpdateClauseAlter withRouting(RoutingStrategy routing) {

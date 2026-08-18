@@ -421,13 +421,27 @@ public class DMLTest extends AbstractTestBase implements LambdaHelpers {
 
 		// === 1. INSERT: LocalDate field mapped to TIMESTAMP column ===
 		LocalDate today = LocalDate.of(2026, 1, 15);
-		Foo foo = new Foo();
-		foo.setCode("FOO_DATE_1");
-		foo.setCodeType(1);
-		foo.setName("DateTest");
-		foo.setInDay2(today);
-		factory.insert(t).populate(foo).execute();
-
+		{
+			Foo foo = new Foo();
+			foo.setCode("FOO_DATE_1");
+			foo.setCodeType(1);
+			foo.setName("DateTest");
+			foo.setInDay2(today);
+			factory.insert(t).populate(foo).execute();	
+		}
+//		{
+//			Foo foo = new Foo();
+//			foo.setCode("FOO_DATE_1");
+//			foo.setCodeType(1);
+//			foo.setName("DateTest");
+//			foo.setInDay2(today);
+//			long v= factory.asMySQL().insertIgnore(t).populate(foo).execute();
+//			System.out.println("IGNOR:"+v);
+//		}
+		
+		
+		
+		
 		// === 2. SELECT: verify LocalDate read back correctly ===
 		Foo fetched = factory.selectFrom(t).where(_Code.eq("FOO_DATE_1")).fetchOne();
 		assertEquals(today, fetched.getInDay2());

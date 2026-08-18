@@ -45,6 +45,7 @@ import com.github.xuse.querydsl.sql.expression.BindingProvider.ListPathBindings;
 import com.github.xuse.querydsl.sql.expression.ConverterWrappedBean;
 import com.github.xuse.querydsl.sql.expression.ValueExtractor;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
+import com.github.xuse.querydsl.sql.log.ExceptionLogDetail;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
@@ -85,6 +86,8 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	private final ConfigurationEx configuration;
 
 	private RoutingStrategy routing;
+
+	private ExceptionLogDetail exceptionLogDetail;
 
 	private Boolean writeNulls;
 	
@@ -787,6 +790,29 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			context.setData(ContextKeyConstants.IMPORTANT, ContextKeyConstants.SLOW);
 		}
 		listeners.executed(context);
+	}
+
+	/**
+	 * Set how much detail is logged if this statement fails.
+	 * <p>设置本语句执行失败时的异常日志详细度。适用于预期内的异常（如主键冲突用于流程控制），
+	 * 避免完整堆栈淹没业务日志，同时不影响其它语句的错误日志。
+	 *
+	 * @param detail {@link ExceptionLogDetail#FULL_STACK} 完整堆栈（默认）、
+	 *        {@link ExceptionLogDetail#BRIEF} 仅SQL和异常摘要、
+	 *        {@link ExceptionLogDetail#NONE} 不打印
+	 * @return this
+	 */
+	public SQLInsertClauseAlter exceptionLog(ExceptionLogDetail detail) {
+		this.exceptionLogDetail = detail;
+		return this;
+	}
+
+	@Override
+	protected void onException(SQLListenerContextImpl context, Exception e) {
+		if (this.exceptionLogDetail != null) {
+			context.setData(ContextKeyConstants.EXCEPTION_LOG_DETAIL, this.exceptionLogDetail);
+		}
+		super.onException(context, e);
 	}
 
 	public SQLInsertClauseAlter withRouting(RoutingStrategy routing) {

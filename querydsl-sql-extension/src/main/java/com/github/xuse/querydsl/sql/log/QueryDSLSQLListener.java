@@ -1,7 +1,9 @@
 package com.github.xuse.querydsl.sql.log;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -108,6 +110,17 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 	 * 业务方可设置为 WARN，适用于预期内可恢复异常（如唯一键冲突后降级处理）不希望触发告警的场景。
 	 */
 	private int exceptionLogLevel = LOG_LEVEL_ERROR;
+
+	/**
+	 * 全局默认的异常日志详细度。语句级设置优先于此项。
+	 */
+	private ExceptionLogDetail exceptionLogDetail = ExceptionLogDetail.FULL_STACK;
+
+	/**
+	 * 按 SQLState 配置的异常日志详细度。key 为 SQLState，命中时覆盖全局默认值，
+	 * 但仍低于语句级设置的优先级。
+	 */
+	private Map<String, ExceptionLogDetail> sqlStateDetails = Collections.emptyMap();
 
 	/**
 	 * 异常日志级别：ERROR（默认）
@@ -371,6 +384,105 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 		return this;
 	}
 
+	/**
+	 * 设置全局默认的异常日志详细度。语句级设置（见各 clause 的
+	 * {@code exceptionLog(ExceptionLogDetail)} 方法）优先于此项。
+	 *
+	 * @param detail 详细度，null 时按 {@link ExceptionLogDetail#FULL_STACK} 处理
+	 * @return this
+	 */
+	public QueryDSLSQLListener setExceptionLogDetail(ExceptionLogDetail detail) {
+		this.exceptionLogDetail = detail == null ? ExceptionLogDetail.FULL_STACK : detail;
+		return this;
+	}
+
+	/**
+	 * 针对指定的 SQLState 配置异常日志详细度。适用于批量降噪已有代码，
+	 * 无需逐个调用点声明。
+	 * <p>
+	 * 常用 SQLState：{@code 23000} 完整性约束违例（含主键/唯一键冲突），
+	 * {@code 23505} Derby/H2 的唯一约束冲突，{@code 23503} 外键违例。
+	 * <p>
+	 * 注意：该配置为全局生效，如果某处的约束冲突其实是缺陷，也会一并降噪。
+	 * 精确控制请使用语句级的 {@code exceptionLog(...)}。
+	 *
+	 * @param sqlState SQLState 值
+	 * @param detail 命中时使用的详细度
+	 * @return this
+	 */
+	public QueryDSLSQLListener setSQLStateDetail(String sqlState, ExceptionLogDetail detail) {
+		if (sqlState == null || detail == null) {
+			return this;
+		}
+		if (this.sqlStateDetails.isEmpty()) {
+			this.sqlStateDetails = new HashMap<>(8);
+		}
+		this.sqlStateDetails.put(sqlState, detail);
+		return this;
+	}
+
+	/**
+	 * 将主键/唯一键冲突相关的 SQLState 统一设置为指定详细度。等价于对
+	 * {@code 23000}、{@code 23505}、{@code 23001}、{@code 23514} 分别调用
+	 * {@link #setSQLStateDetail(String, ExceptionLogDetail)}。
+	 *
+	 * @param detail 详细度
+	 * @return this
+	 */
+	public QueryDSLSQLListener setConstraintViolationDetail(ExceptionLogDetail detail) {
+		for (String state : CONSTRAINT_VIOLATION_STATES) {
+			setSQLStateDetail(state, detail);
+		}
+		return this;
+	}
+
+	/**
+	 * 常见的完整性约束违例 SQLState。
+	 */
+	private static final String[] CONSTRAINT_VIOLATION_STATES = { "23000", "23001", "23503", "23505", "23514" };
+
+	/**
+	 * 计算本次异常应使用的详细度。优先级：语句级 &gt; SQLState 匹配 &gt; 全局默认。
+	 */
+	private ExceptionLogDetail resolveDetail(SQLListenerContext context, Exception ex) {
+		Object perStatement = context.getData(ContextKeyConstants.EXCEPTION_LOG_DETAIL);
+		if (perStatement instanceof ExceptionLogDetail) {
+			return (ExceptionLogDetail) perStatement;
+		}
+		if (!sqlStateDetails.isEmpty()) {
+			String state = findSQLState(ex);
+			if (state != null) {
+				ExceptionLogDetail byState = sqlStateDetails.get(state);
+				if (byState != null) {
+					return byState;
+				}
+			}
+		}
+		return exceptionLogDetail;
+	}
+
+	/**
+	 * 沿异常链查找第一个可用的 SQLState。框架会把 SQLException 转换为
+	 * RuntimeException 抛出，所以此处需要向下钻取 cause。
+	 */
+	private static String findSQLState(Throwable ex) {
+		int depth = 0;
+		while (ex != null && depth++ < 16) {
+			if (ex instanceof SQLException) {
+				String state = ((SQLException) ex).getSQLState();
+				if (state != null && !state.isEmpty()) {
+					return state;
+				}
+			}
+			Throwable cause = ex.getCause();
+			if (cause == ex) {
+				break;
+			}
+			ex = cause;
+		}
+		return null;
+	}
+
 	@Override
 	public final void prePrepare(SQLListenerContext context) {
 		if (log.isInfoEnabled()) {
@@ -425,12 +537,54 @@ public final class QueryDSLSQLListener implements SQLDetailedListener {
 
 	@Override
 	public final void exception(SQLListenerContext context) {
-		String message = errorFormatter.format(context.getAllSQLBindings());
 		Exception ex = context.getException();
-		if (exceptionLogLevel == LOG_LEVEL_WARN) {
+		ExceptionLogDetail detail = resolveDetail(context, ex);
+		if (detail == ExceptionLogDetail.NONE) {
+			return;
+		}
+		boolean warn = exceptionLogLevel == LOG_LEVEL_WARN;
+		if (detail == ExceptionLogDetail.BRIEF) {
+			// 不输出堆栈，仅追加异常类名与message
+			StringBuilder sb = new StringBuilder(errorFormatter.format(context.getAllSQLBindings()));
+			appendBrief(sb, ex);
+			if (warn) {
+				log.warn(sb.toString());
+			} else {
+				log.error(sb.toString());
+			}
+			return;
+		}
+		String message = errorFormatter.format(context.getAllSQLBindings());
+		if (warn) {
 			log.warn(message, ex);
 		} else {
 			log.error(message, ex);
+		}
+	}
+
+	/**
+	 * 追加异常摘要：类名 + message，并沿 cause 链找出根因，不输出堆栈。
+	 */
+	private static void appendBrief(StringBuilder sb, Throwable ex) {
+		if (ex == null) {
+			return;
+		}
+		sb.append("\n").append(ex.getClass().getName());
+		String message = ex.getMessage();
+		if (message != null) {
+			sb.append(": ").append(message);
+		}
+		Throwable root = ex;
+		int depth = 0;
+		while (root.getCause() != null && root.getCause() != root && depth++ < 16) {
+			root = root.getCause();
+		}
+		if (root != ex) {
+			sb.append("\nCaused by: ").append(root.getClass().getName());
+			String rootMessage = root.getMessage();
+			if (rootMessage != null) {
+				sb.append(": ").append(rootMessage);
+			}
 		}
 	}
 

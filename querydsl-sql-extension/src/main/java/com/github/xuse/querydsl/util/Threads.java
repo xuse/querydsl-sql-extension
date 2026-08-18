@@ -411,6 +411,10 @@ public abstract class Threads {
 		public void setMaximumPoolSize(int maximumPoolSize) {
 			pool.setMaximumPoolSize(maximumPoolSize);
 		}
+		@Override
+		public int getMaximumPoolSize() {
+			return pool.getMaximumPoolSize();
+		}
 	}
 
 	/**
