@@ -253,9 +253,11 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			if (!populatedBatch.isEmpty()) {
 				// 新模式PopulatedBatch
 				if (batchToBulk) {
+					//基于拼装长SQL
 					PreparedStatement stmt = newStatementBulk(populatedBatch, false);
 					return executeStatementInternal(stmt,true);
 				} else {
+					//基于JDBC Batch
 					PreparedStatement stmt = newStatementBatch(populatedBatch, false);
 					return executeBatchInternal(Collections.singleton(stmt),true);
 				}
@@ -393,12 +395,17 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		Iterator<Object> iter = beans.iterator();
 		Object bean = iter.next();
 		BatchProcessor batch = createBatch(bean);
-		batch.prepareBulk(beans.size() - 1, withKeys);
+		int repeatTime = beans.size() - 1;
+		List<Object[]> values = batch.collectBatchValues(iter,repeatTime);
+		listeners.prePrepare(context);
+		
+		//数据全部准备完成，开始操作数据库
+		batch.prepareBulk(repeatTime, withKeys);
 		Configuration configuration = this.configuration.get();
-		while (iter.hasNext()) {
-			bean = iter.next();
-			batch.setBulkParameter(bean,configuration);
+		for(Object[] vs:values) {
+			batch.setBulkParameter(vs,configuration);
 		}
+		listeners.prepared(context);
 		return batch.stmt;
 	}
 
@@ -406,12 +413,16 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		Iterator<Object> iter = beans.iterator();
 		Object bean = iter.next();
 		BatchProcessor batch = createBatch(bean);
+		List<Object[]> values = batch.collectBatchValues(iter, beans.size() - 1);
+		listeners.prePrepare(context);
+		
+		//数据全部准备完成，开始操作数据库
 		batch.prepareBatch(withKeys);
 		Configuration configuration = this.configuration.get();
-		while (iter.hasNext()) {
-			bean = iter.next();
-			batch.setBatchStatement(bean, configuration);
+		for (Object[] vs:values) {
+			batch.setBatchStatement(vs, configuration);
 		}
+		listeners.prepared(context);
 		return batch.stmt;
 	}
 	
@@ -893,6 +904,26 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			context.addSQL(principle);
 			listeners.rendered(context);
 		}
+
+		private List<Object[]> collectBatchValues(Iterator<Object> iter,int len) {
+			List<Object[]> result = new ArrayList<>(len);
+			while(iter.hasNext()) {
+				Object bean = iter.next();
+				if (valueExtractor.isInstance(bean)) {
+					Object[] values = this.valueExtractor.values(bean);
+					DefaultValueHelper.applySubstitutions(entity, constantPath, values, getEffectiveBatchNullStrategy());
+					if (count++ < maxLoginBatch) {
+						context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), constantPath));
+					}
+					result.add(values);
+				} else {
+					throw Exceptions.illegalArgument("Object in batch must be in consistent type {}. encounter a {}",
+							valueExtractor.getType(), bean.getClass());
+				}				
+			}
+			return result;
+		}
+		
 		public void prepareBulk(int repeatTime, boolean withKeys) throws SQLException {
 			String sql = principle.getSQL();
 			int index = sql.indexOf("values (");
@@ -919,40 +950,27 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			stmt.addBatch();
 		}
 
-		public void setBulkParameter(Object bean,Configuration config) {
-			Object[] values = this.valueExtractor.values(bean);
-			DefaultValueHelper.applySubstitutions(entity, constantPath, values, getEffectiveBatchNullStrategy());
-			if (count++ < maxLoginBatch) {
-				context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), constantPath));
-			}
+		private void setBulkParameter(Object[] values,Configuration config) {
 			setParameterBulk(this.stmt, values, constantPath, count * values.length, config);
 		}
-		
-		public void setBatchStatement( Object bean,Configuration config) throws SQLException {
+
+		private void setBatchStatement(Object[] values, Configuration config) throws SQLException {
 			List<Path<?>> paths = this.constantPath;
 			PreparedStatement stmt = this.stmt;
-			if (valueExtractor.isInstance(bean)) {
-				Object[] values = valueExtractor.values(bean);
-				DefaultValueHelper.applySubstitutions(entity, paths, values, getEffectiveBatchNullStrategy());
-				if (count++ < maxLoginBatch) {
-					context.addSQL(new SQLBindingsAlter(null, Arrays.asList(values), paths));
+			int len = values.length;
+			for (int i = 0; i < len;) {
+				Path<?> path = paths.get(i);
+				Object o = values[i];
+				try {
+					config.set(stmt, path, ++i, o);
+				} catch (SQLException e) {
+					log.error(principle.getSQL() + "\nField " + (i - 1) + " path=" + path + " set error. "
+							+ e.getMessage());
+					throw e;
 				}
-				int len = values.length;
-				for (int i = 0; i < len;) {
-					Path<?> path = paths.get(i);
-					Object o = values[i];
-					try {
-						config.set(stmt, path, ++i, o);
-					} catch (SQLException e) {
-						log.error(principle.getSQL() + "\nField " + (i - 1) + " path=" + path + " set error. " + e.getMessage());
-						throw e;
-					}
-				}
-				stmt.addBatch();
-			} else {
-				throw Exceptions.illegalArgument("Object in batch must be in consistent type {}. encounter a {}",
-						valueExtractor.getType(), bean.getClass());
 			}
+			stmt.addBatch();
+
 		}
 		private void setParameterBulk(PreparedStatement stmt, Object[] objects, List<Path<?>> paths, int offset,
 				Configuration config) {
@@ -969,7 +987,6 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			}
 		}
 		private PreparedStatement prepareStatement(String sql, boolean withKeys) throws SQLException {
-			listeners.prePrepare(context);
 			PreparedStatement stmt;
 			if (withKeys) {
 				if (entity.getPrimaryKey() != null && !configuration.has(SpecialFeature.PREFER_AUTOGENERATED_KEYS)) {
@@ -988,7 +1005,6 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				stmt = connection().prepareStatement(sql);
 			}
 			context.addPreparedStatement(stmt);
-			listeners.prepared(context);
 			return stmt;
 		}
 	}
