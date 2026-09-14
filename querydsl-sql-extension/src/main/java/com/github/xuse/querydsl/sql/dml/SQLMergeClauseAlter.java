@@ -69,6 +69,13 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 
 	private boolean writeNulls = false;
 
+	/**
+	 * 标记当前是否正在执行内层子 clause（insert/update）。子 clause 复用同一组 listeners，
+	 * 其内部已负责 onException 上报，因此当子 clause 抛出异常时，merge 外层不再重复上报。
+	 * 仅在 executeWithKeys 的 composite 分支使用，配对置位/复位。
+	 */
+	private transient boolean subClauseReported = false;
+
 	SQLMergeClauseAlter(Connection connection, ConfigurationEx configuration, RelationalPath<?> entity) {
 		super(connection, configuration.get(), entity);
 		this.configEx = configuration;
@@ -115,6 +122,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 	 */
 	public ResultSet executeWithKeys() {
 		context = startContext(connection(), metadata, entity);
+		boolean released = false; // 连接生命周期是否已被移交或已在本方法内释放，避免 finally 重复释放
 		try {
 			if (configuration.getTemplates().isNativeMerge()) {
 				PreparedStatement stmt;
@@ -149,7 +157,7 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 				}
 				final Statement stmt2 = stmt;
 				ResultSet rs = stmt.getGeneratedKeys();
-				return new ResultSetAdapter(rs) {
+				ResultSet result = new ResultSetAdapter(rs) {
 
 					@Override
 					public void close() throws SQLException {
@@ -162,6 +170,8 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 						}
 					}
 				};
+				released = true; // 交接给返回的 ResultSet.close() 负责释放
+				return result;
 			} else {
 				if (hasRow()) {
 					// update
@@ -176,23 +186,48 @@ public class SQLMergeClauseAlter extends SQLMergeClause {
 					addKeyConditions(update, true);
 					populate(update);
 					// 源代码中没有update.execute()，属于BUG，此处进行了修复。
+					// 子 clause 复用同一组 listeners，其内部已负责 onException 上报；
+					// 用 subClauseReported 标记，避免 merge 外层对同一异常重复上报（规范：onException 只上报一次）。
+					subClauseReported = true;
 					update.execute();
+					subClauseReported = false;
 					reset();
 					endContext(context);
+					released = true; // 本分支已在此释放
 					return EmptyResultSet.DEFAULT;
 				} else {
 					// insert
 					SQLInsertClauseAlter insert = new SQLInsertClauseAlter(connection(), configEx, entity);
 					insert.addListener(listeners);
 					populate(insert);
-					return insert.executeWithKeys();
+					// 子 clause 内部已负责 onException 上报，标记以避免 merge 外层重复上报。
+					subClauseReported = true;
+					ResultSet result = insert.executeWithKeys();
+					subClauseReported = false;
+					// insert 复用同一物理连接，且返回的 ResultSet.close() 会通过 insert 自身的
+					// context 释放该连接。此处 merge 不能再对同一连接做 endContext（否则会提前关闭
+					// insert 尚未读取的 ResultSet）。仅标记 released 以避免 finally 重复释放，
+					// 维持原有"由返回 ResultSet 负责释放"的语义。
+					released = true;
+					return result;
 				}
 			}
 		} catch (SQLException e) {
+			// SQLException 只可能来自 merge 本层代码（子 clause 不抛受检异常），一定未上报。
 			onException(context, e);
-			reset();
-			endContext(context);
 			throw configuration.translate(queryString, constants, e);
+		} catch (RuntimeException e) {
+			// 若异常来自子 clause（subClauseReported 为 true），其内部已上报，此处不再重复上报。
+			if (!subClauseReported) {
+				onException(context, e);
+			}
+			throw e;
+		} finally {
+			subClauseReported = false;
+			if (!released) {
+				reset();
+				endContext(context);
+			}
 		}
 	}
 

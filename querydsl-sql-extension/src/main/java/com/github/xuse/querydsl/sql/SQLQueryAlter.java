@@ -28,9 +28,9 @@ import com.github.xuse.querydsl.sql.expression.Projection;
 import com.github.xuse.querydsl.sql.log.ContextKeyConstants;
 import com.github.xuse.querydsl.sql.log.ExceptionLogDetail;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
+import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Holder;
 import com.mysema.commons.lang.CloseableIterator;
-import com.mysema.commons.lang.Pair;
 import com.querydsl.core.DefaultQueryMetadata;
 import com.querydsl.core.QueryFlag;
 import com.querydsl.core.QueryMetadata;
@@ -161,27 +161,11 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		}
 	}
 
-	/**
-	 * @deprecated use {@link #fetchResults()} instead.
-	 * @return Pair of Integer,List&lt;T&gt;
-	 */
-	public Pair<Integer, List<T>> fetchAndCount() {
-		int count = (int) fetchCount();
-		if (count == 0) {
-			return Pair.of(count, Collections.emptyList());
-		}
-		return Pair.of(count, fetch());
-	}
-
 	@Override
 	public long fetchCount() {
-		try {
-			return unsafeCount();
-		} catch (SQLException e) {
-			String error = "Caught " + e.getClass().getName();
-			log.error(error, e);
-			throw configuration.translate(e);
-		}
+		// unsafeCount() 内部已在 catch(SQLException) 中完成 onException + translate（转为 RuntimeException）,
+		// 因此这里不再需要 catch(SQLException)（此前那段为不可达的死代码）。异常由 unsafeCount 统一处理并抛出。
+		return unsafeCount();
 	}
 
 	@Override
@@ -192,7 +176,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		return serializer;
 	}
 
-	private long unsafeCount() throws SQLException {
+	private long unsafeCount() {
 		Connection conn;
 		SQLListenerContextImpl context = startContext(conn = connection(), getMetadata());
 		List<Object> constants = Collections.emptyList();
@@ -228,14 +212,11 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			onException(context, e);
 			throw configuration.translate(queryString, constants, e);
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-			} finally {
-				if (stmt != null) {
-					stmt.close();
-				}
+			if (rs != null) {
+				SQLTypeUtils.close(rs);
+			}
+			if (stmt != null) {
+				SQLTypeUtils.close(stmt);
 			}
 			endContext(context);
 		}
@@ -288,10 +269,8 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 					}
 					postExecuted(context, timeElapsed, "Fetch", result.size());
 					return result;
-				} catch (SQLException e) {
-					onException(context, e);
-					throw configuration.translate(queryString, constants, e);
 				}
+				// 内层不做 onException/translate，让异常冒泡到方法级 catch 统一上报一次（规范：onException 只在最外层）。
 			}
 		} catch (SQLException e) {
 			onException(context, e);
@@ -568,6 +547,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
+		boolean released = false; // 连接生命周期是否已移交给返回的迭代器，避免 finally 重复释放
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
@@ -589,16 +569,19 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			Projection<T> expr = getProjection(rs, false);
 			CloseableIterator<T> i = expr.iterator(stmt, rs, context);
 			postExecuted(context, System.currentTimeMillis() - start, "Iterated", i.hasNext() ? 1 : 0);
+			released = true; // 交接给返回的迭代器 close() 负责释放
 			return i;
 		} catch (SQLException e) {
 			onException(context, e);
-			endContext(context);
 			throw configuration.translate(queryString, constants, e);
 		} catch (RuntimeException e) {
 			log.error("Caught " + e.getClass().getName() + " for " + queryString);
 			onException(context, e);
-			endContext(context);
 			throw e;
+		} finally {
+			if (!released) {
+				endContext(context);
+			}
 		}
 	}
 
@@ -612,6 +595,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 		final SQLListenerContextImpl context = startContext(conn = connection(), queryMixin.getMetadata());
 		String queryString = null;
 		List<Object> constants = Collections.emptyList();
+		boolean released = false; // 连接生命周期是否已移交给返回的 ResultSet，避免 finally 重复释放
 		try {
 			listeners.preRender(context);
 			SQLSerializer serializer = serialize(false);
@@ -631,7 +615,7 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 			long start = System.currentTimeMillis();
 			final ResultSet rs = stmt.executeQuery();
 			postExecuted(context, System.currentTimeMillis() - start, "ResultSet", 0);
-			return new ResultSetAdapter(rs) {
+			ResultSet result = new ResultSetAdapter(rs) {
 
 				@Override
 				public void close() throws SQLException {
@@ -643,14 +627,18 @@ public class SQLQueryAlter<T> extends AbstractSQLQuery<T, SQLQueryAlter<T>> {
 					}
 				}
 			};
+			released = true; // 交接给返回的 ResultSet.close() 负责释放
+			return result;
 		} catch (SQLException e) {
 			onException(context, e);
-			endContext(context);
 			throw configuration.translate(queryString, constants, e);
 		} catch (RuntimeException e) {
 			onException(context, e);
-			endContext(context);
 			throw e;
+		} finally {
+			if (!released) {
+				endContext(context);
+			}
 		}
 	}
 

@@ -49,9 +49,9 @@ import com.github.xuse.querydsl.sql.log.ExceptionLogDetail;
 import com.github.xuse.querydsl.sql.routing.RoutingStrategy;
 import com.github.xuse.querydsl.sql.support.SQLTypeUtils;
 import com.github.xuse.querydsl.util.Exceptions;
+import com.querydsl.core.QueryFlag.Position;
 import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.QueryFlag.Position;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ParamExpression;
@@ -193,6 +193,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	 */
 	public ResultSet executeWithKeys() {
 		context = startContext(connection(), metadata, entity);
+		boolean returned = false; // 是否已把连接生命周期移交给返回的 ResultSet
 		try {
 			mergeDifferentBatchMode();
 			PreparedStatement stmt;
@@ -229,7 +230,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			}
 			final Statement stmt2 = stmt;
 			ResultSet rs = stmt.getGeneratedKeys();
-			return new ResultSetAdapter(rs) {
+			ResultSetAdapter result = new ResultSetAdapter(rs) {
 				@Override
 				public void close(){
 					SQLTypeUtils.close(rs);
@@ -238,11 +239,19 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 					endContext(context);
 				}
 			};
+			returned = true; // 交接成功，finally 不再关闭
+			return result;
+		} catch (RuntimeException e) {
+			onException(context, e);
+			throw e;
 		} catch (SQLException e) {
 			onException(context, e);
-			reset();
-			endContext(context);
 			throw configuration.translate(queryString, constants, e);
+		}finally {
+			if(!returned) {
+				reset();
+				endContext(context);	
+			}
 		}
 	}
 
@@ -284,6 +293,9 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				listeners.notifyInserts(entity, metadata, batches);
 				return executeBatchInternal(stmts,true);
 			}
+		} catch (RuntimeException e) {
+			onException(context, e);
+			throw e;
 		} catch (SQLException e) {
 			onException(context, e);
 			throw configuration.translate(queryString, constants, e);
@@ -293,16 +305,13 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 	}
 
-	private long executeStatementInternal(PreparedStatement stmt, boolean close) {
+	private long executeStatementInternal(PreparedStatement stmt, boolean close) throws SQLException {
 		try {
 			listeners.preExecute(context);
 			long start = System.currentTimeMillis();
 			int rc = stmt.executeUpdate();
 			postExecuted(context, System.currentTimeMillis() - start, "Insert", rc);
 			return rc;
-		} catch (SQLException e) {
-			onException(context, e);
-			throw configuration.translate(queryString, constants, e);
 		}finally {
 			if(close) {
 				SQLTypeUtils.close(stmt);
@@ -310,7 +319,7 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 		}
 	}
 
-	private long executeBatchInternal(Collection<PreparedStatement> stmts, boolean close) {
+	private long executeBatchInternal(Collection<PreparedStatement> stmts, boolean close) throws SQLException{
 		listeners.preExecute(context);
 		long start = System.currentTimeMillis();
 		try {
@@ -322,9 +331,6 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			}
 			postExecuted(context, System.currentTimeMillis() - start, "BatchInsert", rc);
 			return rc;
-		} catch (SQLException e) {
-			onException(context, e);
-			throw configuration.translate(queryString, constants, e);
 		} finally {
 			if(close) {
 				stmts.forEach(SQLTypeUtils::close);
@@ -786,6 +792,9 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				}
 				super.configuration.set(stmt, constantPaths.get(i), i + 1, o);
 			} catch (SQLException e) {
+				// 本方法 override querydsl 父类 AbstractSQLClause.setParameters，父类签名不抛受检异常，
+				// 因此不得不就地 translate 为 RuntimeException（规范：受父类约束的方法允许转换）。
+				// 注意：此处只转换、不 onException，上报由最外层 execute/executeWithKeys 统一负责一次。
 				Path<?> p = constantPaths == null ? null : constantPaths.get(i);
 				log.error(queryString + "\nField " + i + " path=" + p + " set error. " + e.getMessage());
 				throw super.configuration.translate(e);
