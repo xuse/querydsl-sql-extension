@@ -416,14 +416,24 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 	@SuppressWarnings("unchecked")
 	private SQLInsertBatch beanToInsertBatch(Object bean) {
 		Map<Path<?>, Object> map = batchMapper.createMap(entity, bean);
-		List<Path<?>> columns = new ArrayList<>(map.size());
-		List<Expression<?>> values = new ArrayList<>(map.size());
+		int size = map.size();
+		List<Path<?>> columns = new ArrayList<>(size);
+		Object[] rawValues = new Object[size];
+		int i = 0;
 		for (Map.Entry<Path<?>, Object> entry : map.entrySet()) {
 			columns.add(entry.getKey());
-			Object value = entry.getValue();
+			rawValues[i++] = entry.getValue();
+		}
+		// 方案A：在原生 bulk 链路中补回空值兜底。
+		// NULLS_BIND mapper 会把 unsaved 的 primitive 值（如 int 0）替换为 Null.DEFAULT，
+		// 若不处理会在 VALUES 中绑定 SQL NULL，导致 NOT NULL 列写入失败。
+		// applySubstitutions 会根据 batchNullStrategy 用列的 defaultExpression / 兜底值替换。
+		DefaultValueHelper.applySubstitutions(entity, columns, rawValues, getEffectiveBatchNullStrategy());
+		List<Expression<?>> values = new ArrayList<>(size);
+		for (Object value : rawValues) {
 			if (value instanceof Expression<?>) {
 				values.add((Expression<?>) value);
-			} else if (value != null) {
+			} else if (value != null && value != Null.DEFAULT) {
 				values.add(ConstantImpl.create(value));
 			} else {
 				values.add(Null.CONSTANT);

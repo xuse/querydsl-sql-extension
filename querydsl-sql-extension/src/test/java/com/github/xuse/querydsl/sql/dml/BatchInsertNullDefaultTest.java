@@ -198,6 +198,45 @@ public class BatchInsertNullDefaultTest extends AbstractTestBase {
 		assertEquals(5, result2.getCodeType(), "codeType=5 should be preserved");
 	}
 
+	/**
+	 * Regression for the bulk-path (batchToBulk=true) primitive int scenario.
+	 * <p>
+	 * codeType is {@code int NOT NULL DEFAULT 1} without @UnsavedValue, so 0 is treated as unsaved.
+	 * Before the fix, the native bulk path (beanToInsertBatch) bound SQL NULL for the unsaved 0,
+	 * causing a NOT NULL constraint violation. The fix re-applies DefaultValueHelper.applySubstitutions
+	 * in the bulk path so 0 is substituted with the column default (1).
+	 */
+	@Test
+	public void testAutoDefault_intFieldWithDefaultValue_bulkMode() {
+		Foo bean = new Foo();
+		bean.setCode("INTBULK01");
+		bean.setName("IntBulk Test");
+		bean.setVolume(10);
+		bean.setCodeType(0); // unsaved for primitive int → must be substituted, not bound as NULL
+
+		Foo bean2 = new Foo();
+		bean2.setCode("INTBULK02");
+		bean2.setName("IntBulk Test2");
+		bean2.setVolume(20);
+		bean2.setCodeType(5); // explicit value preserved
+
+		long count = factory.insert(FOO)
+				.batchToBulk(true)
+				.populateBatch(Arrays.asList(bean, bean2))
+				.execute();
+
+		assertEquals(2, count, "Both records should be inserted in bulk mode");
+
+		CRUDRepository<Foo, Integer> repo = factory.asRepository(FOO);
+		Foo result1 = repo.query().eq(Foo::getName, "IntBulk Test").fetchFirst();
+		assertNotNull(result1);
+		assertEquals(1, result1.getCodeType(), "codeType=0 is unsaved, should be substituted with default 1 in bulk mode");
+
+		Foo result2 = repo.query().eq(Foo::getName, "IntBulk Test2").fetchFirst();
+		assertNotNull(result2);
+		assertEquals(5, result2.getCodeType(), "codeType=5 should be preserved in bulk mode");
+	}
+
 	private Foo makeFoo(String code, String name, int volume) {
 		Foo f = new Foo();
 		f.setCode(code);
