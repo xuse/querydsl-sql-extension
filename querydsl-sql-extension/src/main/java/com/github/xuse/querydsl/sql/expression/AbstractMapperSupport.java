@@ -9,6 +9,7 @@ import com.github.xuse.querydsl.sql.column.ColumnMapping;
 import com.github.xuse.querydsl.util.Entry;
 import com.github.xuse.querydsl.util.Exceptions;
 import com.github.xuse.querydsl.util.SnowflakeIdWorker;
+import com.github.xuse.querydsl.util.StringUtils;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.Expressions;
@@ -72,8 +73,7 @@ public abstract class AbstractMapperSupport {
 				break;
 			case GUID32:
 				if (scenario == SCENARIO_INSERT) {
-					UUID uuid = UUID.randomUUID();
-					return uuid2String32(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+					return StringUtils.generateGuid32();
 				}
 				break;
 			case VERSION:
@@ -107,14 +107,5 @@ public abstract class AbstractMapperSupport {
 				throw new IllegalArgumentException("Unsupported auto-generate type:" + generateDef.value());
 		}
 		return null;
-	}
-
-	private static String uuid2String32(long mostSigBits, long leastSigBits) {
-		return (digits(mostSigBits >> 32, 8) + digits(mostSigBits >> 16, 4) + digits(mostSigBits, 4) + digits(leastSigBits >> 48, 4) + digits(leastSigBits, 12));
-	}
-
-	private static String digits(long val, int digits) {
-		long hi = 1L << (digits * 4);
-		return Long.toHexString(hi | (val & (hi - 1))).substring(1);
 	}
 }

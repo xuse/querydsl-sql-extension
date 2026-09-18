@@ -112,7 +112,7 @@ public class SQLSerializerAlter extends SQLSerializer {
 				serializeConstant(constants.size() + 1, null);
 			}
 			constants.add(constant);
-			//很多场景会造成字段Path小于参数内容，例如MySQL重复批变量，LIMIT OFFSET等
+			//很多场景会造成字段Path小于参数内容，例如MySQL bulk模式下重复批变量，LIMIT OFFSET等
 			if (constantPaths.size() < constants.size()) {
 				constantPaths.add(null);
 			}

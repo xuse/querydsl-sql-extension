@@ -2240,13 +2240,32 @@ public class StringUtils {
 	}
 
 	/**
-	 * 获得32位的Hex uuid
+	 * 获得36位的Hex uuid
 	 * 
 	 * @return String of UUID(size=36)
 	 */
 	public static final String generateGuid() {
 		UUID uuid = UUID.randomUUID();
 		return uuid.toString();
+	}
+	
+	/**
+	 * 获得32位的Hex uuid
+	 * 
+	 * @return String of UUID(size=32)
+	 */
+	public static final String generateGuid32() {
+		UUID uuid = UUID.randomUUID();
+		return uuid2String32(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+	}
+
+	private static String uuid2String32(long mostSigBits, long leastSigBits) {
+		return (digits(mostSigBits >> 32, 8) + digits(mostSigBits >> 16, 4) + digits(mostSigBits, 4) + digits(leastSigBits >> 48, 4) + digits(leastSigBits, 12));
+	}
+
+	private static String digits(long val, int digits) {
+		long hi = 1L << (digits * 4);
+		return Long.toHexString(hi | (val & (hi - 1))).substring(1);
 	}
 
 	public static String trimToEmpty(String value) {
