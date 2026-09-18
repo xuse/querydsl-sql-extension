@@ -954,18 +954,21 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 				}
 			}
 
-			// —— 第二遍（只遍历已缓存的 rows）：按 SQL 列序生成每组 values，处理 auto 值与写回 ——
+			// —— 第二遍：并行遍历 beans 与 rows（同顺序同索引），按 SQL 列序生成每组 values，处理 auto 值与写回 ——
 			int maxLoginBatch = configuration.getMaxRecordsLogInBatch();
 			List<List<Expression<?>>> valueGroups = new ArrayList<>(rows.size());
 			this.bindingValues = new ArrayList<>();
 			List<SQLBindingsAlter> logBindings = new ArrayList<>();
-			for (int r = 0; r < rows.size(); r++) {
+			Iterator<Object> beanIter = beans.iterator();
+			int r = 0;
+			for (Object[] raw : rows) {
+				Object bean = beanIter.next(); // beans 与 rows 由第一遍按同一顺序构建，天然对齐
 				List<Object> groupBindValues = new ArrayList<>(sqlColCount);
-				List<Expression<?>> group = buildValueGroup(rows.get(r), getBeanAt(beans, r), meta, sqlColIdx,
+				List<Expression<?>> group = buildValueGroup(raw, bean, meta, sqlColIdx,
 						sqlColCount, columns, writeNullsMode, groupBindValues);
 				this.bindingValues.addAll(groupBindValues);
 				valueGroups.add(group);
-				if (r < maxLoginBatch) {
+				if (r++ < maxLoginBatch) {
 					logBindings.add(new SQLBindingsAlter(null, new ArrayList<>(groupBindValues), columns));
 				}
 			}
@@ -1113,18 +1116,6 @@ public class SQLInsertClauseAlter extends AbstractSQLInsertClause<SQLInsertClaus
 			return codec.values(bean);
 		}
 		return AdvancedMapper.getBeanCodec(pathEx, bean).values(bean);
-	}
-
-	private static Object getBeanAt(Collection<Object> beans, int index) {
-		if (beans instanceof List) {
-			return ((List<?>) beans).get(index);
-		}
-		Iterator<Object> it = beans.iterator();
-		Object b = null;
-		for (int i = 0; i <= index && it.hasNext(); i++) {
-			b = it.next();
-		}
-		return b;
 	}
 
 	private static boolean isKeyAutoIncrement(ColumnMapping cm) {
