@@ -88,6 +88,24 @@ public abstract class AbstractTestBase {
 			getSqlFactory();			
 		}
 	}
+
+	/**
+	 * Ensure the given entity table exists before a test uses it, then truncate it.
+	 * <p>
+	 * The test suite shares a single static {@link #factory} across all test classes, and some
+	 * DDL-oriented tests drop shared tables (e.g. {@code ca_foo}) without recreating them. Tests
+	 * that only {@code truncate} a table therefore fail with "table not found" depending on
+	 * execution order. Creating with {@code IF NOT EXISTS} first makes such tests order-independent.
+	 * <p>
+	 * 测试套件共享同一个静态 factory，部分 DDL 测试会 drop 共享表且不重建，导致仅 truncate 的测试
+	 * 因执行顺序不同而报“表不存在”。此方法先 CREATE TABLE IF NOT EXISTS 再 truncate，消除顺序依赖。
+	 *
+	 * @param table the entity table to ensure and truncate
+	 */
+	protected static void ensureAndTruncate(com.github.xuse.querydsl.lambda.LambdaTable<?> table) {
+		factory.getMetadataFactory().createTable(table).ifExists().execute();
+		factory.getMetadataFactory().truncate(table).execute();
+	}
 	
 	protected static SQLQueryFactory getSqlFactory() {
 		if(factory==null) {

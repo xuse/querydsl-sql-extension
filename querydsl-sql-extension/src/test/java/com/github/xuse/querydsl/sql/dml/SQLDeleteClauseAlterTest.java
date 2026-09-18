@@ -35,7 +35,7 @@ public class SQLDeleteClauseAlterTest extends AbstractTestBase {
 
 	@BeforeEach
 	public void truncate() {
-		factory.getMetadataFactory().truncate(FOO).execute();
+		ensureAndTruncate(FOO);
 	}
 
 	/**

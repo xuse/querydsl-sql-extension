@@ -50,7 +50,7 @@ public class SQLInsertClauseAlterBatchTest {
 
 		@BeforeEach
 		public void truncate() {
-			factory.getMetadataFactory().truncate(FOO).execute();
+			ensureAndTruncate(FOO);
 		}
 
 		/**
