@@ -199,6 +199,23 @@ public interface SQLTemplatesEx {
 	};
 	
 	boolean isBatchToBulkInDefault();
+
+	/**
+	 * The maximum number of value groups packed into a single bulk INSERT statement
+	 * ({@code INSERT ... VALUES (...),(...),...}). When a batch exceeds this size it is
+	 * split into multiple statements executed sequentially.
+	 * <p>
+	 * The default is a conservative 100. Dialects that tolerate larger statements may
+	 * override this (e.g. MySQL returns 250).
+	 * <p>
+	 * 单条 bulk INSERT 语句中打包的 VALUES 组数上限。超过该数量时，批量数据会被拆分为多条语句依次执行。
+	 * 默认保守取 100，方言可覆盖（如 MySQL 返回 250）。
+	 *
+	 * @return the max number of value groups per bulk insert statement
+	 */
+	default int getMaxRowsPerBulkInsert() {
+		return 100;
+	}
 	
 	/**
 	 * @param columnDef columnDef

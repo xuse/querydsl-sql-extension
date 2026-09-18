@@ -399,6 +399,11 @@ public class MySQLWithJSONTemplates extends MySQLTemplates implements SQLTemplat
 	}
 
 	@Override
+	public int getMaxRowsPerBulkInsert() {
+		return 250;
+	}
+
+	@Override
 	public boolean notSupports(Operator op) {
 		return getTemplate(op)==null || unsupports.contains(op);
 	}

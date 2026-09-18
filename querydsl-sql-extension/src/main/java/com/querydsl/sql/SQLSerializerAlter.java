@@ -323,6 +323,55 @@ public class SQLSerializerAlter extends SQLSerializer {
 		}
 	}
 
+	/**
+	 * Serialize a single group of values enclosed by the caller's parentheses, appending each
+	 * value expression and registering the constant paths of that group.
+	 * <p>
+	 * Only {@link Constant} and {@link Null#CONSTANT} values are registered as bind variables
+	 * (a {@code ?} placeholder is produced). Other expressions (e.g. {@code DEFAULT} keyword,
+	 * {@code current_timestamp}) are inlined and are NOT registered as constant paths. This makes
+	 * each group's bind-variable count independent, so different rows may contain a different mix
+	 * of {@code ?} and {@code DEFAULT}.
+	 * <p>
+	 * 序列化一组 values（括号由调用方负责）。仅 {@link Constant} 与 {@link Null#CONSTANT} 会登记为绑定变量（产生 {@code ?}）；
+	 * 其余表达式（如 {@code DEFAULT} 关键字、{@code current_timestamp}）内联输出且不登记 constantPath，
+	 * 因此每组的绑定变量数量可不同，允许 {@code ?} 与 {@code DEFAULT} 在各行任意混排。
+	 *
+	 * @param values  the value expressions of one row
+	 * @param columns the SQL column order (aligned with {@code values})
+	 */
+	public void serializeValues(List<? extends Expression<?>> values, List<Path<?>> columns) {
+		handleValueList(values, columns);
+	}
+
+	/**
+	 * Serialize a bulk INSERT with a shared column clause and multiple value groups:
+	 * {@code INSERT INTO t (cols) VALUES (...),(...),...}. Each group is serialized independently
+	 * via {@link #serializeValues}, so groups may differ in their bind-variable layout (some cells
+	 * may be {@code DEFAULT} while others are {@code ?}). The column clause is fixed and shared by
+	 * all groups. Trailing flags (e.g. {@code ON DUPLICATE KEY UPDATE}) are NOT handled here; the
+	 * caller appends them once after this method returns.
+	 * <p>
+	 * 生成 bulk INSERT：固定的列子句 + 多组 VALUES。每组通过 {@link #serializeValues} 独立序列化，
+	 * 各组绑定变量布局可不同（某些单元格为 {@code DEFAULT}，另一些为 {@code ?}）。列子句固定、全组共用。
+	 * 尾部 flags（如 {@code ON DUPLICATE KEY UPDATE}）不在此处理，由调用方在本方法返回后追加一次。
+	 *
+	 * @param metadata    query metadata
+	 * @param entity      the target table
+	 * @param columns     the fixed SQL column order shared by all value groups
+	 * @param valueGroups one value-expression list per row
+	 */
+	public void serializeForInsertBulk(QueryMetadata metadata, RelationalPath<?> entity, List<Path<?>> columns,
+			List<List<Expression<?>>> valueGroups) {
+		serializeForInsert(metadata, entity, columns, valueGroups.get(0), null);
+		for (int i = 1; i < valueGroups.size(); i++) {
+			append(COMMA);
+			append("(");
+			serializeValues(valueGroups.get(i), columns);
+			append(")");
+		}
+	}
+
 
 	public RoutingStrategy getRouting() {
 		return routing;
