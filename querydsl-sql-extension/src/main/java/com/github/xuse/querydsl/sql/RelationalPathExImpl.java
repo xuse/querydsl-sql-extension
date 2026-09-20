@@ -111,12 +111,31 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 	}
 	
 	public ColumnMapping removeColumn(Path<?> path){
-		ColumnMapping mapping=columnMetadata.remove(path);
+		Path<?> key = resolveColumnPath(path);
+		ColumnMapping mapping=columnMetadata.remove(key);
 		if (mapping != null) {
-			bindingsMap.remove(path.getMetadata().getName());
+			bindingsMap.remove(key.getMetadata().getName());
 			clearColumnsCache();
 		}
 		return mapping;
+	}
+
+	/**
+	 * 将传入的列路径归一化为当前表中实际持有的Path实例。
+	 * 主要用于处理 lambda 列引用（{@link LambdaColumnBase}），因为 lambda 对象本身的
+	 * identity/equals 不会与 columnMetadata 中存储的具体 Path key 匹配。
+	 */
+	private Path<?> resolveColumnPath(Path<?> path) {
+		if (path instanceof LambdaColumnBase) {
+			Pair<Class<?>, String> content = Lambdas.analysis(path);
+			if (content.getFirst() == this.getType()) {
+				Path<?> resolved = getColumn(content.getSecond());
+				if (resolved != null) {
+					return resolved;
+				}
+			}
+		}
+		return path;
 	}
 
 	static class DynamicField implements AccessibleElement {
@@ -180,10 +199,8 @@ public class RelationalPathExImpl<T> extends RelationalPathBaseEx<T> implements 
 	}
 
 	public static <T> RelationalPathExImpl<T> valueOf(RelationalPath<T> path) {
-		if (path instanceof RelationalPathExImpl) {
-			return (RelationalPathExImpl<T>) path;
-		}
 		if (path instanceof RelationalPathBaseEx) {
+			// 返回副本，避免 DDL（如 changeColumn/removeColumn）直接改动来自 PathCache 的共享实例而污染全局元数据。
 			return ((RelationalPathBaseEx<T>) path).clone();
 		}
 		return generateForOriginal(path);
