@@ -42,13 +42,13 @@ public abstract class AbstractTestBase {
 		dsDerby.setUrl("jdbc:derby:db;create=true");
 
 		dsMySQL.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dsMySQL.setUrl("jdbc:mysql://10.86.16.12:3306/test?useSSL=false");
+		dsMySQL.setUrl(appendUrlParams("jdbc:mysql://10.86.16.12:3306/test?useSSL=false"));
 		dsMySQL.setUsername(System.getProperty("mysql.user"));
 		dsMySQL.setPassword(System.getProperty("mysql.password"));
 		
 		String host="localhost";
 		dsMySQL8.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dsMySQL8.setUrl("jdbc:mysql://"+host+":3306/mysql?allowPublicKeyRetrieval=true");
+		dsMySQL8.setUrl(appendUrlParams("jdbc:mysql://"+host+":3306/mysql?allowPublicKeyRetrieval=true"));
 		dsMySQL8.setUsername("root");
 		dsMySQL8.setPassword(testPws.replace("_", ""));
 		
@@ -62,9 +62,55 @@ public abstract class AbstractTestBase {
 		dsH2.setUrl("jdbc:h2:~/h2test");
 	}
 
-	private static final SimpleDataSource effectiveDs = dsH2;
-	
-	
+	/**
+	 * The active datasource, resolved dynamically from the {@code test.db} system property so the
+	 * suite can target different databases at runtime, e.g. {@code -Dtest.db=mysql8}. Defaults to
+	 * H2 to keep the out-of-the-box behavior unchanged.
+	 * <p>
+	 * 通过 {@code test.db} 系统属性动态选择数据源，从而在运行时用参数切换目标数据库，如
+	 * {@code -Dtest.db=mysql8}。缺省为 H2，保持默认行为不变。
+	 */
+	private static final SimpleDataSource effectiveDs = resolveEffectiveDs();
+
+	private static SimpleDataSource resolveEffectiveDs() {
+		String db = System.getProperty("test.db", "h2").trim().toLowerCase();
+		switch (db) {
+		case "mysql":
+			return dsMySQL;
+		case "mysql8":
+			return dsMySQL8;
+		case "pg":
+		case "postgres":
+		case "postgresql":
+			return dsPg14;
+		case "derby":
+			return dsDerby;
+		case "h2":
+			return dsH2;
+		default:
+			throw new IllegalArgumentException("Unknown test.db value: " + db
+					+ ". Supported: h2, mysql, mysql8, pg, derby");
+		}
+	}
+
+	/**
+	 * Append extra JDBC URL parameters supplied via the {@code test.db.urlParams} system property,
+	 * e.g. {@code -Dtest.db.urlParams=rewriteBatchedStatements=true&useServerPrepStmts=false}. This
+	 * lets tests toggle driver behavior (such as batch statement rewriting) without code changes.
+	 * <p>
+	 * 通过 {@code test.db.urlParams} 系统属性追加额外的 JDBC URL 参数，例如
+	 * {@code -Dtest.db.urlParams=rewriteBatchedStatements=true}，从而在不改代码的情况下切换驱动行为
+	 * （如批量语句改写）。
+	 */
+	private static String appendUrlParams(String url) {
+		String extra = System.getProperty("test.db.urlParams");
+		if (extra == null || extra.trim().isEmpty()) {
+			return url;
+		}
+		String sep = url.indexOf('?') >= 0 ? "&" : "?";
+		return url + sep + extra.trim();
+	}
+
 	public static  SimpleDataSource getEffectiveDs() {
 		return effectiveDs;
 	}
